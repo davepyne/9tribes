@@ -3,15 +3,11 @@ import type { WorldViewModel } from '../../types/worldView';
 import { getSettlementFrame, TEXTURES } from '../assets/keys';
 
 type SettlementCallbacks = {
-  onCitySelected: (cityId: string) => void;
-  onCityDoubleClicked: (cityId: string) => void;
+  onCitySelected: (cityId: string, pointer?: Phaser.Input.Pointer) => void;
   onVillageSelected: (villageId: string) => void;
 };
 
 export class SettlementRenderer {
-  private lastCityClickTime = 0;
-  private lastCityClickId = '';
-
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly layer: Phaser.GameObjects.Container,
@@ -30,18 +26,7 @@ export class SettlementRenderer {
       const sprite = this.scene.add.image(point.x, point.y - 6, TEXTURES.cities, getSettlementFrame(city.factionId, 'city'))
         .setOrigin(0.5, 1)
         .setInteractive({ cursor: 'pointer' });
-      sprite.on('pointerdown', () => {
-        const now = performance.now();
-        const isDbl = now - this.lastCityClickTime < 400 && this.lastCityClickId === city.id;
-        this.lastCityClickTime = now;
-        this.lastCityClickId = city.id;
-        if (isDbl) {
-          callbacks.onCityDoubleClicked(city.id);
-          this.lastCityClickTime = 0; // reset to avoid triple-click re-trigger
-        } else {
-          callbacks.onCitySelected(city.id);
-        }
-      });
+      sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => callbacks.onCitySelected(city.id, pointer));
       this.layer.add(sprite);
 
       const label = this.scene.add.text(point.x, point.y - 60, city.name, {

@@ -199,28 +199,28 @@ export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions 
     };
     state.factions.set(factionId, faction);
 
-    if (usesSettlerStart) {
-      const settlerPrototype = assemblePrototype(
-        factionId,
-        'infantry_frame' as any,
-        ['basic_spear', 'simple_armor'] as any,
-        registry,
-        existingPrototypeIds as any,
-        {
-          faction,
-          validation: {
-            ignoreResearchRequirements: true,
-            ignoreProgressionRequirements: true,
-          },
-          name: 'Settler',
-          tags: ['settler'],
-          sourceRecipeId: 'settler',
-        }
-      );
-      existingPrototypeIds.push(settlerPrototype.id);
-      state.prototypes.set(settlerPrototype.id, settlerPrototype);
-      faction.prototypeIds.push(settlerPrototype.id);
+    const settlerPrototype = assemblePrototype(
+      factionId,
+      'infantry_frame' as any,
+      ['basic_spear', 'simple_armor'] as any,
+      registry,
+      existingPrototypeIds as any,
+      {
+        faction,
+        validation: {
+          ignoreResearchRequirements: true,
+          ignoreProgressionRequirements: true,
+        },
+        name: 'Settler',
+        tags: ['settler'],
+        sourceRecipeId: 'settler',
+      }
+    );
+    existingPrototypeIds.push(settlerPrototype.id);
+    state.prototypes.set(settlerPrototype.id, settlerPrototype);
+    faction.prototypeIds.push(settlerPrototype.id);
 
+    if (usesSettlerStart) {
       const settlerId = createUnitId();
       let settler: Unit = {
         id: settlerId,

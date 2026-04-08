@@ -19,7 +19,13 @@ import { getHexOwner } from '../../../../src/systems/territorySystem.js';
 import { calculateProductionPenalty, calculateMoralePenalty } from '../../../../src/systems/warExhaustionSystem.js';
 import { getVillageSpawnReadinessWithRegistry } from '../../../../src/systems/villageSystem.js';
 import { getFactionCityIds } from '../../../../src/systems/factionOwnershipSystem.js';
-import { getAvailableProductionPrototypes, getUnitCost } from '../../../../src/systems/productionSystem.js';
+import {
+  canPaySettlerVillageCost,
+  getAvailableProductionPrototypes,
+  getPrototypeCostType,
+  getPrototypeQueueCost,
+  SETTLER_VILLAGE_COST,
+} from '../../../../src/systems/productionSystem.js';
 import type {
   CityInspectorViewModel,
   ClientMode,
@@ -758,6 +764,18 @@ function buildCityInspectorViewModel(state: GameState, cityId: string, registry:
   const currentItem = city.currentProduction
     ? state.prototypes.get(city.currentProduction.item.id as never)
     : null;
+  const currentCostType = city.currentProduction?.costType ?? city.currentProduction?.item.costType ?? 'production';
+  const currentVillageCount = faction?.villageIds.length ?? 0;
+  const currentProgress = city.currentProduction
+    ? currentCostType === 'villages'
+      ? Math.min(city.currentProduction.cost, currentVillageCount)
+      : Number(city.currentProduction.progress.toFixed(2))
+    : 0;
+  const currentRemaining = city.currentProduction
+    ? currentCostType === 'villages'
+      ? Math.max(0, city.currentProduction.cost - currentVillageCount)
+      : Number(Math.max(0, city.currentProduction.cost - city.currentProduction.progress).toFixed(2))
+    : 0;
 
   return {
     cityId: city.id,
@@ -774,41 +792,60 @@ function buildCityInspectorViewModel(state: GameState, cityId: string, registry:
         name: currentItem?.name ?? city.currentProduction.item.id,
         type: city.currentProduction.item.type,
         cost: city.currentProduction.cost,
-        progress: Number(city.currentProduction.progress.toFixed(2)),
-        remaining: Number(Math.max(0, city.currentProduction.cost - city.currentProduction.progress).toFixed(2)),
-        turnsRemaining: perTurnIncome > 0
-          ? Math.ceil(Math.max(0, city.currentProduction.cost - city.currentProduction.progress) / perTurnIncome)
-          : null,
+        costType: currentCostType,
+        costLabel: currentCostType === 'villages'
+          ? `${city.currentProduction.cost} villages`
+          : `${city.currentProduction.cost} production`,
+        progress: currentProgress,
+        remaining: currentRemaining,
+        turnsRemaining: currentCostType === 'villages'
+          ? null
+          : perTurnIncome > 0
+            ? Math.ceil(Math.max(0, city.currentProduction.cost - city.currentProduction.progress) / perTurnIncome)
+            : null,
       } : null,
       queue: city.productionQueue.map((item) => {
         const prototype = state.prototypes.get(item.id as never);
+        const costType = item.costType ?? 'production';
         return {
           id: item.id,
           name: prototype?.name ?? item.id,
           type: item.type,
           cost: item.cost,
+          costType,
+          costLabel: costType === 'villages' ? `${item.cost} villages` : `${item.cost} production`,
         };
       }),
       perTurnIncome,
     },
     productionOptions: (!faction ? [] : getAvailableProductionPrototypes(state, city.factionId, registry))
-      .map((prototype) => ({
-        prototypeId: prototype.id,
-        name: prototype.name,
-        cost: getUnitCost(prototype.chassisId),
-        chassisId: prototype.chassisId,
-        attack: prototype.derivedStats.attack,
-        defense: prototype.derivedStats.defense,
-        hp: prototype.derivedStats.hp,
-        moves: prototype.derivedStats.moves,
-        range: prototype.derivedStats.range,
-        disabled: !canManageProduction,
-        disabledReason: !canManageProduction
+      .map((prototype) => {
+        const costType = getPrototypeCostType(prototype);
+        const cost = getPrototypeQueueCost(prototype);
+        const villageCount = faction?.villageIds.length ?? 0;
+        const disabledReason = !canManageProduction
           ? city.besieged
             ? 'Cannot change production while besieged.'
             : 'Only the active friendly city can change production.'
-          : undefined,
-      })),
+          : costType === 'villages' && !canPaySettlerVillageCost(state, city.factionId, SETTLER_VILLAGE_COST)
+            ? `Requires ${SETTLER_VILLAGE_COST} villages (${villageCount} available).`
+            : undefined;
+        return {
+          prototypeId: prototype.id,
+          name: prototype.name,
+          cost,
+          costType,
+          costLabel: costType === 'villages' ? `${cost} villages` : `${cost} production`,
+          chassisId: prototype.chassisId,
+          attack: prototype.derivedStats.attack,
+          defense: prototype.derivedStats.defense,
+          hp: prototype.derivedStats.hp,
+          moves: prototype.derivedStats.moves,
+          range: prototype.derivedStats.range,
+          disabled: disabledReason !== undefined,
+          disabledReason,
+        };
+      }),
     supply: {
       income: economy.supplyIncome,
       used: economy.supplyDemand,

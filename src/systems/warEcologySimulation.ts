@@ -57,6 +57,7 @@ import { evaluateAndSpawnVillage, getVillageCount, destroyVillage } from './vill
 import { deriveResourceIncome, getSupplyDeficit, advanceCaptureTimers } from './economySystem.js';
 import {
   advanceProduction,
+  canCompleteCurrentProduction,
   completeProduction,
   getAvailableProductionPrototypes,
   getUnitCost,
@@ -2147,12 +2148,14 @@ function processFactionPhases(
     let updatedCity = advanceProduction(city, cityProductionIncome);
 
     // Check if production is complete
-    if (updatedCity.currentProduction && updatedCity.currentProduction.progress >= updatedCity.currentProduction.cost) {
+    if (canCompleteCurrentProduction(current, cityId, registry)) {
       current = completeProduction(current, cityId, registry);
       // Re-fetch city after state update
       updatedCity = current.cities.get(cityId) ?? updatedCity;
       // Deduct spent production from economy pool
-      const spentProduction = city.currentProduction?.cost ?? 0;
+      const spentProduction = city.currentProduction?.costType === 'villages'
+        ? 0
+        : city.currentProduction?.cost ?? 0;
       const currentEconomy = current.economy.get(factionId);
       if (currentEconomy) {
         const updatedEconomy = {
@@ -2171,7 +2174,7 @@ function processFactionPhases(
     if (!updatedCity.currentProduction && updatedCity.productionQueue.length === 0 && !updatedCity.besieged) {
       const choice = chooseStrategicProduction(current, factionId, strategy, registry, difficulty);
       if (choice) {
-        updatedCity = queueUnit(updatedCity, choice.prototypeId, choice.chassisId, choice.cost);
+        updatedCity = queueUnit(updatedCity, choice.prototypeId, choice.chassisId, choice.cost, choice.costType);
         log(trace, `${faction.name} queued ${choice.chassisId} at ${updatedCity.name} (${choice.reason})`);
       }
     }

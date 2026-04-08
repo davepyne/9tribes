@@ -113,7 +113,9 @@ export function CommandTray({ state, timelineMax, onSetTurn, onEndTurn, onSetTar
                 <strong className="ct-unit-name">{selectedCity.cityName}</strong>
                 <span className="ct-detail">
                   {selectedCity.production.status === 'producing' && selectedCity.production.current
-                    ? `Building: ${selectedCity.production.current.name} (${selectedCity.production.current.progress}/${selectedCity.production.current.cost})`
+                    ? selectedCity.production.current.costType === 'villages'
+                      ? `Building: ${selectedCity.production.current.name} (${selectedCity.production.current.progress}/${selectedCity.production.current.cost} villages)`
+                      : `Building: ${selectedCity.production.current.name} (${selectedCity.production.current.progress}/${selectedCity.production.current.cost})`
                     : 'Idle'}
                 </span>
               </>

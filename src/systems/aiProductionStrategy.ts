@@ -5,10 +5,15 @@ import type { Prototype } from '../features/prototypes/types.js';
 import type { FactionStrategy, ProductionPriority } from './factionStrategy.js';
 import { calculatePrototypeCost, getDomainIdsByTags } from './knowledgeSystem.js';
 import {
+  canPaySettlerVillageCost,
   getAvailableProductionPrototypes,
+  getPrototypeCostType,
+  getPrototypeQueueCost,
   getPrototypeEconomicProfile,
   getProjectedSupplyDemandWithPrototype,
   getUnitCost,
+  isSettlerPrototype,
+  SETTLER_VILLAGE_COST,
 } from './productionSystem.js';
 import { getSupplyDeficit } from './economySystem.js';
 import { getVisibleEnemyUnits } from './fogSystem.js';
@@ -20,6 +25,7 @@ export interface ProductionDecision {
   prototypeId: string;
   chassisId: string;
   cost: number;
+  costType: 'production' | 'villages';
   reason: string;
 }
 
@@ -117,7 +123,16 @@ export function rankProductionPriorities(
     currentSupplyDeficit,
   };
 
-  const availablePrototypes = getAvailableProductionPrototypes(state, factionId, registry);
+  const availablePrototypes = getAvailableProductionPrototypes(state, factionId, registry)
+    .filter((prototype) => {
+      if (!isSettlerPrototype(prototype)) {
+        return true;
+      }
+      if (difficulty === 'easy') {
+        return false;
+      }
+      return canPaySettlerVillageCost(state, factionId, SETTLER_VILLAGE_COST);
+    });
   if (usesNormalAiBehavior(difficulty) && state.round <= 10) {
     return rankRushProductionPriorities(state, factionId, strategy, registry, availablePrototypes);
   }
@@ -143,6 +158,7 @@ export function rankProductionPriorities(
       const catapultScore = scoreCatapultPreference(factionId, state, strategy, prototype);
       const domains = getDomainIdsByTags(prototype.tags ?? []);
       const codifiedPivotScore = scoreRecentCodifiedDomainPivot(domains, recentCodifiedDomains);
+      const settlerScore = scoreSettlerExpansionValue(state, factionId, strategy, prototype, difficulty);
       const baseCost = getUnitCost(prototype.chassisId);
       const totalCost = calculatePrototypeCost(baseCost, faction, domains);
       const economic = getPrototypeEconomicProfile(prototype, registry);
@@ -170,6 +186,7 @@ export function rankProductionPriorities(
         hybridScore +
         catapultScore +
         codifiedPivotScore +
+        settlerScore +
         doctrineScore +
         supplyEfficiencyScore +
         forceProjectionScore -
@@ -185,6 +202,7 @@ export function rankProductionPriorities(
         roleNeed,
         projectedSupplyMargin,
         codifiedPivotScore,
+        settlerScore,
       );
       return {
         prototypeId: prototype.id,
@@ -226,7 +244,10 @@ export function chooseStrategicProduction(
   return {
     prototypeId: prototype.id,
     chassisId: prototype.chassisId,
-    cost,
+    cost: getPrototypeCostType(prototype) === 'villages'
+      ? getPrototypeQueueCost(prototype)
+      : cost,
+    costType: getPrototypeCostType(prototype),
     reason: best.reason,
   };
 }
@@ -266,7 +287,47 @@ function isRushMilitaryPrototype(
   prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>,
 ): boolean {
   const tags = prototype.tags ?? [];
-  return prototype.derivedStats.role !== 'support' && !tags.includes('transport') && !tags.includes('naval');
+  return prototype.derivedStats.role !== 'support'
+    && !tags.includes('transport')
+    && !tags.includes('naval')
+    && !tags.includes('settler');
+}
+
+function scoreSettlerExpansionValue(
+  state: GameState,
+  factionId: FactionId,
+  strategy: FactionStrategy,
+  prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>,
+  difficulty?: DifficultyLevel,
+): number {
+  if (!isSettlerPrototype(prototype)) {
+    return 0;
+  }
+  if (difficulty === 'easy') {
+    return Number.NEGATIVE_INFINITY;
+  }
+
+  const villageCount = state.factions.get(factionId)?.villageIds.length ?? 0;
+  if (villageCount < SETTLER_VILLAGE_COST) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
+  const postureBonus =
+    strategy.posture === 'defensive' ? 10
+    : strategy.posture === 'recovery' ? 8
+    : strategy.posture === 'balanced' ? 4
+    : strategy.posture === 'exploration' ? 2
+    : strategy.posture === 'offensive' ? -8
+    : -4;
+
+  return (
+    strategy.personality.scalars.defenseBias * 14 +
+    strategy.personality.scalars.caution * 8 +
+    Math.max(0, villageCount - SETTLER_VILLAGE_COST) * 1.5 +
+    postureBonus -
+    strategy.personality.scalars.aggression * 12 -
+    strategy.personality.scalars.siegeBias * 4
+  );
 }
 
 function scoreCatapultPreference(
@@ -383,7 +444,11 @@ function buildProductionReason(
   roleNeed: number,
   projectedSupplyMargin: number,
   codifiedPivotScore: number,
+  settlerScore: number,
 ): string {
+  if (settlerScore > 0) {
+    return `${posture} settler expansion, village-funded growth, score ${settlerScore.toFixed(1)}`;
+  }
   const parts = [`${posture} posture`, `${role} role`];
   if (roleNeed > 0.5) parts.push('fills role gap');
   if (enemyCounterPressure > 1) parts.push('counters enemy composition');

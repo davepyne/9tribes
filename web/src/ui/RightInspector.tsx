@@ -57,16 +57,28 @@ export function RightInspector({ state, onSetCityProduction }: RightInspectorPro
               <div className="city-card">
                 <strong>{selectedCity.production.current.name}</strong>
                 <div className="meta-row">
-                  <span>Progress</span>
-                  <strong>{selectedCity.production.current.progress}/{selectedCity.production.current.cost}</strong>
+                  <span>{selectedCity.production.current.costType === 'villages' ? 'Village Payment' : 'Progress'}</span>
+                  <strong>
+                    {selectedCity.production.current.costType === 'villages'
+                      ? `${selectedCity.production.current.progress}/${selectedCity.production.current.cost} villages`
+                      : `${selectedCity.production.current.progress}/${selectedCity.production.current.cost}`}
+                  </strong>
                 </div>
                 <div className="meta-row">
                   <span>Remaining</span>
-                  <strong>{selectedCity.production.current.remaining}</strong>
+                  <strong>
+                    {selectedCity.production.current.costType === 'villages'
+                      ? `${selectedCity.production.current.remaining} villages`
+                      : selectedCity.production.current.remaining}
+                  </strong>
                 </div>
                 <div className="meta-row">
-                  <span>City output</span>
-                  <strong>{selectedCity.production.perTurnIncome}/turn</strong>
+                  <span>{selectedCity.production.current.costType === 'villages' ? 'Funding' : 'City output'}</span>
+                  <strong>
+                    {selectedCity.production.current.costType === 'villages'
+                      ? selectedCity.production.current.costLabel
+                      : `${selectedCity.production.perTurnIncome}/turn`}
+                  </strong>
                 </div>
                 <div className="meta-row">
                   <span>ETA</span>
@@ -81,7 +93,7 @@ export function RightInspector({ state, onSetCityProduction }: RightInspectorPro
                 {selectedCity.production.queue.map((item) => (
                   <div className="city-list-row" key={`${item.type}-${item.id}`}>
                     <span>{item.name}</span>
-                    <strong>{item.cost}</strong>
+                    <strong>{item.costLabel}</strong>
                   </div>
                 ))}
               </div>
@@ -115,7 +127,7 @@ export function RightInspector({ state, onSetCityProduction }: RightInspectorPro
                 >
                   <div className="city-option__header">
                     <strong>{option.name}</strong>
-                    <span>{option.cost}</span>
+                    <span>{option.costLabel}</span>
                   </div>
                   <p>
                     {option.chassisId.replace('_frame', '')} · atk {option.attack} · def {option.defense} · hp {option.hp} · mov {option.moves} · rng {option.range}

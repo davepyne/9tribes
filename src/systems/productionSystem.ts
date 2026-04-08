@@ -4,21 +4,24 @@
 import type { GameState } from '../game/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
 import type { FactionId, CityId } from '../types.js';
-import type { City, ProductionItem, CurrentProduction } from '../features/cities/types.js';
+import type { City, ProductionItem, CurrentProduction, ProductionCostType } from '../features/cities/types.js';
 import type { Unit } from '../features/units/types.js';
 import type { HistoryEntry } from '../features/units/types.js';
 import type { Prototype } from '../features/prototypes/types.js';
 import { createUnitId } from '../core/ids.js';
-import { getNeighbors, hexToKey } from '../core/grid.js';
+import { getNeighbors, hexDistance, hexToKey } from '../core/grid.js';
 import { recordUnitCreated } from './historySystem.js';
 import { isHexOccupied } from './occupancySystem.js';
 import { getDomainIdsByTags, incrementPrototypeMastery } from './knowledgeSystem.js';
 import { getDomainProgression, meetsLearnedDomainRequirement } from './domainProgression.js';
+import { destroyVillage } from './villageSystem.js';
 
 export interface UnitEconomicProfile {
   productionCost: number;
   supplyCost: number;
 }
+
+export const SETTLER_VILLAGE_COST = 4;
 
 // Unit production costs (in production points)
 export const UNIT_COSTS: Record<string, number> = {
@@ -42,12 +45,14 @@ export function queueUnit(
   city: City,
   prototypeId: string,
   chassisId: string,
-  cost: number
+  cost: number,
+  costType: ProductionCostType = 'production',
 ): City {
   const item: ProductionItem = {
     type: 'unit',
     id: prototypeId,
     cost,
+    costType,
   };
 
   // If no current production, start immediately
@@ -58,6 +63,7 @@ export function queueUnit(
         item,
         progress: 0,
         cost,
+        costType,
       },
     };
   }
@@ -74,7 +80,7 @@ export function queueUnit(
  * Returns updated city state.
  */
 export function advanceProduction(city: City, productionIncome: number): City {
-  if (!city.currentProduction) {
+  if (!city.currentProduction || city.currentProduction.costType === 'villages') {
     return city;
   }
 
@@ -94,7 +100,75 @@ export function advanceProduction(city: City, productionIncome: number): City {
  */
 export function isProductionComplete(city: City): boolean {
   if (!city.currentProduction) return false;
+  if (city.currentProduction.costType === 'villages') return false;
   return city.currentProduction.progress >= city.currentProduction.cost;
+}
+
+export function isSettlerPrototype(
+  prototype: Pick<Prototype, 'name' | 'tags' | 'sourceRecipeId'> | undefined | null,
+): boolean {
+  if (!prototype) return false;
+  return prototype.tags?.includes('settler') === true
+    || prototype.sourceRecipeId === 'settler'
+    || prototype.name.toLowerCase() === 'settler';
+}
+
+export function getPrototypeCostType(
+  prototype: Pick<Prototype, 'name' | 'tags' | 'sourceRecipeId'> | undefined | null,
+): 'production' | 'villages' {
+  return isSettlerPrototype(prototype) ? 'villages' : 'production';
+}
+
+export function getPrototypeVillageCost(
+  prototype: Pick<Prototype, 'name' | 'tags' | 'sourceRecipeId'> | undefined | null,
+): number {
+  return isSettlerPrototype(prototype) ? SETTLER_VILLAGE_COST : 0;
+}
+
+export function getPrototypeQueueCost(prototype: Pick<Prototype, 'chassisId' | 'name' | 'tags' | 'sourceRecipeId'>): number {
+  return isSettlerPrototype(prototype) ? SETTLER_VILLAGE_COST : getUnitCost(prototype.chassisId);
+}
+
+export function canPaySettlerVillageCost(state: GameState, factionId: FactionId, villageCost = SETTLER_VILLAGE_COST): boolean {
+  const faction = state.factions.get(factionId);
+  return (faction?.villageIds.length ?? 0) >= villageCost;
+}
+
+export function getNearestFactionVillageIds(
+  state: GameState,
+  factionId: FactionId,
+  origin: { q: number; r: number },
+  limit = SETTLER_VILLAGE_COST,
+): string[] {
+  return Array.from(state.villages.values())
+    .filter((village) => village.factionId === factionId)
+    .sort((left, right) =>
+      hexDistance(left.position, origin) - hexDistance(right.position, origin)
+      || left.foundedRound - right.foundedRound
+      || left.id.localeCompare(right.id)
+    )
+    .slice(0, limit)
+    .map((village) => village.id);
+}
+
+export function canCompleteCurrentProduction(
+  state: GameState,
+  cityId: CityId,
+  registry: RulesRegistry,
+): boolean {
+  const city = state.cities.get(cityId);
+  if (!city?.currentProduction) return false;
+  if (city.currentProduction.costType !== 'villages') {
+    return isProductionComplete(city);
+  }
+
+  const prototype = state.prototypes.get(city.currentProduction.item.id as never);
+  if (!isSettlerPrototype(prototype)) {
+    return false;
+  }
+
+  return canPaySettlerVillageCost(state, city.factionId, city.currentProduction.cost)
+    && findSpawnHex(state, city.position, registry) !== null;
 }
 
 /**
@@ -112,13 +186,22 @@ export function completeProduction(
   const item = city.currentProduction.item;
   if (item.type !== 'unit') return state;
 
+  const prototype = state.prototypes.get(item.id as any);
+  if (!prototype) return state;
+
+  if (city.currentProduction.costType === 'villages') {
+    if (!isSettlerPrototype(prototype)) {
+      return state;
+    }
+
+    if (!canPaySettlerVillageCost(state, city.factionId, city.currentProduction.cost)) {
+      return state;
+    }
+  }
+
   // Find spawn position (adjacent empty hex)
   const spawnHex = findSpawnHex(state, city.position, registry);
   if (!spawnHex) return state; // No room to spawn
-
-  // Get the prototype
-  const prototype = state.prototypes.get(item.id as any);
-  if (!prototype) return state;
 
   // Create the unit
   const unitId = createUnitId();
@@ -171,6 +254,16 @@ export function completeProduction(
     units: newUnits,
     factions: newFactions,
   };
+
+  if (city.currentProduction.costType === 'villages') {
+    const villageIds = getNearestFactionVillageIds(currentState, city.factionId, city.position, city.currentProduction.cost);
+    if (villageIds.length < city.currentProduction.cost) {
+      return state;
+    }
+    for (const villageId of villageIds) {
+      currentState = destroyVillage(currentState, villageId as never);
+    }
+  }
   
   // Increment prototypeMastery for each domain the faction has learned
   for (const domainId of prototypeDomainIds) {
@@ -190,6 +283,7 @@ export function completeProduction(
         item: nextItem,
         progress: 0,
         cost: nextItem.cost,
+        costType: nextItem.costType,
       },
       productionQueue: city.productionQueue.slice(1),
     };
@@ -355,7 +449,7 @@ export function getAvailableProductionPrototypes(
   return Array.from(state.prototypes.values())
     .filter((prototype) => canProducePrototype(state, factionId, prototype.id, registry))
     .sort((left, right) =>
-      getUnitCost(left.chassisId) - getUnitCost(right.chassisId)
+      getPrototypeQueueCost(left) - getPrototypeQueueCost(right)
       || left.name.localeCompare(right.name)
       || left.id.localeCompare(right.id)
     );
@@ -377,6 +471,7 @@ export function cancelCurrentProduction(city: City): { city: City; lostProgress:
         item: nextItem,
         progress: 0,
         cost: nextItem.cost,
+        costType: nextItem.costType,
       },
       productionQueue: city.productionQueue.slice(1),
     };

@@ -102,10 +102,11 @@ function KnowledgeGainedShellContent({
         return;
       }
 
-      playCombatSoundForPendingCombat(pending, attacker);
-
       // AI-vs-AI combats get instant mode; anything involving a human gets full animation
       const isInstant = !controller.isCombatInvolvesHuman(attacker.factionId, defender.factionId);
+      if (!isInstant) {
+        playCombatSoundForPendingCombat(pending, attacker);
+      }
 
       setCombatLocked(true);
       scene.startCombatAnimation(

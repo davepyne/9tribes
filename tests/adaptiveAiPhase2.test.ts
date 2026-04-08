@@ -19,6 +19,46 @@ function getPrototypeByChassis(state: ReturnType<typeof buildMvpScenario>, facti
 }
 
 describe('adaptive AI phase 2', () => {
+  it('keeps settler production off on easy and makes it more attractive for defensive tribes on normal', () => {
+    const state = buildMvpScenario(42, { registry });
+    const hillId = 'hill_clan' as never;
+    const steppeId = 'steppe_clan' as never;
+    const hillFaction = state.factions.get(hillId)!;
+    const steppeFaction = state.factions.get(steppeId)!;
+
+    state.factions.set(hillId, {
+      ...hillFaction,
+      villageIds: ['hill_v1', 'hill_v2', 'hill_v3', 'hill_v4'] as never[],
+    });
+    state.factions.set(steppeId, {
+      ...steppeFaction,
+      villageIds: ['steppe_v1', 'steppe_v2', 'steppe_v3', 'steppe_v4'] as never[],
+    });
+    state.round = 12;
+
+    const hillSettler = Array.from(state.prototypes.values()).find(
+      (prototype) => prototype.factionId === hillId && prototype.tags?.includes('settler'),
+    );
+    const steppeSettler = Array.from(state.prototypes.values()).find(
+      (prototype) => prototype.factionId === steppeId && prototype.tags?.includes('settler'),
+    );
+    expect(hillSettler).toBeTruthy();
+    expect(steppeSettler).toBeTruthy();
+
+    const hillEasy = rankProductionPriorities(state, hillId, computeFactionStrategy(state, hillId, registry, 'easy'), registry, 'easy');
+    expect(hillEasy.find((entry) => entry.prototypeId === hillSettler!.id)).toBeUndefined();
+
+    const hillNormal = rankProductionPriorities(state, hillId, computeFactionStrategy(state, hillId, registry, 'normal'), registry, 'normal');
+    const steppeNormal = rankProductionPriorities(state, steppeId, computeFactionStrategy(state, steppeId, registry, 'normal'), registry, 'normal');
+    const hillSettlerScore = hillNormal.find((entry) => entry.prototypeId === hillSettler!.id);
+    const steppeSettlerScore = steppeNormal.find((entry) => entry.prototypeId === steppeSettler!.id);
+
+    expect(hillSettlerScore).toBeTruthy();
+    expect(steppeSettlerScore).toBeTruthy();
+    expect(hillSettlerScore!.score).toBeGreaterThan(steppeSettlerScore!.score);
+    expect(hillSettlerScore!.reason).toContain('settler expansion');
+  });
+
   it('computes projected supply margins for production candidates', () => {
     const state = buildMvpScenario(42, { registry });
     const factionId = 'steppe_clan' as never;

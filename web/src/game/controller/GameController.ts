@@ -33,6 +33,7 @@ export class GameController {
   private hoveredKey: string | null = null;
   private zoom = 0.6;
   private productionPopupCityId: string | null = null;
+  private inspectorRequestId = 0;
 
   constructor(options: GameControllerOptions) {
     this.mode = options.mode;
@@ -69,6 +70,7 @@ export class GameController {
         this.targetingMode = 'move';
         this.selected = { type: 'unit', unitId: action.unitId };
         this.productionPopupCityId = null;
+        this.requestInspectorOpen();
         break;
       case 'focus_unit':
         this.targetingMode = 'move';
@@ -80,11 +82,13 @@ export class GameController {
         this.targetingMode = 'move';
         this.selected = { type: 'city', cityId: action.cityId };
         this.productionPopupCityId = null;
+        this.requestInspectorOpen();
         break;
       case 'open_city_production':
         this.targetingMode = 'move';
         this.selected = { type: 'city', cityId: action.cityId };
         this.productionPopupCityId = action.cityId;
+        this.requestInspectorOpen();
         break;
       case 'close_city_production':
         this.productionPopupCityId = null;
@@ -92,6 +96,7 @@ export class GameController {
       case 'select_village':
         this.targetingMode = 'move';
         this.selected = { type: 'village', villageId: action.villageId };
+        this.requestInspectorOpen();
         break;
       case 'set_city_production':
         if (this.session) {
@@ -135,6 +140,9 @@ export class GameController {
               (entry) => entry.position.q === position.q && entry.position.r === position.r,
             );
             this.selected = city ? { type: 'city', cityId: city.id } : null;
+            if (city) {
+              this.requestInspectorOpen();
+            }
           } else {
             this.selected = null;
           }
@@ -244,6 +252,7 @@ export class GameController {
       playFeedback: null,
       research: null,
       productionPopupCityId: null,
+      inspectorRequestId: this.inspectorRequestId,
     };
   }
 
@@ -324,7 +333,12 @@ export class GameController {
       },
       research: buildResearchInspectorViewModel(sessionState, session.getRegistry()),
       productionPopupCityId: this.productionPopupCityId,
+      inspectorRequestId: this.inspectorRequestId,
     };
+  }
+
+  private requestInspectorOpen() {
+    this.inspectorRequestId += 1;
   }
 
   private clearSelectionIfInactive() {

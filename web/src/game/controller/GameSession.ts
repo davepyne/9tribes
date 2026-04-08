@@ -35,9 +35,13 @@ import {
 import { deriveResourceIncome, advanceCaptureTimers } from '../../../../src/systems/economySystem.js';
 import {
   advanceProduction,
+  canPaySettlerVillageCost,
+  canCompleteCurrentProduction,
   canProducePrototype,
   cancelCurrentProduction,
   completeProduction,
+  getPrototypeCostType,
+  getPrototypeQueueCost,
   queueUnit,
   removeFromQueue,
 } from '../../../../src/systems/productionSystem.js';
@@ -906,7 +910,17 @@ export class GameSession {
       return;
     }
 
-    const updatedCity = queueUnit(city, prototype.id, prototype.chassisId, this.getPrototypeCost(prototype.id));
+    const costType = getPrototypeCostType(prototype);
+    if (costType === 'villages' && !canPaySettlerVillageCost(this.state, city.factionId)) {
+      return;
+    }
+    const updatedCity = queueUnit(
+      city,
+      prototype.id,
+      prototype.chassisId,
+      costType === 'villages' ? getPrototypeQueueCost(prototype) : this.getPrototypeCost(prototype.id),
+      costType,
+    );
     const nextCities = new Map(this.state.cities);
     nextCities.set(city.id, updatedCity);
     this.state = { ...this.state, cities: nextCities };
@@ -1124,7 +1138,7 @@ export class GameSession {
             this.difficulty,
           );
           if (choice) {
-            city = queueUnit(city, choice.prototypeId, choice.chassisId, choice.cost);
+            city = queueUnit(city, choice.prototypeId, choice.chassisId, choice.cost, choice.costType);
             this.record('turn', `${city.name} queued ${choice.prototypeId} (${choice.reason})`);
             const cities = new Map(nextState.cities);
             cities.set(cityId, city);
@@ -1139,8 +1153,10 @@ export class GameSession {
 
       let updatedCity = advanceProduction(city, cityProductionIncome);
       let updatedEconomy = nextState.economy.get(factionId as never) ?? economy;
-      if (updatedCity.currentProduction && updatedCity.currentProduction.progress >= updatedCity.currentProduction.cost) {
-        const spentProduction = city.currentProduction?.cost ?? 0;
+      if (canCompleteCurrentProduction(nextState, cityId as never, this.registry)) {
+        const spentProduction = city.currentProduction?.costType === 'villages'
+          ? 0
+          : city.currentProduction?.cost ?? 0;
         const cities = new Map(nextState.cities);
         cities.set(cityId, updatedCity);
         nextState = { ...nextState, cities };

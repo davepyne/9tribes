@@ -2,16 +2,20 @@
 import type { CityId, FactionId } from '../../types.js';
 import type { HexCoord } from '../../types.js';
 
+export type ProductionCostType = 'production' | 'villages';
+
 export interface ProductionItem {
   type: 'unit' | 'improvement' | 'prototype';
   id: string;
   cost: number;
+  costType?: ProductionCostType;
 }
 
 export interface CurrentProduction {
   item: ProductionItem;
   progress: number;
   cost: number;
+  costType?: ProductionCostType;
 }
 
 export type CitySiteTraitKey = 'fresh_water' | 'woodland' | 'open_land';

@@ -36,6 +36,17 @@ export function ContextInspector({ state, onSetCityProduction, onCancelCityProdu
     }
   }, [state.productionPopupCityId]);
 
+  useEffect(() => {
+    if (!state.selected) {
+      return;
+    }
+
+    setIsOpen(true);
+    if (state.selected.type === 'city') {
+      setCityTab('overview');
+    }
+  }, [state.inspectorRequestId]);
+
   // Panel only opens on explicit user toggle (clicking the hamburger button)
 
   const updateScrollState = useCallback(() => {
@@ -365,7 +376,7 @@ export function ContextInspector({ state, onSetCityProduction, onCancelCityProdu
                   <div className="pq-current">
                     <div className="pq-current__header">
                       <span className="pq-current__label">NOW BUILDING</span>
-                      <span className="pq-cost-badge">{selectedCity.production.current.cost}</span>
+                      <span className="pq-cost-badge">{selectedCity.production.current.costLabel}</span>
                     </div>
                     <strong className="pq-current__name">{selectedCity.production.current.name}</strong>
                     <div className="pq-progress">
@@ -375,8 +386,16 @@ export function ContextInspector({ state, onSetCityProduction, onCancelCityProdu
                       />
                     </div>
                     <div className="pq-current__stats">
-                      <span>{selectedCity.production.current.progress.toFixed(0)}/{selectedCity.production.current.cost}</span>
-                      <span>{selectedCity.production.perTurnIncome.toFixed(1)}/turn</span>
+                      <span>
+                        {selectedCity.production.current.costType === 'villages'
+                          ? `${selectedCity.production.current.progress.toFixed(0)}/${selectedCity.production.current.cost} villages`
+                          : `${selectedCity.production.current.progress.toFixed(0)}/${selectedCity.production.current.cost}`}
+                      </span>
+                      <span>
+                        {selectedCity.production.current.costType === 'villages'
+                          ? 'paid from villages'
+                          : `${selectedCity.production.perTurnIncome.toFixed(1)}/turn`}
+                      </span>
                       <span>{selectedCity.production.current.turnsRemaining === null ? '--' : `${selectedCity.production.current.turnsRemaining}t`}</span>
                     </div>
                     {selectedCity.canManageProduction && (
@@ -407,7 +426,7 @@ export function ContextInspector({ state, onSetCityProduction, onCancelCityProdu
                       <div className="pq-queue-item" key={`${item.type}-${item.id}-${index}`}>
                         <span className="pq-queue-item__index">{index + 1}</span>
                         <span className="pq-queue-item__name">{item.name}</span>
-                        <span className="pq-queue-item__cost">{item.cost}</span>
+                        <span className="pq-queue-item__cost">{item.costLabel}</span>
                         {selectedCity.canManageProduction && (
                           <button
                             type="button"
@@ -453,7 +472,7 @@ export function ContextInspector({ state, onSetCityProduction, onCancelCityProdu
                         {option.moves > 1 ? ` · m${option.moves}` : ''}
                         {option.range > 1 ? ` · r${option.range}` : ''}
                       </span>
-                      <span className="pq-unit-row__cost">{option.cost}</span>
+                      <span className="pq-unit-row__cost">{option.costLabel}</span>
                     </button>
                   ))}
                 </div>

@@ -94,6 +94,8 @@ export type CityInspectorViewModel = {
       name: string;
       type: string;
       cost: number;
+      costType: 'production' | 'villages';
+      costLabel: string;
       progress: number;
       remaining: number;
       turnsRemaining: number | null;
@@ -103,6 +105,8 @@ export type CityInspectorViewModel = {
       name: string;
       type: string;
       cost: number;
+      costType: 'production' | 'villages';
+      costLabel: string;
     }>;
     perTurnIncome: number;
   };
@@ -110,6 +114,8 @@ export type CityInspectorViewModel = {
     prototypeId: string;
     name: string;
     cost: number;
+    costType: 'production' | 'villages';
+    costLabel: string;
     chassisId: string;
     attack: number;
     defense: number;
@@ -297,6 +303,7 @@ export type ClientState = {
   playFeedback: PlayFeedbackState | null;
   research: ResearchInspectorViewModel | null;
   productionPopupCityId: string | null;
+  inspectorRequestId: number;
 };
 
 export type GameAction =

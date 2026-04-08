@@ -170,8 +170,7 @@ export class MapScene extends Phaser.Scene {
     this.borderRenderer.render(state.world);
 
     this.settlementRenderer.render(state.world, {
-      onCitySelected: (cityId) => this.controller.dispatch({ type: 'select_city', cityId }),
-      onCityDoubleClicked: (cityId) => this.controller.dispatch({ type: 'select_city', cityId }),
+      onCitySelected: (cityId, pointer) => this.handleCitySelection(state, cityId, pointer),
       onVillageSelected: (villageId) => this.controller.dispatch({ type: 'select_village', villageId }),
     });
 
@@ -300,6 +299,38 @@ export class MapScene extends Phaser.Scene {
       } else {
         this.controller.dispatch({ type: 'select_unit', unitId });
       }
+      return;
+    }
+
+    this.handleSingleClickUnit(state, unitId);
+  }
+
+  private handleCitySelection(state: ClientState, cityId: string, pointer?: Phaser.Input.Pointer) {
+    if (this.combatAnimator.isAnimating()) return;
+    if (MapScene.isRightClick(pointer)) return;
+
+    const city = state.world.cities.find((entry) => entry.id === cityId);
+    if (!city) {
+      return;
+    }
+
+    if (this.isDoubleClick(`${city.q},${city.r}`)) {
+      this.controller.dispatch({ type: 'select_city', cityId });
+      return;
+    }
+
+    const occupyingUnit = state.world.units.find((unit) => unit.q === city.q && unit.r === city.r);
+    if (occupyingUnit) {
+      this.handleSingleClickUnit(state, occupyingUnit.id);
+      return;
+    }
+
+    this.controller.dispatch({ type: 'select_city', cityId });
+  }
+
+  private handleSingleClickUnit(state: ClientState, unitId: string) {
+    const unit = state.world.units.find((entry) => entry.id === unitId);
+    if (!unit) {
       return;
     }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
 import {
+  canCompleteCurrentProduction,
   queueUnit,
   advanceProduction,
   isProductionComplete,
@@ -200,5 +201,60 @@ describe('production completion', () => {
     // City should have cleared production
     const updatedCityAfter = result.cities.get(cityId);
     expect(updatedCityAfter?.currentProduction).toBeUndefined();
+  });
+
+  it('consumes four villages to complete settler production', () => {
+    let state = buildMvpScenario(42);
+    for (const factionId of state.factions.keys()) {
+      state = initializeFogForFaction(state, factionId);
+    }
+    const factionId = Array.from(state.factions.keys())[0];
+    const faction = state.factions.get(factionId)!;
+    const cityId = faction.cityIds[0];
+    const city = state.cities.get(cityId)!;
+    const settlerPrototype = Array.from(state.prototypes.values()).find(
+      (prototype) => prototype.factionId === factionId && prototype.tags?.includes('settler'),
+    );
+
+    expect(settlerPrototype).toBeTruthy();
+
+    const villages = new Map(state.villages);
+    for (let index = 0; index < 4; index += 1) {
+      villages.set(`v_${index}` as never, {
+        id: `v_${index}` as never,
+        factionId,
+        position: { q: 20 + index, r: 20 },
+        name: `Village ${index}`,
+        foundedRound: state.round,
+        productionBonus: 1,
+        supplyBonus: 1,
+      });
+    }
+
+    state = {
+      ...state,
+      villages,
+      factions: new Map(state.factions).set(factionId, {
+        ...faction,
+        villageIds: ['v_0', 'v_1', 'v_2', 'v_3'] as never[],
+      }),
+      cities: new Map(state.cities).set(cityId, {
+        ...city,
+        currentProduction: {
+          item: { type: 'unit', id: settlerPrototype!.id, cost: 4, costType: 'villages' },
+          progress: 0,
+          cost: 4,
+          costType: 'villages',
+        },
+      }),
+    };
+
+    expect(canCompleteCurrentProduction(state, cityId, registry)).toBe(true);
+
+    const result = completeProduction(state, cityId, registry);
+    expect(result.units.size).toBe(state.units.size + 1);
+    expect(result.villages.size).toBe(state.villages.size - 4);
+    expect(result.factions.get(factionId)?.villageIds).toHaveLength(0);
+    expect(result.cities.get(cityId)?.currentProduction).toBeUndefined();
   });
 });
