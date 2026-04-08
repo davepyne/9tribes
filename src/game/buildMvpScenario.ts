@@ -40,6 +40,19 @@ const MAP_SIZE_DIMENSIONS: Record<NonNullable<BuildMvpScenarioOptions['mapSize']
   large: { width: 50, height: 38 },
 };
 
+function getClimateBandStartSeparation(
+  width: number,
+  height: number,
+  factionCount: number,
+): number {
+  if (factionCount <= 0) {
+    return 10;
+  }
+
+  const areaPerFaction = (width * height) / factionCount;
+  return Math.max(4, Math.min(10, Math.round(Math.sqrt(areaPerFaction) * 0.72)));
+}
+
 function stampTerrainPatch(
   state: GameState,
   center: { q: number; r: number },
@@ -90,8 +103,12 @@ export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions 
         width: mapDimensions?.width ?? scenarioConfig.mapWidth,
         height: mapDimensions?.height ?? scenarioConfig.mapHeight,
         mode: mapMode,
-        startSeparation: 10,
-        rerollCap: options.rerollCap ?? 8,
+        startSeparation: getClimateBandStartSeparation(
+          mapDimensions?.width ?? scenarioConfig.mapWidth,
+          mapDimensions?.height ?? scenarioConfig.mapHeight,
+          factionConfigs.length,
+        ),
+        rerollCap: options.rerollCap ?? 10,
       }
     );
     state.map = generated.map;
