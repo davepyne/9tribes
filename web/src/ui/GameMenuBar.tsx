@@ -42,7 +42,6 @@ const viewMenu: MenuEntry[] = [
 ];
 
 const helpMenu: MenuEntry[] = [
-  { label: 'Controls', action: 'open_help' },
   { label: 'How to Play', action: 'open_how_to_play' },
   { label: 'About', action: 'open_about', disabled: true },
 ];
@@ -56,7 +55,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onRestartSessio
       onOpenResearch();
       return;
     }
-    if (action === 'open_help' || action === 'open_how_to_play') {
+    if (action === 'open_how_to_play') {
       onOpenHelp?.();
       return;
     }

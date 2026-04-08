@@ -5226,6 +5226,8 @@ select {
 }
 
 .tribe-card {
+  display: block;
+  min-height: unset;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-left: 3px solid var(--tribe-accent, var(--accent));
