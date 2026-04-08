@@ -82,6 +82,13 @@ function isPirateNavalUnit(unit: Pick<UnitView, 'factionId' | 'movementClass'>):
   return unit.factionId === 'coral_people' && unit.movementClass === 'naval';
 }
 
+function isPirateBaseInfantry(attacker: Pick<UnitView, 'factionId' | 'chassisId' | 'movementClass' | 'range'>): boolean {
+  return attacker.factionId === 'coral_people'
+    && attacker.chassisId === 'infantry_frame'
+    && attacker.movementClass === 'infantry'
+    && isMeleeRange(attacker);
+}
+
 function isMeleeRange(unit: Pick<UnitView, 'range'>): boolean {
   return (unit.range ?? 1) <= 1;
 }
@@ -97,6 +104,10 @@ function classifyCombatSound(attacker: Pick<UnitView, 'factionId' | 'prototypeId
 
   if (isPirateNavalUnit(attacker)) {
     return 'pirate_galley';
+  }
+
+  if (isPirateBaseInfantry(attacker)) {
+    return 'melee_infantry';
   }
 
   if (isPirateLandUnit(attacker)) {

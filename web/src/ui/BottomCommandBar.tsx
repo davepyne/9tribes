@@ -34,7 +34,7 @@ export function BottomCommandBar({ state, timelineMax, onSetTurn, onEndTurn, onR
         {state.mode === 'play' ? (
           <>
             <div className="timeline-controls">
-              <button type="button" onClick={onEndTurn} disabled={!state.actions.canEndTurn}>End Turn</button>
+              <button type="button" onClick={onEndTurn} disabled={!state.actions.canEndTurn}>End Turn [Enter]</button>
               {onRestartSession ? (
                 <button
                   type="button"

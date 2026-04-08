@@ -3,6 +3,8 @@ import type { ReplayCombatEvent } from '../game/types/replay';
 
 type CombatLogPanelProps = {
   events: ReplayCombatEvent[];
+  isOpen: boolean;
+  onToggle: () => void;
 };
 
 type ModifierEntry = {
@@ -77,8 +79,7 @@ function formatOutcome(event: ReplayCombatEvent): string {
   return parts.length > 0 ? parts.join(' \u00b7 ') : '';
 }
 
-export function CombatLogPanel({ events }: CombatLogPanelProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function CombatLogPanel({ events, isOpen, onToggle }: CombatLogPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [localEvents, setLocalEvents] = useState<ReplayCombatEvent[]>(events);
 
@@ -110,7 +111,7 @@ export function CombatLogPanel({ events }: CombatLogPanelProps) {
       <button
         type="button"
         className="clp-toggle"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => onToggle()}
         aria-label={isOpen ? 'Close combat log' : 'Open combat log'}
       >
         <span className="clp-toggle__icon">{isOpen ? '\u2715' : '\u2694'}</span>

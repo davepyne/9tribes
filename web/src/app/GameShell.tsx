@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type Phaser from 'phaser';
 import type { GameController } from '../game/controller/GameController';
 import type { ClientState } from '../game/types/clientState';
@@ -35,6 +35,8 @@ type ShellContentProps = {
   turnBanner: string | null;
   instructionsDismissed: boolean;
   researchOpen: boolean;
+  inspectorOpen: boolean;
+  combatLogOpen: boolean;
   debugVisible: boolean;
   activeOverlay: string | null;
   timelineMax: number;
@@ -42,6 +44,8 @@ type ShellContentProps = {
   onSetInstructionsDismissed: (v: boolean) => void;
   onSetTurnBanner: (v: string | null) => void;
   onSetResearchOpen: (v: boolean) => void;
+  onSetInspectorOpen: (v: boolean) => void;
+  onSetCombatLogOpen: (v: boolean) => void;
   onSetDebugVisible: (v: boolean) => void;
   onSetActiveOverlay: (v: string | null) => void;
   onRestartSession?: () => void;
@@ -56,6 +60,8 @@ function KnowledgeGainedShellContent({
   turnBanner,
   instructionsDismissed,
   researchOpen,
+  inspectorOpen,
+  combatLogOpen,
   debugVisible,
   activeOverlay,
   timelineMax,
@@ -63,6 +69,8 @@ function KnowledgeGainedShellContent({
   onSetInstructionsDismissed,
   onSetTurnBanner,
   onSetResearchOpen,
+  onSetInspectorOpen,
+  onSetCombatLogOpen,
   onSetDebugVisible,
   onSetActiveOverlay,
   onRestartSession,
@@ -71,6 +79,11 @@ function KnowledgeGainedShellContent({
   const { showKnowledgeGained } = useKnowledgeModal();
   const [combatLocked, setCombatLocked] = useState(false);
   const previousStateRef = useRef<ClientState | null>(null);
+
+  // Stable callbacks for panel open/close (avoid re-triggering auto-open effects)
+  const handleInspectorOpen = useCallback(() => onSetInspectorOpen(true), [onSetInspectorOpen]);
+  const handleInspectorClose = useCallback(() => onSetInspectorOpen(false), [onSetInspectorOpen]);
+  const handleCombatLogToggle = useCallback(() => onSetCombatLogOpen((v) => !v), [onSetCombatLogOpen]);
 
   useLearnDetector(
     state.world.units,
@@ -141,6 +154,20 @@ function KnowledgeGainedShellContent({
   }, [controller, gameRef.current]);
 
   const activeFaction = state.world.factions.find((f) => f.id === state.activeFactionId);
+
+  // Global Escape handler: close any open side panel / overlay
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (activeOverlay) { onSetActiveOverlay(null); return; }
+      if (researchOpen) { onSetResearchOpen(false); return; }
+      if (inspectorOpen) { onSetInspectorOpen(false); return; }
+      if (combatLogOpen) { onSetCombatLogOpen(false); return; }
+      if (debugVisible) { onSetDebugVisible(false); return; }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [activeOverlay, researchOpen, inspectorOpen, combatLogOpen, debugVisible, onSetActiveOverlay, onSetResearchOpen, onSetInspectorOpen, onSetCombatLogOpen, onSetDebugVisible]);
   const turnBannerData = state.playFeedback?.lastTurnChange;
 
   const handleMenuAction = (action: string) => {
@@ -187,18 +214,20 @@ function KnowledgeGainedShellContent({
       <div className="game-shell__canvas-host" ref={hostRef} />
       {combatLocked && <div className="combat-overlay-lock" />}
 
-      <CombatLogPanel events={state.hud.recentCombat} />
+      <CombatLogPanel events={state.hud.recentCombat} isOpen={combatLogOpen} onToggle={handleCombatLogToggle} />
 
       <GameMenuBar
         state={state}
         onOpenResearch={() => onSetResearchOpen(true)}
-        onEndTurn={() => controller.dispatch({ type: 'end_turn' })}
         onRestartSession={onRestartSession}
         onMenuAction={handleMenuAction}
       />
 
       <ContextInspector
         state={state}
+        isOpen={inspectorOpen}
+        onOpen={handleInspectorOpen}
+        onClose={handleInspectorClose}
         onSetCityProduction={(cityId, prototypeId) =>
           controller.dispatch({ type: 'set_city_production', cityId, prototypeId })
         }
@@ -269,6 +298,8 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
   const [turnBanner, setTurnBanner] = useState<string | null>(null);
   const [instructionsDismissed, setInstructionsDismissed] = useState(false);
   const [researchOpen, setResearchOpen] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [combatLogOpen, setCombatLogOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
 
@@ -353,6 +384,8 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
           turnBanner={turnBanner}
           instructionsDismissed={instructionsDismissed}
           researchOpen={researchOpen}
+          inspectorOpen={inspectorOpen}
+          combatLogOpen={combatLogOpen}
           debugVisible={debugVisible}
           activeOverlay={activeOverlay}
           timelineMax={timelineMax}
@@ -360,6 +393,8 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
           onSetInstructionsDismissed={setInstructionsDismissed}
           onSetTurnBanner={setTurnBanner}
           onSetResearchOpen={setResearchOpen}
+          onSetInspectorOpen={setInspectorOpen}
+          onSetCombatLogOpen={setCombatLogOpen}
           onSetDebugVisible={setDebugVisible}
           onSetActiveOverlay={setActiveOverlay}
           onRestartSession={onRestartSession}

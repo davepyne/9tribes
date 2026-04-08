@@ -4,6 +4,9 @@ import { getCombatSummary, getIntentSummary } from '../game/view-model/worldView
 
 type ContextInspectorProps = {
   state: ClientState;
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
   onSetCityProduction: (cityId: string, prototypeId: string) => void;
   onCancelCityProduction: (cityId: string) => void;
   onRemoveFromQueue: (cityId: string, queueIndex: number) => void;
@@ -21,31 +24,30 @@ function formatDomainName(domainId: string): string {
     .join(' ');
 }
 
-export function ContextInspector({ state, onSetCityProduction, onCancelCityProduction, onRemoveFromQueue, onSetTargetingMode, onDeselect, onCloseCityProduction }: ContextInspectorProps) {
+export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProduction, onCancelCityProduction, onRemoveFromQueue, onSetTargetingMode, onDeselect, onCloseCityProduction }: ContextInspectorProps) {
   const [cityTab, setCityTab] = useState<CityTab>('overview');
   const tabsRef = useRef<HTMLDivElement>(null);
   const [tabsCanScrollLeft, setTabsCanScrollLeft] = useState(false);
   const [tabsCanScrollRight, setTabsCanScrollRight] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
 
   // Auto-open to production tab when city production popup is requested
   useEffect(() => {
     if (state.productionPopupCityId) {
-      setIsOpen(true);
+      onOpen();
       setCityTab('production');
     }
-  }, [state.productionPopupCityId]);
+  }, [state.productionPopupCityId, onOpen]);
 
   useEffect(() => {
     if (!state.selected) {
       return;
     }
 
-    setIsOpen(true);
+    onOpen();
     if (state.selected.type === 'city') {
       setCityTab('overview');
     }
-  }, [state.inspectorRequestId]);
+  }, [state.inspectorRequestId, onOpen]);
 
   // Panel only opens on explicit user toggle (clicking the hamburger button)
 
@@ -87,7 +89,7 @@ export function ContextInspector({ state, onSetCityProduction, onCancelCityProdu
           <button
             type="button"
             className="ci-toggle"
-            onClick={() => setIsOpen(true)}
+            onClick={() => onOpen()}
             aria-label="Open inspector"
           >
             <span className="ci-toggle__icon">&#9776;</span>
@@ -111,7 +113,7 @@ export function ContextInspector({ state, onSetCityProduction, onCancelCityProdu
       <div className="ci-scroll">
         {/* ── Header ── */}
         <div className="ci-header">
-          <button type="button" className="ci-close" onClick={() => { setIsOpen(false); onCloseCityProduction?.(); }} aria-label="Close inspector">
+          <button type="button" className="ci-close" onClick={() => { onClose(); onCloseCityProduction?.(); }} aria-label="Close inspector">
             &times;
           </button>
           <div className="ci-header-text">

@@ -19,7 +19,7 @@ function formatDomainName(domainId: string): string {
 }
 
 export function CommandTray({ state, timelineMax, onSetTurn, onEndTurn, onSetTargetingMode, onBuildFort, onBuildCity, onSacrifice }: CommandTrayProps) {
-  const selectedUnitId = state.selected?.type === 'unit' ? state.selected.unitId : null;
+  const selectedUnitId = state.selected?.type === 'unit' ? state.selected.unitId : state.actions.selectedUnitId;
   const selectedUnit = selectedUnitId
     ? state.world.units.find((u) => u.id === selectedUnitId)
     : null;
@@ -97,6 +97,9 @@ export function CommandTray({ state, timelineMax, onSetTurn, onEndTurn, onSetTar
                     Carries: {selectedUnit.learnedAbilities.map((d) => formatDomainName(d)).join(', ')}
                     {!canSacrifice ? ' \u2014 return to Home City to Sacrifice' : ''}
                   </span>
+                ) : null}
+                {selectedUnit.isSettler && !settlementPreview ? (
+                  <span className="ct-knowledge-hint">Press 'b' to build a city</span>
                 ) : null}
                 {settlementPreview ? (
                   <span className="ct-knowledge-hint">
@@ -179,7 +182,7 @@ export function CommandTray({ state, timelineMax, onSetTurn, onEndTurn, onSetTar
               disabled={!state.actions.canEndTurn}
               onClick={onEndTurn}
             >
-              End Turn
+              End Turn [Enter]
             </button>
           </div>
         </>

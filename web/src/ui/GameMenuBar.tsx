@@ -7,7 +7,6 @@ import type { MenuEntry } from './DropdownMenu';
 type GameMenuBarProps = {
   state: ClientState;
   onOpenResearch: () => void;
-  onEndTurn: () => void;
   onRestartSession?: () => void;
   onMenuAction: (action: string) => void;
 };
@@ -47,7 +46,7 @@ const helpMenu: MenuEntry[] = [
   { label: 'About', action: 'open_about', disabled: true },
 ];
 
-export function GameMenuBar({ state, onOpenResearch, onEndTurn, onRestartSession, onMenuAction }: GameMenuBarProps) {
+export function GameMenuBar({ state, onOpenResearch, onRestartSession, onMenuAction }: GameMenuBarProps) {
   const activeFaction = state.world.factions.find((f) => f.id === state.activeFactionId);
   const factionColor = activeFaction?.color ?? '#d6a34b';
 
@@ -110,14 +109,6 @@ export function GameMenuBar({ state, onOpenResearch, onEndTurn, onRestartSession
 
         <SynergyChip state={state} />
 
-        <button
-          type="button"
-          className="gmb-btn-end-turn"
-          disabled={!state.actions.canEndTurn}
-          onClick={onEndTurn}
-        >
-          End Turn
-        </button>
       </div>
     </nav>
   );

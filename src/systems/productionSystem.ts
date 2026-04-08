@@ -357,6 +357,7 @@ export function getUnitSupplyCost(
   prototype: Pick<Prototype, 'chassisId'>,
   registry: RulesRegistry,
 ): number {
+  if (isSettlerPrototype(prototype as Prototype)) return 2;
   const chassis = registry.getChassis(prototype.chassisId);
   return chassis?.supplyCost ?? 1;
 }

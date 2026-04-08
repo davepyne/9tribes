@@ -57,6 +57,7 @@ import { applyCombatSignals } from '../../../../src/systems/combatSignalSystem.j
 import { unlockHybridRecipes } from '../../../../src/systems/hybridSystem.js';
 import { awardCombatXP } from '../../../../src/systems/xpSystem.js';
 import { tryPromoteUnit } from '../../../../src/systems/veterancySystem.js';
+import { evaluateAndSpawnVillage } from '../../../../src/systems/villageSystem.js';
 import type { FactionStrategy, UnitStrategicIntent } from '../../../../src/systems/factionStrategy.js';
 import type { CombatResult } from '../../../../src/systems/combatSystem.js';
 import type { GameAction } from '../types/clientState';
@@ -1177,6 +1178,7 @@ export class GameSession {
       };
     }
 
+    nextState = evaluateAndSpawnVillage(nextState, factionId as never, this.registry);
     this.state = nextState;
   }
 

@@ -217,6 +217,12 @@ export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions 
       }
     );
     existingPrototypeIds.push(settlerPrototype.id);
+    // Settlers are non-combatants — cap attack/defense at 1
+    settlerPrototype.derivedStats = {
+      ...settlerPrototype.derivedStats,
+      attack: 1,
+      defense: 1,
+    };
     state.prototypes.set(settlerPrototype.id, settlerPrototype);
     faction.prototypeIds.push(settlerPrototype.id);
 
