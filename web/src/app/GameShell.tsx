@@ -10,6 +10,7 @@ import { createGame } from '../game/phaser/createGame';
 // Legacy components
 import { BottomCommandBar } from '../ui/BottomCommandBar';
 import { ResearchWindow } from '../ui/ResearchWindow';
+import { HelpPanel } from '../ui/HelpPanel';
 import { RightInspector } from '../ui/RightInspector';
 import { TopHud } from '../ui/TopHud';
 
@@ -35,6 +36,7 @@ type ShellContentProps = {
   turnBanner: string | null;
   instructionsDismissed: boolean;
   researchOpen: boolean;
+  helpOpen: boolean;
   inspectorOpen: boolean;
   combatLogOpen: boolean;
   debugVisible: boolean;
@@ -44,6 +46,7 @@ type ShellContentProps = {
   onSetInstructionsDismissed: (v: boolean) => void;
   onSetTurnBanner: (v: string | null) => void;
   onSetResearchOpen: (v: boolean) => void;
+  onSetHelpOpen: (v: boolean) => void;
   onSetInspectorOpen: (v: boolean) => void;
   onSetCombatLogOpen: (v: boolean) => void;
   onSetDebugVisible: (v: boolean) => void;
@@ -60,6 +63,7 @@ function KnowledgeGainedShellContent({
   turnBanner,
   instructionsDismissed,
   researchOpen,
+  helpOpen,
   inspectorOpen,
   combatLogOpen,
   debugVisible,
@@ -69,6 +73,7 @@ function KnowledgeGainedShellContent({
   onSetInstructionsDismissed,
   onSetTurnBanner,
   onSetResearchOpen,
+  onSetHelpOpen,
   onSetInspectorOpen,
   onSetCombatLogOpen,
   onSetDebugVisible,
@@ -83,7 +88,7 @@ function KnowledgeGainedShellContent({
   // Stable callbacks for panel open/close (avoid re-triggering auto-open effects)
   const handleInspectorOpen = useCallback(() => onSetInspectorOpen(true), [onSetInspectorOpen]);
   const handleInspectorClose = useCallback(() => onSetInspectorOpen(false), [onSetInspectorOpen]);
-  const handleCombatLogToggle = useCallback(() => onSetCombatLogOpen((v) => !v), [onSetCombatLogOpen]);
+  const handleCombatLogToggle = useCallback(() => onSetCombatLogOpen(!combatLogOpen), [onSetCombatLogOpen, combatLogOpen]);
 
   useLearnDetector(
     state.world.units,
@@ -160,6 +165,7 @@ function KnowledgeGainedShellContent({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       if (activeOverlay) { onSetActiveOverlay(null); return; }
+      if (helpOpen) { onSetHelpOpen(false); return; }
       if (researchOpen) { onSetResearchOpen(false); return; }
       if (inspectorOpen) { onSetInspectorOpen(false); return; }
       if (combatLogOpen) { onSetCombatLogOpen(false); return; }
@@ -167,7 +173,7 @@ function KnowledgeGainedShellContent({
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [activeOverlay, researchOpen, inspectorOpen, combatLogOpen, debugVisible, onSetActiveOverlay, onSetResearchOpen, onSetInspectorOpen, onSetCombatLogOpen, onSetDebugVisible]);
+  }, [activeOverlay, helpOpen, researchOpen, inspectorOpen, combatLogOpen, debugVisible, onSetActiveOverlay, onSetHelpOpen, onSetResearchOpen, onSetInspectorOpen, onSetCombatLogOpen, onSetDebugVisible]);
   const turnBannerData = state.playFeedback?.lastTurnChange;
 
   const handleMenuAction = (action: string) => {
@@ -219,6 +225,7 @@ function KnowledgeGainedShellContent({
       <GameMenuBar
         state={state}
         onOpenResearch={() => onSetResearchOpen(true)}
+        onOpenHelp={() => onSetHelpOpen(true)}
         onRestartSession={onRestartSession}
         onMenuAction={handleMenuAction}
       />
@@ -283,6 +290,13 @@ function KnowledgeGainedShellContent({
           onClose={() => onSetResearchOpen(false)}
         />
       ) : null}
+
+      {helpOpen ? (
+        <HelpPanel
+          state={state}
+          onClose={() => onSetHelpOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -298,6 +312,7 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
   const [turnBanner, setTurnBanner] = useState<string | null>(null);
   const [instructionsDismissed, setInstructionsDismissed] = useState(false);
   const [researchOpen, setResearchOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [combatLogOpen, setCombatLogOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -384,6 +399,7 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
           turnBanner={turnBanner}
           instructionsDismissed={instructionsDismissed}
           researchOpen={researchOpen}
+          helpOpen={helpOpen}
           inspectorOpen={inspectorOpen}
           combatLogOpen={combatLogOpen}
           debugVisible={debugVisible}
@@ -393,6 +409,7 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
           onSetInstructionsDismissed={setInstructionsDismissed}
           onSetTurnBanner={setTurnBanner}
           onSetResearchOpen={setResearchOpen}
+          onSetHelpOpen={setHelpOpen}
           onSetInspectorOpen={setInspectorOpen}
           onSetCombatLogOpen={setCombatLogOpen}
           onSetDebugVisible={setDebugVisible}

@@ -49,15 +49,15 @@ const DOMAIN_NAMES: Record<string, string> = {
   heavy_hitter: 'Heavy Hitter',
 };
 
-function domainGlyph(domainId: string): string {
+export function domainGlyph(domainId: string): string {
   return DOMAIN_ICONS[domainId] ?? domainId.slice(0, 2).toUpperCase();
 }
 
-function domainColor(domainId: string): string {
+export function domainColor(domainId: string): string {
   return DOMAIN_COLORS[domainId] ?? '#888';
 }
 
-function domainDisplayName(domainId: string): string {
+export function domainDisplayName(domainId: string): string {
   return DOMAIN_NAMES[domainId] ?? domainId.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 }
 

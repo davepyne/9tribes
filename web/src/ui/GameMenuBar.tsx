@@ -7,6 +7,7 @@ import type { MenuEntry } from './DropdownMenu';
 type GameMenuBarProps = {
   state: ClientState;
   onOpenResearch: () => void;
+  onOpenHelp?: () => void;
   onRestartSession?: () => void;
   onMenuAction: (action: string) => void;
 };
@@ -41,18 +42,22 @@ const viewMenu: MenuEntry[] = [
 ];
 
 const helpMenu: MenuEntry[] = [
-  { label: 'Controls', action: 'open_controls', disabled: true },
-  { label: 'How to Play', action: 'open_how_to_play', disabled: true },
+  { label: 'Controls', action: 'open_help' },
+  { label: 'How to Play', action: 'open_how_to_play' },
   { label: 'About', action: 'open_about', disabled: true },
 ];
 
-export function GameMenuBar({ state, onOpenResearch, onRestartSession, onMenuAction }: GameMenuBarProps) {
+export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onRestartSession, onMenuAction }: GameMenuBarProps) {
   const activeFaction = state.world.factions.find((f) => f.id === state.activeFactionId);
   const factionColor = activeFaction?.color ?? '#d6a34b';
 
   const handleMenuAction = (action: string) => {
     if (action === 'open_research') {
       onOpenResearch();
+      return;
+    }
+    if (action === 'open_help' || action === 'open_how_to_play') {
+      onOpenHelp?.();
       return;
     }
     if (action === 'restart_session') {
