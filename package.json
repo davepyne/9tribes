@@ -1,0 +1,23 @@
+{
+  "name": "war-civ-2",
+  "version": "0.1.0-mvp",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/main.ts",
+    "replay:export": "tsx scripts/exportReplay.ts",
+    "test": "vitest run",
+    "test:balance": "vitest run tests/balanceHarness.test.ts",
+    "balance:harness": "tsx scripts/runBalanceHarness.ts",
+    "balance:harness:stratified": "tsx scripts/runBalanceHarness.ts --stratified",
+    "balance:evaluate": "tsx scripts/evaluateBalance.ts",
+    "balance:validate": "tsx scripts/validateBalanceCandidate.ts",
+    "web:dev": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "tsx": "^4.7.0",
+    "vitest": "^1.2.0"
+  }
+}

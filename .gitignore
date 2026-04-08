@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+web/node_modules/
+
+# Build output
+dist/
+web/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Artifacts
+harness_output.json
+tmp/
+docs/full-ui-implementation-plan.md
+.daem0nmcp/
+.playwright-mcp/
+.claude/
+.opencode/
+.pi/
+artifacts/
+*.png
+*.lnk
+*.tsbuildinfo
+.vite/
+web/.vite/
+tmp_*
+create_dir*.js
+update_index.js
+write_design.js
