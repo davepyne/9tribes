@@ -171,6 +171,32 @@ describe('strategic AI', () => {
     expect(intent.waypoint).toBeDefined();
   });
 
+  it('narrows hard focus targets for stronger concentration', () => {
+    let state = buildMvpScenario(42);
+    const hillId = 'hill_clan' as never;
+    const hillUnitIds = state.factions.get(hillId)!.unitIds.slice(0, 2);
+    const enemyUnitIds = Array.from(state.units.values())
+      .filter((unit) => unit.factionId !== hillId)
+      .slice(0, 3)
+      .map((unit) => unit.id);
+
+    expect(enemyUnitIds.length).toBeGreaterThanOrEqual(3);
+
+    state.units.set(hillUnitIds[0], { ...state.units.get(hillUnitIds[0])!, position: { q: 6, r: 6 } });
+    state.units.set(hillUnitIds[1], { ...state.units.get(hillUnitIds[1])!, position: { q: 6, r: 7 } });
+    state.units.set(enemyUnitIds[0], { ...state.units.get(enemyUnitIds[0])!, position: { q: 8, r: 6 } });
+    state.units.set(enemyUnitIds[1], { ...state.units.get(enemyUnitIds[1])!, position: { q: 8, r: 5 } });
+    state.units.set(enemyUnitIds[2], { ...state.units.get(enemyUnitIds[2])!, position: { q: 7, r: 8 } });
+
+    state = updateFogState(state, hillId);
+
+    const normalStrategy = computeFactionStrategy(state, hillId, registry, 'normal');
+    const hardStrategy = computeFactionStrategy(state, hillId, registry, 'hard');
+
+    expect(normalStrategy.focusTargetUnitIds.length).toBe(3);
+    expect(hardStrategy.focusTargetUnitIds.length).toBe(2);
+  });
+
   it('moves siege-assigned units toward the enemy city when no tactical attack is available', () => {
     let state = buildMvpScenario(42);
     trimState(state, ['hill_clan', 'steppe_clan']);

@@ -8,6 +8,7 @@ import {
   SMOKE_HARNESS_SEEDS,
   STRATIFIED_HARNESS_SEEDS_BY_ARCHETYPE,
   runBalanceHarness,
+  runPairedDifficultyBalanceHarness,
   runStratifiedBalanceHarness,
   type BatchBalanceSummary,
 } from '../src/systems/balanceHarness';
@@ -198,6 +199,19 @@ describe('balance harness', () => {
     expect(steppe.supplyUtilizationRatio).toBeGreaterThanOrEqual(0);
     expect(steppe.unitsByPrototypeId).toBeTruthy();
     expect(Array.isArray(steppe.stalledProduction)).toBe(true);
+  });
+
+  it('builds paired normal-vs-hard comparisons on identical seeds', () => {
+    const summary = runPairedDifficultyBalanceHarness(registry, [11], 5);
+    const steppe = summary.factions.steppe_clan;
+
+    expect(summary.normal.totalSeeds).toBe(1);
+    expect(summary.hard.totalSeeds).toBe(1);
+    expect(summary.totals.totalBattlesDelta).toBeTypeOf('number');
+    expect(steppe.normal.avgFieldingGap).toBeGreaterThanOrEqual(0);
+    expect(steppe.hard.avgFieldingGap).toBeGreaterThanOrEqual(0);
+    expect(steppe.delta.avgHybridUnits).toBeTypeOf('number');
+    expect(steppe.delta.avgStalledProductionCount).toBeTypeOf('number');
   });
 
   it('keeps seed 11 steppe materially healthier than the all-cavalry replacement', () => {

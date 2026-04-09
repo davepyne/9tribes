@@ -5,7 +5,8 @@ import type { FactionPosture } from './factionStrategy.js';
 import { hexDistance, hexToKey } from '../core/grid.js';
 import { getSupplyDeficit } from './economySystem.js';
 import type { DifficultyLevel } from './aiDifficulty.js';
-import { usesNormalAiBehavior } from './aiDifficulty.js';
+import { getAiDifficultyProfile } from './aiDifficulty.js';
+import { getVisibleEnemyUnits } from './fogSystem.js';
 
 type ScalarKey =
   | 'aggression'
@@ -163,7 +164,9 @@ function applyStateModifiers(
   snapshot: AiPersonalitySnapshot,
   state: GameState,
   factionId: FactionId,
+  difficulty?: DifficultyLevel,
 ): void {
+  const profile = getAiDifficultyProfile(difficulty);
   const supplyDeficit = getSupplyDeficit(state.economy.get(factionId) ?? { factionId, productionPool: 0, supplyIncome: 0, supplyDemand: 0 });
   const exhaustion = state.warExhaustion.get(factionId)?.exhaustionPoints ?? 0;
   const cityIds = state.factions.get(factionId)?.cityIds ?? [];
@@ -194,6 +197,25 @@ function applyStateModifiers(
     snapshot.scalars.defenseBias = clampScalar(snapshot.scalars.defenseBias + Math.min(0.25, threatenedCities * 0.1));
     snapshot.assignmentWeights.defender = (snapshot.assignmentWeights.defender ?? 0) + threatenedCities;
     snapshot.reasons.push(`state: threatened_cities=${threatenedCities}`);
+  }
+
+  const visibleEnemySkirmishers = getVisibleEnemyUnits(state, factionId).filter(({ unit }) => {
+    const prototype = state.prototypes.get(unit.prototypeId);
+    if (!prototype) return false;
+    return prototype.derivedStats.role === 'mounted'
+      || prototype.derivedStats.range > 1
+      || prototype.derivedStats.moves >= 3;
+  }).length;
+  if (visibleEnemySkirmishers > 0 && profile.personality.antiSkirmishResponseWeight > 0) {
+    const responsePressure = Math.min(
+      3,
+      visibleEnemySkirmishers * profile.personality.antiSkirmishResponseWeight * 0.25,
+    );
+    snapshot.assignmentWeights.defender = (snapshot.assignmentWeights.defender ?? 0) + responsePressure;
+    snapshot.assignmentWeights.reserve = (snapshot.assignmentWeights.reserve ?? 0) + responsePressure * 0.8;
+    snapshot.productionWeights.ranged = (snapshot.productionWeights.ranged ?? 0) + responsePressure * 0.7;
+    snapshot.productionWeights.melee = (snapshot.productionWeights.melee ?? 0) + responsePressure * 0.4;
+    snapshot.reasons.push(`state: skirmisher_pressure=${visibleEnemySkirmishers}`);
   }
 
   const friendlyUnits = Array.from(state.units.values()).filter((unit) => unit.hp > 0 && unit.factionId === factionId).length;
@@ -293,15 +315,20 @@ function applyDifficultyBaselineOverrides(
   baseline: FactionAiBaseline,
   difficulty?: DifficultyLevel,
 ): FactionAiBaseline {
-  if (!usesNormalAiBehavior(difficulty)) {
+  const profile = getAiDifficultyProfile(difficulty);
+  if (!profile.adaptiveAi) {
     return baseline;
   }
 
   return {
     ...baseline,
-    aggression: 0.7,
-    siegeBias: 0.5,
-    raidBias: 0.4,
+    aggression: Math.max(baseline.aggression, profile.personality.aggressionFloor),
+    siegeBias: Math.max(baseline.siegeBias, profile.personality.siegeBiasFloor),
+    raidBias: Math.max(baseline.raidBias, profile.personality.raidBiasFloor),
+    focusFireLimit: baseline.focusFireLimit + profile.personality.focusFireLimitBonus,
+    squadSize: baseline.squadSize + profile.personality.squadSizeBonus,
+    commitAdvantage: baseline.commitAdvantage + profile.personality.commitAdvantageOffset,
+    retreatThreshold: baseline.retreatThreshold + profile.personality.retreatThresholdOffset,
   };
 }
 
@@ -322,12 +349,14 @@ export function computeAiPersonalitySnapshot(
   registry: RulesRegistry,
   difficulty?: DifficultyLevel,
 ): AiPersonalitySnapshot {
+  const profile = getAiDifficultyProfile(difficulty);
   const faction = state.factions.get(factionId);
   const baseline = applyDifficultyBaselineOverrides(
     registry.getFactionAiBaseline(factionId) ?? DEFAULT_BASELINE,
     difficulty,
   );
   const snapshot = createBaseSnapshot(state, factionId, baseline);
+  snapshot.reasons.push(`difficulty=${profile.difficulty}`);
   if (!faction) {
     snapshot.reasons.push('fallback: missing faction');
     return snapshot;
@@ -344,7 +373,7 @@ export function computeAiPersonalitySnapshot(
     snapshot.reasons.push(`${doctrineId}@${factor}`);
   }
 
-  applyStateModifiers(snapshot, state, factionId);
+  applyStateModifiers(snapshot, state, factionId, difficulty);
   return snapshot;
 }
 

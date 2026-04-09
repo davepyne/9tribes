@@ -215,4 +215,107 @@ describe('adaptive AI phase 2', () => {
     expect(priorities[0]?.prototypeId).toBe(cavalry!.id);
     expect(cavalryPriority?.reason).toContain('quality gap');
   });
+
+  it('keeps hard settler windows tighter than normal when supply and reserves are weak', () => {
+    const state = buildMvpScenario(42, { registry });
+    const factionId = 'hill_clan' as never;
+    const faction = state.factions.get(factionId)!;
+    const settler = Array.from(state.prototypes.values()).find(
+      (prototype) => prototype.factionId === factionId && prototype.tags?.includes('settler'),
+    );
+
+    expect(settler).toBeTruthy();
+
+    state.factions.set(factionId, {
+      ...faction,
+      villageIds: ['hill_v1', 'hill_v2', 'hill_v3', 'hill_v4'] as never[],
+    });
+    state.economy.set(factionId, {
+      factionId,
+      productionPool: 0,
+      supplyIncome: 14,
+      supplyDemand: 3,
+    });
+    state.round = 20;
+
+    const normalStrategy = computeFactionStrategy(state, factionId, registry, 'normal');
+    const hardStrategy = computeFactionStrategy(state, factionId, registry, 'hard');
+    const normalSettler = rankProductionPriorities(state, factionId, normalStrategy, registry, 'normal')
+      .find((entry) => entry.prototypeId === settler!.id);
+    const hardSettler = rankProductionPriorities(state, factionId, hardStrategy, registry, 'hard')
+      .find((entry) => entry.prototypeId === settler!.id);
+
+    expect(normalSettler).toBeTruthy();
+    expect(hardSettler).toBeTruthy();
+    expect((hardSettler?.score ?? 0)).toBeLessThan(normalSettler?.score ?? 0);
+  });
+
+  it('pushes hard production toward quality catch-up more aggressively than normal', () => {
+    const state = buildMvpScenario(42, { registry });
+    const factionId = 'steppe_clan' as never;
+    const cavalry = getPrototypeByChassis(state, factionId, 'cavalry_frame');
+    const infantry = getPrototypeByChassis(state, factionId, 'infantry_frame');
+
+    expect(cavalry).toBeTruthy();
+    expect(infantry).toBeTruthy();
+
+    for (const unitId of state.factions.get(factionId)!.unitIds) {
+      const unit = state.units.get(unitId)!;
+      state.units.set(unitId, { ...unit, prototypeId: infantry!.id });
+    }
+    state.economy.set(factionId, {
+      factionId,
+      productionPool: 0,
+      supplyIncome: 20,
+      supplyDemand: 4,
+    });
+    state.round = 30;
+
+    const normalStrategy = computeFactionStrategy(state, factionId, registry, 'normal');
+    const hardStrategy = computeFactionStrategy(state, factionId, registry, 'hard');
+    const normalCavalry = rankProductionPriorities(state, factionId, normalStrategy, registry, 'normal')
+      .find((entry) => entry.prototypeId === cavalry!.id);
+    const hardCavalry = rankProductionPriorities(state, factionId, hardStrategy, registry, 'hard')
+      .find((entry) => entry.prototypeId === cavalry!.id);
+
+    expect(normalCavalry).toBeTruthy();
+    expect(hardCavalry).toBeTruthy();
+    expect((hardCavalry?.score ?? 0)).toBeGreaterThan(normalCavalry?.score ?? 0);
+  });
+
+  it('pushes hard research into breadth earlier than normal once native tier 2 is secured', () => {
+    const state = buildMvpScenario(42, { registry });
+    const factionId = 'steppe_clan' as never;
+    const faction = state.factions.get(factionId)!;
+    const research = state.research.get(factionId)!;
+
+    state.factions.set(factionId, {
+      ...faction,
+      learnedDomains: [...new Set([...faction.learnedDomains, 'charge'])],
+    });
+    state.research.set(factionId, {
+      ...research,
+      completedNodes: [...new Set([...(research.completedNodes as string[]), 'hitrun_t2', 'charge_t1'])] as never[],
+    });
+    state.round = 40;
+
+    const normalStrategy = computeFactionStrategy(state, factionId, registry, 'normal');
+    const hardStrategy = computeFactionStrategy(state, factionId, registry, 'hard');
+    const normalPriorities = rankResearchPriorities(state, factionId, normalStrategy, registry, 'normal');
+    const hardPriorities = rankResearchPriorities(state, factionId, hardStrategy, registry, 'hard');
+
+    const normalBreadth = normalPriorities.find((entry) => entry.nodeId === 'charge_t2');
+    const normalDepth = normalPriorities.find((entry) => entry.nodeId === 'hitrun_t3');
+    const hardBreadth = hardPriorities.find((entry) => entry.nodeId === 'charge_t2');
+    const hardDepth = hardPriorities.find((entry) => entry.nodeId === 'hitrun_t3');
+
+    expect(normalBreadth).toBeTruthy();
+    expect(normalDepth).toBeTruthy();
+    expect(hardBreadth).toBeTruthy();
+    expect(hardDepth).toBeTruthy();
+
+    const normalGap = (normalBreadth?.score ?? 0) - (normalDepth?.score ?? 0);
+    const hardGap = (hardBreadth?.score ?? 0) - (hardDepth?.score ?? 0);
+    expect(hardGap).toBeGreaterThan(normalGap);
+  });
 });

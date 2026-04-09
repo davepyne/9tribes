@@ -19,7 +19,7 @@ import { getSupplyDeficit } from './economySystem.js';
 import { getVisibleEnemyUnits } from './fogSystem.js';
 import { scoreProductionCandidate } from './aiPersonality.js';
 import type { DifficultyLevel } from './aiDifficulty.js';
-import { usesNormalAiBehavior } from './aiDifficulty.js';
+import { getAiDifficultyProfile, type AiDifficultyProfile } from './aiDifficulty.js';
 
 export interface ProductionDecision {
   prototypeId: string;
@@ -41,8 +41,6 @@ interface ProductionScoringContext {
   averageFieldedMilitaryCost: number;
   targetArmySize: number;
 }
-
-const NORMAL_DOMAIN_PIVOT_DURATION = 3;
 
 function isMilitaryPrototype(
   prototype: Pick<Prototype, 'derivedStats' | 'tags'>,
@@ -72,7 +70,7 @@ function getTargetArmySize(
 }
 
 function getProductionCostForPrototype(
-  prototype: Pick<Prototype, 'chassisId' | 'tags' | 'sourceRecipeId'>,
+  prototype: Pick<Prototype, 'name' | 'chassisId' | 'tags' | 'sourceRecipeId'>,
   faction: NonNullable<GameState['factions'] extends Map<any, infer F> ? F : never>,
 ): number {
   if (getPrototypeCostType(prototype) === 'villages') {
@@ -145,6 +143,7 @@ export function rankProductionPriorities(
   registry: RulesRegistry,
   difficulty?: DifficultyLevel,
 ): ProductionPriority[] {
+  const difficultyProfile = getAiDifficultyProfile(difficulty);
   const faction = state.factions.get(factionId);
   if (!faction) return [];
 
@@ -198,14 +197,14 @@ export function rankProductionPriorities(
   scoringContext.highestAvailableMilitaryCost = availableMilitaryCosts.length > 0
     ? Math.max(...availableMilitaryCosts)
     : 0;
-  if (usesNormalAiBehavior(difficulty) && state.round <= 10) {
+  if (difficultyProfile.adaptiveAi && state.round <= difficultyProfile.production.rushTurns) {
     return rankRushProductionPriorities(state, factionId, strategy, registry, availablePrototypes);
   }
   const researchState = state.research.get(factionId);
   const recentCodifiedDomains =
-    usesNormalAiBehavior(difficulty)
+    difficultyProfile.adaptiveAi
     && researchState?.recentCodifiedRound !== undefined
-    && state.round - researchState.recentCodifiedRound <= NORMAL_DOMAIN_PIVOT_DURATION
+    && state.round - researchState.recentCodifiedRound <= difficultyProfile.production.codifiedPivotDuration
       ? new Set(researchState.recentCodifiedDomainIds ?? [])
       : undefined;
 
@@ -223,7 +222,7 @@ export function rankProductionPriorities(
       const catapultScore = scoreCatapultPreference(factionId, state, strategy, prototype);
       const domains = getDomainIdsByTags(prototype.tags ?? []);
       const codifiedPivotScore = scoreRecentCodifiedDomainPivot(domains, recentCodifiedDomains);
-      const settlerScore = scoreSettlerExpansionValue(state, factionId, strategy, prototype, difficulty);
+      const settlerScore = scoreSettlerExpansionValue(state, factionId, strategy, prototype, difficultyProfile, difficulty);
       const baseCost = getUnitCost(prototype.chassisId);
       const totalCost = calculatePrototypeCost(baseCost, faction, domains);
       const economic = getPrototypeEconomicProfile(prototype, registry);
@@ -231,20 +230,22 @@ export function rankProductionPriorities(
       const projectedDeficitPenalty = projectedSupplyMargin >= 0 ? 0 : Math.abs(projectedSupplyMargin) * 12;
       const supplyCostPenalty = economic.supplyCost * (2 + scoringContext.currentSupplyDeficit * 1.4);
       const productionCostPenalty = totalCost * 0.18;
-      const supplyEfficiencyScore = scoreSupplyEfficiency(prototype, registry) * 0.22;
-      const forceProjectionScore = scoreForceProjectionValue(prototype, strategy) * 0.95;
+      const supplyEfficiencyScore =
+        scoreSupplyEfficiency(prototype, registry) * difficultyProfile.production.supplyEfficiencyWeight;
+      const forceProjectionScore =
+        scoreForceProjectionValue(prototype, strategy) * difficultyProfile.production.forceProjectionWeight;
       const underCapScore = scoreUnderCapPressure(
         prototype,
         totalCost,
         economic.supplyCost,
         scoringContext,
-        difficulty,
+        difficultyProfile,
       );
       const qualityLagScore = scoreArmyQualityLag(
         prototype,
         totalCost,
         scoringContext,
-        difficulty,
+        difficultyProfile,
       );
       const doctrineScore = scoreProductionCandidate(
         strategy.personality,
@@ -339,27 +340,39 @@ function scoreUnderCapPressure(
   totalCost: number,
   supplyCost: number,
   context: ProductionScoringContext,
-  difficulty?: DifficultyLevel,
+  difficultyProfile: AiDifficultyProfile,
 ): number {
-  if (!usesNormalAiBehavior(difficulty)) return 0;
+  if (!difficultyProfile.adaptiveAi) return 0;
   if (!isMilitaryPrototype(prototype)) return 0;
-  if (context.supplyUtilizationRatio >= 0.8) return 0;
+  if (context.supplyUtilizationRatio >= difficultyProfile.production.underCapUtilizationFloor) return 0;
 
   const armyShortfall = Math.max(0, context.targetArmySize - context.totalFriendlyUnits);
-  const unusedSupplyPressure = Math.max(0, 0.9 - context.supplyUtilizationRatio);
-  const cheapSupplyBonus = Math.max(0, 3 - supplyCost) * 1.4;
-  const cheapProductionBonus = Math.max(0, 42 - totalCost) * 0.08;
+  const unusedSupplyPressure = Math.max(
+    0,
+    difficultyProfile.production.underCapTargetUtilization - context.supplyUtilizationRatio,
+  );
+  const cheapSupplyBonus = Math.max(0, 3 - supplyCost) * difficultyProfile.production.underCapCheapSupplyWeight;
+  const cheapProductionBonus =
+    Math.max(0, 42 - totalCost) * difficultyProfile.production.underCapCheapProductionWeight;
 
-  return unusedSupplyPressure * 12 + Math.min(6, armyShortfall * 1.2) + cheapSupplyBonus + cheapProductionBonus;
+  return (
+    unusedSupplyPressure * difficultyProfile.production.underCapPressureWeight
+    + Math.min(
+      difficultyProfile.production.underCapArmyShortfallCap,
+      armyShortfall * difficultyProfile.production.underCapArmyShortfallWeight,
+    )
+    + cheapSupplyBonus
+    + cheapProductionBonus
+  );
 }
 
 function scoreArmyQualityLag(
   prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>,
   totalCost: number,
   context: ProductionScoringContext,
-  difficulty?: DifficultyLevel,
+  difficultyProfile: AiDifficultyProfile,
 ): number {
-  if (!usesNormalAiBehavior(difficulty)) return 0;
+  if (!difficultyProfile.adaptiveAi) return 0;
   if (!isMilitaryPrototype(prototype)) return 0;
 
   const highestLag = Math.max(0, context.highestAvailableMilitaryCost - context.highestFieldedMilitaryCost);
@@ -367,11 +380,14 @@ function scoreArmyQualityLag(
   if (highestLag <= 0 && averageLag <= 0) return 0;
 
   let score = 0;
-  if (context.highestAvailableMilitaryCost > 0 && totalCost >= context.highestAvailableMilitaryCost - 1) {
-    score += highestLag * 0.55;
+  if (
+    context.highestAvailableMilitaryCost > 0
+    && totalCost >= context.highestAvailableMilitaryCost - difficultyProfile.production.armyQualityNearTopWindow
+  ) {
+    score += highestLag * difficultyProfile.production.armyQualityHighestLagWeight;
   }
   if (averageLag > 0) {
-    score += averageLag * 0.35;
+    score += averageLag * difficultyProfile.production.armyQualityAverageLagWeight;
   }
   return score;
 }
@@ -401,7 +417,7 @@ function rankRushProductionPriorities(
       return {
         prototypeId: prototype.id,
         score,
-        reason: `normal rush, cheapest military push, cost ${totalCost}, efficiency ${supplyEfficiency.toFixed(2)}`,
+        reason: `rush phase, cheapest military push, cost ${totalCost}, efficiency ${supplyEfficiency.toFixed(2)}`,
       };
     })
     .sort((left, right) => right.score - left.score || left.prototypeId.localeCompare(right.prototypeId));
@@ -418,6 +434,7 @@ function scoreSettlerExpansionValue(
   factionId: FactionId,
   strategy: FactionStrategy,
   prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>,
+  difficultyProfile: AiDifficultyProfile,
   difficulty?: DifficultyLevel,
 ): number {
   if (!isSettlerPrototype(prototype)) {
@@ -438,7 +455,12 @@ function scoreSettlerExpansionValue(
     (unit) => unit.factionId === factionId && unit.hp > 0,
   ).length;
   const targetArmySize = getTargetArmySize(state, factionId);
-  const reserveThreshold = Math.max(3, (state.factions.get(factionId)?.cityIds.length ?? 0) * 2);
+  const cityCount = state.factions.get(factionId)?.cityIds.length ?? 0;
+  const reserveThreshold = Math.max(
+    difficultyProfile.production.settlerReserveFloor,
+    cityCount * difficultyProfile.production.settlerReservePerCity,
+  );
+  const gateStrength = difficultyProfile.production.settlerGateStrength;
 
   const postureBonus =
     strategy.posture === 'defensive' ? 10
@@ -448,10 +470,29 @@ function scoreSettlerExpansionValue(
     : strategy.posture === 'offensive' ? -8
     : -4;
 
-  const armyShortfallPenalty = Math.max(0, targetArmySize - totalFriendlyUnits) * 3;
-  const lowUtilizationPenalty = supplyUtilizationRatio < 0.75 ? (0.75 - supplyUtilizationRatio) * 18 : 0;
-  const pressurePenalty = visibleEnemyPressure > 0 ? 12 + visibleEnemyPressure * 1.5 : 0;
-  const reservePenalty = totalFriendlyUnits < reserveThreshold ? (reserveThreshold - totalFriendlyUnits) * 2.5 : 0;
+  const armyShortfallPenalty =
+    Math.max(0, targetArmySize - totalFriendlyUnits)
+    * difficultyProfile.production.settlerArmyShortfallWeight
+    * gateStrength;
+  const lowUtilizationPenalty =
+    supplyUtilizationRatio < difficultyProfile.production.settlerUtilizationFloor
+      ? (
+          difficultyProfile.production.settlerUtilizationFloor - supplyUtilizationRatio
+        ) * difficultyProfile.production.settlerUtilizationPenaltyWeight * gateStrength
+      : 0;
+  const pressurePenalty =
+    visibleEnemyPressure > 0
+      ? (
+          difficultyProfile.production.settlerVisibleEnemyBasePenalty
+          + visibleEnemyPressure * difficultyProfile.production.settlerVisibleEnemyPerUnitPenalty
+        ) * gateStrength
+      : 0;
+  const reservePenalty =
+    totalFriendlyUnits < reserveThreshold
+      ? (
+          reserveThreshold - totalFriendlyUnits
+        ) * difficultyProfile.production.settlerReservePenaltyWeight * gateStrength
+      : 0;
 
   return (
     strategy.personality.scalars.defenseBias * 14 +

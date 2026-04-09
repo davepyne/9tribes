@@ -3,7 +3,9 @@ import {
   DEFAULT_HARNESS_TURNS,
   SMOKE_HARNESS_SEEDS,
   runBalanceHarness,
+  runPairedDifficultyBalanceHarness,
   runStratifiedBalanceHarness,
+  runStratifiedPairedDifficultyBalanceHarness,
 } from '../src/systems/balanceHarness.js';
 import type { BalanceOverrides } from '../src/balance/types.js';
 import type { DifficultyLevel } from '../src/systems/aiDifficulty.js';
@@ -29,8 +31,16 @@ const overrides: BalanceOverrides | undefined =
       }
     : undefined;
 
-const summary = process.argv.includes('--stratified')
-  ? runStratifiedBalanceHarness(registry, maxTurns, mapMode, overrides, difficulty)
-  : runBalanceHarness(registry, SMOKE_HARNESS_SEEDS, maxTurns, mapMode, overrides, difficulty);
+const summary = process.argv.includes('--paired')
+  ? (
+      process.argv.includes('--stratified')
+        ? runStratifiedPairedDifficultyBalanceHarness(registry, maxTurns, mapMode, overrides)
+        : runPairedDifficultyBalanceHarness(registry, SMOKE_HARNESS_SEEDS, maxTurns, mapMode, overrides)
+    )
+  : (
+      process.argv.includes('--stratified')
+        ? runStratifiedBalanceHarness(registry, maxTurns, mapMode, overrides, difficulty)
+        : runBalanceHarness(registry, SMOKE_HARNESS_SEEDS, maxTurns, mapMode, overrides, difficulty)
+    );
 
 console.log(JSON.stringify(summary, null, 2));

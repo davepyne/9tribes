@@ -237,3 +237,21 @@ No significant changes detected.
 
 ### Dependency Changes
 - `web/src/app/audio/sfxManager.ts` imports: web/src/game/types/clientState.ts (ClientState), web/src/game/controller/GameSession.ts (PendingCombat), web/src/game/types/worldView.ts (UnitView)
+
+---
+
+## Digest — 2026-04-09T04:19:29.023833Z
+
+### New Files
+- `web/src/data/help-content.ts` — 5 exports: HelpSection, TribeProfile, SynergyGuideEntry, HelpContent, helpContent
+
+### Modified Files
+- `src/features/cities/types.ts` — +1 exports (ProductionCostType)
+- `src/systems/aiDifficulty.ts` — +3 exports (AiDifficultyProfile, getAiDifficultyProfile, usesAdaptiveAiBehavior)
+- `src/systems/balanceHarness.ts` — +6 exports (DifficultyComparisonSummary, FactionDifficultyComparison, FactionDifficultyComparisonMetrics, FactionProductionStallMarker, runPairedDifficultyBalanceHarness); ~3 signatures (collectSeedBalanceMetrics, runBalanceHarness, runStratifiedBalanceHarness)
+- `src/systems/productionSystem.ts` — +8 exports (SETTLER_VILLAGE_COST, canCompleteCurrentProduction, canPaySettlerVillageCost, getNearestFactionVillageIds, getPrototypeCostType); ~1 signatures (queueUnit)
+
+### Dependency Changes
+- `src/features/cities/types.ts` — 1 dependencies
+- `src/systems/balanceHarness.ts` — 11 dependencies
+- `src/systems/productionSystem.ts` — 20 dependencies

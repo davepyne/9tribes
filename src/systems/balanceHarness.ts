@@ -154,6 +154,39 @@ export interface BatchBalanceSummary {
   factions: Record<string, FactionBatchMetrics>;
 }
 
+export interface FactionDifficultyComparisonMetrics {
+  avgSupplyUtilizationRatio: number;
+  avgHighestAvailableProductionCost: number;
+  avgHighestFieldedProductionCost: number;
+  avgFieldingGap: number;
+  avgHybridUnits: number;
+  avgSignatureCapableUnits: number;
+  avgStalledProductionCount: number;
+}
+
+export interface FactionDifficultyComparison {
+  factionId: string;
+  normal: FactionDifficultyComparisonMetrics;
+  hard: FactionDifficultyComparisonMetrics;
+  delta: FactionDifficultyComparisonMetrics;
+}
+
+export interface DifficultyComparisonSummary {
+  seeds: number[];
+  maxTurns: number;
+  mapMode: MapGenerationMode;
+  normal: BatchBalanceSummary;
+  hard: BatchBalanceSummary;
+  totals: {
+    avgLivingUnitsDelta: number;
+    totalBattlesDelta: number;
+    totalKillsDelta: number;
+    totalSiegesStartedDelta: number;
+    totalCityCapturesDelta: number;
+  };
+  factions: Record<string, FactionDifficultyComparison>;
+}
+
 function roundMetric(value: number): number {
   return Number(value.toFixed(3));
 }
@@ -639,4 +672,95 @@ export function runStratifiedBalanceHarness(
   difficulty?: DifficultyLevel,
 ): BatchBalanceSummary {
   return runBalanceHarness(registry, STRATIFIED_HARNESS_SEEDS, maxTurns, mapMode, balanceOverrides, difficulty);
+}
+
+function getComparisonMetrics(metrics: FactionBatchMetrics): FactionDifficultyComparisonMetrics {
+  const avgFieldingGap = roundMetric(
+    metrics.avgHighestAvailableProductionCost - metrics.avgHighestFieldedProductionCost,
+  );
+  return {
+    avgSupplyUtilizationRatio: metrics.avgSupplyUtilizationRatio,
+    avgHighestAvailableProductionCost: metrics.avgHighestAvailableProductionCost,
+    avgHighestFieldedProductionCost: metrics.avgHighestFieldedProductionCost,
+    avgFieldingGap,
+    avgHybridUnits: metrics.avgHybridUnits,
+    avgSignatureCapableUnits: metrics.avgSignatureCapableUnits,
+    avgStalledProductionCount: metrics.avgStalledProductionCount,
+  };
+}
+
+function diffComparisonMetrics(
+  hardMetrics: FactionDifficultyComparisonMetrics,
+  normalMetrics: FactionDifficultyComparisonMetrics,
+): FactionDifficultyComparisonMetrics {
+  return {
+    avgSupplyUtilizationRatio: roundMetric(hardMetrics.avgSupplyUtilizationRatio - normalMetrics.avgSupplyUtilizationRatio),
+    avgHighestAvailableProductionCost: roundMetric(
+      hardMetrics.avgHighestAvailableProductionCost - normalMetrics.avgHighestAvailableProductionCost,
+    ),
+    avgHighestFieldedProductionCost: roundMetric(
+      hardMetrics.avgHighestFieldedProductionCost - normalMetrics.avgHighestFieldedProductionCost,
+    ),
+    avgFieldingGap: roundMetric(hardMetrics.avgFieldingGap - normalMetrics.avgFieldingGap),
+    avgHybridUnits: roundMetric(hardMetrics.avgHybridUnits - normalMetrics.avgHybridUnits),
+    avgSignatureCapableUnits: roundMetric(
+      hardMetrics.avgSignatureCapableUnits - normalMetrics.avgSignatureCapableUnits,
+    ),
+    avgStalledProductionCount: roundMetric(
+      hardMetrics.avgStalledProductionCount - normalMetrics.avgStalledProductionCount,
+    ),
+  };
+}
+
+export function runPairedDifficultyBalanceHarness(
+  registry: RulesRegistry,
+  seeds: readonly number[] = SMOKE_HARNESS_SEEDS,
+  maxTurns = DEFAULT_HARNESS_TURNS,
+  mapMode: MapGenerationMode = 'fixed',
+  balanceOverrides?: BalanceOverrides,
+): DifficultyComparisonSummary {
+  const normal = runBalanceHarness(registry, seeds, maxTurns, mapMode, balanceOverrides, 'normal');
+  const hard = runBalanceHarness(registry, seeds, maxTurns, mapMode, balanceOverrides, 'hard');
+
+  const factionIds = Object.keys(normal.factions);
+  const factions = Object.fromEntries(
+    factionIds.map((factionId) => {
+      const normalMetrics = getComparisonMetrics(normal.factions[factionId]);
+      const hardMetrics = getComparisonMetrics(hard.factions[factionId]);
+      return [
+        factionId,
+        {
+          factionId,
+          normal: normalMetrics,
+          hard: hardMetrics,
+          delta: diffComparisonMetrics(hardMetrics, normalMetrics),
+        } satisfies FactionDifficultyComparison,
+      ];
+    }),
+  );
+
+  return {
+    seeds: [...seeds],
+    maxTurns,
+    mapMode,
+    normal,
+    hard,
+    totals: {
+      avgLivingUnitsDelta: roundMetric(hard.avgLivingUnits - normal.avgLivingUnits),
+      totalBattlesDelta: hard.totalBattles - normal.totalBattles,
+      totalKillsDelta: hard.totalKills - normal.totalKills,
+      totalSiegesStartedDelta: hard.totalSiegesStarted - normal.totalSiegesStarted,
+      totalCityCapturesDelta: hard.totalCityCaptures - normal.totalCityCaptures,
+    },
+    factions,
+  };
+}
+
+export function runStratifiedPairedDifficultyBalanceHarness(
+  registry: RulesRegistry,
+  maxTurns = DEFAULT_HARNESS_TURNS,
+  mapMode: MapGenerationMode = 'fixed',
+  balanceOverrides?: BalanceOverrides,
+): DifficultyComparisonSummary {
+  return runPairedDifficultyBalanceHarness(registry, STRATIFIED_HARNESS_SEEDS, maxTurns, mapMode, balanceOverrides);
 }

@@ -30,7 +30,7 @@ import { getTerrainPreferenceScore } from './factionIdentitySystem.js';
 import { getEmbarkedUnits } from './transportSystem.js';
 import { getVisibleEnemyUnits, isUnitVisibleTo, getLastSeenEnemyUnits, getLastSeenEnemyCities, getExploredHexKeys } from './fogSystem.js';
 import type { DifficultyLevel } from './aiDifficulty.js';
-import { usesNormalAiBehavior } from './aiDifficulty.js';
+import { getAiDifficultyProfile, type AiDifficultyProfile } from './aiDifficulty.js';
 
 const FRONT_RADIUS = 4;
 const THREAT_RADIUS = 3;
@@ -84,6 +84,7 @@ export function computeFactionStrategy(
   registry: RulesRegistry,
   difficulty?: DifficultyLevel,
 ): FactionStrategy {
+  const difficultyProfile = getAiDifficultyProfile(difficulty);
   const faction = state.factions.get(factionId);
   if (!faction) {
     return createEmptyStrategy(state.round, factionId);
@@ -110,7 +111,15 @@ export function computeFactionStrategy(
   const primaryEnemyFactionId = choosePrimaryEnemyFaction(fronts, enemyUnits);
   const primaryCityObjectiveId = choosePrimaryCityObjective(fronts, threatenedCities, posture, state, factionId);
   const primaryFrontAnchor = choosePrimaryFrontAnchor(fronts, threatenedCities, posture);
-  const focusTargetDecision = chooseFocusTargets(state, factionId, primaryCityObjectiveId, fronts, posture, personality);
+  const focusTargetDecision = chooseFocusTargets(
+    state,
+    factionId,
+    primaryCityObjectiveId,
+    fronts,
+    posture,
+    personality,
+    difficultyProfile,
+  );
   const focusTargetUnitIds = focusTargetDecision.unitIds;
   const regroupAnchors = buildRegroupAnchors(state, factionId, fronts, threatenedCities);
   const retreatAnchors = getFriendlyCityAnchors(state, factionId);
@@ -128,7 +137,7 @@ export function computeFactionStrategy(
     focusTargetDecision.candidates,
     regroupAnchors,
     retreatAnchors,
-    difficulty,
+    difficultyProfile,
   );
   const debugReasons = buildDebugReasons(
     posture,
@@ -499,6 +508,7 @@ function chooseFocusTargets(
   fronts: FrontLine[],
   posture: FactionPosture,
   personality: AiPersonalitySnapshot,
+  difficultyProfile: AiDifficultyProfile,
 ): FocusTargetDecision {
   const targetEnemyFactionId = fronts[0]?.enemyFactionId;
   const visibleEnemyUnits = getVisibleEnemyUnits(state, factionId);
@@ -507,6 +517,7 @@ function chooseFocusTargets(
     : undefined;
   const candidates = visibleEnemyUnits
     .map((entry) => {
+      const targetPrototype = state.prototypes.get(entry.unit.prototypeId);
       const cityDistance = primaryCityPosition
         ? hexDistance(entry.unit.position, primaryCityPosition)
         : 99;
@@ -519,6 +530,9 @@ function chooseFocusTargets(
       const capturable = entry.unit.routed || hpRatio <= 0.35;
       const wounded = hpRatio <= 0.6;
       const terrainId = state.map?.tiles.get(hexToKey(entry.unit.position))?.terrain;
+      const antiSkirmishScore = isSkirmisherPrototype(targetPrototype)
+        ? difficultyProfile.personality.antiSkirmishResponseWeight
+        : 0;
       const personalityScore = scoreFocusTarget(
         personality,
         { targetDistance: cityDistance },
@@ -530,7 +544,8 @@ function chooseFocusTargets(
           terrainId,
         },
       );
-      const baseScore = sameFrontBonus + routedBonus + postureBonus + (1 - hpRatio) * 4 - cityDistance * 0.25;
+      const baseScore =
+        sameFrontBonus + routedBonus + postureBonus + antiSkirmishScore + (1 - hpRatio) * 4 - cityDistance * 0.25;
       return {
         unitId: entry.unit.id,
         score: baseScore + personalityScore,
@@ -544,7 +559,7 @@ function chooseFocusTargets(
       const rightUnit = state.units.get(right.unitId);
       return compareUnits(leftUnit, rightUnit, state);
     });
-  const topCandidates = candidates.slice(0, 3);
+  const topCandidates = candidates.slice(0, difficultyProfile.strategy.focusTargetLimit);
   return {
     candidates: topCandidates,
     unitIds: topCandidates.map((candidate) => candidate.unitId),
@@ -615,7 +630,7 @@ function assignUnitIntents(
   focusTargetCandidates: FocusTargetCandidate[],
   regroupAnchors: HexCoord[],
   retreatAnchors: HexCoord[],
-  difficulty?: DifficultyLevel,
+  difficultyProfile: AiDifficultyProfile,
 ) : AssignmentDecision {
   const intents: Record<string, UnitStrategicIntent> = {};
   const assignmentSamples: string[] = [];
@@ -624,7 +639,12 @@ function assignUnitIntents(
   const primaryObjectiveCity = primaryCityObjectiveId ? state.cities.get(primaryCityObjectiveId) : undefined;
   const faction = state.factions.get(factionId);
   const homeCity = faction?.homeCityId ? state.cities.get(faction.homeCityId) : undefined;
-  const focusTargetBudgets = buildSoftTargetBudgets(friendlyUnits.length, focusTargetCandidates, personality);
+  const focusTargetBudgets = buildSoftTargetBudgets(
+    friendlyUnits.length,
+    focusTargetCandidates,
+    personality,
+    difficultyProfile,
+  );
   const targetSelectionStats = {
     choices: 0,
     overfills: 0,
@@ -640,7 +660,13 @@ function assignUnitIntents(
     const isolationScore = nearestFriendlyDistance(state, entry.unit, factionId);
     const lowHp = entry.unit.hp / Math.max(1, entry.unit.maxHp) <= RECOVERY_HP_RATIO;
     const fastUnit = entry.prototype.derivedStats.role === 'mounted' || entry.prototype.derivedStats.moves >= 3;
-    const selectedFocusTarget = selectFocusTargetCandidate(state, entry.unit, focusTargetBudgets, targetSelectionStats);
+    const selectedFocusTarget = selectFocusTargetCandidate(
+      state,
+      entry.unit,
+      focusTargetBudgets,
+      targetSelectionStats,
+      difficultyProfile,
+    );
     let assignment: UnitAssignment = 'main_army';
     let waypointKind: WaypointKind = 'front_anchor';
     let waypoint = primaryFrontAnchor ?? retreatAnchors[0] ?? entry.unit.position;
@@ -872,10 +898,10 @@ function assignUnitIntents(
     friendlyUnits,
     intents,
     posture,
-    difficulty,
+    difficultyProfile,
   );
-  const learnLoopReasons = usesNormalAiBehavior(difficulty)
-    ? applyNormalLearnAndSacrificeCoordinator(
+  const learnLoopReasons = difficultyProfile.strategy.learnLoopEnabled
+    ? applyDifficultyLearnAndSacrificeCoordinator(
         state,
         factionId,
         friendlyUnits,
@@ -888,6 +914,7 @@ function assignUnitIntents(
             ?? friendlyUnits[0]?.unit.position
             ?? { q: 0, r: 0 },
         ),
+        difficultyProfile,
       )
     : [];
 
@@ -931,16 +958,17 @@ function applyDifficultyCoordinator(
   friendlyUnits: UnitWithPrototype[],
   intents: Record<string, UnitStrategicIntent>,
   posture: FactionPosture,
-  difficulty?: DifficultyLevel,
+  difficultyProfile: AiDifficultyProfile,
 ): string[] {
-  if (!usesNormalAiBehavior(difficulty)) {
+  if (!difficultyProfile.strategy.coordinatorEnabled) {
     return [];
   }
+  const coordinatorLabel = difficultyProfile.difficulty;
 
   const faction = state.factions.get(factionId);
   const homeCity = faction?.homeCityId ? state.cities.get(faction.homeCityId) : undefined;
   if (!faction || !homeCity) {
-    return ['normal_coordinator=skipped:no_home_city'];
+    return [`${coordinatorLabel}_coordinator=skipped:no_home_city`];
   }
 
   const activeArmy = friendlyUnits.filter((entry) => {
@@ -948,7 +976,7 @@ function applyDifficultyCoordinator(
     return intent && intent.assignment !== 'recovery' && intent.assignment !== 'return_to_sacrifice';
   });
   if (activeArmy.length === 0) {
-    return ['normal_coordinator=skipped:no_active_army'];
+    return [`${coordinatorLabel}_coordinator=skipped:no_active_army`];
   }
 
   const garrisonUnit = [...activeArmy].sort((left, right) => {
@@ -959,7 +987,11 @@ function applyDifficultyCoordinator(
     }
     return compareUnitEntries(left, right);
   })[0];
-  intents[garrisonUnit.unit.id] = buildHomeDefenseIntent(intents[garrisonUnit.unit.id], homeCity, 'normal coordinator home garrison');
+  intents[garrisonUnit.unit.id] = buildHomeDefenseIntent(
+    intents[garrisonUnit.unit.id],
+    homeCity,
+    `${coordinatorLabel} coordinator home garrison`,
+  );
 
   const economy = state.economy.get(factionId);
   const supplyRatio = economy && economy.supplyIncome > 0 ? economy.supplyDemand / economy.supplyIncome : 0;
@@ -969,33 +1001,43 @@ function applyDifficultyCoordinator(
       && entry.unit.status === 'ready'
       && hexDistance(entry.unit.position, homeCity.position) <= 3,
   );
-  if (supplyRatio < 0.8 || idleNearHome.length < 3 || activeArmy.length < 4) {
+  if (
+    supplyRatio < difficultyProfile.strategy.coordinatorMinSupplyRatio
+    || idleNearHome.length < difficultyProfile.strategy.coordinatorMinIdleNearHome
+    || activeArmy.length < difficultyProfile.strategy.coordinatorMinActiveArmy
+  ) {
     return [
-      `normal_garrison=${garrisonUnit.unit.id}`,
-      `normal_coordinator=standby:supply=${supplyRatio.toFixed(2)},idle=${idleNearHome.length}`,
+      `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
+      `${coordinatorLabel}_coordinator=standby:supply=${supplyRatio.toFixed(2)},idle=${idleNearHome.length}`,
     ];
   }
 
   const targetCity = getNearestEnemyCity(state, factionId, homeCity.position);
   if (!targetCity) {
     return [
-      `normal_garrison=${garrisonUnit.unit.id}`,
-      'normal_coordinator=standby:no_enemy_city',
+      `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
+      `${coordinatorLabel}_coordinator=standby:no_enemy_city`,
     ];
   }
 
   const hunterPool = activeArmy.filter((entry) => entry.unit.id !== garrisonUnit.unit.id);
-  const hunterCount = Math.min(hunterPool.length, Math.max(3, Math.floor(activeArmy.length / 2)));
-  if (hunterCount < 3) {
+  const hunterCount = Math.min(
+    hunterPool.length,
+    Math.max(
+      difficultyProfile.strategy.coordinatorHunterFloor,
+      Math.ceil(activeArmy.length * difficultyProfile.strategy.coordinatorHunterShare),
+    ),
+  );
+  if (hunterCount < difficultyProfile.strategy.coordinatorHunterFloor) {
     return [
-      `normal_garrison=${garrisonUnit.unit.id}`,
-      `normal_coordinator=standby:hunter_pool=${hunterPool.length}`,
+      `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
+      `${coordinatorLabel}_coordinator=standby:hunter_pool=${hunterPool.length}`,
     ];
   }
 
   const hunterWaypointVillage =
     posture === 'offensive' || posture === 'siege'
-      ? chooseVillageFirstHunterTarget(state, factionId, homeCity.position, targetCity)
+      ? chooseVillageFirstHunterTarget(state, factionId, homeCity.position, targetCity, difficultyProfile)
       : undefined;
   const hunterWaypoint = hunterWaypointVillage?.position ?? targetCity.position;
   const hunterWaypointKind = hunterWaypointVillage ? 'cleanup_target' : 'enemy_city';
@@ -1026,8 +1068,8 @@ function applyDifficultyCoordinator(
       anchor: targetCity.position,
       isolated: false,
       reason: hunterWaypointVillage
-        ? `normal coordinator hunter raid via village ${hunterWaypointVillage.id} before ${targetCity.id}`
-        : `normal coordinator hunter push toward ${targetCity.id}`,
+        ? `${coordinatorLabel} coordinator hunter raid via village ${hunterWaypointVillage.id} before ${targetCity.id}`
+        : `${coordinatorLabel} coordinator hunter push toward ${targetCity.id}`,
     };
   }
 
@@ -1038,35 +1080,39 @@ function applyDifficultyCoordinator(
     intents[defender.unit.id] = buildHomeDefenseIntent(
       intents[defender.unit.id],
       homeCity,
-      'normal coordinator home defense',
+      `${coordinatorLabel} coordinator home defense`,
     );
   }
 
   return [
-    `normal_garrison=${garrisonUnit.unit.id}`,
-    hunterWaypointVillage ? `normal_village_target=${hunterWaypointVillage.id}` : 'normal_village_target=none',
-    `normal_coordinator=active:supply=${supplyRatio.toFixed(2)},hunters=${hunterIds.size},defenders=${hunterPool.length - hunterIds.size + 1}`,
+    `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
+    hunterWaypointVillage
+      ? `${coordinatorLabel}_village_target=${hunterWaypointVillage.id}`
+      : `${coordinatorLabel}_village_target=none`,
+    `${coordinatorLabel}_coordinator=active:supply=${supplyRatio.toFixed(2)},hunters=${hunterIds.size},defenders=${hunterPool.length - hunterIds.size + 1}`,
   ];
 }
 
-function applyNormalLearnAndSacrificeCoordinator(
+function applyDifficultyLearnAndSacrificeCoordinator(
   state: GameState,
   factionId: FactionId,
   friendlyUnits: UnitWithPrototype[],
   intents: Record<string, UnitStrategicIntent>,
   targetCity: City | undefined,
+  difficultyProfile: AiDifficultyProfile,
 ): string[] {
+  const learnLoopLabel = `${difficultyProfile.difficulty}_learn_loop`;
   const faction = state.factions.get(factionId);
   const homeCity = faction?.homeCityId ? state.cities.get(faction.homeCityId) : undefined;
   if (!faction || !homeCity) {
-    return ['normal_learn_loop=skipped:no_home_city'];
+    return [`${learnLoopLabel}=skipped:no_home_city`];
   }
 
-  const HIGH_ABILITY_THRESHOLD = 2;
-  const FAR_FROM_HOME_DISTANCE = 5;
-  const IDLE_HOME_RADIUS = 4;
-  const MIN_FIELD_FORCE = 3;
-  const MAX_RETURN_SHARE = 0.4;
+  const highAbilityThreshold = difficultyProfile.strategy.learnLoopHighAbilityThreshold;
+  const farFromHomeDistance = difficultyProfile.strategy.learnLoopFarFromHomeDistance;
+  const idleHomeRadius = difficultyProfile.strategy.learnLoopIdleHomeRadius;
+  const minFieldForce = difficultyProfile.strategy.learnLoopMinFieldForce;
+  const maxReturnShare = difficultyProfile.strategy.learnLoopMaxReturnShare;
 
   const fieldArmy = friendlyUnits.filter((entry) => {
     const intent = intents[entry.unit.id];
@@ -1074,8 +1120,8 @@ function applyNormalLearnAndSacrificeCoordinator(
   });
 
   const returnCandidates = fieldArmy
-    .filter((entry) => (entry.unit.learnedAbilities?.length ?? 0) >= HIGH_ABILITY_THRESHOLD)
-    .filter((entry) => hexDistance(entry.unit.position, homeCity.position) > FAR_FROM_HOME_DISTANCE)
+    .filter((entry) => (entry.unit.learnedAbilities?.length ?? 0) >= highAbilityThreshold)
+    .filter((entry) => hexDistance(entry.unit.position, homeCity.position) > farFromHomeDistance)
     .sort((left, right) => {
       const abilityDelta = (right.unit.learnedAbilities?.length ?? 0) - (left.unit.learnedAbilities?.length ?? 0);
       if (abilityDelta !== 0) {
@@ -1090,8 +1136,8 @@ function applyNormalLearnAndSacrificeCoordinator(
 
   const maxReturnCount = Math.min(
     returnCandidates.length,
-    Math.max(0, fieldArmy.length - MIN_FIELD_FORCE),
-    Math.max(1, Math.floor(fieldArmy.length * MAX_RETURN_SHARE)),
+    Math.max(0, fieldArmy.length - minFieldForce),
+    Math.max(1, Math.floor(fieldArmy.length * maxReturnShare)),
   );
 
   const returningIds = new Set<UnitId>();
@@ -1106,7 +1152,7 @@ function applyNormalLearnAndSacrificeCoordinator(
       objectiveUnitId: undefined,
       anchor: homeCity.position,
       isolated: false,
-      reason: `normal learn loop returning ${candidate.unit.learnedAbilities.length} learned abilities to ${faction.name} capital`,
+      reason: `${difficultyProfile.difficulty} learn loop returning ${candidate.unit.learnedAbilities.length} learned abilities to ${faction.name} capital`,
     };
   }
 
@@ -1115,7 +1161,7 @@ function applyNormalLearnAndSacrificeCoordinator(
     .filter((entry) => !returningIds.has(entry.unit.id))
     .filter((entry) => (entry.unit.learnedAbilities?.length ?? 0) <= 1)
     .filter((entry) => entry.unit.status === 'ready')
-    .filter((entry) => hexDistance(entry.unit.position, homeCity.position) <= IDLE_HOME_RADIUS)
+    .filter((entry) => hexDistance(entry.unit.position, homeCity.position) <= idleHomeRadius)
     .filter((entry) => {
       const assignment = intents[entry.unit.id]?.assignment;
       return assignment !== 'defender' && assignment !== 'main_army';
@@ -1133,13 +1179,13 @@ function applyNormalLearnAndSacrificeCoordinator(
       anchor: fallbackTargetCity?.position ?? currentIntent?.anchor ?? learner.unit.position,
       isolated: false,
       reason: fallbackTargetCity
-        ? `normal learn loop sending low-knowledge unit to fight toward ${fallbackTargetCity.id}`
-        : 'normal learn loop promoting idle unit to seek combat',
+        ? `${difficultyProfile.difficulty} learn loop sending low-knowledge unit to fight toward ${fallbackTargetCity.id}`
+        : `${difficultyProfile.difficulty} learn loop promoting idle unit to seek combat`,
     };
   }
 
   return [
-    `normal_learn_loop=returners:${returningIds.size},learners:${learnerPool.length}`,
+    `${learnLoopLabel}=returners:${returningIds.size},learners:${learnerPool.length}`,
   ];
 }
 
@@ -1148,6 +1194,7 @@ function chooseVillageFirstHunterTarget(
   factionId: FactionId,
   homePosition: HexCoord,
   targetCity: City,
+  difficultyProfile: AiDifficultyProfile,
 ): Village | undefined {
   const directDistance = Math.max(1, hexDistance(homePosition, targetCity.position));
   const targetEnemyFactionId = targetCity.factionId;
@@ -1163,12 +1210,16 @@ function chooseVillageFirstHunterTarget(
       const score = sameEnemyBonus + economyValue + Math.max(0, 6 - detour * 2) + Math.max(0, 5 - distToCity);
       return { village, score, detour, distToCity };
     })
-    .filter(({ detour, distToCity }) => detour <= 3 && distToCity <= 8)
     .sort((left, right) =>
       right.score - left.score
       || left.detour - right.detour
       || left.distToCity - right.distToCity
       || left.village.id.localeCompare(right.village.id)
+    )
+    .filter(
+      ({ detour, distToCity }) =>
+        detour <= difficultyProfile.strategy.villageDetourTolerance
+        && distToCity <= difficultyProfile.strategy.villageCityDistanceLimit,
     )[0]?.village;
 }
 
@@ -1214,14 +1265,19 @@ function buildSoftTargetBudgets(
   unitCount: number,
   candidates: FocusTargetCandidate[],
   personality: AiPersonalitySnapshot,
+  difficultyProfile: AiDifficultyProfile,
 ): FocusTargetBudget[] {
   if (candidates.length === 0) return [];
   const pressureFactor = 0.4 + personality.scalars.aggression * 0.25 + personality.scalars.raidBias * 0.2;
   const assaultSlots = Math.max(1, Math.round(unitCount * pressureFactor));
+  const focusFireLimit = Math.max(1, Math.round(personality.thresholds.focusFireLimit));
   const weightedSum = candidates.reduce((sum, candidate) => sum + Math.max(0.5, candidate.score), 0);
   return candidates.map((candidate, index) => {
     const weight = Math.max(0.5, candidate.score);
-    const budget = (weight / weightedSum) * assaultSlots + (index === 0 ? 0.5 : 0);
+    const budget = Math.min(
+      focusFireLimit,
+      (weight / weightedSum) * assaultSlots + (index === 0 ? difficultyProfile.strategy.focusBudgetLeaderBonus : 0),
+    );
     return {
       unitId: candidate.unitId,
       score: candidate.score,
@@ -1236,6 +1292,7 @@ function selectFocusTargetCandidate(
   unit: Unit,
   budgets: FocusTargetBudget[],
   stats: { choices: number; overfills: number },
+  difficultyProfile: AiDifficultyProfile,
 ): Unit | undefined {
   if (budgets.length === 0) return undefined;
 
@@ -1245,7 +1302,8 @@ function selectFocusTargetCandidate(
     const target = state.units.get(budget.unitId);
     if (!target || target.hp <= 0) continue;
     const distancePenalty = hexDistance(unit.position, target.position) * 0.2;
-    const overfillPenalty = Math.max(0, budget.allocated - budget.budget) * 2.4;
+    const overfillPenalty =
+      Math.max(0, budget.allocated - budget.budget) * difficultyProfile.strategy.focusOverfillPenalty;
     const score = budget.score - distancePenalty - overfillPenalty;
     if (score > bestScore) {
       bestScore = score;
@@ -1261,6 +1319,13 @@ function selectFocusTargetCandidate(
     stats.overfills += 1;
   }
   return state.units.get(bestTarget.unitId);
+}
+
+function isSkirmisherPrototype(prototype: Prototype | undefined): boolean {
+  if (!prototype) return false;
+  return prototype.derivedStats.role === 'mounted'
+    || prototype.derivedStats.range > 1
+    || prototype.derivedStats.moves >= 3;
 }
 
 function buildStatelessSquadPlan(

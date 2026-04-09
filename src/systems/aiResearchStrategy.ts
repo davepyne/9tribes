@@ -11,7 +11,7 @@ import type { FactionId } from '../types.js';
 import type { FactionStrategy, ResearchPriority } from './factionStrategy.js';
 import { scoreResearchCandidate } from './aiPersonality.js';
 import type { DifficultyLevel } from './aiDifficulty.js';
-import { usesNormalAiBehavior } from './aiDifficulty.js';
+import { getAiDifficultyProfile, type AiDifficultyProfile } from './aiDifficulty.js';
 import { getDomainProgression } from './domainProgression.js';
 import emergentRulesData from '../content/base/emergent-rules.json' with { type: 'json' };
 import type { EmergentRuleConfig } from './synergyEngine.js';
@@ -317,12 +317,12 @@ function getDomainsWithResearchProgress(research: NonNullable<GameState['researc
 function scoreNormalTier3DepthFocus(
   candidate: CandidateNode,
   domainsWithProgress: Set<string>,
-  difficulty?: DifficultyLevel,
+  difficultyProfile: AiDifficultyProfile,
 ): number {
-  if (!usesNormalAiBehavior(difficulty)) return 0;
+  if (!difficultyProfile.adaptiveAi) return 0;
   if (candidate.tier !== 3) return 0;
   if (!domainsWithProgress.has(candidate.domainId)) return 0;
-  return 3;
+  return difficultyProfile.research.tier3DepthWeight;
 }
 
 function scoreNormalBreadthPivot(
@@ -330,9 +330,9 @@ function scoreNormalBreadthPivot(
   faction: { nativeDomain: string; learnedDomains: string[] },
   progression: ReturnType<typeof getDomainProgression>,
   domainsWithProgress: Set<string>,
-  difficulty?: DifficultyLevel,
+  difficultyProfile: AiDifficultyProfile,
 ): number {
-  if (!usesNormalAiBehavior(difficulty)) return 0;
+  if (!difficultyProfile.adaptiveAi) return 0;
 
   const nativeT2Secured = progression.t2Domains.includes(faction.nativeDomain);
   const nonNativeT2Count = progression.t2Domains.filter((domainId) => domainId !== faction.nativeDomain).length;
@@ -343,14 +343,16 @@ function scoreNormalBreadthPivot(
 
   let score = 0;
   if (nativeT2Secured && isNewBreadthTier2) {
-    score += nonNativeT2Count === 0 ? 7 : 4;
+    score += nonNativeT2Count === 0
+      ? difficultyProfile.research.breadthPivotFirstWeight
+      : difficultyProfile.research.breadthPivotFollowupWeight;
     if (activeBreadthCount === 0) {
-      score += 2;
+      score += difficultyProfile.research.breadthPivotDevelopmentBonus;
     }
   }
 
   if (isNativeTier3 && nativeT2Secured && nonNativeT2Count === 0 && activeBreadthCount === 0) {
-    score -= 5;
+    score -= difficultyProfile.research.nativeTier3DelayPenalty;
   }
 
   return score;
@@ -360,26 +362,26 @@ function scoreNormalHybridBreadth(
   candidate: CandidateNode,
   strategy: FactionStrategy,
   progression: ReturnType<typeof getDomainProgression>,
-  difficulty?: DifficultyLevel,
+  difficultyProfile: AiDifficultyProfile,
 ): number {
-  if (!usesNormalAiBehavior(difficulty)) return 0;
+  if (!difficultyProfile.adaptiveAi) return 0;
   if (candidate.tier !== 2) return 0;
   if (!strategy.hybridGoal.desiredDomainIds.includes(candidate.domainId)) return 0;
 
   const alreadyDeveloped = progression.t2Domains.includes(candidate.domainId);
-  return alreadyDeveloped ? 0 : 4.5;
+  return alreadyDeveloped ? 0 : difficultyProfile.research.hybridBreadthWeight;
 }
 
 function scoreNormalEmergentBreadth(
   candidate: CandidateNode,
   progression: ReturnType<typeof getDomainProgression>,
-  difficulty?: DifficultyLevel,
+  difficultyProfile: AiDifficultyProfile,
 ): number {
-  if (!usesNormalAiBehavior(difficulty)) return 0;
+  if (!difficultyProfile.adaptiveAi) return 0;
   if (candidate.tier !== 2) return 0;
   if (progression.emergentEligibleDomains.includes(candidate.domainId)) return 0;
   if (progression.t2Domains.length >= 2) return 0;
-  return 2.5;
+  return difficultyProfile.research.emergentBreadthWeight;
 }
 
 function getRuleDomainGroups(rule: EmergentRuleConfig): string[][] {
@@ -458,16 +460,21 @@ function getReachableTripleStackOpportunities(
 function scoreNormalTripleStackFocus(
   candidate: CandidateNode,
   opportunities: TripleStackOpportunity[],
-  difficulty?: DifficultyLevel,
+  difficultyProfile: AiDifficultyProfile,
 ): number {
-  if (!usesNormalAiBehavior(difficulty)) return 0;
+  if (!difficultyProfile.adaptiveAi) return 0;
 
   let score = 0;
   for (const opportunity of opportunities) {
     if (!opportunity.missingDomains.has(candidate.domainId)) {
       continue;
     }
-    score = Math.max(score, candidate.tier === 2 ? 10 : 7);
+    score = Math.max(
+      score,
+      candidate.tier === 2
+        ? difficultyProfile.research.tripleStackTier2Weight
+        : difficultyProfile.research.tripleStackTier3Weight,
+    );
   }
   return score;
 }
@@ -555,11 +562,11 @@ function buildResearchReason(
   if (scores.gameState > 0) parts.push('game-state urgency');
   if (scores.doctrinePackage > 0) parts.push('doctrine package');
   if (scores.logistics > 0) parts.push('logistics fit');
-  if (scores.depthFocus > 0) parts.push('normal depth-first tier 3 push');
-  if (scores.breadthPivot > 0) parts.push('normal breadth pivot');
-  if (scores.hybridBreadth > 0) parts.push('normal hybrid breadth');
-  if (scores.emergentBreadth > 0) parts.push('normal emergent breadth');
-  if (scores.tripleStack > 0) parts.push('normal triple-stack reach');
+  if (scores.depthFocus > 0) parts.push('tier 3 depth push');
+  if (scores.breadthPivot > 0) parts.push('breadth pivot');
+  if (scores.hybridBreadth > 0) parts.push('hybrid breadth');
+  if (scores.emergentBreadth > 0) parts.push('emergent breadth');
+  if (scores.tripleStack > 0) parts.push('triple-stack reach');
   return parts.join(', ');
 }
 
@@ -578,6 +585,7 @@ export function rankResearchPriorities(
   registry: RulesRegistry,
   difficulty?: DifficultyLevel,
 ): ResearchPriority[] {
+  const difficultyProfile = getAiDifficultyProfile(difficulty);
   const faction = state.factions.get(factionId);
   const research = state.research.get(factionId);
   if (!faction || !research) return [];
@@ -615,17 +623,17 @@ export function rankResearchPriorities(
         strategy,
       );
       const logisticsScore = scoreLogisticsFit(state, factionId, strategy, candidate);
-      const depthFocusScore = scoreNormalTier3DepthFocus(candidate, domainsWithProgress, difficulty);
+      const depthFocusScore = scoreNormalTier3DepthFocus(candidate, domainsWithProgress, difficultyProfile);
       const breadthPivotScore = scoreNormalBreadthPivot(
         candidate,
         faction,
         progression,
         domainsWithProgress,
-        difficulty,
+        difficultyProfile,
       );
-      const hybridBreadthScore = scoreNormalHybridBreadth(candidate, strategy, progression, difficulty);
-      const emergentBreadthScore = scoreNormalEmergentBreadth(candidate, progression, difficulty);
-      const tripleStackScore = scoreNormalTripleStackFocus(candidate, tripleStackOpportunities, difficulty);
+      const hybridBreadthScore = scoreNormalHybridBreadth(candidate, strategy, progression, difficultyProfile);
+      const emergentBreadthScore = scoreNormalEmergentBreadth(candidate, progression, difficultyProfile);
+      const tripleStackScore = scoreNormalTripleStackFocus(candidate, tripleStackOpportunities, difficultyProfile);
 
       const score =
         native +
@@ -670,9 +678,6 @@ export function rankResearchPriorities(
     .sort((a, b) => b.score - a.score || a.nodeId.localeCompare(b.nodeId));
 }
 
-/** Score threshold that must be exceeded to switch away from active research. */
-const STICKY_THRESHOLD = 3;
-
 /**
  * Choose the best research node for the AI to work on next.
  * Implements "sticky" behavior: won't switch away from the active node
@@ -685,6 +690,7 @@ export function chooseStrategicResearch(
   registry: RulesRegistry,
   difficulty?: DifficultyLevel,
 ): ResearchDecision | null {
+  const difficultyProfile = getAiDifficultyProfile(difficulty);
   const priorities = rankResearchPriorities(state, factionId, strategy, registry, difficulty);
   strategy.researchPriorities = priorities;
 
@@ -699,7 +705,7 @@ export function chooseStrategicResearch(
     const activePriority = priorities.find((p) => p.nodeId === research.activeNodeId);
     const activeScore = activePriority?.score ?? -Infinity;
 
-    if (top.score - activeScore < STICKY_THRESHOLD) {
+    if (top.score - activeScore < difficultyProfile.research.stickyThreshold) {
       return {
         nodeId: research.activeNodeId,
         reason: activePriority?.reason ?? `keeping active research ${research.activeNodeId} sticky`,
