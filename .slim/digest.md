@@ -255,3 +255,45 @@ No significant changes detected.
 - `src/features/cities/types.ts` — 1 dependencies
 - `src/systems/balanceHarness.ts` — 11 dependencies
 - `src/systems/productionSystem.ts` — 20 dependencies
+
+---
+
+## Digest — 2026-04-09T06:33:16.349385Z
+
+### Dependency Changes
+
+No significant changes detected.
+
+---
+
+## Digest — 2026-04-09T12:18:32.695727Z
+
+### New Files
+- `src/systems/combatActionSystem.ts` — 9 exports: CombatActionEffectCategory, CombatActionEffect, CombatActionPreview, CombatActionPreviewOverrides, CombatActionFeedback, ... (+4 more)
+- `src/systems/factionPhaseSystem.ts` — 2 exports: FactionPhaseOptions, runFactionPhase
+- `web/src/game/phaser/systems/combatAnimationScript.ts` — 6 exports: CombatAnimationOutcome, CombatBeatActor, CombatBeatKind, CombatAnimationBeat, CombatAnimationScript, ... (+1 more)
+
+### Modified Files
+- `src/systems/warEcologySimulation.ts` — +5 exports (UnitActivationCombatMode, UnitActivationOptions, UnitActivationResult, activateUnit, processFactionPhases)
+- `web/src/game/phaser/systems/CombatAnimator.ts` — ~1 signatures (CombatAnimData)
+
+### Dependency Changes
+- `src/systems/combatActionSystem.ts` imports: src/core/grid.ts (hexDistance, hexToKey), src/data/registry/types.ts (RulesRegistry), src/features/units/types.ts (Unit), src/game/types.ts (GameState, UnitId), src/systems/factionIdentitySystem.ts (getCombatAttackModifier, getCombatDefenseModifier)
+- `src/systems/factionPhaseSystem.ts` imports: src/game/types.ts (GameState, FactionId), src/data/registry/types.ts (RulesRegistry), src/systems/aiDifficulty.ts (DifficultyLevel), src/systems/warEcologySimulation.ts (SimulationTrace, processFactionPhases)
+- `web/src/game/phaser/systems/combatAnimationScript.ts` imports: web/src/game/types/worldView.ts (UnitView)
+- `src/systems/warEcologySimulation.ts` — 104 dependencies
+- `web/src/game/phaser/systems/CombatAnimator.ts` — 3 dependencies
+
+---
+
+## Digest — 2026-04-09T13:13:25.063796Z
+
+### New Files
+- `src/systems/unitActivationSystem.ts` — 6 exports: UnitActivationCombatMode, UnitActivationOptions, UnitActivationResult, maybeExpirePreparedAbility, activateUnit, ... (+1 more)
+
+### Modified Files
+- `src/systems/warEcologySimulation.ts` — +6 exports (calculateSynergyAttackBonus, calculateSynergyDefenseBonus, getSynergyEngine, log, recordAiIntent); -1 exports (activateUnit)
+
+### Dependency Changes
+- `src/systems/unitActivationSystem.ts` imports: src/core/ids.ts (createImprovementId), src/core/grid.ts (getDirectionIndex, getHexesInRange, getNeighbors), src/data/registry/types.ts (RulesRegistry), src/data/roleEffectiveness.ts (getRoleEffectiveness), src/data/weaponEffectiveness.ts (getWeaponEffectiveness)
+- `src/systems/warEcologySimulation.ts` — 142 dependencies

@@ -5,61 +5,27 @@ import { hexDistance, hexToKey } from '../../../../src/core/grid.js';
 import { getMvpScenarioConfig } from '../../../../src/game/scenarios/mvp.js';
 import { loadRulesRegistry } from '../../../../src/data/loader/loadRulesRegistry.js';
 import type { RulesRegistry } from '../../../../src/data/registry/types.js';
-import { getCombatAttackModifier, getCombatDefenseModifier } from '../../../../src/systems/factionIdentitySystem.js';
-import {
-  getVeteranDefenseBonus,
-  getVeteranMoraleBonus,
-  getVeteranStatBonus,
-  resolveCombat,
-} from '../../../../src/systems/combatSystem.js';
+import { applyCombatAction, previewCombatAction, type CombatActionPreview } from '../../../../src/systems/combatActionSystem.js';
 import { getValidMoves, moveUnit, previewMove } from '../../../../src/systems/movementSystem.js';
 import { resolveCapabilityDoctrine } from '../../../../src/systems/capabilityDoctrine.js';
-import { canUseCharge } from '../../../../src/systems/abilitySystem.js';
-import { getRoleEffectiveness } from '../../../../src/data/roleEffectiveness.js';
-import { getWeaponEffectiveness } from '../../../../src/data/weaponEffectiveness.js';
+import { canUseAmbush, canUseBrace, getTerrainAt, hasAdjacentEnemy, prepareAbility } from '../../../../src/systems/abilitySystem.js';
+import { computeFactionStrategy } from '../../../../src/systems/strategicAi.js';
 import {
-  computeFactionStrategy,
-  getNearestFriendlyCity,
-  getNearbySupportScore,
-  getUnitIntent,
-  isThreatenedCityHex,
-  scoreStrategicTerrain,
-} from '../../../../src/systems/strategicAi.js';
-import {
-  computeRetreatRisk,
-  scoreAttackCandidate,
-  scoreMoveCandidate,
-  scoreStrategicTarget,
-  shouldEngageTarget,
-} from '../../../../src/systems/aiTactics.js';
-import { deriveResourceIncome, advanceCaptureTimers } from '../../../../src/systems/economySystem.js';
-import {
-  advanceProduction,
   canPaySettlerVillageCost,
-  canCompleteCurrentProduction,
   canProducePrototype,
   cancelCurrentProduction,
-  completeProduction,
-  getNearestFactionVillageIds,
   getPrototypeCostType,
   getPrototypeQueueCost,
   queueUnit,
   removeFromQueue,
 } from '../../../../src/systems/productionSystem.js';
-import { getFactionCityIds, syncFactionSettlementIds } from '../../../../src/systems/factionOwnershipSystem.js';
+import { syncFactionSettlementIds } from '../../../../src/systems/factionOwnershipSystem.js';
 import { advanceTurn } from '../../../../src/systems/turnSystem.js';
+import { activateAiUnit } from '../../../../src/systems/unitActivationSystem.js';
 import {
-  addResearchProgress,
   startResearch,
 } from '../../../../src/systems/researchSystem.js';
-import { chooseStrategicResearch } from '../../../../src/systems/aiResearchStrategy.js';
-import { chooseStrategicProduction } from '../../../../src/systems/aiProductionStrategy.js';
-import { applyCombatSignals } from '../../../../src/systems/combatSignalSystem.js';
 import { unlockHybridRecipes } from '../../../../src/systems/hybridSystem.js';
-import { awardCombatXP } from '../../../../src/systems/xpSystem.js';
-import { tryPromoteUnit } from '../../../../src/systems/veterancySystem.js';
-import { evaluateAndSpawnVillage } from '../../../../src/systems/villageSystem.js';
-import type { FactionStrategy, UnitStrategicIntent } from '../../../../src/systems/factionStrategy.js';
 import type { CombatResult } from '../../../../src/systems/combatSystem.js';
 import type { GameAction } from '../types/clientState';
 import type { ReplayCombatEvent } from '../types/replay';
@@ -67,25 +33,10 @@ import type { PlayStateSource, SerializedGameState } from '../types/playState';
 import type { AttackTargetView, ReachableHexView } from '../types/worldView';
 import { deserializeGameState, serializeGameState } from '../types/playState';
 import { updateFogState } from '../../../../src/systems/fogSystem.js';
-import { applyHealingForFaction } from '../../../../src/systems/healingSystem.js';
-import {
-  addExhaustion,
-  applySupplyDeficitPenalties,
-  EXHAUSTION_CONFIG,
-} from '../../../../src/systems/warExhaustionSystem.js';
+import { runFactionPhase } from '../../../../src/systems/factionPhaseSystem.js';
 import { performSacrifice } from '../../../../src/systems/sacrificeSystem.js';
-import { tryLearnFromKill } from '../../../../src/systems/learnByKillSystem.js';
-import { attemptNonCombatCapture } from '../../../../src/systems/captureSystem.js';
 import { createCitySiteBonuses, getSettlementOccupancyBlocker } from '../../../../src/systems/citySiteSystem.js';
-import { findRetreatHex } from '../../../../src/systems/signatureAbilitySystem.js';
-import {
-  captureCity,
-  degradeWalls,
-  getCapturingFaction,
-  isCityVulnerable,
-  repairWalls,
-} from '../../../../src/systems/siegeSystem.js';
-import { isCityEncircled, isEncirclementBroken } from '../../../../src/systems/territorySystem.js';
+import { boardTransport, canBoardTransport, disembarkUnit, getUnitTransport } from '../../../../src/systems/transportSystem.js';
 import type { DifficultyLevel } from '../../../../src/systems/aiDifficulty.js';
 import type { MapGenerationMode } from '../../../../src/world/map/types.js';
 
@@ -144,13 +95,21 @@ type SessionFeedback = {
         factionId: string;
         villageIds: string[];
       }
-    | null;
+  | null;
+};
+
+type AiTurnContext = {
+  factionId: string;
+  unitIds: string[];
+  index: number;
+  fortsBuiltThisTurn: Set<string>;
 };
 
 /** Pre-resolved combat data returned by resolveAttack() before state is mutated */
 export interface PendingCombat {
   attackerId: UnitId;
   defenderId: UnitId;
+  preview: CombatActionPreview;
   result: CombatResult;
   combatEvent: ReplayCombatEvent;
 }
@@ -205,6 +164,7 @@ export class GameSession {
 
   /** Queue of AI-vs-AI (or AI-vs-player) combats resolved during AI turn processing */
   private _aiCombatQueue: PendingCombat[] = [];
+  private _aiTurnContext: AiTurnContext | null = null;
 
   constructor(
     source: PlayStateSource = { type: 'fresh' },
@@ -295,13 +255,21 @@ export class GameSession {
       case 'attack_unit':
         this._pendingCombat = this.resolveAttack(action.attackerId as UnitId, action.defenderId as UnitId);
         return;
+      case 'prepare_ability':
+        this.applyPrepareAbility(action.unitId, action.ability);
+        return;
+      case 'board_transport':
+        this.applyBoardTransport(action.unitId, action.transportId);
+        return;
+      case 'disembark_unit':
+        this.applyDisembarkUnit(action.unitId, action.transportId, action.destination);
+        return;
       case 'end_turn':
         if (this.state.activeFactionId) {
           const activeFactionId = this.state.activeFactionId;
-          this.resolveFactionEconomyAndProduction(activeFactionId);
-          this.resolveFactionSiege(activeFactionId);
-          this.state = applySupplyDeficitPenalties(this.state, activeFactionId as never, this.registry);
-          this.state = applyHealingForFaction(this.state, activeFactionId, this.registry);
+          this.state = runFactionPhase(this.state, activeFactionId as never, this.registry, {
+            difficulty: this.difficulty,
+          });
         }
         this.feedback.lastMove = null;
         this.state = this.refreshFogForAllFactions(advanceTurn(this.state));
@@ -525,173 +493,55 @@ export class GameSession {
    * Returns PendingCombat data for the animator to use, or null if illegal.
    */
   resolveAttack(attackerId: UnitId, defenderId: UnitId): PendingCombat | null {
-    const attacker = this.state.units.get(attackerId);
-    const defender = this.state.units.get(defenderId);
-    if (!attacker || !defender || attacker.hp <= 0 || defender.hp <= 0 || !this.state.map) {
+    const preview = previewCombatAction(this.state, this.registry, attackerId, defenderId);
+    if (!preview) {
       return null;
     }
 
-    if (attacker.factionId !== this.state.activeFactionId || defender.factionId === attacker.factionId || attacker.attacksRemaining <= 0) {
-      return null;
-    }
+    return this.buildPendingCombat(preview);
+  }
 
-    const legalTarget = this.getAttackTargets(attackerId).find((target) => target.unitId === defenderId);
-    if (!legalTarget) {
-      return null;
-    }
-
-    const attackerPrototype = this.state.prototypes.get(attacker.prototypeId as never);
-    const defenderPrototype = this.state.prototypes.get(defender.prototypeId as never);
-    if (!attackerPrototype || !defenderPrototype) {
-      return null;
-    }
-
-    const attackerTerrainId = this.state.map.tiles.get(hexToKey(attacker.position))?.terrain ?? 'plains';
-    const defenderTerrainId = this.state.map.tiles.get(hexToKey(defender.position))?.terrain ?? 'plains';
-    const attackerTerrain = this.registry.getTerrain(attackerTerrainId);
-    const defenderTerrain = this.registry.getTerrain(defenderTerrainId);
-    const attackerFaction = this.state.factions.get(attacker.factionId);
-    const defenderFaction = this.state.factions.get(defender.factionId);
-    const attackerDoctrine = attackerFaction
-      ? resolveCapabilityDoctrine(this.state.research.get(attacker.factionId), attackerFaction)
-      : undefined;
-    const canChargeAttack =
-      (attackerPrototype.derivedStats.range ?? 1) <= 1
-      && (canUseCharge(attackerPrototype) || attackerDoctrine?.chargeTranscendenceEnabled === true);
-    const isChargeAttack = canChargeAttack
-      && (
-        attackerDoctrine?.chargeTranscendenceEnabled === true
-        || attacker.movesRemaining < attacker.maxMoves
-      );
-    const attackModifier =
-      getCombatAttackModifier(attackerFaction, attackerTerrain, defenderTerrain)
-      + (isChargeAttack ? 0.15 : 0);
-    const result = resolveCombat(
-      attacker,
-      defender,
-      attackerPrototype,
-      defenderPrototype,
-      getVeteranStatBonus(this.registry, attacker.veteranLevel),
-      getVeteranDefenseBonus(this.registry, defender.veteranLevel),
-      attackerTerrain,
-      defenderTerrain,
-      this.getImprovementBonus(defender.position),
-      getVeteranMoraleBonus(this.registry, defender.veteranLevel),
-      this.registry,
-      0,
-      attackModifier,
-      getCombatDefenseModifier(defenderFaction, defenderTerrain),
-      this.state.rngState,
-      0,
-      0,
-      0,
-      0,
-      1,
-      0,
-      isChargeAttack,
-    );
-
-    // Build the combat event (same logic as before, but state is NOT mutated yet)
-    const triggeredEffects: ReplayCombatEvent['breakdown']['triggeredEffects'] = [];
-
-    if (result.flankingBonus !== 0) {
-      triggeredEffects.push({
-        label: 'Flanking',
-        detail: `Attacked from the side (${(result.flankingBonus * 100).toFixed(0)}%)`,
-        category: 'positioning',
-      });
-    }
-    if (result.rearAttackBonus !== 0) {
-      triggeredEffects.push({
-        label: 'Rear Attack',
-        detail: `Struck from behind (${(result.rearAttackBonus * 100).toFixed(0)}%)`,
-        category: 'positioning',
-      });
-    }
-    if (result.roleModifier !== 0) {
-      const sign = result.roleModifier > 0 ? '+' : '';
-      triggeredEffects.push({
-        label: 'Role Effectiveness',
-        detail: `${attackerPrototype.derivedStats.role ?? 'unknown'} vs ${defenderPrototype.derivedStats.role ?? 'unknown'}: ${sign}${(result.roleModifier * 100).toFixed(0)}%`,
-        category: 'positioning',
-      });
-    }
-    if (result.weaponModifier !== 0) {
-      const sign = result.weaponModifier > 0 ? '+' : '';
-      triggeredEffects.push({
-        label: 'Weapon Effectiveness',
-        detail: `${sign}${(result.weaponModifier * 100).toFixed(0)}%`,
-        category: 'ability',
-      });
-    }
-    if (result.braceDefenseBonus !== 0) {
-      triggeredEffects.push({
-        label: 'Brace Defense',
-        detail: `Defender braced (+${(result.braceDefenseBonus * 100).toFixed(0)}%)`,
-        category: 'positioning',
-      });
-    }
-    if (result.ambushAttackBonus !== 0) {
-      triggeredEffects.push({
-        label: 'Ambush Attack',
-        detail: `+${(result.ambushAttackBonus * 100).toFixed(0)}%`,
-        category: 'positioning',
-      });
-    }
-    if (result.hiddenAttackBonus !== 0) {
-      triggeredEffects.push({
-        label: 'Hidden Attack',
-        detail: `+${(result.hiddenAttackBonus * 100).toFixed(0)}%`,
-        category: 'ability',
-      });
-    }
-
-    for (const signal of result.signals) {
-      if (signal.startsWith('synergy:')) {
-        triggeredEffects.push({ label: 'Synergy', detail: signal.replace('synergy:', ''), category: 'synergy' });
-      } else if (signal.startsWith('terrain:')) {
-        triggeredEffects.push({ label: 'Terrain', detail: signal.replace('terrain:', ''), category: 'positioning' });
-      } else if (signal.startsWith('charge:')) {
-        triggeredEffects.push({ label: 'Charge', detail: signal.replace('charge:', ''), category: 'ability' });
-      } else if (signal.startsWith('aftermath:')) {
-        triggeredEffects.push({ label: 'Aftermath', detail: signal.replace('aftermath:', ''), category: 'aftermath' });
-      }
-    }
-
+  private buildPendingCombat(preview: CombatActionPreview): PendingCombat {
     const combatEvent: ReplayCombatEvent = {
-      round: this.state.round,
-      attackerUnitId: attacker.id,
-      defenderUnitId: defender.id,
-      attackerFactionId: attacker.factionId,
-      defenderFactionId: defender.factionId,
-      attackerPrototypeName: attackerPrototype.name,
-      defenderPrototypeName: defenderPrototype.name,
-      attackerDamage: result.attackerDamage,
-      defenderDamage: result.defenderDamage,
-      attackerDestroyed: result.attackerDestroyed,
-      defenderDestroyed: result.defenderDestroyed,
-      attackerRouted: result.attackerRouted,
-      defenderRouted: result.defenderRouted,
-      attackerFled: result.attackerFled,
-      defenderFled: result.defenderFled,
-      summary: `${attackerPrototype.name} attacked ${defenderPrototype.name}`,
+      round: preview.round,
+      attackerUnitId: preview.attackerId,
+      defenderUnitId: preview.defenderId,
+      attackerFactionId: preview.attackerFactionId,
+      defenderFactionId: preview.defenderFactionId,
+      attackerPrototypeName: preview.attackerPrototypeName,
+      defenderPrototypeName: preview.defenderPrototypeName,
+      attackerDamage: preview.result.attackerDamage,
+      defenderDamage: preview.result.defenderDamage,
+      attackerDestroyed: preview.result.attackerDestroyed,
+      defenderDestroyed: preview.result.defenderDestroyed,
+      attackerRouted: preview.result.attackerRouted,
+      defenderRouted: preview.result.defenderRouted,
+      attackerFled: preview.result.attackerFled,
+      defenderFled: preview.result.defenderFled,
+      summary: `${preview.attackerPrototypeName} attacked ${preview.defenderPrototypeName}`,
       breakdown: {
         modifiers: {
-          flankingBonus: result.flankingBonus,
-          stealthAmbushBonus: 0,
-          rearAttackBonus: result.rearAttackBonus,
-          finalAttackStrength: result.attackStrength,
-          finalDefenseStrength: result.defenseStrength,
+          flankingBonus: preview.result.flankingBonus,
+          stealthAmbushBonus: preview.attackerWasStealthed ? 0.5 : 0,
+          rearAttackBonus: preview.result.rearAttackBonus,
+          finalAttackStrength: preview.result.attackStrength,
+          finalDefenseStrength: preview.result.defenseStrength,
         },
         outcome: {
-          attackerDamage: result.attackerDamage,
-          defenderDamage: result.defenderDamage,
+          attackerDamage: preview.result.attackerDamage,
+          defenderDamage: preview.result.defenderDamage,
         },
-        triggeredEffects,
+        triggeredEffects: preview.triggeredEffects,
       },
     };
 
-    return { attackerId, defenderId, result, combatEvent };
+    return {
+      attackerId: preview.attackerId,
+      defenderId: preview.defenderId,
+      preview,
+      result: preview.result,
+      combatEvent,
+    };
   }
 
   /**
@@ -699,123 +549,23 @@ export class GameSession {
    * Called after animation completes (human) or immediately (AI).
    */
   applyResolvedCombat(pending: PendingCombat): void {
-    const { attackerId, defenderId, result, combatEvent } = pending;
-    const attacker = this.state.units.get(attackerId);
-    const defender = this.state.units.get(defenderId);
-    // Units may have been removed between resolve and apply (edge case); guard
-    if (!attacker || !defender) return;
-
-    const nextUnits = new Map(this.state.units);
-    let nextAttacker: Unit = {
-      ...attacker,
-      hp: Math.max(0, attacker.hp - result.attackerDamage),
-      morale: Math.max(0, attacker.morale - result.attackerMoraleLoss),
-      routed: result.attackerRouted || result.attackerFled,
-      attacksRemaining: 0,
-      movesRemaining: 0,
-      status: 'spent' as const,
-    } as Unit;
-
-    // Hit and Run: if attacker survives and has the capability, auto-retreat 1 hex
-    const attackerPrototype = this.state.prototypes.get(attacker.prototypeId);
-    if (nextAttacker.hp > 0 && attackerPrototype) {
-      const attackerFaction = this.state.factions.get(attacker.factionId);
-      const attackerDoctrine = attackerFaction
-        ? resolveCapabilityDoctrine(this.state.research.get(attacker.factionId), attackerFaction)
-        : undefined;
-      const hitAndRunEligible =
-        attackerDoctrine?.universalHitAndRunEnabled === true
-        || (attackerDoctrine?.hitAndRunEnabled === true
-            && attackerPrototype.tags?.includes('cavalry') === true
-            && attackerPrototype.tags?.includes('skirmish') === true);
-      if (hitAndRunEligible) {
-        const retreatHex = findRetreatHex(nextAttacker, this.state);
-        if (retreatHex) {
-          nextAttacker = {
-            ...nextAttacker,
-            position: retreatHex,
-            status: 'ready',
-            movesRemaining: Math.max(0, nextAttacker.movesRemaining - 1),
-          };
-          this.feedback.hitAndRunRetreat = { unitId: attackerId, to: retreatHex };
-        }
-      }
-    }
-
-    // Learn-by-kill: check BEFORE promotion so chance is based on pre-combat veterancy
-    if (result.defenderDestroyed && !result.attackerDestroyed && nextAttacker.hp > 0) {
-      const learnResult = tryLearnFromKill(nextAttacker, defender, this.state, this.state.rngState);
-      nextAttacker = learnResult.unit;
-      if (learnResult.learned && learnResult.domainId) {
-        this.feedback.lastLearnedDomain = {
-          unitId: nextAttacker.id,
-          domainId: learnResult.domainId,
-        };
-        this.record('turn', `${learnResult.domainId} ability learned from ${defender.factionId}!`);
-      }
-    }
-
-    // Award XP for combat participation and try promotion (after learn roll)
-    if (nextAttacker.hp > 0) {
-      nextAttacker = awardCombatXP(nextAttacker, result.defenderDestroyed, !result.attackerDestroyed);
-      nextAttacker = tryPromoteUnit(nextAttacker, this.registry);
-    }
-
-    const nextDefender = {
-      ...defender,
-      hp: Math.max(0, defender.hp - result.defenderDamage),
-      morale: Math.max(0, defender.morale - result.defenderMoraleLoss),
-      routed: result.defenderRouted || result.defenderFled,
-      status: result.defenderDestroyed ? ('spent' as const) : defender.status,
-    };
-
-    if (nextAttacker.hp > 0) {
-      nextUnits.set(attackerId, nextAttacker);
-    } else {
-      nextUnits.delete(attackerId);
-    }
-
-    if (nextDefender.hp > 0) {
-      nextUnits.set(defenderId, nextDefender);
-    } else {
-      nextUnits.delete(defenderId);
-    }
-
-    this.state = {
-      ...this.state,
-      units: nextUnits,
-      factions: this.removeDeadUnitsFromFactions(nextUnits),
-      rngState: result.rngState,
-    };
-    const attackerFaction = this.state.factions.get(attacker.factionId);
-    const attackerDoctrine = attackerFaction
-      ? resolveCapabilityDoctrine(this.state.research.get(attacker.factionId), attackerFaction)
-      : undefined;
-    if (result.defenderFled && nextAttacker.hp > 0 && attackerDoctrine?.captureRetreatEnabled) {
-      const retreatCapture = attemptNonCombatCapture(
-        this.state,
-        attackerId,
-        defenderId,
-        this.registry,
-        0.15,
-        0.25,
-        0,
-        this.state.rngState,
-      );
-      this.state = retreatCapture.state;
-    }
-    this.state = applyCombatSignals(this.state, attacker.factionId, result.signals);
-    this.state = unlockHybridRecipes(this.state, attacker.factionId, this.registry);
-    this.state = this.refreshFogForAllFactions(this.state);
+    const { preview, combatEvent } = pending;
+    const applied = applyCombatAction(this.state, this.registry, preview);
+    this.state = this.refreshFogForAllFactions(applied.state);
     this.feedback.lastMove = null;
     this.feedback.lastTurnChange = null;
+    this.feedback.hitAndRunRetreat = applied.feedback.hitAndRunRetreat;
+    if (applied.feedback.lastLearnedDomain) {
+      this.feedback.lastLearnedDomain = applied.feedback.lastLearnedDomain;
+      this.record('turn', `${applied.feedback.lastLearnedDomain.domainId} ability learned from ${preview.defenderFactionId}!`);
+    }
 
     // Keep last 20 events, newest first
     this.feedback.liveCombatEvents = [combatEvent, ...this.feedback.liveCombatEvents].slice(0, 20);
 
     this.record(
       'combat',
-      `${combatEvent.attackerPrototypeName} attacked ${combatEvent.defenderPrototypeName}: dealt ${result.defenderDamage}, took ${result.attackerDamage}.`,
+      `${combatEvent.attackerPrototypeName} attacked ${combatEvent.defenderPrototypeName}: dealt ${preview.result.defenderDamage}, took ${preview.result.attackerDamage}.`,
     );
   }
 
@@ -828,6 +578,10 @@ export class GameSession {
   }
 
   dequeueAiCombat(): PendingCombat | null {
+    if (this._aiCombatQueue.length === 0) {
+      this.runAiUntilHumanTurn();
+    }
+
     const next = this._aiCombatQueue.shift() ?? null;
     if (next) {
       this._pendingCombat = next;
@@ -839,46 +593,12 @@ export class GameSession {
     return this._aiCombatQueue.length;
   }
 
-  private getImprovementBonus(position: { q: number; r: number }) {
-    // Check improvements first (e.g. field forts)
-    for (const improvement of this.state.improvements.values()) {
-      if (improvement.position.q === position.q && improvement.position.r === position.r) {
-        return improvement.defenseBonus ?? 0;
-      }
-    }
-    // Cities give +100% defense
-    for (const [, city] of this.state.cities) {
-      if (city.position.q === position.q && city.position.r === position.r) {
-        return 1;
-      }
-    }
-    // Villages give +50% defense
-    for (const [, village] of this.state.villages) {
-      if (village.position.q === position.q && village.position.r === position.r) {
-        return 0.5;
-      }
-    }
-
-    return 0;
-  }
-
   private refreshFogForAllFactions(state: GameState) {
     let nextState = state;
     for (const fid of nextState.factions.keys()) {
       nextState = updateFogState(nextState, fid);
     }
     return nextState;
-  }
-
-  private removeDeadUnitsFromFactions(nextUnits: GameState['units']) {
-    const nextFactions = new Map(this.state.factions);
-    for (const [factionId, faction] of nextFactions.entries()) {
-      nextFactions.set(factionId, {
-        ...faction,
-        unitIds: faction.unitIds.filter((unitId) => nextUnits.has(unitId as UnitId)),
-      });
-    }
-    return nextFactions;
   }
 
   private getPrototypeName(prototypeId: string) {
@@ -911,54 +631,65 @@ export class GameSession {
         break;
       }
 
-      this.runAiTurn(this.state.activeFactionId);
+      if (!this.processAiTurnUntilBoundary(this.state.activeFactionId)) {
+        break;
+      }
       safety += 1;
     }
   }
 
-  private runAiTurn(factionId: string) {
+  private processAiTurnUntilBoundary(factionId: string) {
     if (this.state.activeFactionId !== factionId) {
-      return;
+      return false;
     }
 
-    const strategy = computeFactionStrategy(this.state, factionId as never, this.registry, this.difficulty);
-    this.state = {
-      ...this.state,
-      factionStrategies: new Map(this.state.factionStrategies).set(factionId as never, strategy),
-    };
-    const fortsBuiltThisTurn = new Set<string>();
+    if (!this._aiTurnContext || this._aiTurnContext.factionId !== factionId) {
+      const strategy = computeFactionStrategy(this.state, factionId as never, this.registry, this.difficulty);
+      this.state = {
+        ...this.state,
+        factionStrategies: new Map(this.state.factionStrategies).set(factionId as never, strategy),
+      };
+      this._aiTurnContext = {
+        factionId,
+        unitIds: this.getAiUnitIds(factionId),
+        index: 0,
+        fortsBuiltThisTurn: new Set<string>(),
+      };
+    }
 
-    for (const unitId of this.getAiUnitIds(factionId)) {
+    while (this._aiTurnContext && this._aiTurnContext.index < this._aiTurnContext.unitIds.length) {
+      const unitId = this._aiTurnContext.unitIds[this._aiTurnContext.index] as UnitId;
+      this._aiTurnContext.index += 1;
+
       const unit = this.state.units.get(unitId as never);
       if (!unit || unit.hp <= 0 || unit.factionId !== factionId || unit.status !== 'ready') {
         continue;
       }
 
-      if (this.tryAiAttack(unit.id, strategy)) {
-        continue;
-      }
+      const activation = activateAiUnit(this.state, unitId, this.registry, {
+        combatMode: 'preview',
+        fortsBuiltThisRound: this._aiTurnContext.fortsBuiltThisTurn as Set<never>,
+      });
+      this.state = activation.state;
 
-      if (this.tryAiBuildFort(unit.id, strategy, fortsBuiltThisTurn)) {
-        continue;
-      }
-
-      const moved = this.tryAiMove(unit.id, strategy);
-      if (moved) {
-        this.tryAiAttack(unit.id, strategy);
+      if (activation.pendingCombat) {
+        this._aiCombatQueue.push(this.buildPendingCombat(activation.pendingCombat));
+        return false;
       }
     }
 
+    this._aiTurnContext = null;
     this.feedback.lastMove = null;
-    this.resolveFactionEconomyAndProduction(factionId);
-    this.resolveFactionSiege(factionId);
-    this.state = applySupplyDeficitPenalties(this.state, factionId as never, this.registry);
-    this.state = applyHealingForFaction(this.state, factionId as never, this.registry);
+    this.state = runFactionPhase(this.state, factionId as never, this.registry, {
+      difficulty: this.difficulty,
+    });
     this.state = this.refreshFogForAllFactions(advanceTurn(this.state));
     this.feedback.lastActiveFactionId = this.state.activeFactionId;
     this.feedback.lastTurnChange = this.state.activeFactionId
       ? { factionId: this.state.activeFactionId }
       : null;
     this.record('turn', `Turn passed to ${this.getActiveFactionName()}.`);
+    return true;
   }
 
   private setCityProduction(cityId: string, prototypeId: string) {
@@ -1164,227 +895,81 @@ export class GameSession {
     this.record('turn', `${faction.name} founded ${cityName} at ${unit.position.q},${unit.position.r}.`);
   }
 
-  private resolveFactionEconomyAndProduction(factionId: string) {
-    this.resolveFactionResearch(factionId);
-    const spentVillageIds: string[] = [];
-    this.feedback.lastSettlerVillageSpend = null;
-
-    // Advance capture ramp timers before deriving income
-    this.state = advanceCaptureTimers(this.state, factionId as never);
-
-    const economy = deriveResourceIncome(this.state, factionId as never, this.registry);
-    let nextState: GameState = {
-      ...this.state,
-      economy: new Map(this.state.economy).set(factionId as never, economy),
-    };
-
-    const cityIds = getFactionCityIds(nextState, factionId as never);
-    const cityCount = cityIds.length;
-    if (cityCount === 0) {
-      this.state = nextState;
+  private applyPrepareAbility(unitId: string, ability: 'brace' | 'ambush') {
+    const unit = this.state.units.get(unitId as UnitId);
+    if (!unit || !this.state.activeFactionId || unit.factionId !== this.state.activeFactionId) {
       return;
     }
 
-    const cityProductionIncome = economy.productionPool / cityCount;
-    for (const cityId of cityIds) {
-      let city = nextState.cities.get(cityId);
-      if (!city || city.besieged) {
-        continue;
-      }
-
-      // Auto-queue production for AI cities with idle queues
-      if (!city.currentProduction && city.productionQueue.length === 0) {
-        const existingStrategy = this.state.factionStrategies.get(factionId as never);
-        if (existingStrategy) {
-          const choice = chooseStrategicProduction(
-            nextState,
-            factionId as never,
-            existingStrategy,
-            this.registry,
-            this.difficulty,
-          );
-          if (choice) {
-            city = queueUnit(city, choice.prototypeId, choice.chassisId, choice.cost, choice.costType);
-            this.record('turn', `${city.name} queued ${choice.prototypeId} (${choice.reason})`);
-            const cities = new Map(nextState.cities);
-            cities.set(cityId, city);
-            nextState = { ...nextState, cities };
-          }
-        }
-      }
-
-      if (!city.currentProduction) {
-        continue;
-      }
-
-      let updatedCity = advanceProduction(city, cityProductionIncome);
-      let updatedEconomy = nextState.economy.get(factionId as never) ?? economy;
-      if (canCompleteCurrentProduction(nextState, cityId as never, this.registry)) {
-        const spentProduction = city.currentProduction?.costType === 'villages'
-          ? 0
-          : city.currentProduction?.cost ?? 0;
-        const spentVillageIdsForCity = city.currentProduction?.costType === 'villages'
-          ? getNearestFactionVillageIds(nextState, city.factionId, city.position, city.currentProduction.cost)
-          : [];
-        const cities = new Map(nextState.cities);
-        cities.set(cityId, updatedCity);
-        nextState = { ...nextState, cities };
-        nextState = completeProduction(nextState, cityId as never, this.registry);
-        if (spentVillageIdsForCity.length > 0) {
-          spentVillageIds.push(...spentVillageIdsForCity);
-        }
-        updatedEconomy = {
-          ...updatedEconomy,
-          productionPool: Math.max(0, updatedEconomy.productionPool - spentProduction),
-        };
-      } else {
-        const cities = new Map(nextState.cities);
-        cities.set(cityId, updatedCity);
-        nextState = { ...nextState, cities };
-      }
-
-      nextState = {
-        ...nextState,
-        economy: new Map(nextState.economy).set(factionId as never, updatedEconomy),
-      };
+    const faction = this.state.factions.get(unit.factionId);
+    const prototype = this.state.prototypes.get(unit.prototypeId as never);
+    if (!faction || !prototype || !this.isHumanControlledFaction(unit.factionId) || unit.status !== 'ready' || unit.hp <= 0) {
+      return;
     }
 
-    nextState = evaluateAndSpawnVillage(nextState, factionId as never, this.registry);
-    this.state = nextState;
-    if (spentVillageIds.length > 0) {
-      this.feedback.lastSettlerVillageSpend = {
-        factionId,
-        villageIds: [...new Set(spentVillageIds)],
-      };
+    const doctrine = resolveCapabilityDoctrine(this.state.research.get(unit.factionId), faction);
+    const canPrepare = ability === 'brace'
+      ? (canUseBrace(prototype) || doctrine.fortressTranscendenceEnabled) && hasAdjacentEnemy(this.state, unit)
+      : canUseAmbush(prototype, getTerrainAt(this.state, unit.position)) && !hasAdjacentEnemy(this.state, unit);
+    if (!canPrepare) {
+      return;
     }
+
+    const units = new Map(this.state.units);
+    units.set(unit.id, prepareAbility(unit, ability, this.state.round));
+    this.state = { ...this.state, units };
+    this.feedback.lastMove = null;
+    this.feedback.lastTurnChange = null;
+    this.record('turn', `${this.getPrototypeName(unit.prototypeId)} prepared ${ability}.`);
   }
 
-  private resolveFactionSiege(factionId: string) {
-    let nextState = this.state;
-    let siegeCities = new Map(nextState.cities);
-
-    for (const [cityId, city] of siegeCities) {
-      if (city.factionId !== factionId) {
-        continue;
-      }
-
-      if (city.besieged) {
-        if (isEncirclementBroken(city, nextState)) {
-          siegeCities.set(cityId, { ...city, besieged: false, turnsUnderSiege: 0 });
-          this.record('turn', `${city.name} siege broken.`);
-          continue;
-        }
-
-        const degradedCity = degradeWalls(city, city.factionId === 'coral_people');
-        const updatedSiegeCity = {
-          ...degradedCity,
-          turnsUnderSiege: city.turnsUnderSiege + 1,
-        };
-        siegeCities.set(cityId, updatedSiegeCity);
-
-        if (isCityVulnerable(updatedSiegeCity, nextState)) {
-          const capturingFaction = getCapturingFaction(updatedSiegeCity, nextState);
-          if (capturingFaction) {
-            nextState = captureCity(updatedSiegeCity, capturingFaction, nextState);
-            siegeCities = new Map(nextState.cities);
-            this.record('turn', `${city.name} captured by ${capturingFaction}.`);
-            continue;
-          }
-        }
-
-        const warExhaustion = nextState.warExhaustion.get(factionId as never);
-        if (warExhaustion) {
-          nextState = {
-            ...nextState,
-            warExhaustion: new Map(nextState.warExhaustion).set(
-              factionId as never,
-              addExhaustion(warExhaustion, EXHAUSTION_CONFIG.BESIEGED_CITY_PER_TURN),
-            ),
-          };
-        }
-
-        continue;
-      }
-
-      const repairedCity = repairWalls(city);
-      if (repairedCity.wallHP !== city.wallHP) {
-        siegeCities.set(cityId, repairedCity);
-      }
-
-      if (isCityEncircled(city, nextState)) {
-        siegeCities.set(cityId, {
-          ...(siegeCities.get(cityId) ?? city),
-          besieged: true,
-          turnsUnderSiege: 1,
-        });
-        this.record('turn', `${city.name} is now besieged.`);
-      }
+  private applyBoardTransport(unitId: string, transportId: string) {
+    const unit = this.state.units.get(unitId as UnitId);
+    const transport = this.state.units.get(transportId as UnitId);
+    if (!unit || !transport || !this.state.activeFactionId || unit.factionId !== this.state.activeFactionId || transport.factionId !== this.state.activeFactionId) {
+      return;
     }
 
+    if (!canBoardTransport(this.state, unit.id, transport.id, this.registry, this.state.transportMap)) {
+      return;
+    }
+
+    const result = boardTransport(this.state, unit.id, transport.id, this.state.transportMap);
     this.state = {
-      ...nextState,
-      cities: siegeCities,
+      ...result.state,
+      transportMap: result.transportMap,
     };
+    this.feedback.lastMove = null;
+    this.feedback.lastTurnChange = null;
+    this.record('turn', `${this.getPrototypeName(unit.prototypeId)} boarded ${this.getPrototypeName(transport.prototypeId)}.`);
   }
 
-  private resolveFactionResearch(factionId: string) {
-    const faction = this.state.factions.get(factionId as never);
-    let research = this.state.research.get(factionId as never);
-    if (!faction || !research) {
+  private applyDisembarkUnit(unitId: string, transportId: string, destination: { q: number; r: number }) {
+    const unit = this.state.units.get(unitId as UnitId);
+    if (!unit || !this.state.activeFactionId || unit.factionId !== this.state.activeFactionId) {
       return;
     }
 
-    // Auto-start research if idle — uses same AI decision-making as the simulation
-    if (!research.activeNodeId) {
-      const strategy = computeFactionStrategy(this.state, factionId as never, this.registry, this.difficulty);
-      const decision = chooseStrategicResearch(this.state, factionId as never, strategy, this.registry);
-      if (decision) {
-        const domainId = decision.nodeId.split('_t')[0];
-        const nodeDef = this.registry.getResearchNode(domainId, decision.nodeId);
-        if (nodeDef) {
-          research = startResearch(
-            research,
-            decision.nodeId as never,
-            nodeDef.prerequisites,
-            faction.learnedDomains,
-          );
-          this.state.research.set(factionId as never, research);
-        }
-      }
-    }
-
-    if (!research.activeNodeId) {
+    const transportState = getUnitTransport(unit.id, this.state.transportMap);
+    if (!transportState || transportState.transportId !== transportId) {
       return;
     }
 
-    const domainId = research.activeNodeId.split('_t')[0];
-    const nodeDef = this.registry.getResearchNode(domainId, research.activeNodeId);
-    if (!nodeDef) {
-      return;
-    }
-
-    // Use simplified base rate (researchPerTurn), no capability bonus
-    const updatedResearch = addResearchProgress(
-      research,
-      nodeDef.xpCost,
-      research.researchPerTurn,
+    const result = disembarkUnit(
+      this.state,
+      transportId as UnitId,
+      unit.id,
+      destination,
+      this.registry,
+      this.state.transportMap,
     );
-
     this.state = {
-      ...this.state,
-      research: new Map(this.state.research).set(factionId as never, updatedResearch),
+      ...result.state,
+      transportMap: result.transportMap,
     };
-
-    if (updatedResearch.activeNodeId) {
-      return;
-    }
-
-    this.feedback.lastResearchCompletion = {
-      nodeId: nodeDef.id,
-      nodeName: nodeDef.name,
-      tier: nodeDef.tier ?? 1,
-    };
-    this.state = unlockHybridRecipes(this.state, factionId as never, this.registry);
+    this.feedback.lastMove = null;
+    this.feedback.lastTurnChange = null;
+    this.record('turn', `${this.getPrototypeName(unit.prototypeId)} disembarked to ${destination.q},${destination.r}.`);
   }
 
   private getPrototypeCost(prototypeId: string) {
@@ -1426,273 +1011,6 @@ export class GameSession {
       .map((unit) => unit.id);
   }
 
-  private tryAiAttack(unitId: string, strategy: FactionStrategy) {
-    const target = this.chooseAiAttackTarget(unitId, strategy);
-    if (!target) {
-      return false;
-    }
-
-    const pending = this.resolveAttack(unitId as UnitId, target.unitId as UnitId);
-    if (pending) {
-      // Queue for visual display instead of immediately applying
-      this._aiCombatQueue.push(pending);
-      this._pendingCombat = null;
-    }
-    return !!pending;
-  }
-
-  private tryAiMove(unitId: string, strategy: FactionStrategy) {
-    const move = this.chooseAiMove(unitId, strategy);
-    if (!move) {
-      return false;
-    }
-
-    this.applyMove(unitId as UnitId, { q: move.q, r: move.r });
-    return true;
-  }
-
-  private tryAiBuildFort(unitId: string, strategy: FactionStrategy, fortsBuiltThisTurn: Set<string>) {
-    const unit = this.state.units.get(unitId as never);
-    if (!unit || fortsBuiltThisTurn.has(unit.factionId)) {
-      return false;
-    }
-
-    const faction = this.state.factions.get(unit.factionId);
-    if (!faction || faction.id !== 'hill_clan') {
-      return false;
-    }
-
-    const fortEligibility = this.getFortBuildEligibility(unit);
-    if (!fortEligibility.canBuild) {
-      return false;
-    }
-
-    const intent = getUnitIntent(strategy, unit.id as never);
-    const nearbyPressure = this.getNearbyUnitPressure(unit.factionId, unit.position, unit.id);
-    const nearbyFriendlySupport = this.countFriendlyUnitsNearHex(unit.factionId, unit.position, unit.id, 2);
-    const terrain = this.state.map?.tiles.get(hexToKey(unit.position))?.terrain ?? 'plains';
-    const nearestCity = getNearestFriendlyCity(this.state, unit.factionId, unit.position);
-    const cityDistance = nearestCity ? hexDistance(unit.position, nearestCity.position) : 99;
-    const nearbyFortCount = this.countFortificationsNearHex(unit.position, 2);
-    const isDefensiveAssignment = intent?.assignment === 'defender' || intent?.assignment === 'recovery' || intent?.assignment === 'reserve';
-    const underPressure = nearbyPressure.nearbyEnemies > 0;
-    const worthwhile =
-      nearbyFriendlySupport > 0
-      && nearbyFortCount === 0
-      && (
-        underPressure
-        || (isDefensiveAssignment && terrain === 'hill' && cityDistance <= 3)
-      );
-
-    if (!worthwhile) {
-      return false;
-    }
-
-    this.state = this.buildFortAtUnit(unit, fortEligibility.defenseBonus);
-    fortsBuiltThisTurn.add(unit.factionId);
-    return true;
-  }
-
-  private chooseAiAttackTarget(unitId: string, strategy: FactionStrategy) {
-    const unit = this.state.units.get(unitId as never);
-    const prototype = unit ? this.state.prototypes.get(unit.prototypeId as never) : null;
-    if (!unit || !prototype) {
-      return null;
-    }
-
-    let bestTarget: AttackTargetView | null = null;
-    let bestScore = -Infinity;
-    const intent = getUnitIntent(strategy, unit.id as never);
-    const nearestFriendlyDist = this.getNearestFriendlyDistanceToHex(unit.factionId, unit.position, unit.id);
-    const anchorDistance = intent ? hexDistance(unit.position, intent.anchor) : 0;
-    const nearbyPressure = this.getNearbyUnitPressure(unit.factionId, unit.position, unit.id);
-    const retreatRisk = computeRetreatRisk({
-      hpRatio: unit.hp / Math.max(1, unit.maxHp),
-      nearbyEnemies: nearbyPressure.nearbyEnemies,
-      nearbyFriendlies: nearbyPressure.nearbyFriendlies,
-      nearestFriendlyDistance: nearestFriendlyDist,
-      anchorDistance,
-    });
-
-    for (const target of this.getAttackTargets(unitId)) {
-      const targetUnit = this.state.units.get(target.unitId as never);
-      const targetPrototype = targetUnit ? this.state.prototypes.get(targetUnit.prototypeId as never) : null;
-      if (!targetUnit || !targetPrototype) {
-        continue;
-      }
-
-      const targetChassis = this.registry.getChassis(targetPrototype.chassisId);
-      const targetMovementClass = targetChassis?.movementClass ?? 'infantry';
-      const attackerWeaponTags = prototype.componentIds.flatMap((componentId) => {
-        const component = this.registry.getComponent(componentId);
-        return component?.slotType === 'weapon' ? (component.tags ?? []) : [];
-      });
-
-      const strategicScore = scoreStrategicTarget({
-        isFocusTarget: strategy.focusTargetUnitIds.includes(targetUnit.id),
-        isAdjacentToPrimaryObjectiveCity: Boolean(
-          strategy.primaryCityObjectiveId
-          && Array.from(this.state.cities.values()).some(
-            (city) =>
-              city.id === strategy.primaryCityObjectiveId
-              && city.factionId !== unit.factionId
-              && hexDistance(city.position, targetUnit.position) <= 1,
-          ),
-        ),
-        isRouted: targetUnit.routed,
-        hpRatio: targetUnit.hp / Math.max(1, targetUnit.maxHp),
-        attacksFromThreatenedCityHex: isThreatenedCityHex(this.state, strategy, unit.position),
-        finishOffPriorityTarget: strategy.absorptionGoal.targetFactionId === targetUnit.factionId
-          && strategy.absorptionGoal.finishOffPriority,
-        isolatedFromAnchor: Boolean(intent && nearestFriendlyDist > 3 && anchorDistance > 4),
-      });
-
-      const attackingIntoFort = this.isFortificationHex(targetUnit.position);
-      const friendlySupport = this.countFriendlyUnitsNearHex(unit.factionId, targetUnit.position, unit.id, 2);
-      const shouldAvoidFortAttack =
-        attackingIntoFort
-        && friendlySupport === 0
-        && targetUnit.hp / Math.max(1, targetUnit.maxHp) > 0.35
-        && !targetUnit.routed;
-      if (shouldAvoidFortAttack) {
-        continue;
-      }
-
-      const score = scoreAttackCandidate({
-        roleEffectiveness: getRoleEffectiveness(prototype.derivedStats.role, targetPrototype.derivedStats.role),
-        weaponEffectiveness: getWeaponEffectiveness(attackerWeaponTags, targetMovementClass),
-        reverseRoleEffectiveness: getRoleEffectiveness(targetPrototype.derivedStats.role, prototype.derivedStats.role),
-        targetHpRatio: targetUnit.hp / Math.max(1, targetUnit.maxHp),
-        targetRouted: targetUnit.routed,
-        strategicTargetScore: strategicScore,
-        extraScore: attackingIntoFort
-          ? (friendlySupport > 0 ? -4 : -18)
-          : 0,
-      });
-
-      if (!shouldEngageTarget(strategy.personality, { attackScore: score, retreatRisk })) {
-        continue;
-      }
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestTarget = target;
-      }
-    }
-
-    return bestTarget;
-  }
-
-  private chooseAiMove(unitId: string, strategy: FactionStrategy) {
-    const unit = this.state.units.get(unitId as never);
-    const intent = unit ? this.getAiIntent(strategy, unitId, unit.position) : null;
-    if (!unit || !intent) {
-      return null;
-    }
-
-    const originSupport = getNearbySupportScore(this.state, unit.factionId, unit.position);
-    const waypoint = this.resolveAiWaypoint(intent);
-    const originWaypointDistance = hexDistance(unit.position, waypoint);
-    const originAnchorDistance = hexDistance(unit.position, intent.anchor);
-    let bestMove: ReachableHexView | null = null;
-    let bestScore = -Infinity;
-
-    for (const move of this.buildReachableMoves(unit.id)) {
-      const waypointDistance = hexDistance(move, waypoint);
-      const supportScore = getNearbySupportScore(this.state, unit.factionId, move);
-      const terrainScore = scoreStrategicTerrain(this.state, unit.factionId, move);
-      const anchorDistance = hexDistance(move, intent.anchor);
-      const nearestCity = getNearestFriendlyCity(this.state, unit.factionId, move);
-      const cityDistance = nearestCity ? hexDistance(move, nearestCity.position) : 99;
-      const fortOccupyBonus = this.getFortOccupyMoveBonus(move, intent.assignment);
-      const score = scoreMoveCandidate({
-        assignment: intent.assignment,
-        originWaypointDistance,
-        waypointDistance,
-        terrainScore: terrainScore + fortOccupyBonus,
-        supportScore,
-        originSupport,
-        originAnchorDistance,
-        anchorDistance,
-        cityDistance,
-        unsafeAfterMove: this.wouldBeUnsafeAfterMove(unit, move, intent),
-      });
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestMove = move;
-      }
-    }
-
-    return bestScore > -Infinity ? bestMove : null;
-  }
-
-  private getAiIntent(strategy: FactionStrategy, unitId: string, fallbackHex: { q: number; r: number }): UnitStrategicIntent {
-    const unit = this.state.units.get(unitId as never);
-    const fallbackCity = unit ? getNearestFriendlyCity(this.state, unit.factionId, fallbackHex) : null;
-    const fallbackWaypoint = fallbackCity?.position ?? fallbackHex;
-
-    return getUnitIntent(strategy, unitId as never) ?? {
-      assignment: 'reserve',
-      waypointKind: 'friendly_city',
-      waypoint: fallbackWaypoint,
-      anchor: fallbackWaypoint,
-      isolationScore: 0,
-      isolated: false,
-      reason: 'fallback movement toward the nearest friendly city',
-    };
-  }
-
-  private resolveAiWaypoint(intent: UnitStrategicIntent) {
-    if (intent.objectiveUnitId) {
-      const liveTarget = this.state.units.get(intent.objectiveUnitId as never);
-      if (liveTarget && liveTarget.hp > 0) {
-        return liveTarget.position;
-      }
-    }
-
-    if (intent.objectiveCityId) {
-      const city = this.state.cities.get(intent.objectiveCityId as never);
-      if (city) {
-        return city.position;
-      }
-    }
-
-    return intent.waypoint;
-  }
-
-  private getNearestFriendlyDistanceToHex(factionId: string, hex: { q: number; r: number }, excludedUnitId: string) {
-    let nearest = Infinity;
-    for (const unit of this.state.units.values()) {
-      if (unit.factionId !== factionId || unit.hp <= 0 || unit.id === excludedUnitId) {
-        continue;
-      }
-
-      nearest = Math.min(nearest, hexDistance(unit.position, hex));
-    }
-
-    return nearest === Infinity ? 99 : nearest;
-  }
-
-  private getNearbyUnitPressure(factionId: string, hex: { q: number; r: number }, excludedUnitId: string) {
-    let nearbyEnemies = 0;
-    let nearbyFriendlies = 0;
-    for (const unit of this.state.units.values()) {
-      if (unit.hp <= 0 || unit.id === excludedUnitId) {
-        continue;
-      }
-      if (hexDistance(hex, unit.position) > 2) {
-        continue;
-      }
-      if (unit.factionId === factionId) {
-        nearbyFriendlies += 1;
-      } else {
-        nearbyEnemies += 1;
-      }
-    }
-    return { nearbyEnemies, nearbyFriendlies };
-  }
-
   private getImprovementAtHex(position: { q: number; r: number }) {
     for (const improvement of this.state.improvements.values()) {
       if (improvement.position.q === position.q && improvement.position.r === position.r) {
@@ -1705,48 +1023,6 @@ export class GameSession {
 
   private isFortificationHex(position: { q: number; r: number }) {
     return this.getImprovementAtHex(position)?.type === 'fortification';
-  }
-
-  private countFriendlyUnitsNearHex(factionId: string, hex: { q: number; r: number }, excludedUnitId: string, radius: number) {
-    let count = 0;
-
-    for (const unit of this.state.units.values()) {
-      if (unit.id === excludedUnitId || unit.hp <= 0 || unit.factionId !== factionId) {
-        continue;
-      }
-      if (hexDistance(hex, unit.position) <= radius) {
-        count += 1;
-      }
-    }
-
-    return count;
-  }
-
-  private countFortificationsNearHex(hex: { q: number; r: number }, radius: number) {
-    let count = 0;
-
-    for (const improvement of this.state.improvements.values()) {
-      if (improvement.type !== 'fortification') {
-        continue;
-      }
-      if (hexDistance(hex, improvement.position) <= radius) {
-        count += 1;
-      }
-    }
-
-    return count;
-  }
-
-  private getFortOccupyMoveBonus(
-    move: { q: number; r: number },
-    assignment: UnitStrategicIntent['assignment'],
-  ) {
-    if (!this.isFortificationHex(move)) {
-      return 0;
-    }
-
-    const isDefensiveAssignment = assignment === 'defender' || assignment === 'recovery' || assignment === 'reserve';
-    return isDefensiveAssignment ? 8 : 4;
   }
 
   private getFortBuildEligibility(unit: Unit) {
@@ -1807,30 +1083,6 @@ export class GameSession {
       improvements,
       units,
     };
-  }
-
-  private wouldBeUnsafeAfterMove(
-    unit: Unit,
-    move: { q: number; r: number },
-    intent: UnitStrategicIntent,
-  ) {
-    let nearestFriendly = Infinity;
-    let nearbyEnemies = 0;
-
-    for (const other of this.state.units.values()) {
-      if (other.id === unit.id || other.hp <= 0) {
-        continue;
-      }
-
-      const distance = hexDistance(move, other.position);
-      if (other.factionId === unit.factionId) {
-        nearestFriendly = Math.min(nearestFriendly, distance);
-      } else if (distance <= 2) {
-        nearbyEnemies += 1;
-      }
-    }
-
-    return nearestFriendly > 3 && hexDistance(move, intent.anchor) > 4 && nearbyEnemies > 0;
   }
 
   private record(kind: SessionEvent['kind'], message: string) {

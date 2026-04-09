@@ -9,6 +9,8 @@ import {
   getCitySiteBonuses,
   getSettlementOccupancyBlocker,
 } from '../../../../src/systems/citySiteSystem.js';
+import { canUseAmbush, canUseBrace, getTerrainAt, hasAdjacentEnemy } from '../../../../src/systems/abilitySystem.js';
+import { resolveCapabilityDoctrine } from '../../../../src/systems/capabilityDoctrine.js';
 import { deriveResourceIncome, getCaptureRampMultiplier, getSupplyDeficit } from '../../../../src/systems/economySystem.js';
 import { getValidMoves } from '../../../../src/systems/movementSystem.js';
 import {
@@ -16,6 +18,7 @@ import {
 } from '../../../../src/systems/researchSystem.js';
 import { getDomainProgression } from '../../../../src/systems/domainProgression.js';
 import { getHexOwner } from '../../../../src/systems/territorySystem.js';
+import { canBoardTransport, getUnitTransport, getValidDisembarkHexes } from '../../../../src/systems/transportSystem.js';
 import { calculateProductionPenalty, calculateMoralePenalty } from '../../../../src/systems/warExhaustionSystem.js';
 import { getVillageSpawnReadinessWithRegistry } from '../../../../src/systems/villageSystem.js';
 import { getFactionCityIds } from '../../../../src/systems/factionOwnershipSystem.js';
@@ -291,6 +294,27 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
         && unit.hp > 0
         && ((moveCounts.get(unit.id) ?? 0) > 0 || (attackCounts.get(unit.id) ?? 0) > 0);
       const faction = state.factions.get(unit.factionId);
+      const factionDoctrine = faction
+        ? resolveCapabilityDoctrine(state.research.get(unit.factionId as never), faction)
+        : undefined;
+      const unitTransport = getUnitTransport(unit.id, state.transportMap);
+      const boardableTransportIds = unit.factionId === state.activeFactionId && unit.hp > 0
+        ? Array.from(state.units.values())
+          .filter((candidate) => candidate.factionId === unit.factionId && candidate.id !== unit.id)
+          .filter((candidate) => canBoardTransport(state, unit.id, candidate.id, source.registry, state.transportMap))
+          .map((candidate) => candidate.id)
+        : [];
+      const validDisembarkHexes = unitTransport
+        ? getValidDisembarkHexes(state, unitTransport.transportId, source.registry, state.transportMap)
+        : [];
+      const canBrace = !!prototype
+        && canAct
+        && (canUseBrace(prototype) || factionDoctrine?.fortressTranscendenceEnabled === true)
+        && hasAdjacentEnemy(state, unit);
+      const canAmbush = !!prototype
+        && canAct
+        && canUseAmbush(prototype, getTerrainAt(state, unit.position))
+        && !hasAdjacentEnemy(state, unit);
       const baseDefense = prototype?.derivedStats.defense ?? 0;
       // Compute effective defense including terrain, improvements, cities, villages
       const tile = state.map?.tiles.get(`${unit.position.q},${unit.position.r}`);
@@ -356,6 +380,12 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
         routed: unit.routed || undefined,
         preparedAbility: unit.preparedAbility,
         isSettler: prototype?.tags?.includes('settler') || undefined,
+        canBrace: canBrace || undefined,
+        canAmbush: canAmbush || undefined,
+        isEmbarked: unitTransport !== undefined || undefined,
+        transportId: unitTransport?.transportId ?? null,
+        boardableTransportIds: boardableTransportIds.length > 0 ? boardableTransportIds : undefined,
+        validDisembarkHexes: validDisembarkHexes.length > 0 ? validDisembarkHexes : undefined,
       };
     }),
     cities: Array.from(state.cities.values()).map((city) => ({

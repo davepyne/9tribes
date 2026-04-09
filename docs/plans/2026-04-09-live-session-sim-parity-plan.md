@@ -440,3 +440,14 @@ npm --prefix web run build
 - Use the parity tests to prove the current divergence before changing rules.
 - Preserve pending-combat animation semantics while replacing the live combat rule path.
 - If time is limited, complete Phases 0 through 2 before Phase 3. Those phases remove the highest-risk rule divergence first.
+
+## Completed Work
+
+### 2026-04-09
+
+- Phase 0 landed with a new `tests/liveSessionParity.test.ts` harness. It compares targeted live-session state slices against shared faction-phase and combat entry points instead of full-state equality.
+- Phase 1 is now functionally complete for application parity. `src/systems/combatActionSystem.ts` owns the shared combat apply path for both live play and sim activation, and gained a shared preview-construction helper plus combat-record / absorption bookkeeping. The sim still computes its richer pre-apply combat modifiers in `warEcologySimulation.ts`, but it no longer owns a separate full post-combat mutation branch.
+- Phase 2 landed via `src/systems/factionPhaseSystem.ts`, with live end-turn and AI end-turn upkeep routed through the shared faction-phase runner rather than the old `GameSession` upkeep fork.
+- Phase 4 landed for the live action surface: `prepare_ability`, `board_transport`, and `disembark_unit` are wired through `GameAction`, `GameSession`, `GameController`, `ContextInspector`, and world-view model affordances. Coverage was added for brace, ambush, boarding, disembark, and transport/disembark view-model exposure.
+- Phase 3 is fully complete. `src/systems/unitActivationSystem.ts` now owns the extracted AI activation logic itself, including target selection, strategic movement, transport-aware movement, fort / dug-in decisions, and the shared `activateUnit(...)` entrypoint. `GameSession` AI resumes from that shared activation module instead of the old `tryAiAttack` / `tryAiMove` / `tryAiBuildFort` loop, and `warEcologySimulation.ts` now imports the extracted activation runner rather than housing a second in-file copy.
+- Phase 5 is complete. The legacy commented sim unit-action loop and dead helper scaffolding were deleted from `warEcologySimulation.ts`, leaving only the intentional sim-local pre-apply combat modifier / trace assembly around the shared combat module. Validation coverage was extended for shared live-vs-extracted AI behavior, including ranged target choice, city-pressure movement, fort-build behavior, and transport-aware movement.

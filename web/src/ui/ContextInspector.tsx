@@ -12,6 +12,9 @@ type ContextInspectorProps = {
   onCancelCityProduction: (cityId: string) => void;
   onRemoveFromQueue: (cityId: string, queueIndex: number) => void;
   onSetTargetingMode: (mode: 'move' | 'attack') => void;
+  onPrepareAbility: (unitId: string, ability: 'brace' | 'ambush') => void;
+  onBoardTransport: (unitId: string, transportId: string) => void;
+  onDisembarkUnit: (unitId: string, transportId: string, destination: { q: number; r: number }) => void;
   onDeselect: () => void;
   onCloseCityProduction?: () => void;
 };
@@ -30,7 +33,7 @@ function getDomainDescription(domainId: string): string | undefined {
   return domain?.baseEffect?.description;
 }
 
-export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProduction, onCancelCityProduction, onRemoveFromQueue, onSetTargetingMode, onDeselect, onCloseCityProduction }: ContextInspectorProps) {
+export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProduction, onCancelCityProduction, onRemoveFromQueue, onSetTargetingMode, onPrepareAbility, onBoardTransport, onDisembarkUnit, onDeselect, onCloseCityProduction }: ContextInspectorProps) {
   const [cityTab, setCityTab] = useState<CityTab>('overview');
   const tabsRef = useRef<HTMLDivElement>(null);
   const [tabsCanScrollLeft, setTabsCanScrollLeft] = useState(false);
@@ -299,6 +302,44 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                 >
                   Attack
                 </button>
+                {selectedUnit.canBrace ? (
+                  <button
+                    type="button"
+                    className="ci-action-btn"
+                    onClick={() => onPrepareAbility(selectedUnit.id, 'brace')}
+                  >
+                    Brace
+                  </button>
+                ) : null}
+                {selectedUnit.canAmbush ? (
+                  <button
+                    type="button"
+                    className="ci-action-btn"
+                    onClick={() => onPrepareAbility(selectedUnit.id, 'ambush')}
+                  >
+                    Ambush
+                  </button>
+                ) : null}
+                {selectedUnit.boardableTransportIds?.map((transportId) => (
+                  <button
+                    key={transportId}
+                    type="button"
+                    className="ci-action-btn"
+                    onClick={() => onBoardTransport(selectedUnit.id, transportId)}
+                  >
+                    Board
+                  </button>
+                ))}
+                {selectedUnit.transportId && selectedUnit.validDisembarkHexes?.map((hex) => (
+                  <button
+                    key={`${hex.q},${hex.r}`}
+                    type="button"
+                    className="ci-action-btn"
+                    onClick={() => onDisembarkUnit(selectedUnit.id, selectedUnit.transportId!, hex)}
+                  >
+                    Land {hex.q},{hex.r}
+                  </button>
+                ))}
               </div>
             ) : null}
 

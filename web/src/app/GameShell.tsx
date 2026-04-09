@@ -265,6 +265,15 @@ function KnowledgeGainedShellContent({
         onSetTargetingMode={(mode) =>
           controller.dispatch({ type: 'set_targeting_mode', mode })
         }
+        onPrepareAbility={(unitId, ability) =>
+          controller.dispatch({ type: 'prepare_ability', unitId, ability })
+        }
+        onBoardTransport={(unitId, transportId) =>
+          controller.dispatch({ type: 'board_transport', unitId, transportId })
+        }
+        onDisembarkUnit={(unitId, transportId, destination) =>
+          controller.dispatch({ type: 'disembark_unit', unitId, transportId, destination })
+        }
         onDeselect={handleDeselect}
         onCloseCityProduction={() => controller.dispatch({ type: 'close_city_production' })}
       />

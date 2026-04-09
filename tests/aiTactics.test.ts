@@ -9,6 +9,7 @@ import {
 } from '../src/systems/aiTactics';
 import { createEmptyAiPersonalitySnapshot } from '../src/systems/aiPersonality';
 import * as aiTactics from '../src/systems/aiTactics';
+import * as unitActivationSystem from '../src/systems/unitActivationSystem';
 import { runWarEcologySimulation } from '../src/systems/warEcologySimulation';
 import { GameSession } from '../web/src/game/controller/GameSession';
 import { serializeGameState } from '../web/src/game/types/playState';
@@ -145,5 +146,19 @@ describe('ai tactics integration', () => {
 
     expect(scoreSpy).toHaveBeenCalled();
     scoreSpy.mockRestore();
+  });
+
+  it('live GameSession AI routes through the shared unit activation module', () => {
+    const { state, registry, druidId } = buildHeadToHeadState();
+    const activationSpy = vi.spyOn(unitActivationSystem, 'activateAiUnit');
+
+    new GameSession(
+      { type: 'serialized', payload: serializeGameState(state) },
+      registry,
+      { humanControlledFactionIds: [druidId] },
+    );
+
+    expect(activationSpy).toHaveBeenCalled();
+    activationSpy.mockRestore();
   });
 });

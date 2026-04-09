@@ -330,6 +330,9 @@ export type GameAction =
   | { type: 'set_targeting_mode'; mode: 'move' | 'attack' }
   | { type: 'move_unit'; unitId: string; destination: HexCoord }
   | { type: 'attack_unit'; attackerId: string; defenderId: string }
+  | { type: 'prepare_ability'; unitId: string; ability: 'brace' | 'ambush' }
+  | { type: 'board_transport'; unitId: string; transportId: string }
+  | { type: 'disembark_unit'; unitId: string; transportId: string; destination: HexCoord }
   | { type: 'build_fort'; unitId: string }
   | { type: 'build_city'; unitId: string }
   | { type: 'end_turn' }

@@ -61,6 +61,12 @@ export type UnitView = {
   routed?: boolean;
   preparedAbility?: string;
   isSettler?: boolean;
+  canBrace?: boolean;
+  canAmbush?: boolean;
+  isEmbarked?: boolean;
+  transportId?: string | null;
+  boardableTransportIds?: string[];
+  validDisembarkHexes?: HexCoord[];
 };
 
 export type CityView = {

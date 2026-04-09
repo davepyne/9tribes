@@ -121,6 +121,9 @@ export class GameController {
           this.selected = { type: 'unit', unitId: action.unitId };
         }
         break;
+      case 'prepare_ability':
+      case 'board_transport':
+      case 'disembark_unit':
       case 'build_fort':
         if (this.session) {
           this.session.dispatch(action);
