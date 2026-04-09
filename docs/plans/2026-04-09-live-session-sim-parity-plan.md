@@ -6,6 +6,48 @@ Make live play and the simulation/replay path run the same gameplay rules wherev
 
 This plan is the authoritative handoff for the implementation work. It is written to be executable after context reset.
 
+## April 9, 2026 Status Update
+
+### Confirmed Already Done
+
+- Live end-turn / upkeep already routes through the shared faction-phase runner (`runFactionPhase` -> `processFactionPhases`).
+- Live AI already routes through `activateAiUnit(..., { combatMode: 'preview' })` from `GameSession.processAiTurnUntilBoundary(...)`; there is no remaining GameSession-only combat or movement decision loop affecting live outcomes.
+- Live actions for `prepare_ability`, `board_transport`, and `disembark_unit` already exist.
+- Shared combat already covered kill-capture, retreat capture, contact transfer, hybrid unlock, war-exhaustion kill credit, transport death cascade, and hit-and-run retreat before this run.
+
+### Finished In This Run
+
+- Shared combat preview is now the authority for the remaining live/sim combat-input modifiers that were still duplicated in `unitActivationSystem`, including synergy / triple-stack pressure, desert swarm, tidal/coastal modifiers, camel anti-camel pressure, bulwark, fortified bonuses, siege-vs-city, canopy / rough-terrain / undying defense, forest ambush, and knockback-distance preview details.
+- Shared combat apply is now the authority for the remaining post-resolution mutations that were still duplicated in `unitActivationSystem`, including history updates, poison, contamination, reflection, extended knockback, stampede extra move, poison trap placement, stealth recharge, retreat heal, combat healing, sandstorm splash, frostbite, facing updates, and final triggered-effect payload assembly.
+- `src/systems/unitActivationSystem.ts` no longer owns a second combat rules branch. It now orchestrates targeting, movement, activation flow, and trace recording while delegating preview/apply authority to `src/systems/combatActionSystem.ts`.
+- `web/src/game/controller/GameSession.ts` now publishes the final triggered-effect payload from shared combat feedback after combat resolves instead of preserving a live-only aftermath list.
+- Added `src/systems/synergyRuntime.ts` so shared combat can resolve pair / triple combat bonuses without depending on `warEcologySimulation.ts`.
+- Fixed two shared-combat aftermath bugs discovered during parity validation:
+  - stealth recharge can now actually re-enter stealth by resetting the immediate post-attack cooldown in the shared apply path
+  - poison traps now use the retreat origin in the shared apply path instead of relying on a dead preview-only position list
+- Added representative parity coverage in `tests/liveSessionParity.test.ts` for:
+  - fortified preview modifiers
+  - naval/coastal preview modifiers
+  - synergy / triple-stack preview pressure and knockback-distance
+  - poison application
+  - contamination
+  - reflection damage
+  - stealth recharge
+  - poison trap placement
+  - retreat heal
+  - sandstorm splash
+  - frostbite
+  - combat healing
+
+### Intentionally Deferred
+
+- I did not add a separate isolated fixture for every single preview scalar listed in the checklist. The shared preview/apply path is now authoritative, representative parity fixtures cover the highest-risk migrated branches, and the remaining preview scalars were audited directly in the shared source after cutover.
+
+### Remaining Risks
+
+- The new parity fixtures are representative rather than exhaustive. A future dedicated combat-fixture pass could still add narrower tests for individual scalar modifiers if one of them regresses.
+- `npm --prefix web run build` still reports the existing Vite large-chunk warning. This is unrelated to the live/sim parity work.
+
 ## Problem Summary
 
 The current codebase has two materially different execution paths:

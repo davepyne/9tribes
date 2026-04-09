@@ -17,7 +17,7 @@ import {
 } from './abilitySystem.js';
 import {
   applyCombatAction,
-  createCombatActionPreview,
+  previewCombatAction,
   type CombatActionPreview,
 } from './combatActionSystem.js';
 import { resolveResearchDoctrine } from './capabilityDoctrine.js';
@@ -29,7 +29,6 @@ import {
   getVeteranMoraleBonus,
 } from './combatSystem.js';
 import { getHexVisibility } from './fogSystem.js';
-import { recordBattleFought, recordEnemyKilled, recordPromotion } from './historySystem.js';
 import { findFleeHex } from './moraleSystem.js';
 import { moveUnit, getValidMoves, canMoveTo } from './movementSystem.js';
 import { getUnitAtHex } from './occupancySystem.js';
@@ -46,22 +45,10 @@ import {
 import { tryPromoteUnit } from './veterancySystem.js';
 import { calculateFlankingBonus, isRearAttack } from './zocSystem.js';
 import {
-  applyKnockback,
-  applyPoisonDoT,
-  breakStealth,
-  enterStealth,
-  getBulwarkDefenseBonus,
-  getTidalCoastDebuff,
-} from './signatureAbilitySystem.js';
-import { getWallDefenseBonus } from './siegeSystem.js';
-import {
   getCombatAttackModifier,
   getCombatDefenseModifier,
-  getDesertSwarmBonus,
   isUnitRiverStealthed,
 } from './factionIdentitySystem.js';
-import { applyCombatSynergies, type CombatContext } from './synergyEffects.js';
-import type { ActiveSynergy, ActiveTripleStack } from './synergyEngine.js';
 import {
   getNearbySupportScore,
   getNearestFriendlyCity,
@@ -77,9 +64,6 @@ import {
 } from './aiTactics.js';
 import type { UnitStrategicIntent } from './factionStrategy.js';
 import {
-  calculateSynergyAttackBonus,
-  calculateSynergyDefenseBonus,
-  getSynergyEngine,
   log,
   recordAiIntent,
   recordCombatEvent,
@@ -104,24 +88,6 @@ export interface UnitActivationResult {
 
 function getTerrainAt(state: GameState, pos: HexCoord): string {
   return getAbilityTerrainAt(state, pos);
-}
-
-function canInflictPoison(state: GameState, unit: Unit): boolean {
-  const prototype = state.prototypes.get(unit.prototypeId);
-  return Boolean(prototype?.tags?.includes('poison'));
-}
-
-function formatPercent(value: number): string {
-  return `${value > 0 ? '+' : ''}${Math.round(value * 100)}%`;
-}
-
-function pushCombatEffect(
-  effects: TraceCombatEffect[],
-  label: string,
-  detail: string,
-  category: TraceCombatEffect['category']
-): void {
-  effects.push({ label, detail, category });
 }
 
 function describeCombatOutcome(result: {
@@ -152,99 +118,6 @@ function formatCombatSummary(
   const highlights = effects.slice(0, 3).map((effect) => effect.label.toLowerCase());
   const highlightText = highlights.length > 0 ? `; ${highlights.join(', ')}` : '';
   return `${attackerName} dealt ${defenderDamage}, took ${attackerDamage}. ${outcome}${highlightText}.`;
-}
-
-function humanizeCombatEffect(effect: string): { label: string; detail: string } | null {
-  const poisonAura = effect.match(/^poison_aura_radius_(\d+)$/);
-  if (poisonAura) {
-    return { label: 'Poison Aura', detail: `Applied poison pressure in radius ${poisonAura[1]}.` };
-  }
-  const landAura = effect.match(/^land_aura_radius_(\d+)$/);
-  if (landAura) {
-    return { label: 'Land Aura', detail: `Granted a defensive aura in radius ${landAura[1]}.` };
-  }
-  const healingRadius = effect.match(/^extended_healing_radius_(\d+)$/);
-  if (healingRadius) {
-    return { label: 'Extended Healing', detail: `Healing aura extended to radius ${healingRadius[1]}.` };
-  }
-  const stealthReveal = effect.match(/^stealth_aura_reveal_(\d+)$/);
-  if (stealthReveal) {
-    return { label: 'Stealth Aura', detail: `Threatened hidden enemies within radius ${stealthReveal[1]}.` };
-  }
-  const combatHealing = effect.match(/^combat_healing_(\d+)%$/);
-  if (combatHealing) {
-    return { label: 'Combat Healing', detail: `Converted ${combatHealing[1]}% of dealt damage into healing.` };
-  }
-  const sandstorm = effect.match(/^sandstorm_damage_(\d+)_accuracy_debuff_(\d+\.?\d*)$/);
-  if (sandstorm) {
-    return { label: 'Sandstorm', detail: `Dealt ${sandstorm[1]} area damage and reduced accuracy by ${formatPercent(-Number(sandstorm[2]))}.` };
-  }
-  const withering = effect.match(/^withering_healing_reduction_(\d+)%$/);
-  if (withering) {
-    return { label: 'Withering', detail: `Reduced incoming healing by ${withering[1]}%.` };
-  }
-  const poisonMultiplier = effect.match(/^poison_multiplier_(\d+\.?\d*)x$/);
-  if (poisonMultiplier) {
-    return { label: 'Poison Multiplier', detail: `Amplified attack output by ${poisonMultiplier[1]}x.` };
-  }
-  const frostSpeed = effect.match(/^frost_speed_movement_(\d+)$/);
-  if (frostSpeed) {
-    return { label: 'Frost Speed', detail: `Adjusted movement by ${frostSpeed[1]} on frozen ground.` };
-  }
-  const healOnRetreat = effect.match(/^heal_on_retreat_(\d+)$/);
-  if (healOnRetreat) {
-    return { label: 'Heal On Retreat', detail: `Recovered ${healOnRetreat[1]} HP after disengaging.` };
-  }
-  const swarmSpeed = effect.match(/^swarm_speed_(\d+)$/);
-  if (swarmSpeed) {
-    return { label: 'Swarm Speed', detail: `Reduced movement cost by ${swarmSpeed[1]}.` };
-  }
-  const adaptiveMultiplier = effect.match(/^adaptive_multiplier_(\d+\.?\d*)x$/);
-  if (adaptiveMultiplier) {
-    return { label: 'Adaptive Multiplier', detail: `Triple-stack multiplier boosted combat by ${adaptiveMultiplier[1]}x.` };
-  }
-
-  const labels: Record<string, string> = {
-    charge_shield: 'Charge Shield',
-    anti_displacement: 'Anti-Displacement',
-    dug_in: 'Dug In',
-    terrain_fortress: 'Terrain Fortress',
-    charge_cooldown_reset: 'Charge Reset',
-    ram_attack: 'Ram Attack',
-    stealth_charge: 'Stealth Charge',
-    double_charge: 'Double Charge',
-    poison_trap: 'Poison Trap',
-    contaminate_coastal: 'Contaminate',
-    stealth_healing: 'Stealth Healing',
-    terrain_poison: 'Terrain Poison',
-    aura_overlap: 'Aura Overlap',
-    wave_cavalry_amphibious: 'Wave Cavalry',
-    stealth_recharge: 'Stealth Recharge',
-    desert_fortress: 'Desert Fortress',
-    frostbite: 'Frostbite',
-    frost_defense: 'Frost Defense',
-    bear_charge: 'Bear Charge',
-    bear_cover: 'Bear Cover',
-    ice_zone_difficult_terrain: 'Ice Zone',
-    bear_mount: 'Bear Mount',
-    terrain_share: 'Terrain Share',
-    pack_bonus: 'Pack Bonus',
-    oasis_neutral_terrain: 'Oasis',
-    permanent_stealth_terrain: 'Permanent Stealth Terrain',
-    shadow_network: 'Shadow Network',
-    nomad_network: 'Nomad Network',
-    impassable_retreat: 'Impassable Retreat',
-    paladin_sustain: 'Paladin Sustain',
-    juggernaut_doubled: 'Juggernaut Doubled',
-    ambush_damage: 'Ambush Damage',
-  };
-
-  const label = labels[effect];
-  if (!label) {
-    return null;
-  }
-
-  return { label, detail: label };
 }
 
 
@@ -1311,369 +1184,7 @@ export function activateUnit(
       return { state: setUnitActivated(current, unitId), pendingCombat: null };
     }
 
-    // Resolve active synergies for attacker and defender
-    const engine = getSynergyEngine();
-    const attackerFaction = current.factions.get(activeUnit.factionId);
-
-    // Get triple stack pair synergies for attacker faction
-    let attackerSynergies: ActiveSynergy[];
-    let attackerTriple: ActiveTripleStack | null = null;
-    if (attackerFaction?.activeTripleStack) {
-      // Triple exists: all pair synergies from the triple apply to ALL faction units
-      attackerSynergies = attackerFaction.activeTripleStack.pairs;
-      attackerTriple = attackerFaction.activeTripleStack;
-    } else {
-      // Normal: only unit's own tag-based synergies
-      attackerSynergies = prototype.tags ? engine.resolveUnitPairs(prototype.tags) : [];
-    }
-
-    const defenderFaction = current.factions.get(enemy.factionId);
-    let defenderSynergies: ActiveSynergy[];
-    let defenderTriple: ActiveTripleStack | null = null;
-    if (defenderFaction?.activeTripleStack) {
-      defenderSynergies = defenderFaction.activeTripleStack.pairs;
-      defenderTriple = defenderFaction.activeTripleStack;
-    } else {
-      defenderSynergies = enemyPrototype.tags ? engine.resolveUnitPairs(enemyPrototype.tags) : [];
-    }
-
-    // Create combat contexts for synergy resolution
-    const attackerPos = activeUnit.position as unknown as { x: number; y: number };
-    const defenderPos = enemy.position as unknown as { x: number; y: number };
-    const attackerContext: CombatContext = {
-      attackerId: activeUnit.id,
-      defenderId: enemy.id,
-      attackerTags: prototype.tags ?? [],
-      defenderTags: enemyPrototype.tags ?? [],
-      attackerHp: activeUnit.hp,
-      defenderHp: enemy.hp,
-      terrain: getTerrainAt(current, activeUnit.position),
-      isCharge: false, // set properly below after charge is determined
-      isStealthAttack: false, // set properly below
-      isRetreat: false,
-      isStealthed: activeUnit.isStealthed,
-      position: attackerPos,
-      attackerPosition: attackerPos,
-      defenderPosition: defenderPos,
-    };
-
-    const defenderContext: CombatContext = {
-      attackerId: enemy.id,
-      defenderId: activeUnit.id,
-      attackerTags: enemyPrototype.tags ?? [],
-      defenderTags: prototype.tags ?? [],
-      attackerHp: enemy.hp,
-      defenderHp: activeUnit.hp,
-      terrain: getTerrainAt(current, enemy.position),
-      isCharge: false,
-      isStealthAttack: enemy.isStealthed ?? false,
-      isRetreat: false,
-      isStealthed: enemy.isStealthed ?? false,
-      position: defenderPos,
-      attackerPosition: defenderPos,
-      defenderPosition: attackerPos,
-    };
-
-    const attackerVeteranBonus = getVeteranStatBonus(registry, activeUnit.veteranLevel);
-    const defenderVeteranBonus = getVeteranDefenseBonus(registry, enemy.veteranLevel);
-    const defenderMoraleBonus = getVeteranMoraleBonus(registry, enemy.veteranLevel);
-    const attackerTerrainId = getTerrainAt(current, activeUnit.position);
-    const defenderTerrainId = getTerrainAt(current, enemy.position);
-    const attackerTerrain = registry.getTerrain(attackerTerrainId);
-    const defenderTerrain = registry.getTerrain(defenderTerrainId);
-    // Check if either unit is standing in a field fort
-    const defenderOnFort = getImprovementBonus(current, enemy.position) > 0;
-    const attackerOnFort = getImprovementBonus(current, activeUnit.position) > 0;
-    // Units in field forts are unflankable — every attack is frontal
-    const flanking = defenderOnFort ? 0 : calculateFlankingBonus(activeUnit, enemy, current);
-    let situationalAttackModifier = getCombatAttackModifier(attackerFaction, attackerTerrain, defenderTerrain);
-    let situationalDefenseModifier = getCombatDefenseModifier(defenderFaction, defenderTerrain);
-
-    // Desert Swarm (desert_logistics): N+ friendly units within distance 2 grants bonus
-    const desertAbilityPlayer = registry.getSignatureAbility('desert_nomads');
-    const swarmConfigPlayer = desertAbilityPlayer ? {
-      threshold: desertAbilityPlayer.desertSwarmThreshold ?? 3,
-      attackBonus: desertAbilityPlayer.desertSwarmAttackBonus ?? 1,
-      defenseMultiplier: desertAbilityPlayer.desertSwarmDefenseMultiplier ?? 1.1,
-    } : undefined;
-    const attackerSwarm = getDesertSwarmBonus(attackerFaction, activeUnit, current, swarmConfigPlayer);
-    if (attackerSwarm.attackBonus > 0) {
-      situationalAttackModifier += attackerSwarm.attackBonus;
-    }
-    const defenderSwarm = getDesertSwarmBonus(defenderFaction, enemy, current, swarmConfigPlayer);
-    if (defenderSwarm.defenseMultiplier > 1.0) {
-      situationalDefenseModifier += (defenderSwarm.defenseMultiplier - 1.0);
-    }
-
-    let tidalAssaultTriggered = false;
-    
-    // Tidal Assault: Amphibious assault — naval units attack from water to land;
-    // enemies on coast get -25% defense (from ability-domains.json tidal_warfare)
-    if (prototype.tags?.includes('naval') && (prototype.tags?.includes('shock') || prototype.tags?.includes('ranged'))) {
-      const isWaterToLand = (attackerTerrainId === 'coast' || attackerTerrainId === 'river') 
-        && defenderTerrainId !== 'coast' && defenderTerrainId !== 'river';
-      if (isWaterToLand) {
-        // Attack bonus from water-to-land
-        const tidalAssaultBonus = registry.getSignatureAbility('coral_people')?.tidalAssaultBonus ?? 0.2;
-        situationalAttackModifier += tidalAssaultBonus;
-        // Defense debuff on coastal enemies
-        const coastDebuff = getTidalCoastDebuff();
-        situationalDefenseModifier -= coastDebuff;
-        tidalAssaultTriggered = true;
-      }
-    }
-    
-    // Camel Scare: Camel units get +30% attack vs cavalry/heavy_cavalry
-    // Horses are historically terrified of camels
-    const attackerIsCamel = prototype.tags?.includes('camel') ?? false;
-    const defenderIsCavalry = enemyPrototype.tags?.includes('cavalry') ?? false;
-    if (attackerIsCamel && defenderIsCavalry) {
-      situationalAttackModifier += 0.3;
-    }
-    // Cavalry are also scared attacking camels (-20% attack)
-    if (defenderIsCavalry && attackerIsCamel === false) {
-      const defenderPrototype = current.prototypes.get(enemy.prototypeId);
-      const defenderIsCamel = defenderPrototype?.tags?.includes('camel') ?? false;
-      if (defenderIsCamel) {
-        situationalAttackModifier -= 0.2;
-      }
-    }
-    
-    // Bulwark (Hill Clan): Adjacent fortress units grant defense bonus to defender
-    // Uses ability-domains.json fortress: +30% defense aura
-    let bulwarkTriggered = false;
-    const defenderNeighbors = getNeighbors(enemy.position);
-    for (const hex of defenderNeighbors) {
-      const neighborUnitId = getUnitAtHex(current, hex);
-      if (neighborUnitId) {
-        const neighborUnit = current.units.get(neighborUnitId);
-        if (neighborUnit && neighborUnit.factionId === enemy.factionId && neighborUnit.hp > 0) {
-          const neighborPrototype = current.prototypes.get(neighborUnit.prototypeId);
-          if (neighborPrototype) {
-            const hasFortress = neighborPrototype.tags?.includes('fortress') ?? false;
-            if (hasFortress) {
-              const bulwarkBonus = getBulwarkDefenseBonus(enemy, current, registry);
-              situationalDefenseModifier += bulwarkBonus;
-              bulwarkTriggered = true;
-              break; // Only apply once per combat
-            }
-          }
-        }
-      }
-    }
-    
-    // Fortified Volley: Ranged units standing IN a field fort gain attack bonus
-    // "Bows from barricades" — archers fire from fortified positions
-    // Fortress-tagged ranged units (Fortress Archers) get double the bonus
-    let fortifiedVolleyTriggered = false;
-    let fortifiedCoverTriggered = false;
-    const attackerIsRanged = prototype.derivedStats.role === 'ranged' || (prototype.derivedStats.range ?? 1) > 1;
-    if (attackerIsRanged && attackerOnFort) {
-      const attackerIsFortress = prototype.tags?.includes('fortress') ?? false;
-      const attackerIsSiege = prototype.tags?.includes('siege') ?? false;
-      const volleyBonus = attackerIsSiege ? 0.40 : attackerIsFortress ? 0.30 : 0.15;
-      situationalAttackModifier += volleyBonus;
-      fortifiedVolleyTriggered = true;
-    }
-    // Fortified Cover: Ranged defenders in a field fort gain defense bonus
-    // Unlike infantry (who only get the flat improvement defense), ranged get a % modifier
-    const defenderIsRanged = enemyPrototype.derivedStats.role === 'ranged' || (enemyPrototype.derivedStats.range ?? 1) > 1;
-    if (defenderIsRanged && defenderOnFort) {
-      const defenderIsFortress = enemyPrototype.tags?.includes('fortress') ?? false;
-      const coverBonus = defenderIsFortress ? 0.30 : 0.15;
-      situationalDefenseModifier += coverBonus;
-      fortifiedCoverTriggered = true;
-    }
-
-    // Siege damage bonus: siege-tagged units get +25% attack against defenders on city hexes
-    if (prototype.tags?.includes('siege') ?? false) {
-      const defenderOnCity = [...current.cities.values()].some(
-        (city) => city.position.q === enemy.position.q && city.position.r === enemy.position.r
-      );
-      if (defenderOnCity) {
-        situationalAttackModifier += 0.25;
-      }
-    }
-    
-    const attackerDoctrine = factionDoctrine;
-    const defenderDoctrine = resolveResearchDoctrine(current.research.get(enemy.factionId), defenderFaction);
-    // Units in forts cannot be attacked from the rear — every approach is frontal
-    const rearAttackBonus = (defenderOnFort ? 0 : isRearAttack(activeUnit, enemy)) ? 0.2 : 0;
-    const isChargeAttack = canChargeAttack
-      && (
-        attackerDoctrine.chargeTranscendenceEnabled
-        || activeUnit.movesRemaining < activeUnit.maxMoves
-      );
-    const braceTriggered = enemy.preparedAbility === 'brace'
-      && (prototype.derivedStats.role === 'mounted' || prototype.derivedStats.range <= 1);
-    const ambushAttackBonus = activeUnit.preparedAbility === 'ambush' ? 0.15 : 0;
-    const bonusDefenderMoraleLoss = (rearAttackBonus > 0 ? 18 : 0) + (activeUnit.preparedAbility === 'ambush' ? 10 : 0);
-    
-    // Stealth ambush: stealthed units get +50% bonus (handled inside resolveCombat via isStealthed param)
-    const attackerIsStealthed = activeUnit.isStealthed;
-    
-    // Calculate charge bonus with signature ability overrides
-    let chargeAttackBonus = isChargeAttack && !braceTriggered ? 0.15 : 0;
-    
-    // Swift Charge: Higher charge bonus for cavalry units
-    let swiftChargeTriggered = false;
-    if (isChargeAttack && !braceTriggered && prototype.tags?.includes('cavalry')) {
-      const swiftChargeBonus = registry.getSignatureAbility('plains_riders')?.swiftChargeBonus ?? 0.3;
-      chargeAttackBonus = swiftChargeBonus;
-      swiftChargeTriggered = true;
-    }
-    
-    // Stampede: Extra bonus when elephants or chariots charge (savannah_lions)
-    let stampedeTriggered = false;
-    if (isChargeAttack && !braceTriggered && (prototype.tags?.includes('elephant') || prototype.tags?.includes('chariot'))) {
-      const stampedeBonus = registry.getSignatureAbility('savannah_lions')?.stampedeBonus ?? 0.3;
-      chargeAttackBonus += stampedeBonus;
-      stampedeTriggered = true;
-    }
-    const retaliationDamageMultiplier = braceTriggered && isChargeAttack ? 1.1 : 1;
-    const braceDefenseBonus = enemy.preparedAbility === 'brace'
-      ? (defenderDoctrine.fortressTranscendenceEnabled ? 0.4 : 0.2)
-      : 0;
-
-    // Hill defense: terrain.defenseModifier is already applied in terrain lookup
-    // No research-based hill fighting modifiers in new system
-    if (enemy.hillDugIn) {
-      situationalDefenseModifier += 0.2;
-    }
-
-    if (attackerDoctrine.greedyCaptureEnabled && enemy.hp < enemy.maxHp * 0.5) {
-      situationalAttackModifier += 0.15;
-    }
-
-    if (attackerDoctrine.antiFortificationEnabled && (enemy.preparedAbility === 'brace' || getImprovementBonus(current, enemy.position) > 0)) {
-      situationalAttackModifier += 0.2;
-    }
-
-    if (attackerDoctrine.chargeRoutedBonusEnabled && isChargeAttack && enemy.routed) {
-      situationalAttackModifier += 0.5;
-    }
-
-    // Shield wall (fortress Tier 1): +15% defense with ally support, or +25% with foreign T3 upgrade.
-    if (defenderDoctrine.shieldWallEnabled) {
-      const attackerIsRanged = prototype.derivedStats.role === 'ranged' || (prototype.derivedStats.range ?? 1) > 1;
-      const defenderIsInfantry = enemyPrototype.derivedStats.role === 'melee' && !(enemyPrototype.tags?.includes('cavalry') || enemyPrototype.tags?.includes('elephant'));
-      if (attackerIsRanged && defenderIsInfantry) {
-        const supportRadius = defenderDoctrine.fortressTranscendenceEnabled ? 2 : 1;
-        const hasSupportAlly = Array.from(current.units.values()).some((neighbor) =>
-          neighbor.id !== enemy.id &&
-          neighbor.factionId === enemy.factionId &&
-          neighbor.hp > 0 &&
-          hexDistance(neighbor.position, enemy.position) <= supportRadius
-        );
-        if (hasSupportAlly) {
-          situationalDefenseModifier += defenderDoctrine.fortressAuraUpgradeEnabled ? 0.25 : 0.15;
-        }
-      }
-    }
-
-    // Canopy cover (nature_healing Tier 2): ranged units +30% defense in forest/jungle
-    if (defenderDoctrine.canopyCoverEnabled) {
-      const defenderIsRanged = enemyPrototype.derivedStats.role === 'ranged';
-      if (defenderIsRanged && (defenderTerrain?.id === 'forest' || defenderTerrain?.id === 'jungle')) {
-        situationalDefenseModifier += 0.3;
-      }
-    }
-
-    if (defenderDoctrine.roughTerrainDefenseEnabled && ['forest', 'jungle', 'hill', 'swamp'].includes(defenderTerrain?.id ?? '')) {
-      situationalDefenseModifier += 0.2;
-    }
-
-    // Undying (native nature_healing Tier 3): units below 20% HP gain +50% defense
-    if (defenderDoctrine.undyingEnabled && enemy.hp < enemy.maxHp * 0.2) {
-      situationalDefenseModifier += 0.5;
-    }
-
-    // Forest ambush doctrine: first strike when attacking from forest hex
-    const forestFirstStrike = attackerDoctrine.forestAmbushEnabled && attackerTerrain?.id === 'forest';
-
-    // Update attacker context with resolved charge/stealth values
-    attackerContext.isCharge = isChargeAttack;
-    attackerContext.isStealthAttack = attackerIsStealthed;
-
-    // Apply synergy effects to combat contexts
-    const attackerSynergyResult = applyCombatSynergies(attackerContext, attackerSynergies, attackerTriple);
-    const defenderSynergyResult = applyCombatSynergies(defenderContext, defenderSynergies, defenderTriple);
-
-    // Modify combat parameters based on synergies
-    const synergyAttackModifier = calculateSynergyAttackBonus(attackerSynergyResult);
-    const synergyDefenseModifier = calculateSynergyDefenseBonus(defenderSynergyResult);
-    situationalAttackModifier += synergyAttackModifier;
-    situationalDefenseModifier += synergyDefenseModifier;
-    const attackerChassis = registry.getChassis(prototype.chassisId);
-    const attackerIsNaval = attackerChassis?.movementClass === 'naval';
-    if (attackerDoctrine.navalCoastalBonusEnabled && attackerIsNaval && ['coast', 'river'].includes(attackerTerrain?.id ?? '')) {
-      situationalAttackModifier += 0.25;
-    }
-    const improvementDefenseBonus = getImprovementBonus(current, enemy.position);
-    const wallDefenseBonus = getWallDefenseBonus(current, enemy.position, registry.getSignatureAbility('coral_people')?.wallDefenseMultiplier ?? 2);
-
-    const result = resolveCombat(
-      activeUnit,
-      enemy,
-      prototype,
-      enemyPrototype,
-      attackerVeteranBonus,
-      defenderVeteranBonus,
-      attackerTerrain,
-      defenderTerrain,
-      improvementDefenseBonus + wallDefenseBonus,
-      defenderMoraleBonus,
-      registry,
-      flanking,
-      situationalAttackModifier + chargeAttackBonus,
-      situationalDefenseModifier,
-      current.rngState,
-      rearAttackBonus,
-      braceDefenseBonus,
-      ambushAttackBonus,
-      bonusDefenderMoraleLoss,
-      retaliationDamageMultiplier,
-      0, // hiddenAttackBonus
-      isChargeAttack,
-      attackerIsStealthed,
-      attackerSynergyResult.chargeShield,
-      defenderSynergyResult.antiDisplacement || defenderDoctrine.armorPenetrationEnabled,
-      attackerSynergyResult.stealthChargeMultiplier,
-      attackerSynergyResult.sandstormAccuracyDebuff,
-      forestFirstStrike,
-    );
-    current = { ...current, rngState: result.rngState };
-
-    let poisonApplied = false;
-    let reStealthTriggered = false;
-    let reflectionDamageApplied = 0;
-    let combatHealingApplied = 0;
-    let sandstormTargetsHit = 0;
-    let contaminatedHexApplied = false;
-    let frostbiteApplied = false;
-    let hitAndRunTriggered = false;
-    let healOnRetreatApplied = 0;
-    // Stampede2 (charge Tier 2): elephant charges knock back 2 hexes instead of 1
-    let totalKnockbackDistance = result.defenderKnockedBack ? result.knockbackDistance : 0;
-    if (result.defenderKnockedBack && attackerDoctrine.elephantStampede2Enabled && prototype.tags?.includes('elephant')) {
-      totalKnockbackDistance = 2;
-    }
-
-    const combatPreview = createCombatActionPreview(
-      current,
-      activeUnit.id,
-      enemy.id,
-      result,
-      {
-        round: current.round,
-        attackerFactionId: activeUnit.factionId,
-        defenderFactionId: enemy.factionId,
-        attackerPrototypeName: prototype.name,
-        defenderPrototypeName: enemyPrototype.name,
-        braceTriggered,
-        attackerWasStealthed: attackerIsStealthed,
-      },
-    );
+    const combatPreview = previewCombatAction(current, registry, activeUnit.id, enemy.id);
     if (!combatPreview) {
       return { state: setUnitActivated(current, unitId), pendingCombat: null };
     }
@@ -1684,352 +1195,26 @@ export function activateUnit(
     const appliedCombat = applyCombatAction(current, registry, combatPreview);
     current = appliedCombat.state;
 
-    const writeUnit = (unit: Unit | undefined) => {
-      if (!unit) {
-        return;
-      }
-      const unitsMap = new Map(current.units);
-      if (unit.hp <= 0) {
-        unitsMap.delete(unit.id);
-      } else {
-        unitsMap.set(unit.id, unit);
-      }
-      current = { ...current, units: unitsMap };
-    };
+    const result = combatPreview.result;
+    const resolution = appliedCombat.feedback.resolution;
+    const updatedAttacker = current.units.get(activeUnit.id) ?? { ...activeUnit, hp: 0, morale: 0, routed: true };
+    const updatedDefender = current.units.get(enemy.id) ?? { ...enemy, hp: 0, morale: 0, routed: true };
 
-    let updatedAttacker = current.units.get(activeUnit.id);
-    let updatedDefender = current.units.get(enemy.id);
-
-    if (updatedAttacker) {
-      updatedAttacker = recordBattleFought(
-        updatedAttacker,
-        enemy.id,
-        result.defenderDestroyed,
-        result.attackerDamage,
-        result.defenderDamage,
-      );
-      if (result.defenderDestroyed) {
-        updatedAttacker = recordEnemyKilled(updatedAttacker, enemy.id);
-      }
-      if (updatedAttacker.veteranLevel !== activeUnit.veteranLevel) {
-        updatedAttacker = recordPromotion(updatedAttacker, activeUnit.veteranLevel, updatedAttacker.veteranLevel);
-      }
-      writeUnit(updatedAttacker);
-    }
-
-    updatedAttacker = current.units.get(activeUnit.id);
-    updatedDefender = current.units.get(enemy.id);
-
-    const captured = Boolean(
-      result.defenderDestroyed
-      && updatedDefender
-      && updatedDefender.factionId === activeUnit.factionId,
-    );
-    const retreatCaptured = Boolean(
-      !result.defenderDestroyed
-      && result.defenderFled
-      && updatedDefender
-      && updatedDefender.factionId === activeUnit.factionId,
-    );
-
-    if (captured) {
+    if (resolution.capturedOnKill) {
       log(trace, `${faction.name} ${prototype.name} CAPTURED ${enemyPrototype.name}!`);
     }
-    if (retreatCaptured) {
+    if (resolution.retreatCaptured) {
       log(trace, `${faction.name} ${prototype.name} captured retreating ${enemyPrototype.name}.`);
-    }
-
-    if (!result.defenderDestroyed && result.defenderDamage > 0 && canInflictPoison(current, activeUnit) && updatedDefender) {
-      const extraStacks = attackerDoctrine.poisonPersistenceEnabled ? 1 : 0;
-      updatedDefender = applyPoisonDoT(
-        updatedDefender,
-        attackerDoctrine.poisonStacksOnHit + extraStacks,
-        attackerDoctrine.poisonDamagePerStack,
-        3,
-      );
-      updatedDefender = { ...updatedDefender, poisonedBy: activeUnit.factionId } as Unit;
-      writeUnit(updatedDefender);
-      poisonApplied = true;
-    }
-
-    if (result.defenderDestroyed && attackerDoctrine.contaminateTerrainEnabled && canInflictPoison(current, activeUnit)) {
-      const hexKey = hexToKey(enemy.position);
-      const newContaminatedHexes = new Set(current.contaminatedHexes);
-      newContaminatedHexes.add(hexKey);
-      current = { ...current, contaminatedHexes: newContaminatedHexes };
-      contaminatedHexApplied = true;
-    }
-
-    updatedAttacker = current.units.get(activeUnit.id);
-    updatedDefender = current.units.get(enemy.id);
-
-    if (updatedAttacker) {
-      updatedAttacker = rotateUnitToward(updatedAttacker, enemy.position);
-      writeUnit(updatedAttacker);
-    }
-    if (updatedDefender && !result.defenderDestroyed) {
-      updatedDefender = rotateUnitToward(updatedDefender, updatedAttacker?.position ?? activeUnit.position);
-      writeUnit(updatedDefender);
-    }
-
-    updatedAttacker = current.units.get(activeUnit.id);
-    updatedDefender = current.units.get(enemy.id);
-
-    if (defenderDoctrine.damageReflectionEnabled && result.defenderDamage > 0 && updatedAttacker) {
-      reflectionDamageApplied = Math.max(1, Math.floor(result.defenderDamage * 0.25));
-      updatedAttacker = {
-        ...updatedAttacker,
-        hp: Math.max(0, updatedAttacker.hp - reflectionDamageApplied),
-      };
-      writeUnit(updatedAttacker);
-    }
-
-    updatedAttacker = current.units.get(activeUnit.id);
-    updatedDefender = current.units.get(enemy.id);
-
-    if (
-      totalKnockbackDistance > result.knockbackDistance
-      && updatedAttacker
-      && updatedDefender
-      && !result.defenderDestroyed
-      && !retreatCaptured
-    ) {
-      const extraKnockback = applyKnockback(
-        current,
-        updatedAttacker,
-        updatedDefender,
-        totalKnockbackDistance - result.knockbackDistance,
-      );
-      if (extraKnockback) {
-        updatedDefender = { ...updatedDefender, position: extraKnockback };
-        writeUnit(updatedDefender);
-        log(trace, `${faction.name} ${prototype.name} knocked back ${enemyPrototype.name} to ${JSON.stringify(extraKnockback)}`);
-      }
-    }
-
-    updatedAttacker = current.units.get(activeUnit.id);
-    updatedDefender = current.units.get(enemy.id);
-
-    if (stampedeTriggered && updatedAttacker) {
-      updatedAttacker = {
-        ...updatedAttacker,
-        movesRemaining: updatedAttacker.movesRemaining + 1,
-      };
-      writeUnit(updatedAttacker);
-      log(trace, `${faction.name} ${prototype.name} stampede grants +1 extra move`);
-    }
-
-    updatedAttacker = current.units.get(activeUnit.id);
-    updatedDefender = current.units.get(enemy.id);
-
-    if (attackerSynergyResult.knockbackDistance > 0 && updatedAttacker && updatedDefender && !result.defenderDestroyed && !retreatCaptured) {
-      const extendedKnockback = applyKnockback(current, updatedAttacker, updatedDefender, attackerSynergyResult.knockbackDistance);
-      if (extendedKnockback) {
-        updatedDefender = { ...updatedDefender, position: extendedKnockback };
-        writeUnit(updatedDefender);
-        log(trace, `${faction.name} ${prototype.name} synergy knockback pushed ${enemyPrototype.name}`);
-        totalKnockbackDistance += attackerSynergyResult.knockbackDistance;
-      }
-    }
-
-    updatedAttacker = current.units.get(activeUnit.id);
-    updatedDefender = current.units.get(enemy.id);
-
-    if (attackerSynergyResult.poisonTrapPositions.length > 0 && updatedAttacker) {
-      const trapKey = hexToKey(updatedAttacker.position);
-      const newTraps = new Map(current.poisonTraps);
-      newTraps.set(trapKey, {
-        damage: attackerSynergyResult.poisonTrapDamage,
-        slow: attackerSynergyResult.poisonTrapSlow,
-        ownerFactionId: factionId,
-      });
-      current = { ...current, poisonTraps: newTraps };
-      log(trace, `${faction.name} ${prototype.name} left a poison trap at ${JSON.stringify(updatedAttacker.position)}`);
-    }
-
-    hitAndRunTriggered = appliedCombat.feedback.hitAndRunRetreat !== null;
-
-    updatedAttacker = current.units.get(activeUnit.id);
-    if (
-      updatedAttacker
-      && (
-        attackerSynergyResult.additionalEffects.includes('stealth_recharge')
-        || (attackerDoctrine.stealthRechargeEnabled && prototype.tags?.includes('stealth'))
-      )
-      && !hasAdjacentEnemy(current, updatedAttacker)
-    ) {
-      updatedAttacker = { ...updatedAttacker, isStealthed: true };
-      writeUnit(updatedAttacker);
-      log(trace, `${faction.name} ${prototype.name} re-entered stealth`);
-      reStealthTriggered = true;
-    }
-
-    updatedAttacker = current.units.get(activeUnit.id);
-    if (hitAndRunTriggered && attackerSynergyResult.healOnRetreatAmount > 0 && updatedAttacker) {
-      updatedAttacker = {
-        ...updatedAttacker,
-        hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + attackerSynergyResult.healOnRetreatAmount),
-      };
-      writeUnit(updatedAttacker);
-      log(trace, `${faction.name} ${prototype.name} healed ${attackerSynergyResult.healOnRetreatAmount} HP on retreat`);
-      healOnRetreatApplied = attackerSynergyResult.healOnRetreatAmount;
-    }
-
-    updatedAttacker = current.units.get(activeUnit.id);
-    const combatHealMatch = attackerSynergyResult.additionalEffects.find((effectCode) => effectCode.includes('combat_healing'));
-    if (combatHealMatch && updatedAttacker) {
-      const healMatch = combatHealMatch.match(/combat_healing_(\d+)%/);
-      if (healMatch) {
-        const healPercent = parseInt(healMatch[1], 10) / 100;
-        const healAmount = Math.floor(result.defenderDamage * healPercent);
-        if (healAmount > 0) {
-          updatedAttacker = {
-            ...updatedAttacker,
-            hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + healAmount),
-          };
-          writeUnit(updatedAttacker);
-          log(trace, `${faction.name} ${prototype.name} healed ${healAmount} HP from combat`);
-          combatHealingApplied = healAmount;
-        }
-      }
-    }
-
-    updatedDefender = current.units.get(enemy.id);
-    if (attackerSynergyResult.sandstormDamage > 0 && updatedDefender && !result.defenderDestroyed && !retreatCaptured) {
-      const sandstormUnits = new Map(current.units);
-      const defenderNeighbors = getNeighbors(updatedDefender.position);
-      for (const adjHex of defenderNeighbors) {
-        const adjUnitId = getUnitAtHex(current, adjHex);
-        if (!adjUnitId) {
-          continue;
-        }
-        const adjUnit = sandstormUnits.get(adjUnitId);
-        if (adjUnit && adjUnit.factionId !== factionId && adjUnit.hp > 0) {
-          sandstormUnits.set(adjUnitId, {
-            ...adjUnit,
-            hp: Math.max(0, adjUnit.hp - attackerSynergyResult.sandstormDamage),
-          });
-          log(trace, `${faction.name} sandstorm dealt ${attackerSynergyResult.sandstormDamage} AoE damage to ${current.prototypes.get(adjUnit.prototypeId)?.name ?? 'unit'}`);
-          sandstormTargetsHit += 1;
-        }
-      }
-      current = { ...current, units: sandstormUnits };
-    }
-
-    updatedDefender = current.units.get(enemy.id);
-    if (attackerSynergyResult.contaminateActive && updatedDefender && !result.defenderDestroyed && !retreatCaptured) {
-      const newContaminated = new Set(current.contaminatedHexes);
-      newContaminated.add(hexToKey(updatedDefender.position));
-      current = { ...current, contaminatedHexes: newContaminated };
-      log(trace, `${faction.name} ${prototype.name} contaminated ${JSON.stringify(updatedDefender.position)}`);
-      contaminatedHexApplied = true;
-    }
-
-    updatedDefender = current.units.get(enemy.id);
-    if (attackerSynergyResult.frostbiteColdDoT > 0 && updatedDefender && !result.defenderDestroyed && !retreatCaptured) {
-      updatedDefender = {
-        ...updatedDefender,
-        frozen: true,
-        frostbiteStacks: attackerSynergyResult.frostbiteColdDoT,
-        frostbiteDoTDuration: 3,
-        movesRemaining: Math.max(0, updatedDefender.movesRemaining - attackerSynergyResult.frostbiteSlow),
-      };
-      writeUnit(updatedDefender);
-      log(trace, `${faction.name} ${prototype.name} applied frostbite (${attackerSynergyResult.frostbiteColdDoT} DoT, ${attackerSynergyResult.frostbiteSlow} slow) to ${enemyPrototype.name}`);
-      frostbiteApplied = true;
-    }
-
-    updatedAttacker = current.units.get(activeUnit.id) ?? { ...activeUnit, hp: 0, morale: 0, routed: true };
-    updatedDefender = current.units.get(enemy.id) ?? { ...enemy, hp: 0, morale: 0, routed: true };
-
-    const triggeredEffects: TraceCombatEffect[] = [];
-    if (flanking > 0) {
-      pushCombatEffect(triggeredEffects, 'Flanking', `Attack gained ${formatPercent(flanking)} from adjacent allied pressure.`, 'positioning');
-    }
-    if (rearAttackBonus > 0) {
-      pushCombatEffect(triggeredEffects, 'Rear Attack', `Hit from behind for ${formatPercent(rearAttackBonus)} and extra morale damage.`, 'positioning');
-    }
-    if (chargeAttackBonus > 0) {
-      pushCombatEffect(triggeredEffects, 'Charge', `Attack gained ${formatPercent(chargeAttackBonus)} from momentum.`, 'ability');
-    }
-    if (braceTriggered) {
-      pushCombatEffect(triggeredEffects, 'Brace', `Defender braced for ${formatPercent(braceDefenseBonus)} defense and stronger retaliation.`, 'ability');
-    }
-    if (ambushAttackBonus > 0) {
-      pushCombatEffect(triggeredEffects, 'Ambush', `Prepared ambush added ${formatPercent(ambushAttackBonus)} attack.`, 'ability');
-    }
-    if (attackerIsStealthed) {
-      pushCombatEffect(triggeredEffects, 'Stealth Ambush', 'Attacker opened from stealth for a major burst bonus.', 'ability');
-    }
-    if (tidalAssaultTriggered) {
-      pushCombatEffect(triggeredEffects, 'Tidal Assault', 'Naval shock force attacked from water and reduced the defender’s footing.', 'ability');
-    }
-    if (bulwarkTriggered) {
-      pushCombatEffect(triggeredEffects, 'Bulwark', 'Adjacent fortress support hardened the defender.', 'ability');
-    }
-    if (fortifiedVolleyTriggered) {
-      pushCombatEffect(triggeredEffects, 'Fortified Volley', 'Ranged unit fired from a field fort for bonus attack.', 'ability');
-    }
-    if (fortifiedCoverTriggered) {
-      pushCombatEffect(triggeredEffects, 'Fortified Cover', 'Ranged defender in a field fort gained fortified cover.', 'ability');
-    }
-    if (swiftChargeTriggered) {
-      pushCombatEffect(triggeredEffects, 'Swift Charge', 'Cavalry signature charge replaced the baseline charge bonus.', 'ability');
-    }
-    if (stampedeTriggered) {
-      pushCombatEffect(triggeredEffects, 'Stampede', 'Elephant momentum stacked extra charge damage.', 'ability');
-    }
-    if (synergyAttackModifier !== 0) {
-      pushCombatEffect(triggeredEffects, 'Synergy Attack Bonus', `Pair or triple synergies added ${formatPercent(synergyAttackModifier)} attack pressure.`, 'synergy');
-    }
-    if (synergyDefenseModifier !== 0) {
-      pushCombatEffect(triggeredEffects, 'Synergy Defense Bonus', `Pair or triple synergies added ${formatPercent(synergyDefenseModifier)} defense.`, 'synergy');
-    }
-    for (const effectCode of [...attackerSynergyResult.additionalEffects, ...defenderSynergyResult.additionalEffects]) {
-      const effect = humanizeCombatEffect(effectCode);
-      if (effect) {
-        pushCombatEffect(triggeredEffects, effect.label, effect.detail, 'synergy');
-      }
-    }
-    if (poisonApplied) {
-      pushCombatEffect(triggeredEffects, 'Poisoned', `Defender was poisoned for ${updatedDefender.poisonStacks} stack damage over time.`, 'aftermath');
-    }
-    if (reflectionDamageApplied > 0) {
-      pushCombatEffect(triggeredEffects, 'Reflection', `Defender reflected ${reflectionDamageApplied} damage back to the attacker.`, 'aftermath');
-    }
-    if (totalKnockbackDistance > 0 && !result.defenderDestroyed) {
-      pushCombatEffect(triggeredEffects, 'Knockback', `Defender was displaced ${totalKnockbackDistance} hex${totalKnockbackDistance === 1 ? '' : 'es'}.`, 'aftermath');
-    }
-    if (reStealthTriggered) {
-      pushCombatEffect(triggeredEffects, 'Stealth Recharge', 'Attacker slipped back into stealth after the exchange.', 'aftermath');
-    }
-    if (combatHealingApplied > 0) {
-      pushCombatEffect(triggeredEffects, 'Combat Healing', `Attacker recovered ${combatHealingApplied} HP from dealt damage.`, 'aftermath');
-    }
-    if (sandstormTargetsHit > 0) {
-      pushCombatEffect(triggeredEffects, 'Sandstorm Splash', `Area damage hit ${sandstormTargetsHit} nearby unit${sandstormTargetsHit === 1 ? '' : 's'}.`, 'aftermath');
-    }
-    if (contaminatedHexApplied) {
-      pushCombatEffect(triggeredEffects, 'Contamination', 'The defender hex became contaminated after the strike.', 'aftermath');
-    }
-    if (frostbiteApplied) {
-      pushCombatEffect(triggeredEffects, 'Frostbite', `Defender took ${attackerSynergyResult.frostbiteColdDoT} cold DoT and ${attackerSynergyResult.frostbiteSlow} slow.`, 'aftermath');
-    }
-    if (hitAndRunTriggered) {
-      pushCombatEffect(triggeredEffects, 'Hit And Run', 'Attacker disengaged after combat to avoid being pinned.', 'aftermath');
-    }
-    if (healOnRetreatApplied > 0) {
-      pushCombatEffect(triggeredEffects, 'Retreat Heal', `Attacker recovered ${healOnRetreatApplied} HP while withdrawing.`, 'aftermath');
     }
 
     const roleInfo = result.roleModifier !== 0 ? ` role:${result.roleModifier > 0 ? '+' : ''}${(result.roleModifier * 100).toFixed(0)}%` : '';
     const weaponInfo = result.weaponModifier !== 0 ? ` weapon:${result.weaponModifier > 0 ? '+' : ''}${(result.weaponModifier * 100).toFixed(0)}%` : '';
     const rearInfo = result.rearAttackBonus > 0 ? ' rear:+20%' : '';
-    const abilityInfo = `${ambushAttackBonus > 0 ? ' ambush' : ''}${chargeAttackBonus > 0 ? ' charge' : ''}${braceTriggered ? ' counter-braced' : ''}`;
-    const stealthInfo = attackerIsStealthed ? ' stealth-ambush' : '';
-    const poisonInfo = !result.defenderDestroyed && result.defenderDamage > 0 && canInflictPoison(current, activeUnit) ? ` poisoned(${updatedDefender.poisonStacks})` : '';
-    const knockbackInfo = result.defenderKnockedBack && !result.defenderDestroyed ? ' knocked-back' : '';
-    const strikeFirstInfo = isChargeAttack && prototype.tags?.includes('cavalry') && result.defenderDestroyed && result.attackerDamage === 0 ? ' strike-first-kill' : '';
+    const abilityInfo = `${result.ambushAttackBonus > 0 ? ' ambush' : ''}${combatPreview.details.chargeAttackBonus > 0 ? ' charge' : ''}${combatPreview.braceTriggered ? ' counter-braced' : ''}`;
+    const stealthInfo = combatPreview.attackerWasStealthed ? ' stealth-ambush' : '';
+    const poisonInfo = resolution.poisonApplied ? ` poisoned(${updatedDefender.poisonStacks ?? 0})` : '';
+    const knockbackInfo = resolution.totalKnockbackDistance > 0 && !result.defenderDestroyed ? ' knocked-back' : '';
+    const strikeFirstInfo = combatPreview.details.isChargeAttack && prototype.tags?.includes('cavalry') && result.defenderDestroyed && result.attackerDamage === 0 ? ' strike-first-kill' : '';
     const moraleInfo = ` morale:${result.defenderMoraleLoss.toFixed(0)}lost${result.defenderRouted ? ' ROUTED' : ''}${result.defenderFled ? ' FLED' : ''}`;
     log(
       trace,
@@ -2044,7 +1229,7 @@ export function activateUnit(
       result.defenderDamage,
       result.attackerDamage,
       outcomeLabel,
-      triggeredEffects
+      resolution.triggeredEffects
     );
     recordCombatEvent(trace, {
       round: current.round,
@@ -2074,7 +1259,7 @@ export function activateUnit(
           prototypeId: activeUnit.prototypeId,
           prototypeName: prototype.name,
           position: activeUnit.position,
-          terrain: attackerTerrainId,
+          terrain: combatPreview.details.attackerTerrainId,
           hpBefore: activeUnit.hp,
           hpAfter: updatedAttacker.hp,
           maxHp: activeUnit.maxHp,
@@ -2086,7 +1271,7 @@ export function activateUnit(
           prototypeId: enemy.prototypeId,
           prototypeName: enemyPrototype.name,
           position: enemy.position,
-          terrain: defenderTerrainId,
+          terrain: combatPreview.details.defenderTerrainId,
           hpBefore: enemy.hp,
           hpAfter: updatedDefender.hp,
           maxHp: enemy.maxHp,
@@ -2097,17 +1282,17 @@ export function activateUnit(
           weaponModifier: result.weaponModifier,
           flankingBonus: result.flankingBonus,
           rearAttackBonus: result.rearAttackBonus,
-          chargeBonus: chargeAttackBonus,
+          chargeBonus: combatPreview.details.chargeAttackBonus,
           braceDefenseBonus: result.braceDefenseBonus,
           ambushBonus: result.ambushAttackBonus,
           hiddenAttackBonus: result.hiddenAttackBonus,
-          stealthAmbushBonus: attackerIsStealthed ? 0.5 : 0,
+          stealthAmbushBonus: combatPreview.attackerWasStealthed ? 0.5 : 0,
           situationalAttackModifier: result.situationalAttackModifier,
           situationalDefenseModifier: result.situationalDefenseModifier,
-          synergyAttackModifier,
-          synergyDefenseModifier,
-          improvementDefenseBonus,
-          wallDefenseBonus,
+          synergyAttackModifier: combatPreview.details.synergyAttackModifier,
+          synergyDefenseModifier: combatPreview.details.synergyDefenseModifier,
+          improvementDefenseBonus: combatPreview.details.improvementDefenseBonus,
+          wallDefenseBonus: combatPreview.details.wallDefenseBonus,
           finalAttackStrength: result.attackStrength,
           finalDefenseStrength: result.defenseStrength,
           baseMultiplier: result.baseMultiplier,
@@ -2128,10 +1313,10 @@ export function activateUnit(
           defenderDamage: result.defenderDamage,
           attackerDestroyed: result.attackerDestroyed,
           defenderDestroyed: result.defenderDestroyed,
-          defenderKnockedBack: totalKnockbackDistance > 0 && !result.defenderDestroyed,
-          knockbackDistance: totalKnockbackDistance,
+          defenderKnockedBack: resolution.totalKnockbackDistance > 0 && !result.defenderDestroyed,
+          knockbackDistance: resolution.totalKnockbackDistance,
         },
-        triggeredEffects,
+        triggeredEffects: resolution.triggeredEffects,
       },
     });
 
@@ -2230,4 +1415,5 @@ export function activateAiUnit(
 ): UnitActivationResult {
   return activateUnit(state, unitId, registry, options);
 }
+
 

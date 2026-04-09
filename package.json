@@ -7,6 +7,7 @@
     "dev": "tsx src/main.ts",
     "replay:export": "tsx scripts/exportReplay.ts",
     "test": "vitest run",
+    "test:architecture": "vitest run tests/architectureBoundaries.test.ts",
     "test:balance": "vitest run tests/balanceHarness.test.ts",
     "balance:harness": "tsx scripts/runBalanceHarness.ts",
     "balance:harness:stratified": "tsx scripts/runBalanceHarness.ts --stratified",

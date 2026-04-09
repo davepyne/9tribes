@@ -560,12 +560,20 @@ export class GameSession {
       this.record('turn', `${applied.feedback.lastLearnedDomain.domainId} ability learned from ${preview.defenderFactionId}!`);
     }
 
+    const finalCombatEvent: ReplayCombatEvent = {
+      ...combatEvent,
+      breakdown: {
+        ...combatEvent.breakdown,
+        triggeredEffects: applied.feedback.resolution.triggeredEffects,
+      },
+    };
+
     // Keep last 20 events, newest first
-    this.feedback.liveCombatEvents = [combatEvent, ...this.feedback.liveCombatEvents].slice(0, 20);
+    this.feedback.liveCombatEvents = [finalCombatEvent, ...this.feedback.liveCombatEvents].slice(0, 20);
 
     this.record(
       'combat',
-      `${combatEvent.attackerPrototypeName} attacked ${combatEvent.defenderPrototypeName}: dealt ${preview.result.defenderDamage}, took ${preview.result.attackerDamage}.`,
+      `${finalCombatEvent.attackerPrototypeName} attacked ${finalCombatEvent.defenderPrototypeName}: dealt ${preview.result.defenderDamage}, took ${preview.result.attackerDamage}.`,
     );
   }
 

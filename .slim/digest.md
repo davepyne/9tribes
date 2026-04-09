@@ -297,3 +297,11 @@ No significant changes detected.
 ### Dependency Changes
 - `src/systems/unitActivationSystem.ts` imports: src/core/ids.ts (createImprovementId), src/core/grid.ts (getDirectionIndex, getHexesInRange, getNeighbors), src/data/registry/types.ts (RulesRegistry), src/data/roleEffectiveness.ts (getRoleEffectiveness), src/data/weaponEffectiveness.ts (getWeaponEffectiveness)
 - `src/systems/warEcologySimulation.ts` — 142 dependencies
+
+---
+
+## Digest — 2026-04-09T14:11:27.482818Z
+
+### Dependency Changes
+
+No significant changes detected.
