@@ -6,6 +6,7 @@ export interface AiDifficultyProfile {
   production: {
     rushTurns: number;
     codifiedPivotDuration: number;
+    codifiedPivotScoringBonus: number;
     supplyEfficiencyWeight: number;
     forceProjectionWeight: number;
     underCapUtilizationFloor: number;
@@ -64,6 +65,9 @@ export interface AiDifficultyProfile {
     villageCityDistanceLimit: number;
     learnLoopEnabled: boolean;
     learnLoopHighAbilityThreshold: number;
+    learnLoopMinAbilitiesToReturn: number;
+    learnLoopMaxAbilitiesToLearn: number;
+    learnLoopDomainTargetingEnabled: boolean;
     learnLoopFarFromHomeDistance: number;
     learnLoopIdleHomeRadius: number;
     learnLoopMinFieldForce: number;
@@ -79,6 +83,7 @@ const EASY_PROFILE: AiDifficultyProfile = {
   production: {
     rushTurns: 0,
     codifiedPivotDuration: 0,
+    codifiedPivotScoringBonus: 0,
     supplyEfficiencyWeight: 0.22,
     forceProjectionWeight: 0.95,
     underCapUtilizationFloor: 0.8,
@@ -137,6 +142,9 @@ const EASY_PROFILE: AiDifficultyProfile = {
     villageCityDistanceLimit: 8,
     learnLoopEnabled: false,
     learnLoopHighAbilityThreshold: 2,
+    learnLoopMinAbilitiesToReturn: 2,
+    learnLoopMaxAbilitiesToLearn: 1,
+    learnLoopDomainTargetingEnabled: false,
     learnLoopFarFromHomeDistance: 5,
     learnLoopIdleHomeRadius: 4,
     learnLoopMinFieldForce: 3,
@@ -152,6 +160,7 @@ const NORMAL_PROFILE: AiDifficultyProfile = {
   production: {
     rushTurns: 10,
     codifiedPivotDuration: 3,
+    codifiedPivotScoringBonus: 0,
     supplyEfficiencyWeight: 0.22,
     forceProjectionWeight: 0.95,
     underCapUtilizationFloor: 0.5,
@@ -210,6 +219,9 @@ const NORMAL_PROFILE: AiDifficultyProfile = {
     villageCityDistanceLimit: 8,
     learnLoopEnabled: true,
     learnLoopHighAbilityThreshold: 2,
+    learnLoopMinAbilitiesToReturn: 2,
+    learnLoopMaxAbilitiesToLearn: 1,
+    learnLoopDomainTargetingEnabled: false,
     learnLoopFarFromHomeDistance: 5,
     learnLoopIdleHomeRadius: 4,
     learnLoopMinFieldForce: 3,
@@ -225,6 +237,7 @@ const HARD_PROFILE: AiDifficultyProfile = {
   production: {
     rushTurns: 7,
     codifiedPivotDuration: 4,
+    codifiedPivotScoringBonus: 5,
     supplyEfficiencyWeight: 0.24,
     forceProjectionWeight: 1.1,
     underCapUtilizationFloor: 0.88,
@@ -283,6 +296,9 @@ const HARD_PROFILE: AiDifficultyProfile = {
     villageCityDistanceLimit: 6,
     learnLoopEnabled: true,
     learnLoopHighAbilityThreshold: 2,
+    learnLoopMinAbilitiesToReturn: 1,
+    learnLoopMaxAbilitiesToLearn: 2,
+    learnLoopDomainTargetingEnabled: true,
     learnLoopFarFromHomeDistance: 4,
     learnLoopIdleHomeRadius: 5,
     learnLoopMinFieldForce: 4,

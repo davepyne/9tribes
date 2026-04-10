@@ -221,7 +221,11 @@ export function rankProductionPriorities(
       const hybridScore = scoreHybridFit(strategy, prototype);
       const catapultScore = scoreCatapultPreference(factionId, state, strategy, prototype);
       const domains = getDomainIdsByTags(prototype.tags ?? []);
-      const codifiedPivotScore = scoreRecentCodifiedDomainPivot(domains, recentCodifiedDomains);
+      const codifiedPivotScore = scoreRecentCodifiedDomainPivot(
+        domains,
+        recentCodifiedDomains,
+        difficultyProfile.production.codifiedPivotScoringBonus,
+      );
       const settlerScore = scoreSettlerExpansionValue(state, factionId, strategy, prototype, difficultyProfile, difficulty);
       const baseCost = getUnitCost(prototype.chassisId);
       const totalCost = calculatePrototypeCost(baseCost, faction, domains);
@@ -638,12 +642,16 @@ function scoreHybridFit(strategy: FactionStrategy, prototype: NonNullable<GameSt
   return score;
 }
 
-function scoreRecentCodifiedDomainPivot(domains: string[], recentCodifiedDomains?: Set<string>): number {
+function scoreRecentCodifiedDomainPivot(
+  domains: string[],
+  recentCodifiedDomains: Set<string> | undefined,
+  scoringBonus: number,
+): number {
   if (!recentCodifiedDomains || recentCodifiedDomains.size === 0) {
     return 0;
   }
   const matches = domains.filter((domainId) => recentCodifiedDomains.has(domainId)).length;
-  return matches > 0 ? 6 + (matches - 1) * 2 : 0;
+  return matches > 0 ? scoringBonus + (matches - 1) * 2 : 0;
 }
 
 function buildProductionReason(

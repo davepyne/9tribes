@@ -31,6 +31,7 @@ import { getEmbarkedUnits } from './transportSystem.js';
 import { getVisibleEnemyUnits, isUnitVisibleTo, getLastSeenEnemyUnits, getLastSeenEnemyCities, getExploredHexKeys } from './fogSystem.js';
 import type { DifficultyLevel } from './aiDifficulty.js';
 import { getAiDifficultyProfile, type AiDifficultyProfile } from './aiDifficulty.js';
+import abilityDomainsData from '../content/base/ability-domains.json' with { type: 'json' };
 
 const FRONT_RADIUS = 4;
 const THREAT_RADIUS = 3;
@@ -77,6 +78,8 @@ interface SquadPlanEntry {
   anchor: HexCoord;
   memberIds: UnitId[];
 }
+
+const ALL_ABILITY_DOMAIN_IDS = new Set(Object.keys(abilityDomainsData.domains));
 
 export function computeFactionStrategy(
   state: GameState,
@@ -1108,7 +1111,8 @@ function applyDifficultyLearnAndSacrificeCoordinator(
     return [`${learnLoopLabel}=skipped:no_home_city`];
   }
 
-  const highAbilityThreshold = difficultyProfile.strategy.learnLoopHighAbilityThreshold;
+  const minAbilitiesToReturn = difficultyProfile.strategy.learnLoopMinAbilitiesToReturn;
+  const maxAbilitiesToLearn = difficultyProfile.strategy.learnLoopMaxAbilitiesToLearn;
   const farFromHomeDistance = difficultyProfile.strategy.learnLoopFarFromHomeDistance;
   const idleHomeRadius = difficultyProfile.strategy.learnLoopIdleHomeRadius;
   const minFieldForce = difficultyProfile.strategy.learnLoopMinFieldForce;
@@ -1120,7 +1124,7 @@ function applyDifficultyLearnAndSacrificeCoordinator(
   });
 
   const returnCandidates = fieldArmy
-    .filter((entry) => (entry.unit.learnedAbilities?.length ?? 0) >= highAbilityThreshold)
+    .filter((entry) => (entry.unit.learnedAbilities?.length ?? 0) >= minAbilitiesToReturn)
     .filter((entry) => hexDistance(entry.unit.position, homeCity.position) > farFromHomeDistance)
     .sort((left, right) => {
       const abilityDelta = (right.unit.learnedAbilities?.length ?? 0) - (left.unit.learnedAbilities?.length ?? 0);
@@ -1157,9 +1161,12 @@ function applyDifficultyLearnAndSacrificeCoordinator(
   }
 
   const fallbackTargetCity = targetCity ?? getNearestEnemyCity(state, factionId, homeCity.position);
+  const learnerTargetCity = difficultyProfile.strategy.learnLoopDomainTargetingEnabled
+    ? getLearnLoopTargetCity(state, factionId, faction.learnedDomains, homeCity.position, fallbackTargetCity)
+    : fallbackTargetCity;
   const learnerPool = fieldArmy
     .filter((entry) => !returningIds.has(entry.unit.id))
-    .filter((entry) => (entry.unit.learnedAbilities?.length ?? 0) <= 1)
+    .filter((entry) => (entry.unit.learnedAbilities?.length ?? 0) <= maxAbilitiesToLearn)
     .filter((entry) => entry.unit.status === 'ready')
     .filter((entry) => hexDistance(entry.unit.position, homeCity.position) <= idleHomeRadius)
     .filter((entry) => {
@@ -1172,14 +1179,16 @@ function applyDifficultyLearnAndSacrificeCoordinator(
     intents[learner.unit.id] = {
       ...currentIntent,
       assignment: 'main_army',
-      waypointKind: fallbackTargetCity ? 'enemy_city' : currentIntent?.waypointKind ?? 'front_anchor',
-      waypoint: fallbackTargetCity?.position ?? currentIntent?.waypoint ?? learner.unit.position,
-      objectiveCityId: fallbackTargetCity?.id,
+      waypointKind: learnerTargetCity ? 'enemy_city' : currentIntent?.waypointKind ?? 'front_anchor',
+      waypoint: learnerTargetCity?.position ?? currentIntent?.waypoint ?? learner.unit.position,
+      objectiveCityId: learnerTargetCity?.id,
       objectiveUnitId: undefined,
-      anchor: fallbackTargetCity?.position ?? currentIntent?.anchor ?? learner.unit.position,
+      anchor: learnerTargetCity?.position ?? currentIntent?.anchor ?? learner.unit.position,
       isolated: false,
-      reason: fallbackTargetCity
-        ? `${difficultyProfile.difficulty} learn loop sending low-knowledge unit to fight toward ${fallbackTargetCity.id}`
+      reason: learnerTargetCity
+        ? difficultyProfile.strategy.learnLoopDomainTargetingEnabled && learnerTargetCity.id !== fallbackTargetCity?.id
+          ? `${difficultyProfile.difficulty} learn loop sending low-knowledge unit to hunt needed domains at ${learnerTargetCity.id}`
+          : `${difficultyProfile.difficulty} learn loop sending low-knowledge unit to fight toward ${learnerTargetCity.id}`
         : `${difficultyProfile.difficulty} learn loop promoting idle unit to seek combat`,
     };
   }
@@ -1187,6 +1196,43 @@ function applyDifficultyLearnAndSacrificeCoordinator(
   return [
     `${learnLoopLabel}=returners:${returningIds.size},learners:${learnerPool.length}`,
   ];
+}
+
+function getLearnLoopTargetCity(
+  state: GameState,
+  factionId: FactionId,
+  learnedDomains: string[],
+  origin: HexCoord,
+  fallbackTargetCity: City | undefined,
+): City | undefined {
+  const neededDomains = new Set<string>();
+  const knownDomains = new Set(learnedDomains);
+  for (const domainId of ALL_ABILITY_DOMAIN_IDS) {
+    if (!knownDomains.has(domainId)) {
+      neededDomains.add(domainId);
+    }
+  }
+  if (neededDomains.size === 0) {
+    return fallbackTargetCity;
+  }
+
+  let bestCity: City | undefined;
+  let bestDistance = Infinity;
+  for (const city of state.cities.values()) {
+    if (city.factionId === factionId) {
+      continue;
+    }
+    const cityFaction = state.factions.get(city.factionId);
+    if (!cityFaction || !neededDomains.has(cityFaction.nativeDomain)) {
+      continue;
+    }
+    const distance = hexDistance(origin, city.position);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestCity = city;
+    }
+  }
+  return bestCity ?? fallbackTargetCity;
 }
 
 function chooseVillageFirstHunterTarget(
