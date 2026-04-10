@@ -56,6 +56,8 @@ export interface AiDifficultyProfile {
     focusBudgetLeaderBonus: number;
     focusOverfillPenalty: number;
     coordinatorEnabled: boolean;
+    multiAxisEnabled: boolean;
+    multiAxisGroupCount: number;
     coordinatorMinSupplyRatio: number;
     coordinatorMinIdleNearHome: number;
     coordinatorMinActiveArmy: number;
@@ -133,6 +135,8 @@ const EASY_PROFILE: AiDifficultyProfile = {
     focusBudgetLeaderBonus: 0.5,
     focusOverfillPenalty: 2.4,
     coordinatorEnabled: false,
+    multiAxisEnabled: false,
+    multiAxisGroupCount: 1,
     coordinatorMinSupplyRatio: 0.8,
     coordinatorMinIdleNearHome: 3,
     coordinatorMinActiveArmy: 4,
@@ -210,6 +214,8 @@ const NORMAL_PROFILE: AiDifficultyProfile = {
     focusBudgetLeaderBonus: 0.5,
     focusOverfillPenalty: 2.4,
     coordinatorEnabled: true,
+    multiAxisEnabled: false,
+    multiAxisGroupCount: 1,
     coordinatorMinSupplyRatio: 0.8,
     coordinatorMinIdleNearHome: 3,
     coordinatorMinActiveArmy: 4,
@@ -287,6 +293,8 @@ const HARD_PROFILE: AiDifficultyProfile = {
     focusBudgetLeaderBonus: 1.1,
     focusOverfillPenalty: 3.8,
     coordinatorEnabled: true,
+    multiAxisEnabled: true,
+    multiAxisGroupCount: 2,
     coordinatorMinSupplyRatio: 0.9,
     coordinatorMinIdleNearHome: 2,
     coordinatorMinActiveArmy: 5,

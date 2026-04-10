@@ -1038,6 +1038,111 @@ function applyDifficultyCoordinator(
     ];
   }
 
+  const assignHunterGroup = (
+    huntersToAssign: UnitWithPrototype[],
+    assignedHunterIds: Set<UnitId>,
+    destinationCity: City,
+    pushReason: string,
+  ): Village | undefined => {
+    const waypointVillage =
+      posture === 'offensive' || posture === 'siege'
+        ? chooseVillageFirstHunterTarget(state, factionId, homeCity.position, destinationCity, difficultyProfile)
+        : undefined;
+    const waypoint = waypointVillage?.position ?? destinationCity.position;
+    const waypointKind = waypointVillage ? 'cleanup_target' : 'enemy_city';
+
+    for (const hunter of huntersToAssign) {
+      assignedHunterIds.add(hunter.unit.id);
+      intents[hunter.unit.id] = {
+        ...intents[hunter.unit.id],
+        assignment: 'main_army',
+        waypointKind,
+        waypoint,
+        objectiveCityId: waypointVillage ? undefined : destinationCity.id,
+        objectiveUnitId: undefined,
+        anchor: destinationCity.position,
+        isolated: false,
+        reason: waypointVillage
+          ? `${pushReason} via village ${waypointVillage.id} before ${destinationCity.id}`
+          : `${pushReason} toward ${destinationCity.id}`,
+      };
+    }
+
+    return waypointVillage;
+  };
+
+  if (
+    difficultyProfile.strategy.multiAxisEnabled
+    && difficultyProfile.strategy.multiAxisGroupCount > 1
+    && hunterCount >= 4
+  ) {
+    const secondTargetCity = getSecondNearestEnemyCity(state, factionId, homeCity.position, targetCity.id);
+    if (secondTargetCity) {
+      const flankCount = Math.max(2, Math.floor(hunterCount * 0.4));
+      const primaryCount = hunterCount - flankCount;
+      if (primaryCount >= 2) {
+        const rankHuntersForTarget = (pool: UnitWithPrototype[], target: City): UnitWithPrototype[] =>
+          [...pool].sort((left, right) => {
+            const leftDistance = hexDistance(left.unit.position, target.position);
+            const rightDistance = hexDistance(right.unit.position, target.position);
+            if (leftDistance !== rightDistance) {
+              return leftDistance - rightDistance;
+            }
+            if (left.prototype.derivedStats.moves !== right.prototype.derivedStats.moves) {
+              return right.prototype.derivedStats.moves - left.prototype.derivedStats.moves;
+            }
+            return compareUnitEntries(left, right);
+          });
+
+        const primaryHunters = rankHuntersForTarget(hunterPool, targetCity).slice(0, primaryCount);
+        const primaryHunterIds = new Set(primaryHunters.map((entry) => entry.unit.id));
+        const flankHunters = rankHuntersForTarget(
+          hunterPool.filter((entry) => !primaryHunterIds.has(entry.unit.id)),
+          secondTargetCity,
+        ).slice(0, flankCount);
+
+        if (flankHunters.length >= 2) {
+          const hunterIds = new Set<UnitId>();
+          const primaryWaypointVillage = assignHunterGroup(
+            primaryHunters,
+            hunterIds,
+            targetCity,
+            `${coordinatorLabel} coordinator hunter push`,
+          );
+          const flankWaypointVillage = assignHunterGroup(
+            flankHunters,
+            hunterIds,
+            secondTargetCity,
+            `${coordinatorLabel} coordinator flanking push`,
+          );
+
+          for (const defender of hunterPool) {
+            if (hunterIds.has(defender.unit.id)) {
+              continue;
+            }
+            intents[defender.unit.id] = buildHomeDefenseIntent(
+              intents[defender.unit.id],
+              homeCity,
+              `${coordinatorLabel} coordinator home defense`,
+            );
+          }
+
+          return [
+            `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
+            primaryWaypointVillage
+              ? `${coordinatorLabel}_village_target=${primaryWaypointVillage.id}`
+              : `${coordinatorLabel}_village_target=none`,
+            flankWaypointVillage
+              ? `${coordinatorLabel}_flank_village_target=${flankWaypointVillage.id}`
+              : `${coordinatorLabel}_flank_village_target=none`,
+            `${coordinatorLabel}_flank_target=${secondTargetCity.id}`,
+            `${coordinatorLabel}_coordinator=active:supply=${supplyRatio.toFixed(2)},hunters=${hunterIds.size},defenders=${hunterPool.length - hunterIds.size + 1}`,
+          ];
+        }
+      }
+    }
+  }
+
   const hunterWaypointVillage =
     posture === 'offensive' || posture === 'siege'
       ? chooseVillageFirstHunterTarget(state, factionId, homeCity.position, targetCity, difficultyProfile)
@@ -1305,6 +1410,34 @@ function getNearestEnemyCity(
     }
   }
   return best;
+}
+
+function getSecondNearestEnemyCity(
+  state: GameState,
+  factionId: FactionId,
+  origin: HexCoord,
+  excludedCityId: CityId,
+): City | undefined {
+  const primaryTargetCity = state.cities.get(excludedCityId);
+  const enemyCities = Array.from(state.cities.values())
+    .filter((city) => city.factionId !== factionId && city.id !== excludedCityId)
+    .sort((left, right) => {
+      const leftDistance = hexDistance(origin, left.position);
+      const rightDistance = hexDistance(origin, right.position);
+      if (leftDistance !== rightDistance) {
+        return leftDistance - rightDistance;
+      }
+      return left.id.localeCompare(right.id);
+    });
+
+  if (enemyCities.length === 0) {
+    return undefined;
+  }
+
+  const differentFactionCity = primaryTargetCity
+    ? enemyCities.find((city) => city.factionId !== primaryTargetCity.factionId)
+    : undefined;
+  return differentFactionCity ?? enemyCities[0];
 }
 
 function buildSoftTargetBudgets(
