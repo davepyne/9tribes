@@ -32,6 +32,34 @@ export class PathRenderer {
       this.layer.add(marker);
     }
 
+    // Render queued path before the live hover preview so the active preview stays on top.
+    if (world.overlays.queuedPath.length >= 2) {
+      const queuedGraphics = this.scene.add.graphics();
+      queuedGraphics.lineStyle(4, 0x4ecdc4, 0.65);
+      for (let index = 0; index < world.overlays.queuedPath.length - 1; index += 1) {
+        const current = world.overlays.queuedPath[index];
+        const next = world.overlays.queuedPath[index + 1];
+        const from = this.worldToScreen(current.q, current.r);
+        const to = this.worldToScreen(next.q, next.r);
+        this.drawDashedLine(queuedGraphics, from.x, from.y - 8, to.x, to.y - 8, 8, 5);
+      }
+      this.layer.add(queuedGraphics);
+
+      for (const node of world.overlays.queuedPath) {
+        const point = this.worldToScreen(node.q, node.r);
+        const isLast = node.step === world.overlays.queuedPath.length - 1;
+        const marker = this.scene.add.ellipse(
+          point.x,
+          point.y - 8,
+          isLast ? 16 : 10,
+          isLast ? 8 : 5,
+          0x4ecdc4,
+          0.5,
+        ).setStrokeStyle(2, 0x7eeee4, 0.85);
+        this.layer.add(marker);
+      }
+    }
+
     if (world.overlays.pathPreview.length < 2) {
       return;
     }
@@ -52,6 +80,43 @@ export class PathRenderer {
       const marker = this.scene.add.ellipse(point.x, point.y - 8, node.step === 0 ? 18 : 14, node.step === 0 ? 10 : 8, 0xf7e7a8, node.step === 0 ? 0.78 : 0.9)
         .setStrokeStyle(2, 0xfff4c8, 0.95);
       this.layer.add(marker);
+    }
+  }
+
+  private drawDashedLine(
+    graphics: Phaser.GameObjects.Graphics,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    dashLength: number,
+    gapLength: number,
+  ) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance === 0) {
+      return;
+    }
+
+    const stepX = dx / distance;
+    const stepY = dy / distance;
+
+    let position = 0;
+    let drawing = true;
+    while (position < distance) {
+      const segmentLength = drawing
+        ? Math.min(dashLength, distance - position)
+        : Math.min(gapLength, distance - position);
+      if (drawing) {
+        const startX = x1 + stepX * position;
+        const startY = y1 + stepY * position;
+        const endX = x1 + stepX * (position + segmentLength);
+        const endY = y1 + stepY * (position + segmentLength);
+        graphics.lineBetween(startX, startY, endX, endY);
+      }
+      position += segmentLength;
+      drawing = !drawing;
     }
   }
 }

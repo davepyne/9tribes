@@ -5,6 +5,7 @@ import { GameSession, type SessionSaveSnapshot } from './GameSession';
 import type { PendingCombat } from './GameSession';
 import { buildDebugViewModel, buildHudViewModel, buildResearchInspectorViewModel, buildWorldViewModel } from '../view-model/worldViewModel';
 import { getVictoryStatus } from '../../../../src/systems/warEcologySimulation.js';
+import { findPath } from '../../../../src/systems/pathfinder.js';
 
 type Listener = () => void;
 
@@ -116,9 +117,26 @@ export class GameController {
         break;
       case 'move_unit':
         if (this.session) {
+          // Clear any existing queue before issuing direct move
+          const existingUnit = this.session.getState().units.get(action.unitId as never);
+          if (existingUnit?.moveQueueDestination) {
+            this.session.dispatch({ type: 'cancel_queue', unitId: action.unitId });
+          }
           this.session.dispatch(action);
           this.targetingMode = 'move';
           this.selected = { type: 'unit', unitId: action.unitId };
+        }
+        break;
+      case 'queue_move':
+        if (this.session) {
+          this.session.dispatch(action);
+          this.targetingMode = 'move';
+          this.selected = { type: 'unit', unitId: action.unitId };
+        }
+        break;
+      case 'cancel_queue':
+        if (this.session) {
+          this.session.dispatch(action);
         }
         break;
       case 'prepare_ability':
@@ -126,6 +144,7 @@ export class GameController {
       case 'disembark_unit':
       case 'build_fort':
         if (this.session) {
+          this.clearQueueIfNeeded(action.unitId);
           this.session.dispatch(action);
           this.targetingMode = 'move';
           this.selected = { type: 'unit', unitId: action.unitId };
@@ -133,6 +152,7 @@ export class GameController {
         break;
       case 'build_city':
         if (this.session) {
+          this.clearQueueIfNeeded(action.unitId);
           const unit = this.session.getState().units.get(action.unitId as never);
           const position = unit ? { ...unit.position } : null;
           this.session.dispatch(action);
@@ -153,6 +173,7 @@ export class GameController {
         break;
       case 'attack_unit':
         if (this.session) {
+          this.clearQueueIfNeeded(action.attackerId);
           this.session.dispatch(action);
           const pending = this.session.getPendingCombat();
           if (pending) {
@@ -182,8 +203,13 @@ export class GameController {
         break;
       case 'start_research':
       case 'cancel_research':
+        if (this.session) {
+          this.session.dispatch(action);
+        }
+        break;
       case 'sacrifice_unit':
         if (this.session) {
+          this.clearQueueIfNeeded(action.unitId);
           this.session.dispatch(action);
         }
         break;
@@ -226,6 +252,7 @@ export class GameController {
       reachableHexes,
       attackHexes,
       pathPreview,
+      queuedPath: [],
     });
 
     return {
@@ -249,6 +276,9 @@ export class GameController {
         interactionHint: 'Scrub the timeline or click entities to inspect the replay.',
         hoveredMove,
         hoveredAttackTarget,
+        queuedUnitId: null,
+        queuedPath: [],
+        estimatedTurnsToArrival: null,
       },
       debug: buildDebugViewModel(turn),
       replay,
@@ -276,6 +306,31 @@ export class GameController {
     const feedback = session.getFeedback();
     const victory = getVictoryStatus(sessionState);
     const playerFactionId = session.getPrimaryHumanFactionId();
+
+    // Compute queued path for display
+    let queuedUnitIdDisplay: string | null = null;
+    let queuedPathDisplay: PathPreviewNodeView[] = [];
+    let estimatedTurnsToArrival: number | null = null;
+    if (activeUnitId && sessionState.map) {
+      const queueUnit = sessionState.units.get(activeUnitId as never);
+      if (queueUnit?.moveQueueDestination) {
+        queuedUnitIdDisplay = activeUnitId;
+        const queueResult = findPath(
+          sessionState, activeUnitId as never, queueUnit.moveQueueDestination,
+          sessionState.map, session.getRegistry(),
+        );
+        if (queueResult) {
+          queuedPathDisplay = queueResult.path.map((node, index) => ({
+            key: `${node.q},${node.r}`,
+            q: node.q,
+            r: node.r,
+            step: index,
+          }));
+          estimatedTurnsToArrival = queueResult.estimatedTurns;
+        }
+      }
+    }
+
     const world = buildWorldViewModel({
       kind: 'play',
       state: sessionState,
@@ -283,6 +338,7 @@ export class GameController {
       reachableHexes: this.targetingMode === 'move' ? legalMoves : [],
       attackHexes: this.targetingMode === 'attack' ? attackTargets : [],
       pathPreview,
+      queuedPath: queuedPathDisplay,
       lastMove: feedback.lastMove,
     });
 
@@ -307,6 +363,9 @@ export class GameController {
         interactionHint: describePlayHint(world, activeUnitId, this.targetingMode, legalMoves.length, attackTargets.length),
         hoveredMove,
         hoveredAttackTarget,
+        queuedUnitId: queuedUnitIdDisplay,
+        queuedPath: queuedPathDisplay,
+        estimatedTurnsToArrival,
       },
       debug: buildDebugViewModel(null, session.getEvents()),
       replay: null,
@@ -361,6 +420,15 @@ export class GameController {
         this.targetingMode = 'move';
         this.selected = null;
       }
+  }
+
+  /** Clear move queue on a unit if one exists (before issuing a conflicting command). */
+  private clearQueueIfNeeded(unitId: string) {
+    if (!this.session) return;
+    const unit = this.session.getState().units.get(unitId as never);
+    if (unit?.moveQueueDestination) {
+      this.session.dispatch({ type: 'cancel_queue', unitId });
+    }
   }
 
   /** Register a listener for when combat is pending animation */

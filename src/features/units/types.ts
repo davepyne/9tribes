@@ -52,4 +52,6 @@ export interface Unit {
   frostbiteDoTDuration?: number;
   // Learn-by-kill system: abilities learned from killing enemy faction units
   learnedAbilities: LearnedAbility[];
+  // Multi-turn move queue target; undefined = no active queue
+  moveQueueDestination?: HexCoord;
 }

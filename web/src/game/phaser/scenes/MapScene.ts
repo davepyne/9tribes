@@ -116,11 +116,24 @@ export class MapScene extends Phaser.Scene {
 
     this.input.keyboard?.on('keydown-ESC', () => {
       const state = this.latestState;
-      if (!state || state.mode !== 'play' || state.actions.targetingMode !== 'attack') {
+      if (!state || state.mode !== 'play') {
         return;
       }
 
-      this.controller.dispatch({ type: 'set_targeting_mode', mode: 'move' });
+      // Priority 1: Cancel attack mode
+      if (state.actions.targetingMode === 'attack') {
+        this.controller.dispatch({ type: 'set_targeting_mode', mode: 'move' });
+        return;
+      }
+
+      // Priority 2: Cancel move queue
+      if (state.actions.queuedUnitId) {
+        this.controller.dispatch({ type: 'cancel_queue', unitId: state.actions.queuedUnitId });
+        return;
+      }
+
+      // Priority 3: Deselect
+      this.controller.dispatch({ type: 'select_hex', q: -1, r: -1 });
     });
 
     this.input.keyboard?.on('keydown-ENTER', () => {
@@ -228,7 +241,22 @@ export class MapScene extends Phaser.Scene {
       return;
     }
 
-    // Movement is via right-click; left-clicking a reachable hex does nothing.
+    // Left-click beyond reachable range → queue multi-turn move (on visible/explored terrain)
+    if (state.mode === 'play' && selectedUnitId) {
+      const legalMove = state.actions.legalMoves.find((hex) => hex.key === key);
+      if (!legalMove) {
+        const clickedHex = state.world.map.hexes.find((h) => h.key === key);
+        if (clickedHex && (clickedHex.visibility === 'visible' || clickedHex.visibility === 'explored')) {
+          this.controller.dispatch({
+            type: 'queue_move',
+            unitId: selectedUnitId,
+            destination: { q, r },
+          });
+          return;
+        }
+      }
+    }
+
     // Clicking empty terrain deselects — collapses the sidebar
     this.controller.dispatch({ type: 'select_hex', q: -1, r: -1 });
   }
@@ -393,6 +421,17 @@ export class MapScene extends Phaser.Scene {
           type: 'move_unit',
           unitId: selectedUnitId,
           destination: { q: target.q, r: target.r },
+        });
+        return;
+      }
+
+      // Right-click beyond reachable range → queue multi-turn move
+      const clickedHex = state.world.map.hexes.find((h) => h.key === key);
+      if (clickedHex && (clickedHex.visibility === 'visible' || clickedHex.visibility === 'explored')) {
+        this.controller.dispatch({
+          type: 'queue_move',
+          unitId: selectedUnitId,
+          destination: { q: coord.q, r: coord.r },
         });
         return;
       }

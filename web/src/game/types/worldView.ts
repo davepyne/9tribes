@@ -153,6 +153,7 @@ export type WorldViewModel = {
     reachableHexes: ReachableHexView[];
     attackHexes: AttackTargetView[];
     pathPreview: PathPreviewNodeView[];
+    queuedPath: PathPreviewNodeView[];
     lastMove:
       | {
           unitId: string;

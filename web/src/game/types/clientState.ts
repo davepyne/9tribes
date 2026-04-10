@@ -176,6 +176,9 @@ export type ClientActionState = {
   interactionHint: string | null;
   hoveredMove: ReachableHexView | null;
   hoveredAttackTarget: AttackTargetView | null;
+  queuedUnitId: string | null;
+  queuedPath: PathPreviewNodeView[];
+  estimatedTurnsToArrival: number | null;
 };
 
 export type PlayFeedbackState = {
@@ -341,4 +344,6 @@ export type GameAction =
   | { type: 'cancel_research' }
   | { type: 'sacrifice_unit'; unitId: string }
   | { type: 'open_city_production'; cityId: string }
-  | { type: 'close_city_production' };
+  | { type: 'close_city_production' }
+  | { type: 'queue_move'; unitId: string; destination: HexCoord }
+  | { type: 'cancel_queue'; unitId: string };

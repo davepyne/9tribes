@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "outDir": ".tmp-test-dist",
+    "rootDir": ".",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "jsx": "react-jsx",
+    "noEmitOnError": false
+  },
+  "include": [
+    "src/**/*",
+    "web/src/game/**/*",
+    "tests/strategicAi.test.ts",
+    "tests/adaptiveAiPhase2.test.ts",
+    "tests/adaptiveAiPhase3.test.ts",
+    "tests/adaptiveAiPhase5.test.ts",
+    "tests/aiTactics.test.ts"
+  ],
+  "exclude": ["node_modules", "dist", ".tmp-test-dist"]
+}

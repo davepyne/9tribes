@@ -61,6 +61,7 @@ type ReplayWorldSource = {
   reachableHexes: ReachableHexView[];
   attackHexes: AttackTargetView[];
   pathPreview: PathPreviewNodeView[];
+  queuedPath: PathPreviewNodeView[];
 };
 
 type PlayWorldSource = {
@@ -70,6 +71,7 @@ type PlayWorldSource = {
   reachableHexes: ReachableHexView[];
   attackHexes: AttackTargetView[];
   pathPreview: PathPreviewNodeView[];
+  queuedPath: PathPreviewNodeView[];
   lastMove: { unitId: string; destination: HexCoord } | null;
 };
 
@@ -232,6 +234,7 @@ function buildReplayWorldViewModel(source: ReplayWorldSource): WorldViewModel {
       reachableHexes: source.reachableHexes,
       attackHexes: source.attackHexes,
       pathPreview: source.pathPreview,
+      queuedPath: source.queuedPath,
       lastMove: null,
     },
     visibility: {
@@ -422,6 +425,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       reachableHexes: source.reachableHexes,
       attackHexes: source.attackHexes,
       pathPreview: source.pathPreview,
+      queuedPath: source.queuedPath,
       lastMove: source.lastMove,
     },
     visibility: {
