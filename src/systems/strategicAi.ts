@@ -28,10 +28,13 @@ import {
 import { getExposureDetails } from './knowledgeSystem.js';
 import { getTerrainPreferenceScore } from './factionIdentitySystem.js';
 import { getEmbarkedUnits } from './transportSystem.js';
+import { isSettlerPrototype } from './productionSystem.js';
 import { getVisibleEnemyUnits, isUnitVisibleTo, getLastSeenEnemyUnits, getLastSeenEnemyCities, getExploredHexKeys } from './fogSystem.js';
 import type { DifficultyLevel } from './aiDifficulty.js';
 import { getAiDifficultyProfile, type AiDifficultyProfile } from './aiDifficulty.js';
 import abilityDomainsData from '../content/base/ability-domains.json' with { type: 'json' };
+import emergentRulesData from '../content/base/emergent-rules.json' with { type: 'json' };
+import type { EmergentRuleConfig } from './synergyEngine.js';
 
 const FRONT_RADIUS = 4;
 const THREAT_RADIUS = 3;
@@ -79,7 +82,19 @@ interface SquadPlanEntry {
   memberIds: UnitId[];
 }
 
+interface PressureObjective {
+  waypointKind: WaypointKind;
+  waypoint: HexCoord;
+  objectiveCityId?: CityId;
+  objectiveUnitId?: UnitId;
+  villageId?: string;
+  anchor: HexCoord;
+  targetId: string;
+  reason: string;
+}
+
 const ALL_ABILITY_DOMAIN_IDS = new Set(Object.keys(abilityDomainsData.domains));
+const EMERGENT_RULES = emergentRulesData.rules as EmergentRuleConfig[];
 
 export function computeFactionStrategy(
   state: GameState,
@@ -88,15 +103,16 @@ export function computeFactionStrategy(
   difficulty?: DifficultyLevel,
 ): FactionStrategy {
   const difficultyProfile = getAiDifficultyProfile(difficulty);
+  const previousStrategy = state.factionStrategies.get(factionId);
   const faction = state.factions.get(factionId);
   if (!faction) {
     return createEmptyStrategy(state.round, factionId);
   }
 
   const friendlyUnits = getLivingUnitsForFaction(state, factionId);
-  const enemyUnits = getLivingEnemyUnits(state, factionId);
-  const threatenedCities = assessThreatenedCities(state, factionId);
-  const fronts = detectFronts(state, factionId, threatenedCities);
+  const enemyUnits = getLivingEnemyUnits(state, factionId, difficultyProfile);
+  const threatenedCities = assessThreatenedCities(state, factionId, difficultyProfile);
+  const fronts = detectFronts(state, factionId, threatenedCities, difficultyProfile);
   const personality = computeAiPersonalitySnapshot(state, factionId, registry, difficulty);
   const economy = state.economy.get(factionId);
   const supplyDeficit = economy ? getSupplyDeficit(economy) : 0;
@@ -109,10 +125,20 @@ export function computeFactionStrategy(
     supplyDeficit,
     fronts,
     personality,
+    state.round,
+    difficultyProfile,
+    previousStrategy,
   );
   const posture = postureDecision.posture;
   const primaryEnemyFactionId = choosePrimaryEnemyFaction(fronts, enemyUnits);
-  const primaryCityObjectiveId = choosePrimaryCityObjective(fronts, threatenedCities, posture, state, factionId);
+  const primaryCityObjectiveId = choosePrimaryCityObjective(
+    fronts,
+    threatenedCities,
+    posture,
+    state,
+    factionId,
+    difficultyProfile,
+  );
   const primaryFrontAnchor = choosePrimaryFrontAnchor(fronts, threatenedCities, posture);
   const focusTargetDecision = chooseFocusTargets(
     state,
@@ -141,6 +167,7 @@ export function computeFactionStrategy(
     regroupAnchors,
     retreatAnchors,
     difficultyProfile,
+    previousStrategy,
   );
   const debugReasons = buildDebugReasons(
     posture,
@@ -215,11 +242,26 @@ function getLivingUnitsForFaction(state: GameState, factionId: FactionId): UnitW
     .sort(compareUnitEntries);
 }
 
-function getLivingEnemyUnits(state: GameState, factionId: FactionId): UnitWithPrototype[] {
+function getLivingEnemyUnits(
+  state: GameState,
+  factionId: FactionId,
+  difficultyProfile: AiDifficultyProfile,
+): UnitWithPrototype[] {
+  if (difficultyProfile.strategy.strategicFogCheat) {
+    return Array.from(state.units.values())
+      .filter((unit) => unit.factionId !== factionId && unit.hp > 0)
+      .map((unit) => ({ unit, prototype: state.prototypes.get(unit.prototypeId)! }))
+      .filter((entry) => Boolean(entry.prototype))
+      .sort(compareUnitEntries);
+  }
   return getVisibleEnemyUnits(state, factionId);
 }
 
-function assessThreatenedCities(state: GameState, factionId: FactionId): ThreatAssessment[] {
+function assessThreatenedCities(
+  state: GameState,
+  factionId: FactionId,
+  difficultyProfile: AiDifficultyProfile,
+): ThreatAssessment[] {
   return Array.from(state.cities.values())
     .filter((city) => city.factionId === factionId)
     .map((city) => {
@@ -233,8 +275,7 @@ function assessThreatenedCities(state: GameState, factionId: FactionId): ThreatA
         if (unit.factionId === factionId) {
           nearbyFriendlyUnits += 1;
         } else {
-          // Only count visible enemy units
-          if (!isUnitVisibleTo(state, factionId, unit)) continue;
+          if (!difficultyProfile.strategy.strategicFogCheat && !isUnitVisibleTo(state, factionId, unit)) continue;
           const dist = hexDistance(city.position, unit.position);
           if (dist > THREAT_RADIUS) continue;
           nearbyEnemyUnits += 1;
@@ -262,7 +303,12 @@ function assessThreatenedCities(state: GameState, factionId: FactionId): ThreatA
     });
 }
 
-function detectFronts(state: GameState, factionId: FactionId, threatenedCities: ThreatAssessment[]): FrontLine[] {
+function detectFronts(
+  state: GameState,
+  factionId: FactionId,
+  threatenedCities: ThreatAssessment[],
+  difficultyProfile: AiDifficultyProfile,
+): FrontLine[] {
   const fronts = new Map<string, FrontLine>();
   const threatenedByCity = new Map(threatenedCities.map((threat) => [threat.cityId, threat]));
 
@@ -310,7 +356,7 @@ function detectFronts(state: GameState, factionId: FactionId, threatenedCities: 
     if (friendly.factionId !== factionId || friendly.hp <= 0) continue;
     for (const enemy of state.units.values()) {
       if (enemy.factionId === factionId || enemy.hp <= 0) continue;
-      if (!isUnitVisibleTo(state, factionId, enemy)) continue;
+      if (!difficultyProfile.strategy.strategicFogCheat && !isUnitVisibleTo(state, factionId, enemy)) continue;
       const dist = hexDistance(friendly.position, enemy.position);
       if (dist > FRONT_RADIUS) continue;
 
@@ -352,8 +398,7 @@ function detectFronts(state: GameState, factionId: FactionId, threatenedCities: 
   for (const friendly of state.units.values()) {
     if (friendly.factionId !== factionId || friendly.hp <= 0) continue;
     for (const lse of lastSeenEnemies) {
-      // Only consider if we have a reasonably recent memory (within 5 rounds)
-      if (lse.roundsAgo > 10) continue;
+      if (lse.roundsAgo > difficultyProfile.strategy.memoryDecayTurns) continue;
       registerFront(friendly.position, lse.position, lse.factionId);
     }
   }
@@ -390,6 +435,9 @@ function determinePosture(
   supplyDeficit: number,
   fronts: FrontLine[],
   personality: AiPersonalitySnapshot,
+  round: number,
+  difficultyProfile: AiDifficultyProfile,
+  previousStrategy: FactionStrategy | undefined,
 ): PostureDecision {
   const cityThreat = threatenedCities[0]?.threatScore ?? 0;
   const majorFront = fronts[0];
@@ -432,6 +480,31 @@ function determinePosture(
     scoreByPosture.set('offensive', (scoreByPosture.get('offensive') ?? 0) - 2);
     scoreByPosture.set('siege', (scoreByPosture.get('siege') ?? 0) - 2);
   }
+  if (round >= difficultyProfile.strategy.postureExplorationDeadline) {
+    scoreByPosture.set('exploration', Number.NEGATIVE_INFINITY);
+  }
+  if (enemyUnitCount > 0 && unitCount >= enemyUnitCount + 2) {
+    scoreByPosture.set('balanced', (scoreByPosture.get('balanced') ?? 0) - 2.5);
+    scoreByPosture.set('offensive', (scoreByPosture.get('offensive') ?? 0) + 1.5);
+  }
+  if (previousStrategy && difficultyProfile.strategy.postureCommitmentLockTurns > 0) {
+    const roundsSinceLast = round - previousStrategy.round;
+    const previousUnitCount = Object.keys(previousStrategy.unitIntents).length;
+    const lostArmyMass =
+      previousUnitCount > 0 && unitCount <= Math.max(1, Math.floor(previousUnitCount * 0.7));
+    const decisiveBreak = cityThreat >= 5 || exhaustion >= 8 || supplyDeficit >= 2 || lostArmyMass;
+    const stickyPosture =
+      previousStrategy.posture === 'offensive' || previousStrategy.posture === 'siege'
+        ? previousStrategy.posture
+        : undefined;
+    if (
+      stickyPosture
+      && roundsSinceLast <= difficultyProfile.strategy.postureCommitmentLockTurns
+      && !decisiveBreak
+    ) {
+      scoreByPosture.set(stickyPosture, (scoreByPosture.get(stickyPosture) ?? 0) + 6);
+    }
+  }
   const ranked = Array.from(scoreByPosture.entries()).sort(
     (left, right) => right[1] - left[1] || left[0].localeCompare(right[0]),
   );
@@ -457,7 +530,8 @@ function choosePrimaryCityObjective(
   threatenedCities: ThreatAssessment[],
   posture: FactionPosture,
   state?: GameState,
-  factionId?: FactionId
+  factionId?: FactionId,
+  difficultyProfile?: AiDifficultyProfile,
 ): CityId | undefined {
   if ((posture === 'defensive' || posture === 'recovery') && threatenedCities[0]) {
     return threatenedCities[0].cityId;
@@ -479,10 +553,24 @@ function choosePrimaryCityObjective(
   const frontCity = fronts.find((front) => Boolean(front.enemyCityId))?.enemyCityId;
   if (frontCity) return frontCity;
 
-  // Fall back to last-seen enemy cities when no visible city objectives exist
+  if (state && factionId && difficultyProfile?.strategy.strategicFogCheat) {
+    const homeCityId = state.factions.get(factionId)?.homeCityId;
+    const homeCity = homeCityId ? state.cities.get(homeCityId) : undefined;
+    const strategicCity = Array.from(state.cities.values())
+      .filter((city) => city.factionId !== factionId)
+      .sort((left, right) => {
+        const leftDistance = hexDistance(left.position, homeCity?.position ?? left.position);
+        const rightDistance = hexDistance(right.position, homeCity?.position ?? right.position);
+        return leftDistance - rightDistance || left.id.localeCompare(right.id);
+      })[0];
+    if (strategicCity) {
+      return strategicCity.id;
+    }
+  }
+
   if (state && factionId && posture !== 'defensive' && posture !== 'recovery') {
     const lastSeenCities = getLastSeenEnemyCities(state, factionId)
-      .filter((c) => c.roundsAgo <= 20)
+      .filter((c) => c.roundsAgo <= (difficultyProfile?.strategy.memoryDecayTurns ?? 20))
       .sort((a, b) => a.roundsAgo - b.roundsAgo);
 
     if (lastSeenCities.length > 0) {
@@ -514,11 +602,11 @@ function chooseFocusTargets(
   difficultyProfile: AiDifficultyProfile,
 ): FocusTargetDecision {
   const targetEnemyFactionId = fronts[0]?.enemyFactionId;
-  const visibleEnemyUnits = getVisibleEnemyUnits(state, factionId);
+  const candidateEnemyUnits = getLivingEnemyUnits(state, factionId, difficultyProfile);
   const primaryCityPosition = primaryCityObjectiveId
     ? state.cities.get(primaryCityObjectiveId)?.position
     : undefined;
-  const candidates = visibleEnemyUnits
+  const candidates = candidateEnemyUnits
     .map((entry) => {
       const targetPrototype = state.prototypes.get(entry.unit.prototypeId);
       const cityDistance = primaryCityPosition
@@ -634,6 +722,7 @@ function assignUnitIntents(
   regroupAnchors: HexCoord[],
   retreatAnchors: HexCoord[],
   difficultyProfile: AiDifficultyProfile,
+  previousStrategy: FactionStrategy | undefined,
 ) : AssignmentDecision {
   const intents: Record<string, UnitStrategicIntent> = {};
   const assignmentSamples: string[] = [];
@@ -902,6 +991,7 @@ function assignUnitIntents(
     intents,
     posture,
     difficultyProfile,
+    previousStrategy,
   );
   const learnLoopReasons = difficultyProfile.strategy.learnLoopEnabled
     ? applyDifficultyLearnAndSacrificeCoordinator(
@@ -962,6 +1052,7 @@ function applyDifficultyCoordinator(
   intents: Record<string, UnitStrategicIntent>,
   posture: FactionPosture,
   difficultyProfile: AiDifficultyProfile,
+  previousStrategy: FactionStrategy | undefined,
 ): string[] {
   if (!difficultyProfile.strategy.coordinatorEnabled) {
     return [];
@@ -1024,11 +1115,17 @@ function applyDifficultyCoordinator(
   }
 
   const hunterPool = activeArmy.filter((entry) => entry.unit.id !== garrisonUnit.unit.id);
+  const enemyUnits = getLivingEnemyUnits(state, factionId, difficultyProfile);
+  const isWinning = enemyUnits.length > 0 && activeArmy.length >= enemyUnits.length + 2;
+  const isLosing = difficultyProfile.strategy.losingDenialMode && enemyUnits.length >= activeArmy.length + 2;
+  const hunterShare = isWinning
+    ? difficultyProfile.strategy.advantageHunterShare
+    : difficultyProfile.strategy.coordinatorHunterShare;
   const hunterCount = Math.min(
     hunterPool.length,
     Math.max(
       difficultyProfile.strategy.coordinatorHunterFloor,
-      Math.ceil(activeArmy.length * difficultyProfile.strategy.coordinatorHunterShare),
+      Math.ceil(activeArmy.length * hunterShare),
     ),
   );
   if (hunterCount < difficultyProfile.strategy.coordinatorHunterFloor) {
@@ -1038,81 +1135,322 @@ function applyDifficultyCoordinator(
     ];
   }
 
-  const assignHunterGroup = (
+  const usedObjectives = {
+    unitIds: new Set<UnitId>(),
+    villageIds: new Set<string>(),
+    cityIds: new Set<CityId>(),
+  };
+  const registerObjective = (objective: PressureObjective | undefined) => {
+    if (!objective) return;
+    if (objective.objectiveUnitId) usedObjectives.unitIds.add(objective.objectiveUnitId);
+    if (objective.villageId) usedObjectives.villageIds.add(objective.villageId);
+    if (objective.objectiveCityId) usedObjectives.cityIds.add(objective.objectiveCityId);
+  };
+  const rankHuntersForObjective = (
+    pool: UnitWithPrototype[],
+    objective: { waypoint: HexCoord; harassment?: boolean; city?: City },
+  ): UnitWithPrototype[] =>
+    [...pool].sort((left, right) => {
+      const leftDistance = hexDistance(left.unit.position, objective.waypoint);
+      const rightDistance = hexDistance(right.unit.position, objective.waypoint);
+      const leftHarass = objective.harassment ? getHarassmentSuitability(left, factionId) : 0;
+      const rightHarass = objective.harassment ? getHarassmentSuitability(right, factionId) : 0;
+      if (leftHarass !== rightHarass) {
+        return rightHarass - leftHarass;
+      }
+      if (leftDistance !== rightDistance) {
+        return leftDistance - rightDistance;
+      }
+      if (objective.city) {
+        const leftCityDistance = hexDistance(left.unit.position, objective.city.position);
+        const rightCityDistance = hexDistance(right.unit.position, objective.city.position);
+        if (leftCityDistance !== rightCityDistance) {
+          return leftCityDistance - rightCityDistance;
+        }
+      }
+      if (left.prototype.derivedStats.moves !== right.prototype.derivedStats.moves) {
+        return right.prototype.derivedStats.moves - left.prototype.derivedStats.moves;
+      }
+      return compareUnitEntries(left, right);
+    });
+  const assignObjectiveGroup = (
     huntersToAssign: UnitWithPrototype[],
     assignedHunterIds: Set<UnitId>,
-    destinationCity: City,
+    objective: PressureObjective,
+    assignment: UnitAssignment,
     pushReason: string,
-  ): Village | undefined => {
-    const waypointVillage =
-      posture === 'offensive' || posture === 'siege'
-        ? chooseVillageFirstHunterTarget(state, factionId, homeCity.position, destinationCity, difficultyProfile)
-        : undefined;
-    const waypoint = waypointVillage?.position ?? destinationCity.position;
-    const waypointKind = waypointVillage ? 'cleanup_target' : 'enemy_city';
-
+  ) => {
+    registerObjective(objective);
     for (const hunter of huntersToAssign) {
       assignedHunterIds.add(hunter.unit.id);
       intents[hunter.unit.id] = {
         ...intents[hunter.unit.id],
-        assignment: 'main_army',
-        waypointKind,
-        waypoint,
-        objectiveCityId: waypointVillage ? undefined : destinationCity.id,
-        objectiveUnitId: undefined,
-        anchor: destinationCity.position,
+        assignment,
+        waypointKind: objective.waypointKind,
+        waypoint: objective.waypoint,
+        objectiveCityId: objective.objectiveCityId,
+        objectiveUnitId: objective.objectiveUnitId,
+        anchor: objective.anchor,
         isolated: false,
-        reason: waypointVillage
-          ? `${pushReason} via village ${waypointVillage.id} before ${destinationCity.id}`
-          : `${pushReason} toward ${destinationCity.id}`,
+        reason: `${pushReason} ${objective.reason}`,
       };
     }
-
-    return waypointVillage;
   };
+  const assignStagingGroup = (
+    huntersToAssign: UnitWithPrototype[],
+    assignedHunterIds: Set<UnitId>,
+    destination: HexCoord,
+    pushReason: string,
+  ) => {
+    const stagingHex = buildStagingHex(homeCity.position, destination);
+    for (const hunter of huntersToAssign) {
+      assignedHunterIds.add(hunter.unit.id);
+      intents[hunter.unit.id] = {
+        ...intents[hunter.unit.id],
+        assignment: 'reserve',
+        waypointKind: 'regroup_anchor',
+        waypoint: stagingHex,
+        objectiveCityId: undefined,
+        objectiveUnitId: undefined,
+        anchor: stagingHex,
+        isolated: false,
+        reason: `${pushReason} staging behind early harassment`,
+      };
+    }
+  };
+  const chooseCityPressureObjective = (
+    destinationCity: City,
+  ): PressureObjective => {
+    if (isLosing) {
+      const denialObjective = chooseEconomicDenialObjective(
+        state,
+        factionId,
+        homeCity.position,
+        difficultyProfile,
+        {
+          preferredEnemyFactionId: destinationCity.factionId,
+          excludedUnitIds: usedObjectives.unitIds,
+          excludedVillageIds: usedObjectives.villageIds,
+          excludedCityIds: usedObjectives.cityIds,
+        },
+      );
+      if (denialObjective) {
+        return denialObjective;
+      }
+    }
+
+    const waypointVillage =
+      posture === 'offensive' || posture === 'siege' || difficultyProfile.strategy.economicDenialWeight > 0
+        ? chooseVillageFirstHunterTarget(state, factionId, homeCity.position, destinationCity, difficultyProfile)
+        : undefined;
+    if (waypointVillage) {
+      return {
+        waypointKind: 'cleanup_target',
+        waypoint: waypointVillage.position,
+        objectiveCityId: undefined,
+        objectiveUnitId: undefined,
+        villageId: waypointVillage.id,
+        anchor: destinationCity.position,
+        targetId: waypointVillage.id,
+        reason: `via village ${waypointVillage.id} before ${destinationCity.id}`,
+      };
+    }
+    return {
+      waypointKind: 'enemy_city',
+      waypoint: destinationCity.position,
+      objectiveCityId: destinationCity.id,
+      objectiveUnitId: undefined,
+      villageId: undefined,
+      anchor: destinationCity.position,
+      targetId: destinationCity.id,
+      reason: `toward ${destinationCity.id}`,
+    };
+  };
+
+  const multiAxisMinGroupSize = Math.max(2, difficultyProfile.strategy.multiAxisMinGroupSize);
+  const shouldStaggerMainPush =
+    difficultyProfile.strategy.multiAxisStaggerTurns > 0
+    && difficultyProfile.strategy.multiAxisGroupCount >= 3
+    && (!previousStrategy || state.round - previousStrategy.round > difficultyProfile.strategy.multiAxisStaggerTurns);
+
+  if (
+    difficultyProfile.strategy.multiAxisEnabled
+    && difficultyProfile.strategy.multiAxisGroupCount >= 3
+    && hunterCount >= multiAxisMinGroupSize * 3
+  ) {
+    const flankTargetCity = chooseAdaptivePressureCity(
+      state,
+      factionId,
+      homeCity.position,
+      targetCity.id,
+      difficultyProfile,
+      usedObjectives.cityIds,
+    );
+    const harassObjective = chooseEconomicDenialObjective(
+      state,
+      factionId,
+      homeCity.position,
+      difficultyProfile,
+      {
+        preferredEnemyFactionId: targetCity.factionId,
+        excludedUnitIds: usedObjectives.unitIds,
+        excludedVillageIds: usedObjectives.villageIds,
+        excludedCityIds: usedObjectives.cityIds,
+      },
+    );
+    if (flankTargetCity && harassObjective) {
+      const harassCount = Math.max(
+        multiAxisMinGroupSize,
+        Math.min(
+          hunterCount - multiAxisMinGroupSize * 2,
+          Math.floor(hunterCount * difficultyProfile.strategy.multiAxisHarassShare),
+        ),
+      );
+      const rankedHarassers = rankHuntersForObjective(hunterPool, {
+        waypoint: harassObjective.waypoint,
+        harassment: true,
+      });
+      const harassmentHunters = rankedHarassers.slice(0, harassCount);
+      if (harassmentHunters.length >= multiAxisMinGroupSize) {
+        const harassmentIds = new Set(harassmentHunters.map((entry) => entry.unit.id));
+        const remainingPool = hunterPool.filter((entry) => !harassmentIds.has(entry.unit.id));
+        const remainingCount = remainingPool.length;
+        const primaryCount = Math.max(
+          multiAxisMinGroupSize,
+          Math.min(
+            remainingCount - multiAxisMinGroupSize,
+            Math.round(hunterCount * difficultyProfile.strategy.multiAxisPrimaryShare),
+          ),
+        );
+        const flankCount = Math.max(
+          multiAxisMinGroupSize,
+          Math.min(
+            remainingCount - primaryCount,
+            Math.round(hunterCount * difficultyProfile.strategy.multiAxisFlankShare),
+          ),
+        );
+        const primaryHunters = rankHuntersForObjective(remainingPool, {
+          waypoint: targetCity.position,
+          city: targetCity,
+        }).slice(0, primaryCount);
+        const primaryIds = new Set(primaryHunters.map((entry) => entry.unit.id));
+        const flankHunters = rankHuntersForObjective(
+          remainingPool.filter((entry) => !primaryIds.has(entry.unit.id)),
+          {
+            waypoint: flankTargetCity.position,
+            city: flankTargetCity,
+          },
+        ).slice(0, flankCount);
+
+        if (primaryHunters.length >= multiAxisMinGroupSize && flankHunters.length >= multiAxisMinGroupSize) {
+          const hunterIds = new Set<UnitId>();
+          const primaryObjective = chooseCityPressureObjective(targetCity);
+          const flankObjective = chooseCityPressureObjective(flankTargetCity);
+          assignObjectiveGroup(
+            harassmentHunters,
+            hunterIds,
+            harassObjective,
+            'raider',
+            `${coordinatorLabel} coordinator harassment wave`,
+          );
+          if (shouldStaggerMainPush) {
+            assignStagingGroup(
+              primaryHunters,
+              hunterIds,
+              targetCity.position,
+              `${coordinatorLabel} coordinator main push`,
+            );
+            assignStagingGroup(
+              flankHunters,
+              hunterIds,
+              flankTargetCity.position,
+              `${coordinatorLabel} coordinator flanking push`,
+            );
+          } else {
+            assignObjectiveGroup(
+              primaryHunters,
+              hunterIds,
+              primaryObjective,
+              isLosing ? 'raider' : 'main_army',
+              `${coordinatorLabel} coordinator main push`,
+            );
+            assignObjectiveGroup(
+              flankHunters,
+              hunterIds,
+              flankObjective,
+              isLosing ? 'raider' : 'main_army',
+              `${coordinatorLabel} coordinator flanking push`,
+            );
+          }
+
+          for (const defender of hunterPool) {
+            if (hunterIds.has(defender.unit.id)) {
+              continue;
+            }
+            intents[defender.unit.id] = buildHomeDefenseIntent(
+              intents[defender.unit.id],
+              homeCity,
+              `${coordinatorLabel} coordinator home defense`,
+            );
+          }
+
+          return [
+            `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
+            `${coordinatorLabel}_multi_axis=triple`,
+            `${coordinatorLabel}_stagger=${shouldStaggerMainPush ? 'arming' : 'released'}`,
+            `${coordinatorLabel}_harass_target=${harassObjective.targetId}`,
+            `${coordinatorLabel}_flank_target=${flankTargetCity.id}`,
+            `${coordinatorLabel}_coordinator=active:supply=${supplyRatio.toFixed(2)},hunters=${hunterIds.size},defenders=${hunterPool.length - hunterIds.size + 1},mode=${isLosing ? 'denial' : isWinning ? 'advantage' : 'standard'}`,
+          ];
+        }
+      }
+    }
+  }
 
   if (
     difficultyProfile.strategy.multiAxisEnabled
     && difficultyProfile.strategy.multiAxisGroupCount > 1
-    && hunterCount >= 6
+    && hunterCount >= multiAxisMinGroupSize * 2
   ) {
-    const secondTargetCity = getSecondNearestEnemyCity(state, factionId, homeCity.position, targetCity.id);
+    const secondTargetCity = chooseAdaptivePressureCity(
+      state,
+      factionId,
+      homeCity.position,
+      targetCity.id,
+      difficultyProfile,
+      usedObjectives.cityIds,
+    ) ?? getSecondNearestEnemyCity(state, factionId, homeCity.position, targetCity.id);
     if (secondTargetCity) {
-      const flankCount = Math.max(2, Math.floor(hunterCount * 0.4));
+      const flankCount = Math.max(multiAxisMinGroupSize, Math.floor(hunterCount * difficultyProfile.strategy.multiAxisFlankShare || 0.4));
       const primaryCount = hunterCount - flankCount;
-      if (primaryCount >= 2) {
-        const rankHuntersForTarget = (pool: UnitWithPrototype[], target: City): UnitWithPrototype[] =>
-          [...pool].sort((left, right) => {
-            const leftDistance = hexDistance(left.unit.position, target.position);
-            const rightDistance = hexDistance(right.unit.position, target.position);
-            if (leftDistance !== rightDistance) {
-              return leftDistance - rightDistance;
-            }
-            if (left.prototype.derivedStats.moves !== right.prototype.derivedStats.moves) {
-              return right.prototype.derivedStats.moves - left.prototype.derivedStats.moves;
-            }
-            return compareUnitEntries(left, right);
-          });
-
-        const primaryHunters = rankHuntersForTarget(hunterPool, targetCity).slice(0, primaryCount);
+      if (primaryCount >= multiAxisMinGroupSize) {
+        const primaryHunters = rankHuntersForObjective(hunterPool, {
+          waypoint: targetCity.position,
+          city: targetCity,
+        }).slice(0, primaryCount);
         const primaryHunterIds = new Set(primaryHunters.map((entry) => entry.unit.id));
-        const flankHunters = rankHuntersForTarget(
+        const flankHunters = rankHuntersForObjective(
           hunterPool.filter((entry) => !primaryHunterIds.has(entry.unit.id)),
-          secondTargetCity,
+          {
+            waypoint: secondTargetCity.position,
+            city: secondTargetCity,
+          },
         ).slice(0, flankCount);
 
-        if (flankHunters.length >= 2) {
+        if (flankHunters.length >= multiAxisMinGroupSize) {
           const hunterIds = new Set<UnitId>();
-          const primaryWaypointVillage = assignHunterGroup(
+          assignObjectiveGroup(
             primaryHunters,
             hunterIds,
-            targetCity,
+            chooseCityPressureObjective(targetCity),
+            isLosing ? 'raider' : 'main_army',
             `${coordinatorLabel} coordinator hunter push`,
           );
-          const flankWaypointVillage = assignHunterGroup(
+          assignObjectiveGroup(
             flankHunters,
             hunterIds,
-            secondTargetCity,
+            chooseCityPressureObjective(secondTargetCity),
+            isLosing ? 'raider' : 'main_army',
             `${coordinatorLabel} coordinator flanking push`,
           );
 
@@ -1129,57 +1467,45 @@ function applyDifficultyCoordinator(
 
           return [
             `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
-            primaryWaypointVillage
-              ? `${coordinatorLabel}_village_target=${primaryWaypointVillage.id}`
-              : `${coordinatorLabel}_village_target=none`,
-            flankWaypointVillage
-              ? `${coordinatorLabel}_flank_village_target=${flankWaypointVillage.id}`
-              : `${coordinatorLabel}_flank_village_target=none`,
+            `${coordinatorLabel}_multi_axis=double`,
             `${coordinatorLabel}_flank_target=${secondTargetCity.id}`,
-            `${coordinatorLabel}_coordinator=active:supply=${supplyRatio.toFixed(2)},hunters=${hunterIds.size},defenders=${hunterPool.length - hunterIds.size + 1}`,
+            `${coordinatorLabel}_coordinator=active:supply=${supplyRatio.toFixed(2)},hunters=${hunterIds.size},defenders=${hunterPool.length - hunterIds.size + 1},mode=${isLosing ? 'denial' : isWinning ? 'advantage' : 'standard'}`,
           ];
         }
       }
     }
   }
 
-  const hunterWaypointVillage =
-    posture === 'offensive' || posture === 'siege'
-      ? chooseVillageFirstHunterTarget(state, factionId, homeCity.position, targetCity, difficultyProfile)
-      : undefined;
-  const hunterWaypoint = hunterWaypointVillage?.position ?? targetCity.position;
-  const hunterWaypointKind = hunterWaypointVillage ? 'cleanup_target' : 'enemy_city';
+  const singleAxisObjective = isLosing
+    ? chooseEconomicDenialObjective(
+        state,
+        factionId,
+        homeCity.position,
+        difficultyProfile,
+        {
+          preferredEnemyFactionId: targetCity.factionId,
+          excludedUnitIds: usedObjectives.unitIds,
+          excludedVillageIds: usedObjectives.villageIds,
+          excludedCityIds: usedObjectives.cityIds,
+        },
+      ) ?? chooseCityPressureObjective(targetCity)
+    : chooseCityPressureObjective(targetCity);
 
-  const hunters = [...hunterPool]
-    .sort((left, right) => {
-      const leftDistance = hexDistance(left.unit.position, targetCity.position);
-      const rightDistance = hexDistance(right.unit.position, targetCity.position);
-      if (leftDistance !== rightDistance) {
-        return leftDistance - rightDistance;
-      }
-      if (left.prototype.derivedStats.moves !== right.prototype.derivedStats.moves) {
-        return right.prototype.derivedStats.moves - left.prototype.derivedStats.moves;
-      }
-      return compareUnitEntries(left, right);
-    })
+  const hunters = rankHuntersForObjective(hunterPool, {
+    waypoint: singleAxisObjective.waypoint,
+    harassment: singleAxisObjective.objectiveUnitId !== undefined || singleAxisObjective.villageId !== undefined,
+    city: singleAxisObjective.objectiveCityId ? state.cities.get(singleAxisObjective.objectiveCityId) : undefined,
+  })
     .slice(0, hunterCount);
   const hunterIds = new Set(hunters.map((entry) => entry.unit.id));
 
-  for (const hunter of hunters) {
-    intents[hunter.unit.id] = {
-      ...intents[hunter.unit.id],
-      assignment: 'main_army',
-      waypointKind: hunterWaypointKind,
-      waypoint: hunterWaypoint,
-      objectiveCityId: hunterWaypointVillage ? undefined : targetCity.id,
-      objectiveUnitId: undefined,
-      anchor: targetCity.position,
-      isolated: false,
-      reason: hunterWaypointVillage
-        ? `${coordinatorLabel} coordinator hunter raid via village ${hunterWaypointVillage.id} before ${targetCity.id}`
-        : `${coordinatorLabel} coordinator hunter push toward ${targetCity.id}`,
-    };
-  }
+  assignObjectiveGroup(
+    hunters,
+    hunterIds,
+    singleAxisObjective,
+    isLosing ? 'raider' : 'main_army',
+    `${coordinatorLabel} coordinator hunter push`,
+  );
 
   for (const defender of hunterPool) {
     if (hunterIds.has(defender.unit.id)) {
@@ -1194,10 +1520,9 @@ function applyDifficultyCoordinator(
 
   return [
     `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
-    hunterWaypointVillage
-      ? `${coordinatorLabel}_village_target=${hunterWaypointVillage.id}`
-      : `${coordinatorLabel}_village_target=none`,
-    `${coordinatorLabel}_coordinator=active:supply=${supplyRatio.toFixed(2)},hunters=${hunterIds.size},defenders=${hunterPool.length - hunterIds.size + 1}`,
+    `${coordinatorLabel}_multi_axis=single`,
+    `${coordinatorLabel}_target=${singleAxisObjective.targetId}`,
+    `${coordinatorLabel}_coordinator=active:supply=${supplyRatio.toFixed(2)},hunters=${hunterIds.size},defenders=${hunterPool.length - hunterIds.size + 1},mode=${isLosing ? 'denial' : isWinning ? 'advantage' : 'standard'}`,
   ];
 }
 
@@ -1267,7 +1592,14 @@ function applyDifficultyLearnAndSacrificeCoordinator(
 
   const fallbackTargetCity = targetCity ?? getNearestEnemyCity(state, factionId, homeCity.position);
   const learnerTargetCity = difficultyProfile.strategy.learnLoopDomainTargetingEnabled
-    ? getLearnLoopTargetCity(state, factionId, faction.learnedDomains, homeCity.position, fallbackTargetCity)
+    ? getLearnLoopTargetCity(
+        state,
+        factionId,
+        faction.learnedDomains,
+        homeCity.position,
+        fallbackTargetCity,
+        difficultyProfile,
+      )
     : fallbackTargetCity;
   const learnerPool = fieldArmy
     .filter((entry) => !returningIds.has(entry.unit.id))
@@ -1309,6 +1641,7 @@ function getLearnLoopTargetCity(
   learnedDomains: string[],
   origin: HexCoord,
   fallbackTargetCity: City | undefined,
+  difficultyProfile: AiDifficultyProfile,
 ): City | undefined {
   const neededDomains = new Set<string>();
   const knownDomains = new Set(learnedDomains);
@@ -1332,12 +1665,287 @@ function getLearnLoopTargetCity(
       continue;
     }
     const distance = hexDistance(origin, city.position);
-    if (distance < bestDistance) {
-      bestDistance = distance;
+    const adjustedDistance =
+      distance
+      - getEmergentRuleSacrificeDistanceCredit(
+        knownDomains,
+        cityFaction.nativeDomain,
+        difficultyProfile,
+      );
+    if (adjustedDistance < bestDistance || (adjustedDistance === bestDistance && distance < hexDistance(origin, bestCity?.position ?? city.position))) {
+      bestDistance = adjustedDistance;
       bestCity = city;
     }
   }
   return bestCity ?? fallbackTargetCity;
+}
+
+function getRuleDomainGroups(rule: EmergentRuleConfig): string[][] {
+  if (rule.domainSets) {
+    return Object.values(rule.domainSets);
+  }
+  if (rule.mobilityDomains) {
+    return [rule.mobilityDomains];
+  }
+  if (rule.combatDomains) {
+    return [rule.combatDomains];
+  }
+  return [];
+}
+
+function getEmergentRuleSacrificeDistanceCredit(
+  knownDomains: Set<string>,
+  candidateDomainId: string,
+  difficultyProfile: AiDifficultyProfile,
+): number {
+  const baseCredit = difficultyProfile.research.emergentRuleSacrificePriority * 2;
+  if (baseCredit <= 0 || knownDomains.has(candidateDomainId)) {
+    return 0;
+  }
+
+  let bestCredit = 0;
+  for (const rule of EMERGENT_RULES) {
+    if (rule.condition === 'default') {
+      continue;
+    }
+    const groups = getRuleDomainGroups(rule);
+    if (groups.length === 0) {
+      continue;
+    }
+
+    if (groups.length === 1) {
+      const knownCount = groups[0].filter((domainId) => knownDomains.has(domainId)).length;
+      if (knownCount === 2 && groups[0].includes(candidateDomainId)) {
+        bestCredit = Math.max(bestCredit, baseCredit);
+      }
+      continue;
+    }
+
+    const coveredGroups = groups.filter((domains) => domains.some((domainId) => knownDomains.has(domainId)));
+    if (coveredGroups.length !== groups.length - 1) {
+      continue;
+    }
+
+    const missingGroup = groups.find((domains) => !domains.some((domainId) => knownDomains.has(domainId)));
+    if (missingGroup?.includes(candidateDomainId)) {
+      bestCredit = Math.max(bestCredit, baseCredit);
+    }
+  }
+
+  return bestCredit;
+}
+
+function buildStagingHex(origin: HexCoord, destination: HexCoord): HexCoord {
+  return {
+    q: Math.round((origin.q * 2 + destination.q) / 3),
+    r: Math.round((origin.r * 2 + destination.r) / 3),
+  };
+}
+
+function getStrategicEnemyPressure(
+  state: GameState,
+  factionId: FactionId,
+  position: HexCoord,
+  radius: number,
+  difficultyProfile: AiDifficultyProfile,
+): number {
+  let pressure = 0;
+  for (const enemy of state.units.values()) {
+    if (enemy.factionId === factionId || enemy.hp <= 0) continue;
+    if (!difficultyProfile.strategy.strategicFogCheat && !isUnitVisibleTo(state, factionId, enemy)) continue;
+    if (hexDistance(position, enemy.position) <= radius) {
+      pressure += 1;
+    }
+  }
+  return pressure;
+}
+
+function getHarassmentSuitability(entry: UnitWithPrototype, factionId: FactionId): number {
+  const tags = entry.prototype.tags ?? [];
+  let score = entry.prototype.derivedStats.moves;
+  if (entry.prototype.derivedStats.role === 'mounted') score += 3;
+  if (tags.includes('naval') || tags.includes('transport')) score += 2;
+  if (tags.includes('skirmish')) score += 1.5;
+  if (tags.includes('capture') || tags.includes('slave')) score += 1.5;
+
+  switch (factionId) {
+    case 'steppe_clan':
+      if (entry.prototype.derivedStats.role === 'mounted') score += 3;
+      if (tags.includes('skirmish')) score += 2;
+      break;
+    case 'coral_people':
+      if (tags.includes('naval') || tags.includes('transport')) score += 3;
+      if (tags.includes('capture') || tags.includes('slave')) score += 2;
+      break;
+    case 'desert_nomads':
+      if (tags.includes('camel') || tags.includes('desert')) score += 3;
+      break;
+    case 'frost_wardens':
+      if (entry.prototype.name.toLowerCase().includes('bear')) score += 2.5;
+      break;
+    default:
+      break;
+  }
+
+  return score;
+}
+
+function chooseAdaptivePressureCity(
+  state: GameState,
+  factionId: FactionId,
+  origin: HexCoord,
+  excludedCityId: CityId,
+  difficultyProfile: AiDifficultyProfile,
+  excludedCityIds: Set<CityId> = new Set(),
+): City | undefined {
+  return Array.from(state.cities.values())
+    .filter((city) => city.factionId !== factionId && city.id !== excludedCityId && !excludedCityIds.has(city.id))
+    .map((city) => {
+      const distance = hexDistance(origin, city.position);
+      const defenders = getStrategicEnemyPressure(state, factionId, city.position, 2, difficultyProfile);
+      const villageCount = state.factions.get(city.factionId)?.villageIds.length ?? 0;
+      const vulnerableCaptureBonus =
+        city.turnsSinceCapture !== undefined && city.turnsSinceCapture <= Math.max(1, difficultyProfile.strategy.freshVillageDenialTurns)
+          ? 8
+          : 0;
+      const cityAge = city.foundedRound !== undefined ? state.round - city.foundedRound : Infinity;
+      const freshFoundingBonus =
+        difficultyProfile.strategy.freshVillageDenialTurns > 0 && cityAge <= difficultyProfile.strategy.freshVillageDenialTurns
+          ? 6
+          : 0;
+      const score =
+        18
+        + villageCount * difficultyProfile.strategy.economicDenialWeight * 0.5
+        + vulnerableCaptureBonus
+        + freshFoundingBonus
+        + (city.isCapital ? 0 : 2)
+        - distance * 0.75
+        - defenders * 4
+        - city.wallHP / 35;
+      return { city, score, defenders, distance };
+    })
+    .sort((left, right) =>
+      right.score - left.score
+      || left.defenders - right.defenders
+      || left.distance - right.distance
+      || left.city.id.localeCompare(right.city.id)
+    )[0]?.city;
+}
+
+function chooseEconomicDenialObjective(
+  state: GameState,
+  factionId: FactionId,
+  origin: HexCoord,
+  difficultyProfile: AiDifficultyProfile,
+  options: {
+    preferredEnemyFactionId?: FactionId;
+    excludedUnitIds?: Set<UnitId>;
+    excludedVillageIds?: Set<string>;
+    excludedCityIds?: Set<CityId>;
+  } = {},
+): PressureObjective | undefined {
+  const economicWeight = difficultyProfile.strategy.economicDenialWeight;
+  if (economicWeight <= 0) {
+    return undefined;
+  }
+
+  const objectives: Array<PressureObjective & { score: number }> = [];
+  const excludedUnitIds = options.excludedUnitIds ?? new Set<UnitId>();
+  const excludedVillageIds = options.excludedVillageIds ?? new Set<string>();
+  const excludedCityIds = options.excludedCityIds ?? new Set<CityId>();
+  const sameEnemyBonus = (enemyFactionId: FactionId) =>
+    options.preferredEnemyFactionId && enemyFactionId === options.preferredEnemyFactionId ? 3 : 0;
+
+  if (difficultyProfile.strategy.settlerInterceptionEnabled) {
+    for (const enemy of state.units.values()) {
+      if (enemy.factionId === factionId || enemy.hp <= 0 || excludedUnitIds.has(enemy.id)) continue;
+      if (!difficultyProfile.strategy.strategicFogCheat && !isUnitVisibleTo(state, factionId, enemy)) continue;
+      const prototype = state.prototypes.get(enemy.prototypeId);
+      if (!prototype || !isSettlerPrototype(prototype)) continue;
+
+      const distance = hexDistance(origin, enemy.position);
+      if (distance > difficultyProfile.strategy.settlerInterceptionRadius) continue;
+      const escortPressure = getStrategicEnemyPressure(state, factionId, enemy.position, 2, difficultyProfile);
+      const score =
+        16
+        + economicWeight * 2.5
+        + sameEnemyBonus(enemy.factionId)
+        + Math.max(0, difficultyProfile.strategy.settlerInterceptionRadius - distance) * 0.35
+        - escortPressure * 2;
+      objectives.push({
+        waypointKind: 'cleanup_target',
+        waypoint: enemy.position,
+        objectiveCityId: undefined,
+        objectiveUnitId: enemy.id,
+        anchor: enemy.position,
+        targetId: `settler:${enemy.id}`,
+        reason: `to intercept settler ${enemy.id}`,
+        villageId: undefined,
+        score,
+      });
+    }
+  }
+
+  for (const village of state.villages.values()) {
+    if (village.factionId === factionId || excludedVillageIds.has(village.id)) continue;
+    const distance = hexDistance(origin, village.position);
+    const defenders = getStrategicEnemyPressure(state, factionId, village.position, 2, difficultyProfile);
+    const villageAge = Math.max(0, state.round - village.foundedRound);
+    const freshBonus = villageAge <= difficultyProfile.strategy.freshVillageDenialTurns ? 10 : 0;
+    const score =
+      8
+      + sameEnemyBonus(village.factionId)
+      + (village.productionBonus + village.supplyBonus + 1) * economicWeight
+      + freshBonus
+      + Math.max(0, 12 - distance)
+      - defenders * 2;
+    objectives.push({
+      waypointKind: 'cleanup_target',
+      waypoint: village.position,
+      objectiveCityId: undefined,
+      objectiveUnitId: undefined,
+      villageId: village.id,
+      anchor: village.position,
+      targetId: `village:${village.id}`,
+      reason: `to deny village ${village.id}`,
+      score,
+    });
+  }
+
+  for (const city of state.cities.values()) {
+    if (city.factionId === factionId || excludedCityIds.has(city.id)) continue;
+    const isCapturedVulnerable = city.turnsSinceCapture !== undefined && city.turnsSinceCapture <= Math.max(1, difficultyProfile.strategy.freshVillageDenialTurns);
+    const cityAge = city.foundedRound !== undefined ? state.round - city.foundedRound : Infinity;
+    const isFreshFounded = difficultyProfile.strategy.freshVillageDenialTurns > 0 && cityAge <= difficultyProfile.strategy.freshVillageDenialTurns;
+    if (!isCapturedVulnerable && !isFreshFounded) {
+      continue;
+    }
+    const distance = hexDistance(origin, city.position);
+    const defenders = getStrategicEnemyPressure(state, factionId, city.position, 2, difficultyProfile);
+    const foundingBonus = isFreshFounded ? 4 : 0;
+    const score =
+      10
+      + sameEnemyBonus(city.factionId)
+      + economicWeight * 1.5
+      + foundingBonus
+      + Math.max(0, 10 - distance)
+      - defenders * 3
+      - city.wallHP / 40;
+    objectives.push({
+      waypointKind: 'enemy_city',
+      waypoint: city.position,
+      objectiveCityId: city.id,
+      objectiveUnitId: undefined,
+      villageId: undefined,
+      anchor: city.position,
+      targetId: `city:${city.id}`,
+      reason: isFreshFounded && !isCapturedVulnerable ? `to punish newly founded city ${city.id}` : `to punish vulnerable city ${city.id}`,
+      score,
+    });
+  }
+
+  return objectives
+    .sort((left, right) => right.score - left.score || left.targetId.localeCompare(right.targetId))[0];
 }
 
 function chooseVillageFirstHunterTarget(
@@ -1357,8 +1965,17 @@ function chooseVillageFirstHunterTarget(
       const distToCity = hexDistance(village.position, targetCity.position);
       const detour = distFromHome + distToCity - directDistance;
       const sameEnemyBonus = village.factionId === targetEnemyFactionId ? 3 : 0;
-      const economyValue = village.productionBonus * 3;
-      const score = sameEnemyBonus + economyValue + Math.max(0, 6 - detour * 2) + Math.max(0, 5 - distToCity);
+      const villageAge = Math.max(0, state.round - village.foundedRound);
+      const freshVillageBonus = villageAge <= difficultyProfile.strategy.freshVillageDenialTurns ? 8 : 0;
+      const economyValue =
+        village.productionBonus * 3
+        + village.supplyBonus * Math.max(1, difficultyProfile.strategy.economicDenialWeight * 0.75);
+      const score =
+        sameEnemyBonus
+        + economyValue
+        + freshVillageBonus
+        + Math.max(0, 6 - detour * 2)
+        + Math.max(0, 5 - distToCity);
       return { village, score, detour, distToCity };
     })
     .sort((left, right) =>

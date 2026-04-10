@@ -25,7 +25,7 @@
     "baseAttack": 1,
     "baseDefense": 1,
     "movementClass": "infantry",
-    "baseRange": 2,
+    "baseRange": 1,
     "supplyCost": 1,
     "tags": ["ranged", "skirmish"],
     "capabilityPressure": {

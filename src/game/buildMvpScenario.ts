@@ -164,6 +164,7 @@ export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions 
         besieged: false,
         turnsUnderSiege: 0,
         siteBonuses: createCitySiteBonuses(state.map, startHex, 2),
+        foundedRound: 0,
       };
       state.cities.set(cityId, city);
     }

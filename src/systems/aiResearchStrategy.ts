@@ -176,16 +176,55 @@ function scorePosture(posture: FactionStrategy['posture'], domainId: string): nu
  * Signature unit synergy: bonus for domains matching the faction's signature unit.
  */
 function scoreSignatureDomain(
-  signatureUnit: string,
+  faction: {
+    id: FactionId;
+    nativeDomain: string;
+    identityProfile: {
+      signatureUnit: string;
+      passiveTrait: string;
+      economyAngle: string;
+    };
+  },
   domainId: string,
+  difficultyProfile: AiDifficultyProfile,
 ): number {
-  const sig = signatureUnit.toLowerCase();
+  const sig = faction.identityProfile.signatureUnit.toLowerCase();
+  let score = 0;
   for (const [keyword, domains] of Object.entries(SIGNATURE_DOMAINS)) {
     if (sig.includes(keyword) && domains.includes(domainId)) {
-      return 3;
+      score = 3;
+      break;
     }
   }
-  return 0;
+
+  if (difficultyProfile.research.signatureExploitWeight <= 0) {
+    return score;
+  }
+
+  let exploitScore = 0;
+  switch (faction.id) {
+    case 'steppe_clan':
+      if (domainId === 'hitrun') exploitScore += 4;
+      if (domainId === 'charge') exploitScore += 2;
+      break;
+    case 'coral_people':
+      if (domainId === 'slaving') exploitScore += 4;
+      if (domainId === 'tidal_warfare') exploitScore += 3;
+      if (domainId === 'river_stealth') exploitScore += 1.5;
+      break;
+    case 'frost_wardens':
+      if (domainId === 'heavy_hitter') exploitScore += 4;
+      if (domainId === 'fortress' || domainId === 'nature_healing') exploitScore += 2;
+      break;
+    case 'desert_nomads':
+      if (domainId === 'camel_adaptation') exploitScore += 4;
+      if (domainId === 'hitrun' || domainId === 'charge') exploitScore += 1.5;
+      break;
+    default:
+      break;
+  }
+
+  return score + exploitScore * difficultyProfile.research.signatureExploitWeight;
 }
 
 /**
@@ -469,12 +508,14 @@ function scoreNormalTripleStackFocus(
     if (!opportunity.missingDomains.has(candidate.domainId)) {
       continue;
     }
-    score = Math.max(
-      score,
+    const tierWeight =
       candidate.tier === 2
         ? difficultyProfile.research.tripleStackTier2Weight
-        : difficultyProfile.research.tripleStackTier3Weight,
-    );
+        : difficultyProfile.research.tripleStackTier3Weight;
+    score = Math.max(score, tierWeight);
+    if (opportunity.missingDomains.size === 1) {
+      score += difficultyProfile.research.emergentRuleNearBonus;
+    }
   }
   return score;
 }
@@ -603,8 +644,9 @@ export function rankResearchPriorities(
       const native = scoreNativePriority(candidate);
       const postureScore = scorePosture(strategy.posture, candidate.domainId);
       const signatureScore = scoreSignatureDomain(
-        faction.identityProfile.signatureUnit,
+        faction,
         candidate.domainId,
+        difficultyProfile,
       );
       const synergyScore = scoreSynergy(strategy, candidate.def.codifies ?? []);
       const tierScore = scoreTierUrgency(candidate.tier);

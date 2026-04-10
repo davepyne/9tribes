@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
+import { assemblePrototype } from '../src/design/assemblePrototype';
 import { computeFactionStrategy } from '../src/systems/strategicAi';
 import {
   getProjectedSupplyMarginAfterBuild,
@@ -316,6 +317,75 @@ describe('adaptive AI phase 2', () => {
 
     const normalGap = (normalBreadth?.score ?? 0) - (normalDepth?.score ?? 0);
     const hardGap = (hardBreadth?.score ?? 0) - (hardDepth?.score ?? 0);
+    expect(hardGap).toBeGreaterThan(normalGap);
+  });
+
+  it('uses hard strategic visibility to counter-build hidden ranged-heavy armies', () => {
+    const state = buildMvpScenario(42, { registry });
+    const steppeId = 'steppe_clan' as never;
+    const hillId = 'hill_clan' as never;
+    const steppeFaction = state.factions.get(steppeId)!;
+    const hillFaction = state.factions.get(hillId)!;
+    const cavalry = getPrototypeByChassis(state, steppeId, 'cavalry_frame');
+    const infantry = getPrototypeByChassis(state, steppeId, 'infantry_frame');
+
+    expect(cavalry).toBeTruthy();
+    expect(infantry).toBeTruthy();
+
+    const rangedProto = assemblePrototype(
+      hillId,
+      'ranged_frame' as never,
+      ['basic_bow', 'simple_armor'] as never,
+      registry,
+      Array.from(state.prototypes.keys()),
+      {
+        capabilityLevels: hillFaction.capabilities?.domainLevels,
+        validation: { ignoreResearchRequirements: true },
+      },
+    );
+    state.prototypes.set(rangedProto.id, rangedProto);
+
+    for (const unitId of hillFaction.unitIds) {
+      const unit = state.units.get(unitId)!;
+      state.units.set(unitId, {
+        ...unit,
+        prototypeId: rangedProto.id,
+        position: { q: 30, r: 30 },
+      });
+    }
+    for (const unitId of steppeFaction.unitIds) {
+      const unit = state.units.get(unitId)!;
+      state.units.set(unitId, {
+        ...unit,
+        position: { q: 4, r: 4 },
+      });
+    }
+    state.round = 30;
+    state.economy.set(steppeId, {
+      factionId: steppeId,
+      productionPool: 0,
+      supplyIncome: 20,
+      supplyDemand: 4,
+    });
+
+    const normalStrategy = computeFactionStrategy(state, steppeId, registry, 'normal');
+    const hardStrategy = computeFactionStrategy(state, steppeId, registry, 'hard');
+    const normalPriorities = rankProductionPriorities(state, steppeId, normalStrategy, registry, 'normal');
+    const hardPriorities = rankProductionPriorities(state, steppeId, hardStrategy, registry, 'hard');
+    const hasRole = (prototypeId: string, role: string) =>
+      state.prototypes.get(prototypeId)?.derivedStats.role === role;
+    const normalCavalry = normalPriorities.find((entry) => hasRole(entry.prototypeId, 'mounted'));
+    const normalInfantry = normalPriorities.find((entry) => hasRole(entry.prototypeId, 'melee'));
+    const hardCavalry = hardPriorities.find((entry) => hasRole(entry.prototypeId, 'mounted'));
+    const hardInfantry = hardPriorities.find((entry) => hasRole(entry.prototypeId, 'melee'));
+
+    expect(normalCavalry).toBeTruthy();
+    expect(normalInfantry).toBeTruthy();
+    expect(hardCavalry).toBeTruthy();
+    expect(hardInfantry).toBeTruthy();
+
+    const normalGap = (normalCavalry?.score ?? 0) - (normalInfantry?.score ?? 0);
+    const hardGap = (hardCavalry?.score ?? 0) - (hardInfantry?.score ?? 0);
     expect(hardGap).toBeGreaterThan(normalGap);
   });
 });

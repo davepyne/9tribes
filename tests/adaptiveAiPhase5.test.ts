@@ -63,6 +63,91 @@ function readWaitReason(strategy: ReturnType<typeof computeFactionStrategy>) {
 }
 
 describe('adaptive AI phase 5', () => {
+  it('switches hard into denial raids when losing and exposed enemy economy exists', () => {
+    const state = buildMvpScenario(42, { registry });
+    const trimmed = trimState(state, ['hill_clan', 'steppe_clan', 'coral_people']);
+    const hillId = 'hill_clan' as never;
+    const steppeId = 'steppe_clan' as never;
+    const hillFaction = trimmed.factions.get(hillId)!;
+    const homeCity = trimmed.cities.get(hillFaction.homeCityId!)!;
+    const baseUnit = trimmed.units.get(hillFaction.unitIds[0])!;
+    const steppeSettlerProto = Array.from(trimmed.prototypes.values()).find(
+      (prototype) => prototype.factionId === steppeId && prototype.tags?.includes('settler'),
+    )!;
+
+    for (let index = 0; index < 4; index += 1) {
+      const unitId = `hill_denial_${index}` as never;
+      trimmed.units.set(unitId, {
+        ...baseUnit,
+        id: unitId,
+        position: { q: homeCity.position.q + (index % 2), r: homeCity.position.r + 1 + Math.floor(index / 2) },
+        veteranLevel: 'elite',
+        learnedAbilities: [
+          { domainId: 'fortress', fromFactionId: hillId, learnedOnRound: 1 },
+          { domainId: 'charge', fromFactionId: steppeId, learnedOnRound: 2 },
+          { domainId: 'slaving', fromFactionId: 'coral_people' as never, learnedOnRound: 3 },
+        ],
+      });
+      hillFaction.unitIds.push(unitId);
+    }
+    trimmed.units.set(baseUnit.id, {
+      ...baseUnit,
+      veteranLevel: 'elite',
+      learnedAbilities: [
+        { domainId: 'fortress', fromFactionId: hillId, learnedOnRound: 1 },
+        { domainId: 'charge', fromFactionId: steppeId, learnedOnRound: 2 },
+        { domainId: 'slaving', fromFactionId: 'coral_people' as never, learnedOnRound: 3 },
+      ],
+    });
+
+    const enemyBaseUnit = trimmed.units.get(trimmed.factions.get(steppeId)!.unitIds[0])!;
+    for (let index = 0; index < 6; index += 1) {
+      const unitId = `steppe_pressure_${index}` as never;
+      trimmed.units.set(unitId, {
+        ...enemyBaseUnit,
+        id: unitId,
+        position: { q: homeCity.position.q + 6 + (index % 3), r: homeCity.position.r - 1 + Math.floor(index / 3) },
+      });
+      trimmed.factions.get(steppeId)!.unitIds.push(unitId);
+    }
+
+    trimmed.villages.set('steppe_denial_village' as never, {
+      id: 'steppe_denial_village' as never,
+      factionId: steppeId,
+      position: { q: homeCity.position.q + 5, r: homeCity.position.r - 2 },
+      name: 'Steppe Outpost',
+      foundedRound: trimmed.round,
+      productionBonus: 1,
+      supplyBonus: 1,
+    });
+    trimmed.factions.set(steppeId, {
+      ...trimmed.factions.get(steppeId)!,
+      villageIds: ['steppe_denial_village' as never],
+    });
+    trimmed.units.set('steppe_denial_settler' as never, {
+      ...enemyBaseUnit,
+      id: 'steppe_denial_settler' as never,
+      prototypeId: steppeSettlerProto.id,
+      position: { q: homeCity.position.q + 7, r: homeCity.position.r - 2 },
+    });
+    trimmed.factions.get(steppeId)!.unitIds.push('steppe_denial_settler' as never);
+    trimmed.economy.set(hillId, {
+      factionId: hillId,
+      productionPool: 0,
+      supplyIncome: 24,
+      supplyDemand: 22,
+    });
+    trimmed.round = 22;
+
+    const strategy = computeFactionStrategy(trimmed, hillId, registry, 'hard');
+
+    expect(
+      Object.values(strategy.unitIntents)
+        .filter((intent) => intent.reason.includes('coordinator'))
+        .some((intent) => intent.assignment === 'raider' && /intercept settler|deny village/.test(intent.reason)),
+    ).toBe(true);
+  });
+
   it('holds/regroups when squad mass is insufficient to commit', () => {
     const state = buildMvpScenario(42, { registry });
     const trimmed = trimState(state, ['steppe_clan', 'hill_clan']);

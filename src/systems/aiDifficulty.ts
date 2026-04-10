@@ -28,6 +28,9 @@ export interface AiDifficultyProfile {
     settlerVisibleEnemyBasePenalty: number;
     settlerVisibleEnemyPerUnitPenalty: number;
     settlerReservePenaltyWeight: number;
+    counterCompositionThreshold: number;
+    counterCompositionWeight: number;
+    signatureExploitWeight: number;
   };
   research: {
     stickyThreshold: number;
@@ -40,6 +43,10 @@ export interface AiDifficultyProfile {
     emergentBreadthWeight: number;
     tripleStackTier2Weight: number;
     tripleStackTier3Weight: number;
+    emergentRuleNearBonus: number;
+    emergentRuleSacrificePriority: number;
+    emergentRuleCompletionBonus: number;
+    signatureExploitWeight: number;
   };
   personality: {
     aggressionFloor: number;
@@ -58,6 +65,11 @@ export interface AiDifficultyProfile {
     coordinatorEnabled: boolean;
     multiAxisEnabled: boolean;
     multiAxisGroupCount: number;
+    multiAxisPrimaryShare: number;
+    multiAxisFlankShare: number;
+    multiAxisHarassShare: number;
+    multiAxisMinGroupSize: number;
+    multiAxisStaggerTurns: number;
     coordinatorMinSupplyRatio: number;
     coordinatorMinIdleNearHome: number;
     coordinatorMinActiveArmy: number;
@@ -76,6 +88,14 @@ export interface AiDifficultyProfile {
     learnLoopMaxReturnShare: number;
     strategicFogCheat: boolean;
     memoryDecayTurns: number;
+    economicDenialWeight: number;
+    freshVillageDenialTurns: number;
+    settlerInterceptionEnabled: boolean;
+    settlerInterceptionRadius: number;
+    postureCommitmentLockTurns: number;
+    postureExplorationDeadline: number;
+    advantageHunterShare: number;
+    losingDenialMode: boolean;
   };
 }
 
@@ -107,6 +127,9 @@ const EASY_PROFILE: AiDifficultyProfile = {
     settlerVisibleEnemyBasePenalty: 12,
     settlerVisibleEnemyPerUnitPenalty: 1.5,
     settlerReservePenaltyWeight: 2.5,
+    counterCompositionThreshold: 1,
+    counterCompositionWeight: 0,
+    signatureExploitWeight: 0,
   },
   research: {
     stickyThreshold: 3,
@@ -119,6 +142,10 @@ const EASY_PROFILE: AiDifficultyProfile = {
     emergentBreadthWeight: 2.5,
     tripleStackTier2Weight: 10,
     tripleStackTier3Weight: 7,
+    emergentRuleNearBonus: 0,
+    emergentRuleSacrificePriority: 0,
+    emergentRuleCompletionBonus: 0,
+    signatureExploitWeight: 0,
   },
   personality: {
     aggressionFloor: 0.5,
@@ -137,6 +164,11 @@ const EASY_PROFILE: AiDifficultyProfile = {
     coordinatorEnabled: false,
     multiAxisEnabled: false,
     multiAxisGroupCount: 1,
+    multiAxisPrimaryShare: 1,
+    multiAxisFlankShare: 0,
+    multiAxisHarassShare: 0,
+    multiAxisMinGroupSize: 2,
+    multiAxisStaggerTurns: 0,
     coordinatorMinSupplyRatio: 0.8,
     coordinatorMinIdleNearHome: 3,
     coordinatorMinActiveArmy: 4,
@@ -155,6 +187,14 @@ const EASY_PROFILE: AiDifficultyProfile = {
     learnLoopMaxReturnShare: 0.4,
     strategicFogCheat: false,
     memoryDecayTurns: 10,
+    economicDenialWeight: 0,
+    freshVillageDenialTurns: 0,
+    settlerInterceptionEnabled: false,
+    settlerInterceptionRadius: 0,
+    postureCommitmentLockTurns: 0,
+    postureExplorationDeadline: 99,
+    advantageHunterShare: 0.5,
+    losingDenialMode: false,
   },
 };
 
@@ -186,6 +226,9 @@ const NORMAL_PROFILE: AiDifficultyProfile = {
     settlerVisibleEnemyBasePenalty: 12,
     settlerVisibleEnemyPerUnitPenalty: 1.5,
     settlerReservePenaltyWeight: 2.5,
+    counterCompositionThreshold: 0.75,
+    counterCompositionWeight: 0.75,
+    signatureExploitWeight: 0,
   },
   research: {
     stickyThreshold: 3,
@@ -198,6 +241,10 @@ const NORMAL_PROFILE: AiDifficultyProfile = {
     emergentBreadthWeight: 2.5,
     tripleStackTier2Weight: 10,
     tripleStackTier3Weight: 7,
+    emergentRuleNearBonus: 0,
+    emergentRuleSacrificePriority: 0,
+    emergentRuleCompletionBonus: 0,
+    signatureExploitWeight: 0,
   },
   personality: {
     aggressionFloor: 0.7,
@@ -216,6 +263,11 @@ const NORMAL_PROFILE: AiDifficultyProfile = {
     coordinatorEnabled: true,
     multiAxisEnabled: false,
     multiAxisGroupCount: 1,
+    multiAxisPrimaryShare: 1,
+    multiAxisFlankShare: 0,
+    multiAxisHarassShare: 0,
+    multiAxisMinGroupSize: 2,
+    multiAxisStaggerTurns: 0,
     coordinatorMinSupplyRatio: 0.8,
     coordinatorMinIdleNearHome: 3,
     coordinatorMinActiveArmy: 4,
@@ -234,6 +286,14 @@ const NORMAL_PROFILE: AiDifficultyProfile = {
     learnLoopMaxReturnShare: 0.4,
     strategicFogCheat: false,
     memoryDecayTurns: 10,
+    economicDenialWeight: 0,
+    freshVillageDenialTurns: 0,
+    settlerInterceptionEnabled: false,
+    settlerInterceptionRadius: 0,
+    postureCommitmentLockTurns: 1,
+    postureExplorationDeadline: 24,
+    advantageHunterShare: 0.65,
+    losingDenialMode: false,
   },
 };
 
@@ -265,6 +325,9 @@ const HARD_PROFILE: AiDifficultyProfile = {
     settlerVisibleEnemyBasePenalty: 14,
     settlerVisibleEnemyPerUnitPenalty: 2,
     settlerReservePenaltyWeight: 3.25,
+    counterCompositionThreshold: 0.4,
+    counterCompositionWeight: 2.5,
+    signatureExploitWeight: 2.2,
   },
   research: {
     stickyThreshold: 2.5,
@@ -277,6 +340,10 @@ const HARD_PROFILE: AiDifficultyProfile = {
     emergentBreadthWeight: 4,
     tripleStackTier2Weight: 12,
     tripleStackTier3Weight: 8.5,
+    emergentRuleNearBonus: 15,
+    emergentRuleSacrificePriority: 3,
+    emergentRuleCompletionBonus: 4,
+    signatureExploitWeight: 1.8,
   },
   personality: {
     aggressionFloor: 0.78,
@@ -294,7 +361,12 @@ const HARD_PROFILE: AiDifficultyProfile = {
     focusOverfillPenalty: 3.8,
     coordinatorEnabled: true,
     multiAxisEnabled: true,
-    multiAxisGroupCount: 2,
+    multiAxisGroupCount: 3,
+    multiAxisPrimaryShare: 0.5,
+    multiAxisFlankShare: 0.3,
+    multiAxisHarassShare: 0.2,
+    multiAxisMinGroupSize: 2,
+    multiAxisStaggerTurns: 1,
     coordinatorMinSupplyRatio: 0.9,
     coordinatorMinIdleNearHome: 2,
     coordinatorMinActiveArmy: 6,
@@ -313,6 +385,14 @@ const HARD_PROFILE: AiDifficultyProfile = {
     learnLoopMaxReturnShare: 0.33,
     strategicFogCheat: true,
     memoryDecayTurns: Infinity,
+    economicDenialWeight: 4,
+    freshVillageDenialTurns: 3,
+    settlerInterceptionEnabled: true,
+    settlerInterceptionRadius: 18,
+    postureCommitmentLockTurns: 3,
+    postureExplorationDeadline: 15,
+    advantageHunterShare: 0.95,
+    losingDenialMode: true,
   },
 };
 

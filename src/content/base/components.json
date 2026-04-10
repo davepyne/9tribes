@@ -104,7 +104,7 @@
     "name": "Musket",
     "slotType": "training",
     "attackBonus": 2,
-    "rangeBonus": 2,
+    "rangeBonus": 1,
     "compatibleChassis": [
       "heavy_infantry_frame",
       "infantry_frame"
@@ -514,7 +514,7 @@
     "name": "Ship Cannon",
     "slotType": "weapon",
     "attackBonus": 2,
-    "rangeBonus": 1,
+    "rangeBonus": 0,
     "compatibleChassis": [
       "ranged_naval_frame",
       "galley_frame",
@@ -578,7 +578,7 @@
     "name": "Catapult Arm",
     "slotType": "weapon",
     "attackBonus": 2,
-    "rangeBonus": 1,
+    "rangeBonus": 0,
     "compatibleChassis": [
       "catapult_frame"
     ],

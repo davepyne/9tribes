@@ -62,6 +62,197 @@ function trimState(state: ReturnType<typeof buildMvpScenario>, factionIds: strin
 }
 
 describe('strategic AI', () => {
+  it('uses triple-axis hard pressure with harassment launched before the main push', () => {
+    const state = buildMvpScenario(42, { registry });
+    trimState(state, ['hill_clan', 'steppe_clan', 'coral_people']);
+    const hillId = 'hill_clan' as never;
+    const steppeId = 'steppe_clan' as never;
+    const hillFaction = state.factions.get(hillId)!;
+    const homeCity = state.cities.get(hillFaction.homeCityId!)!;
+    const baseUnit = state.units.get(hillFaction.unitIds[0])!;
+    const steppeSettlerProto = Array.from(state.prototypes.values()).find(
+      (prototype) => prototype.factionId === steppeId && prototype.tags?.includes('settler'),
+    )!;
+
+    for (let index = 0; index < 6; index += 1) {
+      const unitId = `hill_reinforcement_${index}` as never;
+      state.units.set(unitId, {
+        ...baseUnit,
+        id: unitId,
+        position: { q: homeCity.position.q + (index % 3), r: homeCity.position.r + 1 + Math.floor(index / 3) },
+        veteranLevel: 'elite',
+        learnedAbilities: [
+          { domainId: 'fortress', fromFactionId: hillId, learnedOnRound: 1 },
+          { domainId: 'charge', fromFactionId: steppeId, learnedOnRound: 2 },
+          { domainId: 'slaving', fromFactionId: 'coral_people' as never, learnedOnRound: 3 },
+        ],
+      });
+      hillFaction.unitIds.push(unitId);
+    }
+    state.units.set(baseUnit.id, {
+      ...baseUnit,
+      veteranLevel: 'elite',
+      learnedAbilities: [
+        { domainId: 'fortress', fromFactionId: hillId, learnedOnRound: 1 },
+        { domainId: 'charge', fromFactionId: steppeId, learnedOnRound: 2 },
+        { domainId: 'slaving', fromFactionId: 'coral_people' as never, learnedOnRound: 3 },
+      ],
+    });
+
+    state.villages.set('steppe_fresh_village' as never, {
+      id: 'steppe_fresh_village' as never,
+      factionId: steppeId,
+      position: { q: homeCity.position.q + 5, r: homeCity.position.r - 2 },
+      name: 'Fresh Steppe Outpost',
+      foundedRound: state.round,
+      productionBonus: 1,
+      supplyBonus: 1,
+    });
+    state.factions.set(steppeId, {
+      ...state.factions.get(steppeId)!,
+      villageIds: ['steppe_fresh_village' as never],
+    });
+    state.units.set('steppe_settler_probe' as never, {
+      ...state.units.get(state.factions.get(steppeId)!.unitIds[0])!,
+      id: 'steppe_settler_probe' as never,
+      prototypeId: steppeSettlerProto.id,
+      position: { q: homeCity.position.q + 6, r: homeCity.position.r - 1 },
+      hp: 100,
+      maxHp: 100,
+    });
+    state.factions.get(steppeId)!.unitIds.push('steppe_settler_probe' as never);
+    state.economy.set(hillId, {
+      factionId: hillId,
+      productionPool: 0,
+      supplyIncome: 24,
+      supplyDemand: 22,
+    });
+    state.round = 20;
+
+    const first = computeFactionStrategy(state, hillId, registry, 'hard');
+
+    const firstAssignments = Object.values(first.unitIntents);
+    expect(firstAssignments.some((intent) => intent.reason.includes('coordinator harassment wave'))).toBe(true);
+    expect(firstAssignments.some((intent) => intent.reason.includes('coordinator main push staging behind early harassment'))).toBe(true);
+
+    state.factionStrategies.set(hillId, first);
+    state.round += 1;
+    const second = computeFactionStrategy(state, hillId, registry, 'hard');
+
+    expect(Object.values(second.unitIntents).some((intent) => intent.reason.includes('coordinator main push toward'))).toBe(true);
+    expect(Object.values(second.unitIntents).some((intent) => intent.reason.includes('coordinator flanking push'))).toBe(true);
+  });
+
+  it('retargets the hard flank toward the newly exposed alternate city', () => {
+    const state = buildMvpScenario(42, { registry });
+    trimState(state, ['hill_clan', 'steppe_clan', 'coral_people']);
+    const hillId = 'hill_clan' as never;
+    const hillFaction = state.factions.get(hillId)!;
+    const homeCity = state.cities.get(hillFaction.homeCityId!)!;
+    const baseUnit = state.units.get(hillFaction.unitIds[0])!;
+
+    for (let index = 0; index < 6; index += 1) {
+      const unitId = `hill_axis_${index}` as never;
+      state.units.set(unitId, {
+        ...baseUnit,
+        id: unitId,
+        position: { q: homeCity.position.q + (index % 3), r: homeCity.position.r + 1 + Math.floor(index / 3) },
+        veteranLevel: 'elite',
+        learnedAbilities: [
+          { domainId: 'fortress', fromFactionId: hillId, learnedOnRound: 1 },
+          { domainId: 'charge', fromFactionId: 'steppe_clan' as never, learnedOnRound: 2 },
+          { domainId: 'slaving', fromFactionId: 'coral_people' as never, learnedOnRound: 3 },
+        ],
+      });
+      hillFaction.unitIds.push(unitId);
+    }
+    state.units.set(baseUnit.id, {
+      ...baseUnit,
+      veteranLevel: 'elite',
+      learnedAbilities: [
+        { domainId: 'fortress', fromFactionId: hillId, learnedOnRound: 1 },
+        { domainId: 'charge', fromFactionId: 'steppe_clan' as never, learnedOnRound: 2 },
+        { domainId: 'slaving', fromFactionId: 'coral_people' as never, learnedOnRound: 3 },
+      ],
+    });
+
+    state.cities.set('coral_forward_city' as never, {
+      ...state.cities.get(state.factions.get('coral_people' as never)!.cityIds[0])!,
+      id: 'coral_forward_city' as never,
+      factionId: 'coral_people' as never,
+      position: { q: homeCity.position.q + 9, r: homeCity.position.r + 1 },
+      isCapital: false,
+      wallHP: 60,
+      maxWallHP: 100,
+      turnsUnderSiege: 0,
+      productionQueue: [],
+      productionProgress: 0,
+      besieged: false,
+    });
+    state.factions.set('coral_people' as never, {
+      ...state.factions.get('coral_people' as never)!,
+      cityIds: [...state.factions.get('coral_people' as never)!.cityIds, 'coral_forward_city' as never],
+    });
+    state.economy.set(hillId, {
+      factionId: hillId,
+      productionPool: 0,
+      supplyIncome: 24,
+      supplyDemand: 22,
+    });
+
+    state.round = 20;
+    const opening = computeFactionStrategy(state, hillId, registry, 'hard');
+    state.factionStrategies.set(hillId, opening);
+    state.round += 1;
+
+    const firstReleased = computeFactionStrategy(state, hillId, registry, 'hard');
+    const firstFlankReason = Object.values(firstReleased.unitIntents)
+      .find((intent) => intent.reason.includes('coordinator flanking push'))
+      ?.reason;
+    expect(firstFlankReason).toBeTruthy();
+
+    const coralCity = state.cities.get('coral_forward_city' as never)!;
+    const coralFaction = state.factions.get('coral_people' as never)!;
+    const coralBaseUnit = state.units.get(coralFaction.unitIds[0])!;
+    for (let index = 0; index < 2; index += 1) {
+      const unitId = `coral_guard_${index}` as never;
+      state.units.set(unitId, {
+        ...coralBaseUnit,
+        id: unitId,
+        position: { q: coralCity.position.q - 1 + index, r: coralCity.position.r },
+      });
+      coralFaction.unitIds.push(unitId);
+    }
+
+    state.cities.set('steppe_exposed_city' as never, {
+      ...state.cities.get(state.factions.get('steppe_clan' as never)!.cityIds[0])!,
+      id: 'steppe_exposed_city' as never,
+      factionId: 'steppe_clan' as never,
+      position: { q: homeCity.position.q + 11, r: homeCity.position.r - 2 },
+      isCapital: false,
+      wallHP: 40,
+      maxWallHP: 100,
+      turnsUnderSiege: 0,
+      productionQueue: [],
+      productionProgress: 0,
+      besieged: false,
+    });
+    state.factions.set('steppe_clan' as never, {
+      ...state.factions.get('steppe_clan' as never)!,
+      cityIds: [...state.factions.get('steppe_clan' as never)!.cityIds, 'steppe_exposed_city' as never],
+    });
+    state.factionStrategies.set(hillId, firstReleased);
+    state.round += 1;
+
+    const retargeted = computeFactionStrategy(state, hillId, registry, 'hard');
+    const secondFlankReason = Object.values(retargeted.unitIntents)
+      .find((intent) => intent.reason.includes('coordinator flanking push'))
+      ?.reason;
+
+    expect(firstFlankReason).not.toBe(secondFlankReason);
+    expect(secondFlankReason).toContain('steppe_exposed_city');
+  });
+
   it('foreign river stealth t3 reveals nearby stealthed enemies to fog consumers', () => {
     let state = buildMvpScenario(42);
     trimState(state, ['hill_clan', 'steppe_clan']);
@@ -195,6 +386,58 @@ describe('strategic AI', () => {
 
     expect(normalStrategy.focusTargetUnitIds.length).toBe(3);
     expect(hardStrategy.focusTargetUnitIds.length).toBe(2);
+  });
+
+  it('uses full strategic visibility on hard when choosing hidden objectives', () => {
+    const state = buildMvpScenario(42);
+    trimState(state, ['hill_clan', 'steppe_clan']);
+    const hillId = 'hill_clan' as never;
+    const steppeId = 'steppe_clan' as never;
+    const hillHome = state.cities.get(state.factions.get(hillId)!.homeCityId!)!;
+    const steppeCityId = state.factions.get(steppeId)!.cityIds[0];
+
+    state.cities.set(steppeCityId, {
+      ...state.cities.get(steppeCityId)!,
+      position: { q: hillHome.position.q + 12, r: hillHome.position.r + 8 },
+    });
+    for (const unitId of state.factions.get(steppeId)!.unitIds) {
+      state.units.set(unitId, {
+        ...state.units.get(unitId)!,
+        position: { q: hillHome.position.q + 11, r: hillHome.position.r + 8 },
+      });
+    }
+
+    const normalStrategy = computeFactionStrategy(state, hillId, registry, 'normal');
+    const hardStrategy = computeFactionStrategy(state, hillId, registry, 'hard');
+
+    expect(normalStrategy.primaryCityObjectiveId).toBeUndefined();
+    expect(normalStrategy.focusTargetUnitIds.length).toBe(0);
+    expect(hardStrategy.primaryCityObjectiveId).toBe(steppeCityId);
+    expect(hardStrategy.focusTargetUnitIds.length).toBeGreaterThan(0);
+  });
+
+  it('keeps hard committed to offensive pressure instead of pivoting into exploration immediately', () => {
+    let state = buildMvpScenario(42);
+    trimState(state, ['steppe_clan', 'hill_clan']);
+    const steppeId = 'steppe_clan' as never;
+    const hillId = 'hill_clan' as never;
+    const steppeUnits = state.factions.get(steppeId)!.unitIds;
+    const hillUnits = state.factions.get(hillId)!.unitIds;
+
+    state.units.set(steppeUnits[0], { ...state.units.get(steppeUnits[0])!, position: { q: 8, r: 6 }, hp: 100 });
+    state.units.set(steppeUnits[1], { ...state.units.get(steppeUnits[1])!, position: { q: 9, r: 6 }, hp: 100 });
+    state.units.set(hillUnits[0], { ...state.units.get(hillUnits[0])!, position: { q: 10, r: 6 }, hp: 100 });
+
+    const committed = computeFactionStrategy(state, steppeId, registry, 'hard');
+    expect(['offensive', 'siege']).toContain(committed.posture);
+
+    state.factionStrategies.set(steppeId, committed);
+    state.round += 1;
+    state.units.set(hillUnits[0], { ...state.units.get(hillUnits[0])!, position: { q: 22, r: 20 } });
+
+    const followThrough = computeFactionStrategy(state, steppeId, registry, 'hard');
+    expect(followThrough.posture).not.toBe('exploration');
+    expect(['offensive', 'siege', 'balanced']).toContain(followThrough.posture);
   });
 
   it('moves siege-assigned units toward the enemy city when no tactical attack is available', () => {
@@ -368,5 +611,151 @@ describe('strategic AI', () => {
     expect(decision).toBeTruthy();
     expect(decision?.prototypeId).not.toBe(customCavalryId);
     expect(decision?.reason).toMatch(/recovery|defensive|balanced/);
+  });
+
+  it('targets newly founded enemy cities for denial on Hard', () => {
+    const state = buildMvpScenario(42, { registry });
+    trimState(state, ['hill_clan', 'steppe_clan', 'coral_people']);
+    const hillId = 'hill_clan' as never;
+    const steppeId = 'steppe_clan' as never;
+    const hillFaction = state.factions.get(hillId)!;
+    const homeCity = state.cities.get(hillFaction.homeCityId!)!;
+    const baseUnit = state.units.get(hillFaction.unitIds[0])!;
+    const steppeBaseCity = state.cities.get(state.factions.get(steppeId)!.cityIds[0])!;
+
+    // Add enough units for Hard coordinator to activate (needs >= 6 active army)
+    for (let index = 0; index < 6; index += 1) {
+      const unitId = `hill_denial_reinforce_${index}` as never;
+      state.units.set(unitId, {
+        ...baseUnit,
+        id: unitId,
+        position: { q: homeCity.position.q + (index % 3), r: homeCity.position.r + 1 + Math.floor(index / 3) },
+        veteranLevel: 'elite',
+        learnedAbilities: [
+          { domainId: 'fortress', fromFactionId: hillId, learnedOnRound: 1 },
+          { domainId: 'charge', fromFactionId: steppeId, learnedOnRound: 2 },
+          { domainId: 'slaving', fromFactionId: 'coral_people' as never, learnedOnRound: 3 },
+        ],
+      });
+      hillFaction.unitIds.push(unitId);
+    }
+    state.units.set(baseUnit.id, {
+      ...baseUnit,
+      veteranLevel: 'elite',
+      learnedAbilities: [
+        { domainId: 'fortress', fromFactionId: hillId, learnedOnRound: 1 },
+        { domainId: 'charge', fromFactionId: steppeId, learnedOnRound: 2 },
+        { domainId: 'slaving', fromFactionId: 'coral_people' as never, learnedOnRound: 3 },
+      ],
+    });
+
+    // Add a village so the harassment objective exists (needed for triple-axis path)
+    state.villages.set('steppe_denial_village' as never, {
+      id: 'steppe_denial_village' as never,
+      factionId: steppeId,
+      position: { q: homeCity.position.q + 5, r: homeCity.position.r - 2 },
+      name: 'Steppe Outpost',
+      foundedRound: 20,
+      productionBonus: 1,
+      supplyBonus: 1,
+    });
+    state.factions.set(steppeId, {
+      ...state.factions.get(steppeId)!,
+      villageIds: ['steppe_denial_village' as never],
+    });
+
+    // Place steppe base city near hill
+    state.cities.set(state.factions.get(steppeId)!.cityIds[0], {
+      ...steppeBaseCity,
+      position: { q: homeCity.position.q + 4, r: homeCity.position.r + 2 },
+    });
+
+    // Add a newly founded enemy city (founded this round)
+    state.cities.set('steppe_new_colony' as never, {
+      ...steppeBaseCity,
+      id: 'steppe_new_colony' as never,
+      factionId: steppeId,
+      position: { q: homeCity.position.q + 7, r: homeCity.position.r + 6 },
+      isCapital: false,
+      wallHP: 50,
+      maxWallHP: 50,
+      foundedRound: 20,
+    });
+    state.factions.set(steppeId, {
+      ...state.factions.get(steppeId)!,
+      cityIds: [...state.factions.get(steppeId)!.cityIds, 'steppe_new_colony' as never],
+    });
+
+    state.economy.set(hillId, {
+      factionId: hillId,
+      productionPool: 0,
+      supplyIncome: 24,
+      supplyDemand: 22,
+    });
+    state.round = 20;
+
+    // First turn: Hard will stage (stagger) — ignore this
+    const first = computeFactionStrategy(state, hillId, registry, 'hard');
+    state.factionStrategies.set(hillId, first);
+    state.round += 1;
+
+    // Second turn: Hard releases — now check for newly founded city targeting
+    const second = computeFactionStrategy(state, hillId, registry, 'hard');
+
+    const coordinatorIntents = Object.values(second.unitIntents)
+      .filter((intent) => intent.reason.includes('coordinator'));
+    const hasNewColonyObjective = coordinatorIntents.some(
+      (intent) => intent.objectiveCityId === 'steppe_new_colony',
+    );
+    const hasNewColonyInDebug = second.debugReasons.some(
+      (reason) => reason.includes('steppe_new_colony'),
+    );
+    expect(hasNewColonyObjective || hasNewColonyInDebug).toBe(true);
+  });
+
+  it('does not give newly founded city denial bonus on Normal', () => {
+    const state = buildMvpScenario(42, { registry });
+    trimState(state, ['hill_clan', 'steppe_clan']);
+    const hillId = 'hill_clan' as never;
+    const steppeId = 'steppe_clan' as never;
+    const hillCity = state.cities.get(state.factions.get(hillId)!.homeCityId!)!;
+    const steppeBaseCity = state.cities.get(state.factions.get(steppeId)!.cityIds[0])!;
+
+    // Place steppe base city near hill
+    state.cities.set(state.factions.get(steppeId)!.cityIds[0], {
+      ...steppeBaseCity,
+      position: { q: hillCity.position.q + 8, r: hillCity.position.r + 4 },
+    });
+
+    // Add a newly founded enemy city (founded this round)
+    state.cities.set('steppe_new_colony' as never, {
+      ...steppeBaseCity,
+      id: 'steppe_new_colony' as never,
+      factionId: steppeId,
+      position: { q: hillCity.position.q + 6, r: hillCity.position.r + 2 },
+      isCapital: false,
+      wallHP: 50,
+      maxWallHP: 50,
+      foundedRound: 20,
+    });
+    state.factions.set(steppeId, {
+      ...state.factions.get(steppeId)!,
+      cityIds: [...state.factions.get(steppeId)!.cityIds, 'steppe_new_colony' as never],
+    });
+
+    state.economy.set(hillId, {
+      factionId: hillId,
+      productionPool: 0,
+      supplyIncome: 24,
+      supplyDemand: 22,
+    });
+    state.round = 21;
+
+    // Normal: freshVillageDenialTurns=0, so no fresh-founded bonus.
+    // The Normal coordinator should NOT produce a "newly founded" denial reason.
+    const normalStrategy = computeFactionStrategy(state, hillId, registry, 'normal');
+    const allReasons = Object.values(normalStrategy.unitIntents)
+      .flatMap((intent) => intent.reason);
+    expect(allReasons.some((r) => r.includes('newly founded'))).toBe(false);
   });
 });

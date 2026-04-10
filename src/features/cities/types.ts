@@ -58,4 +58,6 @@ export interface City {
   lastVillageSpawnRound?: number;
   // Site traits derived from the surrounding territory when the city was founded.
   siteBonuses?: CitySiteBonuses;
+  // The game round when this city was founded. Set at creation time.
+  foundedRound?: number;
 }

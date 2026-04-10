@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
+import { assemblePrototype } from '../src/design/assemblePrototype';
 import { computeFactionStrategy } from '../src/systems/strategicAi';
+import { rankProductionPriorities } from '../src/systems/aiProductionStrategy';
 import { createSimulationTrace, runWarEcologySimulation } from '../src/systems/warEcologySimulation';
 import { initializeFogForFaction, updateFogState } from '../src/systems/fogSystem';
 
@@ -49,6 +51,63 @@ function countAssignments(strategy: ReturnType<typeof computeFactionStrategy>, a
 }
 
 describe('adaptive AI phase 3', () => {
+  it('pushes hard steppe production further toward mounted skirmish identity units than normal', () => {
+    const state = buildMvpScenario(42, { registry });
+    trimState(state, ['steppe_clan', 'hill_clan']);
+    const steppeId = 'steppe_clan' as never;
+    const cavalry = assemblePrototype(
+      steppeId,
+      'cavalry_frame' as never,
+      ['basic_bow', 'skirmish_drill'] as never,
+      registry,
+      Array.from(state.prototypes.keys()),
+      {
+        capabilityLevels: state.factions.get(steppeId)?.capabilities?.domainLevels,
+        validation: { ignoreResearchRequirements: true },
+      },
+    );
+    state.prototypes.set(cavalry.id, cavalry);
+    state.factions.set(steppeId, {
+      ...state.factions.get(steppeId)!,
+      prototypeIds: [...state.factions.get(steppeId)!.prototypeIds, cavalry.id],
+    });
+    const infantry = Array.from(state.prototypes.values()).find(
+      (prototype) => prototype.factionId === steppeId && prototype.chassisId === 'infantry_frame' && !prototype.tags?.includes('settler'),
+    );
+
+    expect(cavalry).toBeTruthy();
+    expect(infantry).toBeTruthy();
+
+    state.economy.set(steppeId, {
+      factionId: steppeId,
+      productionPool: 0,
+      supplyIncome: 20,
+      supplyDemand: 4,
+    });
+    state.round = 24;
+
+    const normalStrategy = computeFactionStrategy(state, steppeId, registry, 'normal');
+    const hardStrategy = computeFactionStrategy(state, steppeId, registry, 'hard');
+    const normalPriorities = rankProductionPriorities(state, steppeId, normalStrategy, registry, 'normal');
+    const hardPriorities = rankProductionPriorities(state, steppeId, hardStrategy, registry, 'hard');
+    const normalCamel = normalPriorities.find(
+      (entry) => state.prototypes.get(entry.prototypeId)?.derivedStats.role === 'mounted',
+    );
+    const normalInfantry = normalPriorities.find((entry) => entry.prototypeId === infantry!.id);
+    const hardCamel = hardPriorities.find(
+      (entry) => state.prototypes.get(entry.prototypeId)?.derivedStats.role === 'mounted',
+    );
+    const hardInfantry = hardPriorities.find((entry) => entry.prototypeId === infantry!.id);
+
+    expect(normalCamel).toBeTruthy();
+    expect(normalInfantry).toBeTruthy();
+    expect(hardCamel).toBeTruthy();
+    expect(hardInfantry).toBeTruthy();
+    expect((hardCamel?.score ?? 0) - (hardInfantry?.score ?? 0)).toBeGreaterThan(
+      (normalCamel?.score ?? 0) - (normalInfantry?.score ?? 0),
+    );
+  });
+
   it('keeps hard recovery guard ahead of weighted posture scoring', () => {
     const state = buildMvpScenario(42, { registry });
     trimState(state, ['steppe_clan', 'hill_clan']);
