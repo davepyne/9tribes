@@ -5,6 +5,8 @@ web/node_modules/
 # Build output
 dist/
 web/dist/
+*.js
+!*.config.js
 
 # IDE
 .idea/
