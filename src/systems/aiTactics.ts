@@ -61,7 +61,8 @@ export function scoreStrategicTarget(input: StrategicTargetScoreInput): number {
   if (input.isFocusTarget) score += 6;
   if (input.isAdjacentToPrimaryObjectiveCity) score += 4;
   if (input.isRouted) score += 2;
-  if (input.hpRatio <= 0.4) score += 3;
+  if (input.hpRatio <= 0.15) score += 8; // execute tier — go finish them
+  else if (input.hpRatio <= 0.4) score += 3;
   if (input.attacksFromThreatenedCityHex) score += 4;
   if (input.finishOffPriorityTarget) score += 3;
   if (input.isolatedFromAnchor) score -= 6;
@@ -80,6 +81,7 @@ export function scoreAttackCandidate(input: AttackCandidateScoreInput): number {
   score += input.roleEffectiveness * 10;
   score += input.weaponEffectiveness * 10;
   score += (1 - input.targetHpRatio) * 5;
+  if (input.targetHpRatio <= 0.2) score += 6; // execute bonus — prioritize kill shots
   if (input.targetRouted) score += 8;
   score -= input.reverseRoleEffectiveness * 5;
   score += input.strategicTargetScore;

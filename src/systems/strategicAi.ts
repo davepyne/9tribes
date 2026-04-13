@@ -582,6 +582,24 @@ function choosePrimaryCityObjective(
     }
   }
 
+  // Known start positions: AI knows where enemy home cities are (but not garrison/units)
+  if (state && factionId && difficultyProfile?.strategy.knownStartPositions) {
+    const homeCityId = state.factions.get(factionId)?.homeCityId;
+    const homeCity = homeCityId ? state.cities.get(homeCityId) : undefined;
+    const startCity = Array.from(state.factions.values())
+      .filter((f) => f.id !== factionId && f.homeCityId)
+      .map((f) => ({ faction: f, city: state.cities.get(f.homeCityId!) }))
+      .filter((entry) => entry.city)
+      .sort((a, b) => {
+        const aDist = hexDistance(a.city!.position, homeCity?.position ?? a.city!.position);
+        const bDist = hexDistance(b.city!.position, homeCity?.position ?? b.city!.position);
+        return aDist - bDist;
+      })[0];
+    if (startCity) {
+      return startCity.city!.id;
+    }
+  }
+
   return undefined;
 }
 
@@ -639,8 +657,9 @@ function chooseFocusTargets(
           terrainId,
         },
       );
+      const executeBonus = hpRatio <= 0.15 ? 6 : 0; // prioritize finishing nearly-dead enemies
       const baseScore =
-        sameFrontBonus + routedBonus + postureBonus + antiSkirmishScore + (1 - hpRatio) * 4 - cityDistance * 0.25;
+        sameFrontBonus + routedBonus + postureBonus + antiSkirmishScore + (1 - hpRatio) * 4 + executeBonus - cityDistance * 0.25;
       return {
         unitId: entry.unit.id,
         score: baseScore + personalityScore,
@@ -689,9 +708,10 @@ function getFriendlyCityAnchors(state: GameState, factionId: FactionId): HexCoor
 }
 
 /**
- * Find a waypoint toward unexplored territory, biased toward the map center.
+ * Find a waypoint toward unexplored territory, biased toward the map center
+ * and (when knownStartPositions is active) toward known enemy home cities.
  * The center bias acts as a proxy for moving toward likely enemy positions,
- * since factions are placed roughly equidistant from the center.
+ * while the city bias directs exploration toward known enemy locations.
  */
 function findDirectedExplorationWaypoint(
   state: GameState,
@@ -711,6 +731,16 @@ function findDirectedExplorationWaypoint(
       - state.round * difficultyProfile.strategy.explorationCenterBiasDecayPerRound,
   );
 
+  // Known enemy city positions for directional bias
+  const knownEnemyCities: HexCoord[] = [];
+  if (difficultyProfile.strategy.knownStartPositions) {
+    for (const f of state.factions.values()) {
+      if (f.id === factionId || !f.homeCityId) continue;
+      const city = state.cities.get(f.homeCityId);
+      if (city) knownEnemyCities.push(city.position);
+    }
+  }
+
   let best: HexCoord | null = null;
   let bestScore = Infinity;
 
@@ -719,7 +749,12 @@ function findDirectedExplorationWaypoint(
     const hex = keyToHex(key);
     const distFromUnit = hexDistance(origin, hex);
     const distFromCenter = hexDistance({ q: centerQ, r: centerR }, hex);
-    const score = distFromUnit + effectiveBias * distFromCenter;
+    let score = distFromUnit + effectiveBias * distFromCenter;
+    // Bias toward nearest known enemy city (half center bias strength)
+    if (knownEnemyCities.length > 0) {
+      const minCityDist = Math.min(...knownEnemyCities.map((c) => hexDistance(c, hex)));
+      score += effectiveBias * 0.5 * minCityDist;
+    }
     if (score < bestScore) {
       bestScore = score;
       best = hex;

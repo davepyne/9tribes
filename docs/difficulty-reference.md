@@ -138,6 +138,7 @@ computeFactionStrategy()
 | | explorationCenterBias | 0.6 | **New field** — biases exploration toward map center |
 | | explorationCenterBiasDecayPerRound | 0.03 | Bias decays to 0 by ~turn 20 |
 | | noEnemySeenOffensivePenalty | -0.5 | **New field** (was hardcoded -2) |
+| | knownStartPositions | false | No knowledge of enemy cities |
 
 ---
 
@@ -220,6 +221,7 @@ computeFactionStrategy()
 | | explorationCenterBias | 0.8 | **New** — strong center bias |
 | | explorationCenterBiasDecayPerRound | 0.04 | Decays to 0 by ~turn 20 |
 | | noEnemySeenOffensivePenalty | -0.5 | **New** (was hardcoded -2) |
+| | knownStartPositions | true | **New** — knows enemy home city locations |
 
 ---
 
@@ -320,6 +322,7 @@ computeFactionStrategy()
 | | explorationCenterBias | 0.5 | **New** (lower — Hard has fogCheat) |
 | | explorationCenterBiasDecayPerRound | 0.03 | |
 | | noEnemySeenOffensivePenalty | 0 | **New** — no penalty at all |
+| | knownStartPositions | true | Same as Normal (redundant with fogCheat) |
 
 ---
 
@@ -486,6 +489,18 @@ When `strategicFogCheat: false`, the AI:
 - Only sees enemies within vision range
 - Relies on `getLastSeenEnemyCities` for remembered city positions
 - Memory entries older than `memoryDecayTurns` are ignored
+- If `knownStartPositions: true`, still knows enemy home city locations for targeting and exploration (but not garrison/units)
+
+### Known Start Positions
+
+| | Easy | Normal | Hard |
+|--|------|--------|------|
+| knownStartPositions | false | true | true |
+
+When `knownStartPositions: true`, the AI:
+- Always has a valid city objective via nearest enemy home city (`choosePrimaryCityObjective` fallback)
+- Biases exploration toward known enemy city positions (in addition to map center)
+- Does NOT see enemy units, garrison, or non-home cities — only home city locations
 
 ---
 
@@ -516,6 +531,7 @@ When `strategicFogCheat: false`, the AI:
 | Settler interception | No | No | Yes |
 | Losing denial mode | No | No | Yes |
 | Strategic fog cheat | No | No | Yes |
+| Known start positions | No | Yes | Yes |
 | Posture commitment lock | 0 turns | 1 turn | 3 turns |
 
 ---
@@ -548,8 +564,26 @@ Problem: AI never proactively sought the player in early game. Five compounding 
 - `src/systems/strategicAi.ts` — Directed exploration, posture penalty, Easy coordinator
 - `src/systems/unitActivationSystem.ts` — Forward fallback intent
 
+---
+
+## Recent Changes (2026-04-12b: Known Start Positions)
+
+Problem: On Normal, AI factions could be 8 hexes from the player and never attack. The center-biased exploration sent units in the wrong direction, `choosePrimaryCityObjective` had no valid target (no fog cheat, no memory), and the coordinator couldn't redirect units efficiently.
+
+### What changed
+
+1. **New parameter `knownStartPositions`** — When true, the AI knows the locations of enemy home cities (but not garrison/units). Normal and Hard get this; Easy does not.
+
+2. **City-awareness fallback in `choosePrimaryCityObjective`** — New path 6 after last-seen cities: finds nearest enemy home city via `knownStartPositions`. Ensures the AI always has a valid city objective.
+
+3. **Enemy city direction bias in exploration** — `findDirectedExplorationWaypoint` now biases toward known enemy city positions in addition to map center. Uses half the center bias strength for city direction. Only active when `knownStartPositions` is true.
+
+### Files modified
+- `src/systems/aiDifficulty.ts` — New `knownStartPositions` field on type and all three profiles
+- `src/systems/strategicAi.ts` — City-awareness fallback in `choosePrimaryCityObjective`, enemy city bias in `findDirectedExplorationWaypoint`
+
 ### Open tuning questions
 - Does the AI send too many units away and leave cities undefended?
-- Is Normal still too passive after turn 8-10?
 - Should Easy's simplified coordinator also respect supply ratio?
 - Does the exploration center bias need to be per-faction (e.g., factions on the edge should explore inward)?
+- Is 0.5x center bias the right weight for enemy city direction, or should it be stronger?

@@ -101,6 +101,7 @@ export interface AiDifficultyProfile {
     explorationCenterBias: number;
     explorationCenterBiasDecayPerRound: number;
     noEnemySeenOffensivePenalty: number;
+    knownStartPositions: boolean;
   };
 }
 
@@ -205,6 +206,7 @@ const EASY_PROFILE: AiDifficultyProfile = {
     explorationCenterBias: 0.6,
     explorationCenterBiasDecayPerRound: 0.03,
     noEnemySeenOffensivePenalty: -0.5,
+    knownStartPositions: false,
   },
 };
 
@@ -309,6 +311,7 @@ const NORMAL_PROFILE: AiDifficultyProfile = {
     explorationCenterBias: 0.8,
     explorationCenterBiasDecayPerRound: 0.04,
     noEnemySeenOffensivePenalty: -0.5,
+    knownStartPositions: true,
   },
 };
 
@@ -413,6 +416,7 @@ const HARD_PROFILE: AiDifficultyProfile = {
     explorationCenterBias: 0.5,
     explorationCenterBiasDecayPerRound: 0.03,
     noEnemySeenOffensivePenalty: 0,
+    knownStartPositions: true,
   },
 };
 
