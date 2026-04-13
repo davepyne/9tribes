@@ -225,6 +225,24 @@ function countFriendlyUnitsNearHex(
   return count;
 }
 
+function countEnemyUnitsNearHex(
+  state: GameState,
+  friendlyFactionId: FactionId,
+  pos: HexCoord,
+  radius: number,
+  excludedUnitId?: UnitId,
+): number {
+  let count = 0;
+  for (const unit of state.units.values()) {
+    if (unit.hp <= 0 || unit.factionId === friendlyFactionId) continue;
+    if (excludedUnitId && unit.id === excludedUnitId) continue;
+    if (hexDistance(pos, unit.position) <= radius) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
 function countFortificationsNearHex(state: GameState, pos: HexCoord, radius: number): number {
   let count = 0;
   for (const improvement of state.improvements.values()) {
@@ -1144,18 +1162,29 @@ export function activateUnit(
     ? current.cities.get(unitIntent.threatenedCityId)
     : undefined;
   const threatenedCityPosition = threatenedCityForUnit?.position;
-  const shouldEngageFromPosition = (unitAtPosition: Unit, attackScore: number): boolean => {
+  const shouldEngageFromPosition = (unitAtPosition: Unit, attackScore: number, targetPos?: HexCoord): boolean => {
     const strategy = current.factionStrategies.get(factionId);
     const unitIntent = getUnitIntent(strategy, unitId);
     const nearestFriendlyDist = getNearestFriendlyDistanceToHex(current, factionId, unitAtPosition.position);
     const nearbyPressure = countNearbyUnitPressure(current, factionId, unitAtPosition.position, unitId);
     const anchorDistance = unitIntent ? hexDistance(unitAtPosition.position, unitIntent.anchor) : 0;
+    // Count enemy support near the target (units within 2 hexes that can reinforce/counterattack)
+    let targetEnemySupport = 0;
+    let targetInCity = false;
+    if (targetPos) {
+      targetEnemySupport = countEnemyUnitsNearHex(current, factionId, targetPos, 2, unitId);
+      targetInCity = Array.from(current.cities.values()).some(
+        (city) => city.position.q === targetPos.q && city.position.r === targetPos.r,
+      );
+    }
     const retreatRisk = computeRetreatRisk({
       hpRatio: unitAtPosition.hp / Math.max(1, unitAtPosition.maxHp),
       nearbyEnemies: nearbyPressure.nearbyEnemies,
       nearbyFriendlies: nearbyPressure.nearbyFriendlies,
       nearestFriendlyDistance: nearestFriendlyDist,
       anchorDistance,
+      targetEnemySupport,
+      targetInCity,
     });
     return shouldEngageTarget(strategy?.personality, { attackScore, retreatRisk });
   };
@@ -1164,7 +1193,7 @@ export function activateUnit(
     ? findBestRangedTarget(current, unitId, activeUnit.position, factionId, prototype as any, registry, unitRange, threatenedCityPosition)
     : findBestTargetChoice(current, unitId, activeUnit.position, factionId, prototype as any, registry, threatenedCityPosition);
   let enemy: typeof enemyChoice.target | undefined = enemyChoice.target;
-  if (enemy && !shouldEngageFromPosition(activeUnit, enemyChoice.score)) {
+  if (enemy && !shouldEngageFromPosition(activeUnit, enemyChoice.score, enemy.position)) {
     enemy = undefined;
   }
 
@@ -1454,7 +1483,7 @@ export function activateUnit(
       const postMoveTarget = findBestTargetChoice(
         current, unitId, movedUnit.position, factionId, prototype as any, registry, threatenedCityPosition
       );
-      if (postMoveTarget.target && postMoveTarget.score > 0) {
+      if (postMoveTarget.target && shouldEngageFromPosition(movedUnit, postMoveTarget.score, postMoveTarget.target.position)) {
         const postMoveEnemy = postMoveTarget.target;
         const postMovePreview = previewCombatAction(current, registry, movedUnit.id, postMoveEnemy.id);
         if (postMovePreview) {

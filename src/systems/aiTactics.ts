@@ -49,6 +49,10 @@ export interface RetreatRiskInput {
   nearbyFriendlies: number;
   nearestFriendlyDistance: number;
   anchorDistance: number;
+  /** Enemy units within 2 hexes of the *target* (support the defender can call on) */
+  targetEnemySupport?: number;
+  /** Whether the target is inside a city (city defense bonus makes attacks riskier) */
+  targetInCity?: boolean;
 }
 
 export interface EngageTargetGateInput {
@@ -134,7 +138,11 @@ export function computeRetreatRisk(input: RetreatRiskInput): number {
   const enemyPressure = Math.max(0, input.nearbyEnemies - input.nearbyFriendlies) * 0.12;
   const isolationPressure = input.nearestFriendlyDistance > 3 ? 0.2 : 0;
   const anchorPressure = input.anchorDistance > 4 ? 0.2 : 0;
-  return Math.min(1.25, hpPressure + enemyPressure + isolationPressure + anchorPressure);
+  // Defender support: extra risk when the target has nearby allies that can reinforce/counterattack
+  const supportPressure = (input.targetEnemySupport ?? 0) * 0.18;
+  // City defense: attacking into a city is inherently riskier
+  const cityPressure = input.targetInCity ? 0.25 : 0;
+  return Math.min(1.25, hpPressure + enemyPressure + isolationPressure + anchorPressure + supportPressure + cityPressure);
 }
 
 export function computeAttackAdvantageFromScore(score: number): number {
