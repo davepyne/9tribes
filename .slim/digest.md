@@ -331,3 +331,19 @@ No significant changes detected.
 ### Dependency Changes
 - `src/systems/knowledgeSystem.ts` — 6 dependencies
 - `src/systems/zocSystem.ts` — 12 dependencies
+
+---
+
+## Digest — 2026-04-15T11:34:31.660549Z
+
+### Dependency Changes
+
+No significant changes detected.
+
+---
+
+## Digest — 2026-04-16T22:34:17.334318Z
+
+### Dependency Changes
+
+No significant changes detected.

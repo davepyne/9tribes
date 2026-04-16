@@ -3,7 +3,7 @@
   "version": "0.1.0-mvp",
   "type": "module",
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json --noEmit",
     "dev": "tsx src/main.ts",
     "replay:export": "tsx scripts/exportReplay.ts",
     "test": "vitest run",

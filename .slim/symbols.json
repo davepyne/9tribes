@@ -134,45 +134,6 @@
         }
       ]
     },
-    "src/systems/aiDifficulty.ts": {
-      "exports": [
-        {
-          "name": "DifficultyLevel",
-          "kind": "type",
-          "line": 1,
-          "signature": "export type DifficultyLevel = 'easy' | 'normal' | 'hard';",
-          "isDefault": false
-        },
-        {
-          "name": "AiDifficultyProfile",
-          "kind": "interface",
-          "line": 3,
-          "signature": "export interface AiDifficultyProfile {",
-          "isDefault": false
-        },
-        {
-          "name": "getAiDifficultyProfile",
-          "kind": "function",
-          "line": 429,
-          "signature": "export function getAiDifficultyProfile(difficulty?: DifficultyLevel): AiDifficultyProfile {",
-          "isDefault": false
-        },
-        {
-          "name": "usesAdaptiveAiBehavior",
-          "kind": "function",
-          "line": 433,
-          "signature": "export function usesAdaptiveAiBehavior(difficulty?: DifficultyLevel): boolean {",
-          "isDefault": false
-        },
-        {
-          "name": "usesNormalAiBehavior",
-          "kind": "function",
-          "line": 440,
-          "signature": "export function usesNormalAiBehavior(difficulty?: DifficultyLevel): boolean {",
-          "isDefault": false
-        }
-      ]
-    },
     "web/src/ui/CapabilityPip.tsx": {
       "exports": [
         {
@@ -537,31 +498,6 @@
           "kind": "function",
           "line": 279,
           "signature": "export function calculatePrototypeCost(baseCost: number, faction: Faction, domainIds: string[], prototype?: {",
-          "isDefault": false
-        }
-      ]
-    },
-    "web/src/game/controller/GameSession.ts": {
-      "exports": [
-        {
-          "name": "PendingCombat",
-          "kind": "interface",
-          "line": 117,
-          "signature": "export interface PendingCombat {",
-          "isDefault": false
-        },
-        {
-          "name": "SessionSaveSnapshot",
-          "kind": "type",
-          "line": 133,
-          "signature": "export type SessionSaveSnapshot = {",
-          "isDefault": false
-        },
-        {
-          "name": "GameSession",
-          "kind": "class",
-          "line": 145,
-          "signature": "export class GameSession {",
           "isDefault": false
         }
       ]
@@ -1020,115 +956,6 @@
         }
       ]
     },
-    "web/src/game/types/worldView.ts": {
-      "exports": [
-        {
-          "name": "VisibilityState",
-          "kind": "type",
-          "line": 1,
-          "signature": "export type VisibilityState = 'visible' | 'explored' | 'hidden';",
-          "isDefault": false
-        },
-        {
-          "name": "HexCoord",
-          "kind": "type",
-          "line": 3,
-          "signature": "export type HexCoord = {",
-          "isDefault": false
-        },
-        {
-          "name": "HexView",
-          "kind": "type",
-          "line": 8,
-          "signature": "export type HexView = {",
-          "isDefault": false
-        },
-        {
-          "name": "FactionView",
-          "kind": "type",
-          "line": 17,
-          "signature": "export type FactionView = {",
-          "isDefault": false
-        },
-        {
-          "name": "UnitStatusView",
-          "kind": "type",
-          "line": 28,
-          "signature": "export type UnitStatusView = 'ready' | 'fortified' | 'spent' | 'inactive';",
-          "isDefault": false
-        },
-        {
-          "name": "UnitView",
-          "kind": "type",
-          "line": 30,
-          "signature": "export type UnitView = {",
-          "isDefault": false
-        },
-        {
-          "name": "CityView",
-          "kind": "type",
-          "line": 72,
-          "signature": "export type CityView = {",
-          "isDefault": false
-        },
-        {
-          "name": "VillageView",
-          "kind": "type",
-          "line": 86,
-          "signature": "export type VillageView = {",
-          "isDefault": false
-        },
-        {
-          "name": "ImprovementView",
-          "kind": "type",
-          "line": 96,
-          "signature": "export type ImprovementView = {",
-          "isDefault": false
-        },
-        {
-          "name": "BorderSide",
-          "kind": "type",
-          "line": 105,
-          "signature": "export type BorderSide = 'north' | 'east' | 'south' | 'west';",
-          "isDefault": false
-        },
-        {
-          "name": "BorderEdgeView",
-          "kind": "type",
-          "line": 107,
-          "signature": "export type BorderEdgeView = {",
-          "isDefault": false
-        },
-        {
-          "name": "ReachableHexView",
-          "kind": "type",
-          "line": 116,
-          "signature": "export type ReachableHexView = {",
-          "isDefault": false
-        },
-        {
-          "name": "AttackTargetView",
-          "kind": "type",
-          "line": 125,
-          "signature": "export type AttackTargetView = {",
-          "isDefault": false
-        },
-        {
-          "name": "PathPreviewNodeView",
-          "kind": "type",
-          "line": 133,
-          "signature": "export type PathPreviewNodeView = {",
-          "isDefault": false
-        },
-        {
-          "name": "WorldViewModel",
-          "kind": "type",
-          "line": 140,
-          "signature": "export type WorldViewModel = {",
-          "isDefault": false
-        }
-      ]
-    },
     "web/src/game/phaser/systems/combatAnimationScript.ts": {
       "exports": [
         {
@@ -1555,17 +1382,6 @@
         }
       ]
     },
-    "web/src/game/phaser/scenes/MapScene.ts": {
-      "exports": [
-        {
-          "name": "MapScene",
-          "kind": "class",
-          "line": 16,
-          "signature": "export class MapScene extends Phaser.Scene {",
-          "isDefault": false
-        }
-      ]
-    },
     "src/data/registry/types.ts": {
       "exports": [
         {
@@ -1912,56 +1728,6 @@
           "kind": "const",
           "line": 26,
           "signature": "export const RECT_CORNER_NEIGHBORS: Record<RectCorner, Array<[number, number]>>",
-          "isDefault": false
-        }
-      ]
-    },
-    "src/systems/movementSystem.ts": {
-      "exports": [
-        {
-          "name": "MovementPreview",
-          "kind": "interface",
-          "line": 44,
-          "signature": "export interface MovementPreview {",
-          "isDefault": false
-        },
-        {
-          "name": "previewMove",
-          "kind": "function",
-          "line": 50,
-          "signature": "export function previewMove( gameState: GameState, unitId: UnitId, targetHex: HexCoord, map: GameMap, rulesRegistry: RulesRegistry ): MovementPreview | null {",
-          "isDefault": false
-        },
-        {
-          "name": "canMoveTo",
-          "kind": "function",
-          "line": 190,
-          "signature": "export function canMoveTo( gameState: GameState, unitId: UnitId, targetHex: HexCoord, map: GameMap, rulesRegistry: RulesRegistry ): boolean {",
-          "isDefault": false
-        },
-        {
-          "name": "moveUnit",
-          "kind": "function",
-          "line": 225,
-          "signature": "export function moveUnit( gameState: GameState, unitId: UnitId, targetHex: HexCoord, map: GameMap, rulesRegistry: RulesRegistry ): GameState {",
-          "isDefault": false
-        },
-        {
-          "name": "getValidMoves",
-          "kind": "function",
-          "line": 298,
-          "signature": "export function getValidMoves( gameState: GameState, unitId: UnitId, map: GameMap, rulesRegistry: RulesRegistry ): HexCoord[] {",
-          "isDefault": false
-        }
-      ]
-    },
-    "web/src/ui/ControlsTab.tsx": {
-      "exports": [
-        {
-          "name": "ControlsTab",
-          "kind": "function",
-          "line": 1,
-          "signature": "export function ControlsTab() {",
           "isDefault": false
         }
       ]
@@ -2385,17 +2151,6 @@
           "kind": "function",
           "line": 211,
           "signature": "export function setResearchRate( state: ResearchState, rate: number ): ResearchState {",
-          "isDefault": false
-        }
-      ]
-    },
-    "web/src/app/routes/MenuClient.tsx": {
-      "exports": [
-        {
-          "name": "MenuClient",
-          "kind": "function",
-          "line": 50,
-          "signature": "export function MenuClient() {",
           "isDefault": false
         }
       ]
@@ -3240,52 +2995,6 @@
         }
       ]
     },
-    "web/src/game/view-model/worldViewModel.ts": {
-      "exports": [
-        {
-          "name": "buildWorldViewModel",
-          "kind": "function",
-          "line": 113,
-          "signature": "export function buildWorldViewModel(source: WorldViewSource): WorldViewModel {",
-          "isDefault": false
-        },
-        {
-          "name": "buildHudViewModel",
-          "kind": "function",
-          "line": 119,
-          "signature": "export function buildHudViewModel( source: ReplayBundle | GameState, turnIndex: number, mode: ClientMode, selected: ClientSelection, hoveredKey: string | null, world: WorldViewModel, registry?: RulesRegistry, liveCombatEvents?: ReplayCombatEvent[], ): HudViewModel {",
-          "isDefault": false
-        },
-        {
-          "name": "buildDebugViewModel",
-          "kind": "function",
-          "line": 134,
-          "signature": "export function buildDebugViewModel( turn: ReplayTurn | null, events: Array<{",
-          "isDefault": false
-        },
-        {
-          "name": "getCombatSummary",
-          "kind": "function",
-          "line": 143,
-          "signature": "export function getCombatSummary(event: ReplayCombatEvent) {",
-          "isDefault": false
-        },
-        {
-          "name": "getIntentSummary",
-          "kind": "function",
-          "line": 148,
-          "signature": "export function getIntentSummary(intent: ReplayAiIntentEvent, factions: ReplayFactionSummary[]) {",
-          "isDefault": false
-        },
-        {
-          "name": "buildResearchInspectorViewModel",
-          "kind": "function",
-          "line": 1239,
-          "signature": "export function buildResearchInspectorViewModel( state: GameState, registry: RulesRegistry, ): ResearchInspectorViewModel | null {",
-          "isDefault": false
-        }
-      ]
-    },
     "src/systems/xpSystem.ts": {
       "exports": [
         {
@@ -3429,73 +3138,6 @@
         }
       ]
     },
-    "src/systems/combatActionSystem.ts": {
-      "exports": [
-        {
-          "name": "CombatActionEffectCategory",
-          "kind": "type",
-          "line": 63,
-          "signature": "export type CombatActionEffectCategory = 'positioning' | 'ability' | 'synergy' | 'aftermath';",
-          "isDefault": false
-        },
-        {
-          "name": "CombatActionEffect",
-          "kind": "interface",
-          "line": 65,
-          "signature": "export interface CombatActionEffect {",
-          "isDefault": false
-        },
-        {
-          "name": "CombatActionPreview",
-          "kind": "interface",
-          "line": 71,
-          "signature": "export interface CombatActionPreview {",
-          "isDefault": false
-        },
-        {
-          "name": "CombatActionPreviewDetails",
-          "kind": "interface",
-          "line": 86,
-          "signature": "export interface CombatActionPreviewDetails {",
-          "isDefault": false
-        },
-        {
-          "name": "CombatActionFeedback",
-          "kind": "interface",
-          "line": 110,
-          "signature": "export interface CombatActionFeedback {",
-          "isDefault": false
-        },
-        {
-          "name": "CombatActionResolution",
-          "kind": "interface",
-          "line": 117,
-          "signature": "export interface CombatActionResolution {",
-          "isDefault": false
-        },
-        {
-          "name": "CombatActionApplyResult",
-          "kind": "interface",
-          "line": 134,
-          "signature": "export interface CombatActionApplyResult {",
-          "isDefault": false
-        },
-        {
-          "name": "previewCombatAction",
-          "kind": "function",
-          "line": 509,
-          "signature": "export function previewCombatAction( state: GameState, registry: RulesRegistry, attackerId: UnitId, defenderId: UnitId, ): CombatActionPreview | null {",
-          "isDefault": false
-        },
-        {
-          "name": "applyCombatAction",
-          "kind": "function",
-          "line": 892,
-          "signature": "export function applyCombatAction( state: GameState, registry: RulesRegistry, preview: CombatActionPreview, ): CombatActionApplyResult {",
-          "isDefault": false
-        }
-      ]
-    },
     "src/world/map/createMap.ts": {
       "exports": [
         {
@@ -3614,17 +3256,6 @@
           "kind": "function",
           "line": 154,
           "signature": "export function getSupplyDeficit(economy: FactionEconomy): number {",
-          "isDefault": false
-        }
-      ]
-    },
-    "web/src/game/controller/GameController.ts": {
-      "exports": [
-        {
-          "name": "GameController",
-          "kind": "class",
-          "line": 24,
-          "signature": "export class GameController {",
           "isDefault": false
         }
       ]
@@ -3888,38 +3519,6 @@
           "kind": "function",
           "line": 51,
           "signature": "export function GameMenuBar({",
-          "isDefault": false
-        }
-      ]
-    },
-    "web/src/ui/SynergyChip.tsx": {
-      "exports": [
-        {
-          "name": "domainGlyph",
-          "kind": "function",
-          "line": 52,
-          "signature": "export function domainGlyph(domainId: string): string {",
-          "isDefault": false
-        },
-        {
-          "name": "domainColor",
-          "kind": "function",
-          "line": 56,
-          "signature": "export function domainColor(domainId: string): string {",
-          "isDefault": false
-        },
-        {
-          "name": "domainDisplayName",
-          "kind": "function",
-          "line": 60,
-          "signature": "export function domainDisplayName(domainId: string): string {",
-          "isDefault": false
-        },
-        {
-          "name": "SynergyChip",
-          "kind": "function",
-          "line": 248,
-          "signature": "export function SynergyChip({",
           "isDefault": false
         }
       ]
@@ -4288,52 +3887,6 @@
         }
       ]
     },
-    "src/systems/unitActivationSystem.ts": {
-      "exports": [
-        {
-          "name": "UnitActivationCombatMode",
-          "kind": "type",
-          "line": 76,
-          "signature": "export type UnitActivationCombatMode = 'apply' | 'preview';",
-          "isDefault": false
-        },
-        {
-          "name": "UnitActivationOptions",
-          "kind": "interface",
-          "line": 78,
-          "signature": "export interface UnitActivationOptions {",
-          "isDefault": false
-        },
-        {
-          "name": "UnitActivationResult",
-          "kind": "interface",
-          "line": 84,
-          "signature": "export interface UnitActivationResult {",
-          "isDefault": false
-        },
-        {
-          "name": "maybeExpirePreparedAbility",
-          "kind": "function",
-          "line": 154,
-          "signature": "export function maybeExpirePreparedAbility(unit: Unit, round: number, state: GameState): Unit {",
-          "isDefault": false
-        },
-        {
-          "name": "activateUnit",
-          "kind": "function",
-          "line": 1099,
-          "signature": "export function activateUnit( state: GameState, unitId: UnitId, registry: RulesRegistry, options: UnitActivationOptions = {",
-          "isDefault": false
-        },
-        {
-          "name": "activateAiUnit",
-          "kind": "function",
-          "line": 1511,
-          "signature": "export function activateAiUnit( state: GameState, unitId: UnitId, registry: RulesRegistry, options: UnitActivationOptions = {",
-          "isDefault": false
-        }
-      ]
-    },
     "src/types.ts": {
       "exports": [
         {
@@ -4429,45 +3982,6 @@
           "kind": "class",
           "line": 4,
           "signature": "export class PathRenderer {",
-          "isDefault": false
-        }
-      ]
-    },
-    "web/src/data/help-content.ts": {
-      "exports": [
-        {
-          "name": "HelpSection",
-          "kind": "interface",
-          "line": 5,
-          "signature": "export interface HelpSection {",
-          "isDefault": false
-        },
-        {
-          "name": "TribeProfile",
-          "kind": "interface",
-          "line": 11,
-          "signature": "export interface TribeProfile {",
-          "isDefault": false
-        },
-        {
-          "name": "SynergyGuideEntry",
-          "kind": "interface",
-          "line": 23,
-          "signature": "export interface SynergyGuideEntry {",
-          "isDefault": false
-        },
-        {
-          "name": "HelpContent",
-          "kind": "interface",
-          "line": 28,
-          "signature": "export interface HelpContent {",
-          "isDefault": false
-        },
-        {
-          "name": "helpContent",
-          "kind": "const",
-          "line": 36,
-          "signature": "export const helpContent: HelpContent",
           "isDefault": false
         }
       ]
@@ -4912,17 +4426,6 @@
           "kind": "class",
           "line": 10,
           "signature": "export class SettlementRenderer {",
-          "isDefault": false
-        }
-      ]
-    },
-    "web/src/ui/SynergyEncyclopediaTab.tsx": {
-      "exports": [
-        {
-          "name": "SynergyEncyclopediaTab",
-          "kind": "function",
-          "line": 92,
-          "signature": "export function SynergyEncyclopediaTab() {",
           "isDefault": false
         }
       ]
@@ -5582,17 +5085,6 @@
         }
       ]
     },
-    "web/src/ui/CombatDetailModal.tsx": {
-      "exports": [
-        {
-          "name": "CombatDetailModal",
-          "kind": "function",
-          "line": 9,
-          "signature": "export function CombatDetailModal({",
-          "isDefault": false
-        }
-      ]
-    },
     "src/data/loader/loadRulesRegistry.ts": {
       "exports": [
         {
@@ -6055,17 +5547,6 @@
         }
       ]
     },
-    "web/src/game/phaser/systems/ImprovementRenderer.ts": {
-      "exports": [
-        {
-          "name": "ImprovementRenderer",
-          "kind": "class",
-          "line": 5,
-          "signature": "export class ImprovementRenderer {",
-          "isDefault": false
-        }
-      ]
-    },
     "src/game/scenarios/mvp.ts": {
       "exports": [
         {
@@ -6352,25 +5833,544 @@
           "isDefault": false
         }
       ]
+    },
+    "web/src/game/controller/GameSession.ts": {
+      "exports": [
+        {
+          "name": "PendingCombat",
+          "kind": "interface",
+          "line": 117,
+          "signature": "export interface PendingCombat {",
+          "isDefault": false
+        },
+        {
+          "name": "SessionSaveSnapshot",
+          "kind": "type",
+          "line": 133,
+          "signature": "export type SessionSaveSnapshot = {",
+          "isDefault": false
+        },
+        {
+          "name": "GameSession",
+          "kind": "class",
+          "line": 145,
+          "signature": "export class GameSession {",
+          "isDefault": false
+        }
+      ]
+    },
+    "src/systems/movementSystem.ts": {
+      "exports": [
+        {
+          "name": "MovementPreview",
+          "kind": "interface",
+          "line": 44,
+          "signature": "export interface MovementPreview {",
+          "isDefault": false
+        },
+        {
+          "name": "previewMove",
+          "kind": "function",
+          "line": 51,
+          "signature": "export function previewMove( gameState: GameState, unitId: UnitId, targetHex: HexCoord, map: GameMap, rulesRegistry: RulesRegistry ): MovementPreview | null {",
+          "isDefault": false
+        },
+        {
+          "name": "canMoveTo",
+          "kind": "function",
+          "line": 195,
+          "signature": "export function canMoveTo( gameState: GameState, unitId: UnitId, targetHex: HexCoord, map: GameMap, rulesRegistry: RulesRegistry ): boolean {",
+          "isDefault": false
+        },
+        {
+          "name": "moveUnit",
+          "kind": "function",
+          "line": 235,
+          "signature": "export function moveUnit( gameState: GameState, unitId: UnitId, targetHex: HexCoord, map: GameMap, rulesRegistry: RulesRegistry ): GameState {",
+          "isDefault": false
+        },
+        {
+          "name": "getValidMoves",
+          "kind": "function",
+          "line": 308,
+          "signature": "export function getValidMoves( gameState: GameState, unitId: UnitId, map: GameMap, rulesRegistry: RulesRegistry ): HexCoord[] {",
+          "isDefault": false
+        }
+      ]
+    },
+    "web/src/game/controller/GameController.ts": {
+      "exports": [
+        {
+          "name": "GameController",
+          "kind": "class",
+          "line": 24,
+          "signature": "export class GameController {",
+          "isDefault": false
+        }
+      ]
+    },
+    "src/systems/aiDifficulty.ts": {
+      "exports": [
+        {
+          "name": "DifficultyLevel",
+          "kind": "type",
+          "line": 1,
+          "signature": "export type DifficultyLevel = 'easy' | 'normal' | 'hard';",
+          "isDefault": false
+        },
+        {
+          "name": "AiDifficultyProfile",
+          "kind": "interface",
+          "line": 3,
+          "signature": "export interface AiDifficultyProfile {",
+          "isDefault": false
+        },
+        {
+          "name": "getAiDifficultyProfile",
+          "kind": "function",
+          "line": 429,
+          "signature": "export function getAiDifficultyProfile(difficulty?: DifficultyLevel): AiDifficultyProfile {",
+          "isDefault": false
+        },
+        {
+          "name": "usesAdaptiveAiBehavior",
+          "kind": "function",
+          "line": 433,
+          "signature": "export function usesAdaptiveAiBehavior(difficulty?: DifficultyLevel): boolean {",
+          "isDefault": false
+        },
+        {
+          "name": "usesNormalAiBehavior",
+          "kind": "function",
+          "line": 440,
+          "signature": "export function usesNormalAiBehavior(difficulty?: DifficultyLevel): boolean {",
+          "isDefault": false
+        }
+      ]
+    },
+    "web/src/ui/SynergyChip.tsx": {
+      "exports": [
+        {
+          "name": "domainGlyph",
+          "kind": "function",
+          "line": 52,
+          "signature": "export function domainGlyph(domainId: string): string {",
+          "isDefault": false
+        },
+        {
+          "name": "domainColor",
+          "kind": "function",
+          "line": 56,
+          "signature": "export function domainColor(domainId: string): string {",
+          "isDefault": false
+        },
+        {
+          "name": "domainDisplayName",
+          "kind": "function",
+          "line": 60,
+          "signature": "export function domainDisplayName(domainId: string): string {",
+          "isDefault": false
+        },
+        {
+          "name": "SynergyChip",
+          "kind": "function",
+          "line": 248,
+          "signature": "export function SynergyChip({",
+          "isDefault": false
+        }
+      ]
+    },
+    "web/src/game/phaser/systems/ImprovementRenderer.ts": {
+      "exports": [
+        {
+          "name": "ImprovementRenderer",
+          "kind": "class",
+          "line": 5,
+          "signature": "export class ImprovementRenderer {",
+          "isDefault": false
+        }
+      ]
+    },
+    "web/src/app/routes/MenuClient.tsx": {
+      "exports": [
+        {
+          "name": "MenuClient",
+          "kind": "function",
+          "line": 50,
+          "signature": "export function MenuClient() {",
+          "isDefault": false
+        }
+      ]
+    },
+    "web/src/game/view-model/worldViewModel.ts": {
+      "exports": [
+        {
+          "name": "buildWorldViewModel",
+          "kind": "function",
+          "line": 114,
+          "signature": "export function buildWorldViewModel(source: WorldViewSource): WorldViewModel {",
+          "isDefault": false
+        },
+        {
+          "name": "buildHudViewModel",
+          "kind": "function",
+          "line": 120,
+          "signature": "export function buildHudViewModel( source: ReplayBundle | GameState, turnIndex: number, mode: ClientMode, selected: ClientSelection, hoveredKey: string | null, world: WorldViewModel, registry?: RulesRegistry, liveCombatEvents?: ReplayCombatEvent[], ): HudViewModel {",
+          "isDefault": false
+        },
+        {
+          "name": "buildDebugViewModel",
+          "kind": "function",
+          "line": 135,
+          "signature": "export function buildDebugViewModel( turn: ReplayTurn | null, events: Array<{",
+          "isDefault": false
+        },
+        {
+          "name": "getCombatSummary",
+          "kind": "function",
+          "line": 144,
+          "signature": "export function getCombatSummary(event: ReplayCombatEvent) {",
+          "isDefault": false
+        },
+        {
+          "name": "getIntentSummary",
+          "kind": "function",
+          "line": 149,
+          "signature": "export function getIntentSummary(intent: ReplayAiIntentEvent, factions: ReplayFactionSummary[]) {",
+          "isDefault": false
+        },
+        {
+          "name": "buildResearchInspectorViewModel",
+          "kind": "function",
+          "line": 1257,
+          "signature": "export function buildResearchInspectorViewModel( state: GameState, registry: RulesRegistry, ): ResearchInspectorViewModel | null {",
+          "isDefault": false
+        }
+      ]
+    },
+    "web/src/game/types/worldView.ts": {
+      "exports": [
+        {
+          "name": "VisibilityState",
+          "kind": "type",
+          "line": 1,
+          "signature": "export type VisibilityState = 'visible' | 'explored' | 'hidden';",
+          "isDefault": false
+        },
+        {
+          "name": "HexCoord",
+          "kind": "type",
+          "line": 3,
+          "signature": "export type HexCoord = {",
+          "isDefault": false
+        },
+        {
+          "name": "HexView",
+          "kind": "type",
+          "line": 8,
+          "signature": "export type HexView = {",
+          "isDefault": false
+        },
+        {
+          "name": "FactionView",
+          "kind": "type",
+          "line": 17,
+          "signature": "export type FactionView = {",
+          "isDefault": false
+        },
+        {
+          "name": "UnitStatusView",
+          "kind": "type",
+          "line": 28,
+          "signature": "export type UnitStatusView = 'ready' | 'fortified' | 'spent' | 'inactive';",
+          "isDefault": false
+        },
+        {
+          "name": "UnitView",
+          "kind": "type",
+          "line": 30,
+          "signature": "export type UnitView = {",
+          "isDefault": false
+        },
+        {
+          "name": "CityView",
+          "kind": "type",
+          "line": 72,
+          "signature": "export type CityView = {",
+          "isDefault": false
+        },
+        {
+          "name": "VillageView",
+          "kind": "type",
+          "line": 86,
+          "signature": "export type VillageView = {",
+          "isDefault": false
+        },
+        {
+          "name": "ImprovementView",
+          "kind": "type",
+          "line": 96,
+          "signature": "export type ImprovementView = {",
+          "isDefault": false
+        },
+        {
+          "name": "BorderSide",
+          "kind": "type",
+          "line": 106,
+          "signature": "export type BorderSide = 'north' | 'east' | 'south' | 'west';",
+          "isDefault": false
+        },
+        {
+          "name": "BorderEdgeView",
+          "kind": "type",
+          "line": 108,
+          "signature": "export type BorderEdgeView = {",
+          "isDefault": false
+        },
+        {
+          "name": "ReachableHexView",
+          "kind": "type",
+          "line": 117,
+          "signature": "export type ReachableHexView = {",
+          "isDefault": false
+        },
+        {
+          "name": "AttackTargetView",
+          "kind": "type",
+          "line": 126,
+          "signature": "export type AttackTargetView = {",
+          "isDefault": false
+        },
+        {
+          "name": "PathPreviewNodeView",
+          "kind": "type",
+          "line": 134,
+          "signature": "export type PathPreviewNodeView = {",
+          "isDefault": false
+        },
+        {
+          "name": "WorldViewModel",
+          "kind": "type",
+          "line": 141,
+          "signature": "export type WorldViewModel = {",
+          "isDefault": false
+        }
+      ]
+    },
+    "web/src/ui/ControlsTab.tsx": {
+      "exports": [
+        {
+          "name": "ControlsTab",
+          "kind": "function",
+          "line": 1,
+          "signature": "export function ControlsTab() {",
+          "isDefault": false
+        }
+      ]
+    },
+    "web/src/data/help-content.ts": {
+      "exports": [
+        {
+          "name": "HelpSection",
+          "kind": "interface",
+          "line": 5,
+          "signature": "export interface HelpSection {",
+          "isDefault": false
+        },
+        {
+          "name": "TribeProfile",
+          "kind": "interface",
+          "line": 11,
+          "signature": "export interface TribeProfile {",
+          "isDefault": false
+        },
+        {
+          "name": "SynergyGuideEntry",
+          "kind": "interface",
+          "line": 23,
+          "signature": "export interface SynergyGuideEntry {",
+          "isDefault": false
+        },
+        {
+          "name": "HelpContent",
+          "kind": "interface",
+          "line": 28,
+          "signature": "export interface HelpContent {",
+          "isDefault": false
+        },
+        {
+          "name": "helpContent",
+          "kind": "const",
+          "line": 36,
+          "signature": "export const helpContent: HelpContent",
+          "isDefault": false
+        }
+      ]
+    },
+    "web/src/ui/SynergyEncyclopediaTab.tsx": {
+      "exports": [
+        {
+          "name": "SynergyEncyclopediaTab",
+          "kind": "function",
+          "line": 92,
+          "signature": "export function SynergyEncyclopediaTab() {",
+          "isDefault": false
+        }
+      ]
+    },
+    "web/src/ui/CombatDetailModal.tsx": {
+      "exports": [
+        {
+          "name": "CombatDetailModal",
+          "kind": "function",
+          "line": 57,
+          "signature": "export function CombatDetailModal({",
+          "isDefault": false
+        }
+      ]
+    },
+    "web/src/game/phaser/scenes/MapScene.ts": {
+      "exports": [
+        {
+          "name": "MapScene",
+          "kind": "class",
+          "line": 16,
+          "signature": "export class MapScene extends Phaser.Scene {",
+          "isDefault": false
+        }
+      ]
+    },
+    "src/systems/unitActivationSystem.ts": {
+      "exports": [
+        {
+          "name": "UnitActivationCombatMode",
+          "kind": "type",
+          "line": 76,
+          "signature": "export type UnitActivationCombatMode = 'apply' | 'preview';",
+          "isDefault": false
+        },
+        {
+          "name": "UnitActivationOptions",
+          "kind": "interface",
+          "line": 78,
+          "signature": "export interface UnitActivationOptions {",
+          "isDefault": false
+        },
+        {
+          "name": "UnitActivationResult",
+          "kind": "interface",
+          "line": 84,
+          "signature": "export interface UnitActivationResult {",
+          "isDefault": false
+        },
+        {
+          "name": "maybeExpirePreparedAbility",
+          "kind": "function",
+          "line": 154,
+          "signature": "export function maybeExpirePreparedAbility(unit: Unit, round: number, state: GameState): Unit {",
+          "isDefault": false
+        },
+        {
+          "name": "activateUnit",
+          "kind": "function",
+          "line": 1148,
+          "signature": "export function activateUnit( state: GameState, unitId: UnitId, registry: RulesRegistry, options: UnitActivationOptions = {",
+          "isDefault": false
+        },
+        {
+          "name": "activateAiUnit",
+          "kind": "function",
+          "line": 1679,
+          "signature": "export function activateAiUnit( state: GameState, unitId: UnitId, registry: RulesRegistry, options: UnitActivationOptions = {",
+          "isDefault": false
+        }
+      ]
+    },
+    "src/systems/combatActionSystem.ts": {
+      "exports": [
+        {
+          "name": "CombatActionEffectCategory",
+          "kind": "type",
+          "line": 63,
+          "signature": "export type CombatActionEffectCategory = 'positioning' | 'ability' | 'synergy' | 'aftermath';",
+          "isDefault": false
+        },
+        {
+          "name": "CombatActionEffect",
+          "kind": "interface",
+          "line": 65,
+          "signature": "export interface CombatActionEffect {",
+          "isDefault": false
+        },
+        {
+          "name": "CombatActionPreview",
+          "kind": "interface",
+          "line": 71,
+          "signature": "export interface CombatActionPreview {",
+          "isDefault": false
+        },
+        {
+          "name": "CombatActionPreviewDetails",
+          "kind": "interface",
+          "line": 86,
+          "signature": "export interface CombatActionPreviewDetails {",
+          "isDefault": false
+        },
+        {
+          "name": "CombatActionFeedback",
+          "kind": "interface",
+          "line": 110,
+          "signature": "export interface CombatActionFeedback {",
+          "isDefault": false
+        },
+        {
+          "name": "CombatActionResolution",
+          "kind": "interface",
+          "line": 117,
+          "signature": "export interface CombatActionResolution {",
+          "isDefault": false
+        },
+        {
+          "name": "CombatActionApplyResult",
+          "kind": "interface",
+          "line": 134,
+          "signature": "export interface CombatActionApplyResult {",
+          "isDefault": false
+        },
+        {
+          "name": "previewCombatAction",
+          "kind": "function",
+          "line": 509,
+          "signature": "export function previewCombatAction( state: GameState, registry: RulesRegistry, attackerId: UnitId, defenderId: UnitId, ): CombatActionPreview | null {",
+          "isDefault": false
+        },
+        {
+          "name": "applyCombatAction",
+          "kind": "function",
+          "line": 892,
+          "signature": "export function applyCombatAction( state: GameState, registry: RulesRegistry, preview: CombatActionPreview, ): CombatActionApplyResult {",
+          "isDefault": false
+        }
+      ]
     }
   },
   "_metadata": {
     "version": "2.0.0",
-    "last_run": "2026-04-15T11:34:31.660549Z",
+    "last_run": "2026-04-16T22:35:23.934941Z",
     "root": "C:\\Users\\fosbo\\war-civ-v2",
     "file_count": 155
   },
   "_file_hashes": {
-    ".gitignore": "b0b7ae3ff6431c7d0f7f38a671daa384",
+    ".gitignore": "4bc433f2c30262b0ffed8821ad81d3e2",
     "AGENTS.md": "9296da726dc4978e6e8f152f89a6409d",
     "bun.lock": "fcec4f81b61207c211affdbf552aaedb",
     "CLAUDE.md": "061f9b1654ca64c3611273b3dc444955",
     "docs/claude-knowledge-dump.md": "cebf27e5aa349b6552dd0e7ac9b1d8d8",
     "docs/codex-rehydration-memory.md": "ae423776abd71fd09bbb7a7c620baacd",
-    "docs/difficulty-reference.md": "fe9bfb503989e140a242f057f9370373",
-    "nul": "d41d8cd98f00b204e9800998ecf8427e",
+    "docs/difficulty-reference.md": "d3d31f0b724d67589692f0da07e52ca2",
+    "IMPLEMENTATION_PLAN.md": "aebc2df235a7bacc34c8265dcd8d9f97",
     "package-lock.json": "5eaf0320f9b6920ac35408741ab09edb",
-    "package.json": "08a5ecc45c53489942fcaf86f75b2fce",
+    "package.json": "d15b78d7c8bb854f11b83d4b2cc17fbe",
     "scripts/evaluateBalance.ts": "ee192ce33719910c456b0151d18d52d0",
     "scripts/exportReplay.ts": "83b43c9308e1365df1b07c41ebb73ea4",
     "scripts/manual-vitest-runner.mjs": "963be1380b0a9250b40413cf2ee8d70e",
@@ -6389,11 +6389,11 @@
     "src/content/base/ai-profiles.json": "4c5b506a124db37ddd7f5c2b5068de2f",
     "src/content/base/capability-domains.json": "1d9474f8ef3bdc69cc2f0bcb709dc3aa",
     "src/content/base/chassis.json": "a3230a8a12f92947c8ed76171653a3a4",
-    "src/content/base/civilizations.json": "85e3a95d9f65da67850638abdad584e9",
+    "src/content/base/civilizations.json": "62cd5b314ff969c6bda7976af1ea0800",
     "src/content/base/components.json": "77c58343c7bb0bbbbe8d19b8f2b8eb9b",
     "src/content/base/economy.json": "54ed216b695ce7fcc181b865ffce6650",
     "src/content/base/emergent-rules.json": "c0fe701fe1196f6bcd722f6bfc338af0",
-    "src/content/base/hybrid-recipes.json": "03218d34150edfb387d44473a488003d",
+    "src/content/base/hybrid-recipes.json": "5a75511fa5d3e902492c331bceb6f862",
     "src/content/base/improvements.json": "69b58e6fec2c7f897d7d6d7566ffe157",
     "src/content/base/pair-synergies.json": "2afe2d5d501e178ae2e48e95bada97cb",
     "src/content/base/research.json": "73b5b9086b553266b4f17ee9e83f4cde",
@@ -6430,7 +6430,7 @@
     "src/replay/exportReplay.ts": "4afc93409af7d3e1ede98ebf0baf2788",
     "src/replay/types.ts": "795e137c7bd8837837251cb2d6133653",
     "src/systems/abilitySystem.ts": "bc187df3a27cd392b6dbc713f3a23e3e",
-    "src/systems/aiDifficulty.ts": "24564edfda9ee972d88f9391daada5ce",
+    "src/systems/aiDifficulty.ts": "4f7c74b99113cb07a3a26d3486a5f4f7",
     "src/systems/aiPersonality.ts": "1ef5f84f624271ad4e9f132b1bcc25f3",
     "src/systems/aiProductionStrategy.ts": "4d3c9977be2c69cd8167f6b7c8f34a8e",
     "src/systems/aiResearchStrategy.ts": "7813cee8252af8fc9ba0cc2a8a646a4a",
@@ -6440,7 +6440,7 @@
     "src/systems/capabilitySystem.ts": "80479650f06d36a36c64ead7ab27c61d",
     "src/systems/captureSystem.ts": "9dddf952cf6f419f896da8f68cf793e1",
     "src/systems/citySiteSystem.ts": "dab1ad05728e8ca57b9079bbbe9881aa",
-    "src/systems/combatActionSystem.ts": "179acf7cc38cf79fc733314304fe0143",
+    "src/systems/combatActionSystem.ts": "bfb1b5a4b74c7c4d85cad4b1f8210328",
     "src/systems/combatSignalSystem.ts": "3f02ed7ffe97441903205c19a1300da5",
     "src/systems/combatSystem.ts": "f4402537361e26b61c966914bd556eed",
     "src/systems/domainProgression.ts": "6d9cf14224698bd63515f52458821ce5",
@@ -6456,7 +6456,7 @@
     "src/systems/knowledgeSystem.ts": "53a59e4604978ce527064bb8bdc995e1",
     "src/systems/learnByKillSystem.ts": "3bb1e624ddbd4070fd7f8e5da4697ec3",
     "src/systems/moraleSystem.ts": "630fafa095c3f3ba322f4e7b0f99d01d",
-    "src/systems/movementSystem.ts": "d0451373d991890c97b5109e760d5586",
+    "src/systems/movementSystem.ts": "68c505daf421239f2d460e33a172fe3e",
     "src/systems/occupancySystem.ts": "4ad1d73b25f4258903720a554b1f5591",
     "src/systems/opportunityAttackSystem.ts": "9e2fc5450c16a8cd5ffcbd48041fad19",
     "src/systems/pathfinder.ts": "e17417627c6b565c0e50d89ad6f847d5",
@@ -6472,7 +6472,7 @@
     "src/systems/territorySystem.ts": "08415e36eb57a192a632d548c51e8a6a",
     "src/systems/transportSystem.ts": "b1c671d9ff9d3d93e8f585d3d565e497",
     "src/systems/turnSystem.ts": "c0bfd1048170b297caa5e3e64480b86d",
-    "src/systems/unitActivationSystem.ts": "e0265d612132372f0201fe9beaa93bc0",
+    "src/systems/unitActivationSystem.ts": "f0e77be388ab5b1ba4a45130597ec028",
     "src/systems/veterancySystem.ts": "c207c7e1b5f33055f7133ef977115cca",
     "src/systems/villageCaptureSystem.ts": "6331a9dea332c97054f1e5d0fe72c1ea",
     "src/systems/villageSystem.ts": "4559174814564aefda8998d04ce8dcc7",
@@ -6513,18 +6513,18 @@
     "tests/learn-kill-verify.test.ts": "59232a5f1ac51e662c744ea5217cf3da",
     "tests/liveSessionParity.test.ts": "b3e6e2ff552b531e32b2669d98802546",
     "tests/map.test.ts": "e795c6d7c541d83eb9baab4490568e7f",
-    "tests/movementSystem.test.ts": "d21c2c0ed0e763a73b9c4096ca0bb296",
+    "tests/movementSystem.test.ts": "1549efa39450a1fb010714314ade3ee7",
     "tests/opportunityAttack.test.ts": "f8236bc65f7191ee54225fd6fcf879c9",
     "tests/production.test.ts": "5b43d84dd9ee436744847966b205584d",
     "tests/productionSystem.test.ts": "7610770b22007ffd62b7cf8caae05fe4",
     "tests/prototype.test.ts": "cf650b8c8216e573c936c74a7f5c8e57",
-    "tests/replay.test.ts": "f0a4fd4e21e7738d7cb290c8f50ac4c3",
+    "tests/replay.test.ts": "256781d2a8eed36cf3b6adde72db395b",
     "tests/riverRendering.test.ts": "8b163fd1f784883022ae779ec40cfa48",
     "tests/rng.test.ts": "701e8ea296e7ee2885a7c21be9b3defb",
     "tests/sacrificeSystem.test.ts": "23076c1822f49aa9ecb31c7fa6cd89f0",
     "tests/sfxManager.test.ts": "a04a90aafb8afc0ef580fa4b7490b252",
     "tests/siege.test.ts": "231e95c1236f4fb8e4851a71c1191c37",
-    "tests/strategicAi.test.ts": "02c49fbc32823e7795680e1f20f32c68",
+    "tests/strategicAi.test.ts": "dfe8d8434e15b96615dd70cd000a1187",
     "tests/terrainRendering.test.ts": "91166595dce8112363a032f73c75fb34",
     "tests/territory.test.ts": "bdaa12b6d5007ddea7e9fce02de33c2b",
     "tests/tsconfig.json": "c376a3af9265d07d44ba071cc29ff4fe",
@@ -6533,11 +6533,13 @@
     "tests/warEcologySimulation.test.ts": "c628d36262302410bbcb15645cbc128a",
     "tests/warExhaustion.test.ts": "f5b89ca7e2eecf2ab5429d88d4110389",
     "tests/webGameController.test.ts": "fbc6b484f5e1b641ff85a07f1cafcfc1",
-    "tests/webGameSession.test.ts": "46a91fdbf0875691ebecdd15aec54392",
-    "tests/webWorldViewModel.test.ts": "6871be04a61a3d50a41a2b70ed147d3c",
+    "tests/webGameSession.test.ts": "7b9cba7169d5f5e1b8a08986c3f6813a",
+    "tests/webWorldViewModel.test.ts": "643986beaad3674b6d38800f64ac23a1",
     "tests/zoc.test.ts": "2b26a00bcfb19c55265d83c8c6114969",
-    "tsconfig.json": "7c2a92ecd21aa811787316dea8bf49dd",
+    "tsconfig.build.json": "7270b82da8397750f4cd32504eb4bb9f",
+    "tsconfig.json": "4821f2de89047bf5e8b690902f95c1fd",
     "tsconfig.test-runner.json": "f5c801efb8295c1e2dc37ed7dbc3178a",
+    "tsconfig.test.json": "0a41083c3383966282c9806d60ae6b28",
     "vite.config.ts": "4717cd4f09171d5bd27ea88c0df6f78d",
     "vitest-env.d.ts": "349a22abda966e99a4c114d2d694871f",
     "vitest.config.test.ts": "01d5ab2e95a248f3b648f7e8903088fd",
@@ -6620,30 +6622,30 @@
     "web/src/app/audio/musicManager.ts": "93525afad1f213b29bf0cff3c8d641db",
     "web/src/app/audio/sfxManager.ts": "f7f831f4210ee3f64143206f5992abbb",
     "web/src/app/GameShell.tsx": "962cc179d22ae309c0a6be4bcfbcb6e3",
-    "web/src/app/routes/MenuClient.tsx": "f7ab425ab85c4cb4e93043dd9071df9b",
+    "web/src/app/routes/MenuClient.tsx": "ee8c7b82b20c454ffe5d6d32cc1f08ce",
     "web/src/app/routes/PlayClient.tsx": "5b787b1a7cfb13a618d49450165a1f16",
     "web/src/app/routes/ReplayClient.tsx": "8fe0d3978238a6ecf1f14f2e6ce52770",
     "web/src/app/savegames.ts": "e0a7c53d8ef7f2b9a11433caac95e43d",
     "web/src/App.tsx": "af27c8dd12a35f140767af9d316f6ea3",
-    "web/src/data/ability-domains.json": "d80202692ccb0d21e6a4de3df25a6d1b",
+    "web/src/data/ability-domains.json": "eeb07a46b4f1b446d7431afbb9274de6",
     "web/src/data/emergent-rules.json": "c0fe701fe1196f6bcd722f6bfc338af0",
-    "web/src/data/help-content.ts": "0030e1212d08ab17e7d148e0ff486c41",
+    "web/src/data/help-content.ts": "3bada6f6741839e4feb30bdcbd1bdfab",
     "web/src/data/pair-synergies.json": "2afe2d5d501e178ae2e48e95bada97cb",
-    "web/src/game/controller/GameController.ts": "7695770329458badf18d3f31af4c91c1",
-    "web/src/game/controller/GameSession.ts": "f09d7c6b67826812cf1f90137364a2e6",
+    "web/src/game/controller/GameController.ts": "1f3e3bc5bd57fb75fe47a489a9021e15",
+    "web/src/game/controller/GameSession.ts": "06448623073c2b868fff7a812b4dc6d3",
     "web/src/game/fixtures/curatedPlaytest.ts": "2ec4a692efd41c09f00e7f045287b593",
     "web/src/game/phaser/assets/assetManifest.ts": "e979288e8b60260c21f605bda7ba8e86",
     "web/src/game/phaser/assets/freelandSpec.ts": "55c8f3a716564cdac029d23ce6cb5ee4",
     "web/src/game/phaser/assets/keys.ts": "c720f17a89e5afc0474fb0a60b4cf44c",
     "web/src/game/phaser/createGame.ts": "28c3c4598eaf3b6131eb6b1c9013ecfd",
     "web/src/game/phaser/scenes/BootScene.ts": "4334a4efd47f1b77e8281a312e9c339c",
-    "web/src/game/phaser/scenes/MapScene.ts": "9f61da09d002acbdb00f3105a1f6409c",
+    "web/src/game/phaser/scenes/MapScene.ts": "3ad604c8b62c8d0aaa58b87b1eb1512f",
     "web/src/game/phaser/system/PathRenderer.ts": "6abcf7794ddf839ccf0994e9dae8a0f6",
     "web/src/game/phaser/systems/BorderRenderer.ts": "a9f294b957e2fe580f65fe8f1212fc96",
     "web/src/game/phaser/systems/combatAnimationScript.ts": "bd6b8dff9ebef86b4514897603ac3e47",
     "web/src/game/phaser/systems/CombatAnimator.ts": "6f96e43c3b634d3d2e7d7fb00cea15ac",
     "web/src/game/phaser/systems/FogRenderer.ts": "41845aeb489c18a5a4649c914be34a2b",
-    "web/src/game/phaser/systems/ImprovementRenderer.ts": "fc11baf228a52d3a5153be068ff3b8f0",
+    "web/src/game/phaser/systems/ImprovementRenderer.ts": "192c03b982087f84a69b24b4bc490f39",
     "web/src/game/phaser/systems/PathRenderer.ts": "66cd738bfacdc2d695446f5bd24131ef",
     "web/src/game/phaser/systems/SelectionRenderer.ts": "b512ad8ebd052a213261ab7d463dfe29",
     "web/src/game/phaser/systems/SettlementRenderer.ts": "2a364eaefe56323b46c8042cc240c83b",
@@ -6654,19 +6656,19 @@
     "web/src/game/types/clientState.ts": "c3756af2e96e519c59be12538866a2ef",
     "web/src/game/types/playState.ts": "6a29a87c772ed0231cc07ae52533f430",
     "web/src/game/types/replay.ts": "c69ac336af611bafaefb160a4b6b73bf",
-    "web/src/game/types/worldView.ts": "1f073c0ac5bb831cc0de1eb154326e8c",
-    "web/src/game/view-model/worldViewModel.ts": "44c4178f10c70fdf6ab8112b4113499b",
+    "web/src/game/types/worldView.ts": "36eb4a1b1428dbe2bcb5f7d79732f905",
+    "web/src/game/view-model/worldViewModel.ts": "8f0e68b4a55c2afcb6b62699b2d63a2b",
     "web/src/main.tsx": "eef67a0a05496ed6617a65265a3ae204",
     "web/src/styles.css": "a20b8c36b032552c2067d61a643f7566",
     "web/src/ui/BottomCommandBar.tsx": "e1fc6776c304a0d2fcdcbdc77ff7e27f",
     "web/src/ui/CapabilityBar.tsx": "b2c1828cfb5bc4165cc41c798e59f5fe",
     "web/src/ui/CapabilityPip.tsx": "2e43a045f5f375ebc528992f10a17b1c",
-    "web/src/ui/CombatDetailModal.tsx": "eb384278564a90598821fc0f932537d3",
+    "web/src/ui/CombatDetailModal.tsx": "2e960502905d4c9f404df3490a6a9d69",
     "web/src/ui/CombatLogPanel.tsx": "59c66a8dcb940cc2b24ee48956fa4d67",
     "web/src/ui/CombatTab.tsx": "2f7dacf5ef8690ba3932b0b4b0109735",
     "web/src/ui/CommandTray.tsx": "c7e9e6762965cf11eb8805eb833c39c2",
     "web/src/ui/ContextInspector.tsx": "58cae3a13cd11359f4ed330793f9956d",
-    "web/src/ui/ControlsTab.tsx": "6239ac91c93a3139c1edc3f8a2e8fccf",
+    "web/src/ui/ControlsTab.tsx": "35f174e9718a27f03928104e884f6f68",
     "web/src/ui/DebugOverlay.tsx": "d1ec01e6cd7d2f1333e3531dd675f90d",
     "web/src/ui/DropdownMenu.tsx": "a115f5e3d9cdbfb2c850532a3cfd35db",
     "web/src/ui/EventToast.tsx": "c140eef6a0f4389dcd29916acb1f4747",
@@ -6681,8 +6683,8 @@
     "web/src/ui/ResearchTree.tsx": "1624e00158c90a1b989d3837f2d4b538",
     "web/src/ui/ResearchWindow.tsx": "0657c48d41e6a3269e4cf788c8af7676",
     "web/src/ui/RightInspector.tsx": "3f49dfb2c79a05a1c85df7a13d8ea3b2",
-    "web/src/ui/SynergyChip.tsx": "ec28bda602831bcb9890f1e47b737ec6",
-    "web/src/ui/SynergyEncyclopediaTab.tsx": "50895413c472a0610e6ca6253c22082a",
+    "web/src/ui/SynergyChip.tsx": "813ad6b62932abaf4911df7c9c0723b5",
+    "web/src/ui/SynergyEncyclopediaTab.tsx": "5b8cc7930ce85e56d7c13073c75d68da",
     "web/src/ui/TopHud.tsx": "d94a17fa3569df45de704ce36f5f4769",
     "web/src/ui/TribesTab.tsx": "2b1850b383d1ca4fdbfad56d04931f69",
     "web/src/ui/TurnBanner.tsx": "012b66ddb9152ac79a4f500d786928ab",

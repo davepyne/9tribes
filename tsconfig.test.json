@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "types": ["vitest/globals"],
+    "lib": ["ES2022", "DOM"],
+    "jsx": "react-jsx",
+    "noEmit": true
+  },
+  "include": ["tests/**/*", "vitest*.ts", "vitest*.d.ts", "vitest-env.d.ts"],
+  "exclude": ["node_modules", "dist", "web/dist"]
+}

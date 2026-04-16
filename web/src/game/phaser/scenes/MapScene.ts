@@ -487,7 +487,7 @@ export class MapScene extends Phaser.Scene {
   }
 
   cancelCombatAnimation(): void {
-    this.cameras.main.stopImmediate();
+    this.cameras.main.resetFX();
     this.combatAnimator.cancel();
   }
 }
