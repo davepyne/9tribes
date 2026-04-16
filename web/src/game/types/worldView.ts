@@ -99,6 +99,7 @@ export type ImprovementView = {
   q: number;
   r: number;
   ownerFactionId: string | null;
+  spriteKey: string;
   visible: boolean;
 };
 

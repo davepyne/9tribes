@@ -1,8 +1,8 @@
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
 import { assemblePrototype } from '../src/design/assemblePrototype';
-import { previewMove } from '../src/systems/movementSystem';
-import { hexToKey } from '../src/core/grid';
+import { previewMove, canMoveTo, moveUnit, getValidMoves } from '../src/systems/movementSystem';
+import { hexToKey, getNeighbors } from '../src/core/grid';
 import { createUnitId } from '../src/core/ids';
 
 const registry = loadRulesRegistry();
@@ -93,5 +93,57 @@ describe('movementSystem', () => {
 
     const preview = previewMove(state, navalUnit.id, targetHex, state.map!, registry);
     expect(preview?.totalCost).toBe(0.5);
+  });
+
+  it('allows entry into swamp but consumes all remaining moves', () => {
+    const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
+    // Get a 2-move infantry unit
+    const unit = getFactionUnitByMovementClass(state, 'druid_circle', 'infantry');
+
+    state.units = new Map([[unit.id, unit]]);
+    state.cities = new Map();
+
+    // Place a swamp tile adjacent to the unit
+    const neighbors = getNeighbors(unit.position);
+    const swampHex = neighbors[0];
+    const tile = state.map!.tiles.get(hexToKey(swampHex));
+    expect(tile).toBeTruthy();
+    tile!.terrain = 'swamp';
+
+    // Preview should show consumesAllMoves
+    const preview = previewMove(state, unit.id, swampHex, state.map!, registry);
+    expect(preview).not.toBeNull();
+    expect(preview!.consumesAllMoves).toBe(true);
+
+    // 2-move unit should be able to enter (consumesAllMoves bypasses cost check)
+    expect(canMoveTo(state, unit.id, swampHex, state.map!, registry)).toBe(true);
+
+    // After moving into swamp, all moves consumed
+    const newState = moveUnit(state, unit.id, swampHex, state.map!, registry);
+    const movedUnit = newState.units.get(unit.id)!;
+    expect(movedUnit.movesRemaining).toBe(0);
+
+    // No further moves possible from swamp
+    const nextMoves = getValidMoves(newState, unit.id, newState.map!, registry);
+    expect(nextMoves).toHaveLength(0);
+  });
+
+  it('blocks entry into swamp when unit has 0 moves remaining', () => {
+    const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
+    const unit = getFactionUnitByMovementClass(state, 'druid_circle', 'infantry');
+
+    state.units = new Map([[unit.id, unit]]);
+    state.cities = new Map();
+
+    // Exhaust all moves
+    unit.movesRemaining = 0;
+
+    const neighbors = getNeighbors(unit.position);
+    const swampHex = neighbors[0];
+    const tile = state.map!.tiles.get(hexToKey(swampHex));
+    expect(tile).toBeTruthy();
+    tile!.terrain = 'swamp';
+
+    expect(canMoveTo(state, unit.id, swampHex, state.map!, registry)).toBe(false);
   });
 });

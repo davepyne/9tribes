@@ -285,7 +285,7 @@ const NORMAL_PROFILE: AiDifficultyProfile = {
     coordinatorMinSupplyRatio: 0.8,
     coordinatorMinIdleNearHome: 1,
     coordinatorMinActiveArmy: 2,
-    coordinatorHunterShare: 0.5,
+    coordinatorHunterShare: 0.65,
     coordinatorHunterFloor: 2,
     villageDetourTolerance: 3,
     villageCityDistanceLimit: 8,

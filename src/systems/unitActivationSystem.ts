@@ -509,7 +509,8 @@ function findBestRangedTarget(
           targetHpRatio: unit.hp / Math.max(1, unit.maxHp),
           targetRouted: unit.routed,
           strategicTargetScore: strategicScore,
-          extraScore: extraScore + (defenderOnFort ? (friendlySupport > 0 ? -4 : -18) : 0),
+          // Ranged attacks take no retaliation — always a positive trade, boost score
+          extraScore: extraScore + 12 + (defenderOnFort ? (friendlySupport > 0 ? -4 : -18) : 0),
           distancePenalty: dist * 0.5,
           isSiegeVsCity: isSiege && isOnCity,
           isSiegeVsFort: isSiege && defenderOnFort,
@@ -616,13 +617,22 @@ function setUnitActivated(state: GameState, unitId: UnitId): GameState {
   return { ...state, units };
 }
 
-function buildFieldFortIfEligible(
+interface FieldFortOpportunity {
+  score: number;
+  reason: string;
+}
+
+const FIELD_FORT_DECISION_SCORE = 6;
+const FIELD_FORT_ATTACK_MARGIN = 1;
+const HIGH_VALUE_ATTACK_SCORE = 10;
+
+function getFieldFortOpportunity(
   state: GameState,
   factionId: FactionId,
   unitId: UnitId,
   registry: RulesRegistry,
-  fortsBuiltThisRound?: Set<FactionId>
-): GameState {
+  fortsBuiltThisRound?: Set<FactionId>,
+): FieldFortOpportunity | null {
   const faction = state.factions.get(factionId);
   const unit = state.units.get(unitId);
   const research = state.research.get(factionId);
@@ -636,25 +646,25 @@ function buildFieldFortIfEligible(
     unit.movesRemaining !== unit.maxMoves ||
     unit.status !== 'ready'
   ) {
-    return state;
+    return null;
   }
 
-  // Field fort build eligibility: 
+  // Field fort build eligibility:
   // - zoCAuraEnabled (fortress_t2) indicates the faction has developed fortification doctrine
   // - Units with the right movement class can construct field forts
   if (!doctrine.canBuildFieldForts) {
-    return state;
+    return null;
   }
 
   const prototype = state.prototypes.get(unit.prototypeId);
   const movementClass = prototype ? registry.getChassis(prototype.chassisId)?.movementClass : undefined;
   const role = prototype?.derivedStats.role;
   if (!(movementClass === 'infantry' || role === 'ranged')) {
-    return state;
+    return null;
   }
 
   if (getImprovementAtHex(state, unit.position)) {
-    return state;
+    return null;
   }
 
   const strategy = state.factionStrategies.get(factionId);
@@ -669,14 +679,53 @@ function buildFieldFortIfEligible(
     unitIntent?.assignment === 'defender'
     || unitIntent?.assignment === 'recovery'
     || unitIntent?.assignment === 'reserve';
-  const worthwhile =
-    nearbyFriendlySupport > 0
-    && nearbyFortCount === 0
-    && (
-      nearbyEnemies > 0
-      || (isDefensiveAssignment && terrain === 'hill' && cityDistance <= 3)
-    );
-  if (!worthwhile) {
+  const defensiveHold = isDefensiveAssignment && terrain === 'hill' && cityDistance <= 3;
+  if (
+    nearbyFriendlySupport <= 0
+    || nearbyFortCount > 0
+    || (!defensiveHold && nearbyEnemies <= 0)
+  ) {
+    return null;
+  }
+
+  let score = Math.min(nearbyFriendlySupport, 2) * 1.5;
+  score += Math.min(nearbyEnemies, 2) * 3;
+  if (terrain === 'hill') score += 3;
+  if (isDefensiveAssignment) score += 3;
+  if (cityDistance <= 1) {
+    score += 2.5;
+  } else if (cityDistance <= 2) {
+    score += 1.5;
+  } else if (cityDistance <= 3) {
+    score += 0.5;
+  }
+  if (unitIntent?.threatenedCityId && nearestCity?.id === unitIntent.threatenedCityId) {
+    score += 2;
+  } else if (nearestCity?.besieged) {
+    score += 1.5;
+  }
+
+  const reason = nearbyEnemies > 0
+    ? `pressure=${nearbyEnemies} support=${nearbyFriendlySupport} terrain=${terrain}`
+    : `hold=${isDefensiveAssignment ? unitIntent?.assignment : 'none'} terrain=${terrain} city=${cityDistance}`;
+  return { score, reason };
+}
+
+function buildFieldFortIfEligible(
+  state: GameState,
+  factionId: FactionId,
+  unitId: UnitId,
+  registry: RulesRegistry,
+  fortsBuiltThisRound?: Set<FactionId>
+): GameState {
+  const opportunity = getFieldFortOpportunity(state, factionId, unitId, registry, fortsBuiltThisRound);
+  if (!opportunity) {
+    return state;
+  }
+
+  const faction = state.factions.get(factionId);
+  const unit = state.units.get(unitId);
+  if (!faction || !unit) {
     return state;
   }
 
@@ -1193,15 +1242,16 @@ export function activateUnit(
     ? findBestRangedTarget(current, unitId, activeUnit.position, factionId, prototype as any, registry, unitRange, threatenedCityPosition)
     : findBestTargetChoice(current, unitId, activeUnit.position, factionId, prototype as any, registry, threatenedCityPosition);
   let enemy: typeof enemyChoice.target | undefined = enemyChoice.target;
-  if (enemy && !shouldEngageFromPosition(activeUnit, enemyChoice.score, enemy.position)) {
+  const forceAttack = enemyChoice.score >= HIGH_VALUE_ATTACK_SCORE;
+  if (enemy && !forceAttack && !shouldEngageFromPosition(activeUnit, enemyChoice.score, enemy.position)) {
     enemy = undefined;
   }
 
   // Ranged units (range > 1) attack from their current position — no need to charge/move adjacent
-  if (!enemy && activeUnit.movesRemaining > 0 && canChargeAttack) {
-    let chargeMove: HexCoord | null = null;
-    let bestChargeScore = -Infinity;
+  let chargeMove: HexCoord | null = null;
+  let bestChargeScore = -Infinity;
 
+  if (!enemy && activeUnit.movesRemaining > 0 && canChargeAttack) {
     for (const move of getValidMoves(current, unitId, map, registry)) {
       const choice = findBestTargetChoice(current, unitId, move, factionId, prototype as any, registry, threatenedCityPosition);
       if (!choice.target) continue;
@@ -1211,29 +1261,48 @@ export function activateUnit(
         chargeMove = move;
       }
     }
+  }
 
-    if (chargeMove && bestChargeScore > 0) {
-      current = moveUnit(current, unitId, chargeMove, map, registry);
-      // Update embarked unit positions if moving unit is a transport
-      const movedUnit = current.units.get(unitId);
-      if (movedUnit) {
-        const movedProto = current.prototypes.get(movedUnit.prototypeId);
-        if (movedProto && isTransportUnit(movedProto, registry)) {
-          current = updateEmbarkedPositions(current, unitId, movedUnit.position, current.transportMap);
-        }
-      }
-      activeUnit = current.units.get(unitId)!;
-      // Unit may have been destroyed by an opportunity attack during the charge move.
-      if (!activeUnit) {
-        return { state: setUnitActivated(current, unitId), pendingCombat: null };
-      }
-      enemyChoice = findBestTargetChoice(current, unitId, activeUnit.position, factionId, prototype as any, registry, threatenedCityPosition);
-      enemy = enemyChoice.target;
-      if (enemy && !shouldEngageFromPosition(activeUnit, enemyChoice.score)) {
-        enemy = undefined;
-      }
-      log(trace, `${faction.name} ${prototype.name} charged into position`);
+  const fieldFortOpportunity = getFieldFortOpportunity(current, factionId, unitId, registry, fortsBuiltThisRound);
+  const bestImmediateAttackScore = Math.max(
+    enemy && activeUnit.attacksRemaining > 0 ? enemyChoice.score : -Infinity,
+    bestChargeScore,
+  );
+  if (
+    fieldFortOpportunity
+    && fieldFortOpportunity.score >= FIELD_FORT_DECISION_SCORE
+    && bestImmediateAttackScore < FIELD_FORT_ATTACK_MARGIN
+  ) {
+    const improvementCount = current.improvements.size;
+    current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+    if (current.improvements.size > improvementCount) {
+      log(trace, `${faction.name} ${prototype.name} built a field fort (${fieldFortOpportunity.reason})`);
+      current = applyHillDugInIfEligible(current, factionId, unitId);
+      return { state: setUnitActivated(current, unitId), pendingCombat: null };
     }
+  }
+
+  if (!enemy && activeUnit.movesRemaining > 0 && canChargeAttack && chargeMove && bestChargeScore > 0) {
+    current = moveUnit(current, unitId, chargeMove, map, registry);
+    // Update embarked unit positions if moving unit is a transport
+    const movedUnit = current.units.get(unitId);
+    if (movedUnit) {
+      const movedProto = current.prototypes.get(movedUnit.prototypeId);
+      if (movedProto && isTransportUnit(movedProto, registry)) {
+        current = updateEmbarkedPositions(current, unitId, movedUnit.position, current.transportMap);
+      }
+    }
+    activeUnit = current.units.get(unitId)!;
+    // Unit may have been destroyed by an opportunity attack during the charge move.
+    if (!activeUnit) {
+      return { state: setUnitActivated(current, unitId), pendingCombat: null };
+    }
+    enemyChoice = findBestTargetChoice(current, unitId, activeUnit.position, factionId, prototype as any, registry, threatenedCityPosition);
+    enemy = enemyChoice.target;
+    if (enemy && enemyChoice.score < HIGH_VALUE_ATTACK_SCORE && !shouldEngageFromPosition(activeUnit, enemyChoice.score)) {
+      enemy = undefined;
+    }
+    log(trace, `${faction.name} ${prototype.name} charged into position`);
   }
 
   if (
@@ -1493,7 +1562,106 @@ export function activateUnit(
           const postMoveCombat = applyCombatAction(current, registry, postMovePreview);
           current = postMoveCombat.state;
           const enemyProto = current.prototypes.get(postMoveEnemy.prototypeId);
+          const postMoveResult = postMovePreview.result;
+          const postMoveResolution = postMoveCombat.feedback.resolution;
+          const postMoveUpdatedAttacker = current.units.get(movedUnit.id) ?? { ...movedUnit, hp: 0, morale: 0, routed: true };
+          const postMoveUpdatedDefender = current.units.get(postMoveEnemy.id) ?? { ...postMoveEnemy, hp: 0, morale: 0, routed: true };
           log(trace, `${faction.name} ${prototype.name} attacked ${enemyProto?.name ?? 'enemy'} after movement`);
+          recordCombatEvent(trace, {
+            round: current.round,
+            attackerUnitId: postMoveUpdatedAttacker.id,
+            defenderUnitId: postMoveUpdatedDefender.id,
+            attackerFactionId: postMoveUpdatedAttacker.factionId,
+            defenderFactionId: postMoveUpdatedDefender.factionId,
+            attackerPrototypeId: postMoveUpdatedAttacker.prototypeId,
+            defenderPrototypeId: postMoveUpdatedDefender.prototypeId,
+            attackerPrototypeName: prototype.name,
+            defenderPrototypeName: enemyProto?.name ?? 'unknown',
+            attackerDamage: postMoveResult.attackerDamage,
+            defenderDamage: postMoveResult.defenderDamage,
+            attackerHpAfter: postMoveUpdatedAttacker.hp,
+            defenderHpAfter: postMoveUpdatedDefender.hp,
+            attackerDestroyed: postMoveResult.attackerDestroyed,
+            defenderDestroyed: postMoveResult.defenderDestroyed,
+            attackerRouted: postMoveResult.attackerRouted,
+            defenderRouted: postMoveResult.defenderRouted,
+            attackerFled: postMoveResult.attackerFled,
+            defenderFled: postMoveResult.defenderFled,
+            summary: formatCombatSummary(
+              prototype.name,
+              enemyProto?.name ?? 'unknown',
+              postMoveResult.defenderDamage,
+              postMoveResult.attackerDamage,
+              describeCombatOutcome(postMoveResult),
+              postMoveResolution.triggeredEffects
+            ),
+            breakdown: {
+              attacker: {
+                unitId: movedUnit.id,
+                factionId: movedUnit.factionId,
+                prototypeId: movedUnit.prototypeId,
+                prototypeName: prototype.name,
+                position: movedUnit.position,
+                terrain: postMovePreview.details.attackerTerrainId,
+                hpBefore: movedUnit.hp,
+                hpAfter: postMoveUpdatedAttacker.hp,
+                maxHp: movedUnit.maxHp,
+                baseStat: postMoveResult.attackerBaseAttack,
+              },
+              defender: {
+                unitId: postMoveEnemy.id,
+                factionId: postMoveEnemy.factionId,
+                prototypeId: postMoveEnemy.prototypeId,
+                prototypeName: enemyProto?.name ?? 'unknown',
+                position: postMoveEnemy.position,
+                terrain: postMovePreview.details.defenderTerrainId,
+                hpBefore: postMoveEnemy.hp,
+                hpAfter: postMoveUpdatedDefender.hp,
+                maxHp: postMoveEnemy.maxHp,
+                baseStat: postMoveResult.defenderBaseDefense,
+              },
+              modifiers: {
+                roleModifier: postMoveResult.roleModifier,
+                weaponModifier: postMoveResult.weaponModifier,
+                flankingBonus: postMoveResult.flankingBonus,
+                rearAttackBonus: postMoveResult.rearAttackBonus,
+                chargeBonus: postMovePreview.details.chargeAttackBonus,
+                braceDefenseBonus: postMoveResult.braceDefenseBonus,
+                ambushBonus: postMoveResult.ambushAttackBonus,
+                hiddenAttackBonus: postMoveResult.hiddenAttackBonus,
+                stealthAmbushBonus: postMovePreview.attackerWasStealthed ? 0.5 : 0,
+                situationalAttackModifier: postMoveResult.situationalAttackModifier,
+                situationalDefenseModifier: postMoveResult.situationalDefenseModifier,
+                synergyAttackModifier: postMovePreview.details.synergyAttackModifier,
+                synergyDefenseModifier: postMovePreview.details.synergyDefenseModifier,
+                improvementDefenseBonus: postMovePreview.details.improvementDefenseBonus,
+                wallDefenseBonus: postMovePreview.details.wallDefenseBonus,
+                finalAttackStrength: postMoveResult.attackStrength,
+                finalDefenseStrength: postMoveResult.defenseStrength,
+                baseMultiplier: postMoveResult.baseMultiplier,
+                positionalMultiplier: postMoveResult.positionalMultiplier,
+                damageVarianceMultiplier: postMoveResult.damageVarianceMultiplier,
+                retaliationVarianceMultiplier: postMoveResult.retaliationVarianceMultiplier,
+              },
+              morale: {
+                attackerLoss: postMoveResult.attackerMoraleLoss,
+                defenderLoss: postMoveResult.defenderMoraleLoss,
+                attackerRouted: postMoveResult.attackerRouted,
+                defenderRouted: postMoveResult.defenderRouted,
+                attackerFled: postMoveResult.attackerFled,
+                defenderFled: postMoveResult.defenderFled,
+              },
+              outcome: {
+                attackerDamage: postMoveResult.attackerDamage,
+                defenderDamage: postMoveResult.defenderDamage,
+                attackerDestroyed: postMoveResult.attackerDestroyed,
+                defenderDestroyed: postMoveResult.defenderDestroyed,
+                defenderKnockedBack: postMoveResolution.totalKnockbackDistance > 0 && !postMoveResult.defenderDestroyed,
+                knockbackDistance: postMoveResolution.totalKnockbackDistance,
+              },
+              triggeredEffects: postMoveResolution.triggeredEffects,
+            },
+          });
           current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
           current = applyHillDugInIfEligible(current, factionId, unitId);
           return { state: setUnitActivated(current, unitId), pendingCombat: null };

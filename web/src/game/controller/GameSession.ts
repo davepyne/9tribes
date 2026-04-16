@@ -151,6 +151,7 @@ export class GameSession {
   private readonly mapMode?: MapGenerationMode;
   private readonly mapSize?: 'small' | 'medium' | 'large';
   private readonly selectedFactions?: string[];
+  private onAiComplete: (() => void) | null = null;
   private readonly events: SessionEvent[] = [];
   private readonly feedback: SessionFeedback = {
     eventSequence: 0,
@@ -750,6 +751,10 @@ export class GameSession {
     return this._pendingCombat;
   }
 
+  setOnAiComplete(callback: (() => void) | null): void {
+    this.onAiComplete = callback;
+  }
+
   clearPendingCombat(): void {
     this._pendingCombat = null;
   }
@@ -808,6 +813,7 @@ export class GameSession {
       setTimeout(() => this.continueAiUntilHumanTurn(), 0);
     } else {
       this.feedback.aiProcessing = false;
+      this.onAiComplete?.();
     }
   }
 

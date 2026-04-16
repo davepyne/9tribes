@@ -1,7 +1,7 @@
 import civilizationsData from '../../../../src/content/base/civilizations.json';
 import { hexDistance, hexToKey } from '../../../../src/core/grid.js';
 import type { RulesRegistry } from '../../../../src/data/registry/types.js';
-import type { GameState, Unit } from '../../../../src/game/types.js';
+import type { FactionId, GameState, Unit } from '../../../../src/game/types.js';
 import type { CitySiteBonuses } from '../../../../src/features/cities/types.js';
 import {
   evaluateCitySiteBonuses,
@@ -70,6 +70,7 @@ type PlayWorldSource = {
   kind: 'play';
   state: GameState;
   registry: RulesRegistry;
+  playerFactionId: string | null;
   reachableHexes: ReachableHexView[];
   attackHexes: AttackTargetView[];
   pathPreview: PathPreviewNodeView[];
@@ -253,7 +254,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
   }
 
   const factions = buildPlayFactions(state);
-  const hexVisibility = buildHexVisibilityMap(state);
+  const hexVisibility = buildHexVisibilityMap(state, source.playerFactionId);
   const hexes = Array.from(state.map.tiles.values()).map((tile) => {
     const key = hexToKey(tile.position);
     return {
@@ -375,7 +376,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
         role: prototype?.derivedStats.role,
         spriteKey: getSpriteKeyForUnit(unit.factionId, prototype?.name ?? unit.prototypeId, chassisId, prototype?.sourceRecipeId),
         facing: unit.facing ?? 0,
-        visible: unit.factionId === state.activeFactionId
+        visible: unit.factionId === source.playerFactionId
           ? (hexVisibility.get(hexToKey(unit.position)) ?? 'hidden') !== 'hidden'
           : (hexVisibility.get(hexToKey(unit.position)) ?? 'hidden') === 'visible',
         veteranLevel: unit.veteranLevel,
@@ -401,7 +402,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       factionId: city.factionId,
       q: city.position.q,
       r: city.position.r,
-      visible: city.factionId === state.activeFactionId
+      visible: city.factionId === source.playerFactionId
         ? (hexVisibility.get(hexToKey(city.position)) ?? 'hidden') !== 'hidden'
         : (hexVisibility.get(hexToKey(city.position)) ?? 'hidden') === 'visible',
       remembered: true,
@@ -416,7 +417,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       factionId: village.factionId,
       q: village.position.q,
       r: village.position.r,
-      visible: village.factionId === state.activeFactionId
+      visible: village.factionId === source.playerFactionId
         ? (hexVisibility.get(hexToKey(village.position)) ?? 'hidden') !== 'hidden'
         : (hexVisibility.get(hexToKey(village.position)) ?? 'hidden') === 'visible',
       remembered: true,
@@ -427,7 +428,8 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       q: improvement.position.q,
       r: improvement.position.r,
       ownerFactionId: improvement.ownerFactionId,
-      visible: improvement.ownerFactionId === state.activeFactionId
+      spriteKey: getSpriteKeyForImprovement(improvement.ownerFactionId, improvement.type),
+      visible: improvement.ownerFactionId === source.playerFactionId
         ? (hexVisibility.get(hexToKey(improvement.position)) ?? 'hidden') !== 'hidden'
         : (hexVisibility.get(hexToKey(improvement.position)) ?? 'hidden') === 'visible',
     })),
@@ -1047,13 +1049,13 @@ function buildPlayFactions(state: GameState): FactionView[] {
   }));
 }
 
-function buildHexVisibilityMap(state: GameState): Map<string, 'visible' | 'explored' | 'hidden'> {
+function buildHexVisibilityMap(state: GameState, playerFactionId: string | null): Map<string, 'visible' | 'explored' | 'hidden'> {
   const map = new Map<string, 'visible' | 'explored' | 'hidden'>();
-  if (!state.activeFactionId || !state.fogState) {
+  if (!playerFactionId || !state.fogState) {
     return map;
   }
 
-  const fog = state.fogState.get(state.activeFactionId);
+  const fog = state.fogState.get(playerFactionId as FactionId);
   if (!fog) {
     return map;
   }
@@ -1137,6 +1139,22 @@ function normalizeSpriteKey(chassisId: string) {
   if (chassisId.includes('cavalry')) return 'cavalry';
   if (chassisId.includes('ranged')) return 'ranged';
   return 'infantry';
+}
+
+const DEFAULT_IMPROVEMENT_SPRITE_KEYS: Record<string, string> = {
+  fortification: 'hill_fortress',
+};
+
+const FACTION_IMPROVEMENT_SPRITE_KEYS: Record<string, Record<string, string>> = {
+  hill_clan: {
+    fortification: 'hill_fortress',
+  },
+};
+
+function getSpriteKeyForImprovement(ownerFactionId: string | null, type: string): string {
+  return (ownerFactionId ? FACTION_IMPROVEMENT_SPRITE_KEYS[ownerFactionId]?.[type] : undefined)
+    ?? DEFAULT_IMPROVEMENT_SPRITE_KEYS[type]
+    ?? 'hill_fortress';
 }
 
 function getSpriteKeyForUnit(factionId: string, prototypeName: string, chassisId: string, sourceRecipeId?: string): string {

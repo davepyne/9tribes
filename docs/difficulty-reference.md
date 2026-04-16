@@ -195,7 +195,7 @@ computeFactionStrategy()
 | | coordinatorMinSupplyRatio | 0.8 | |
 | | coordinatorMinIdleNearHome | 1 | **Lowered** (was 3) |
 | | coordinatorMinActiveArmy | 2 | **Lowered** (was 4) |
-| | coordinatorHunterShare | 0.5 | |
+| | coordinatorHunterShare | 0.65 | **Raised** to keep more of Medium's army on city-push duty |
 | | coordinatorHunterFloor | 2 | **Lowered** (was 3) |
 | | villageDetourTolerance | 3 | |
 | | villageCityDistanceLimit | 8 | |
@@ -296,7 +296,7 @@ computeFactionStrategy()
 | | coordinatorMinSupplyRatio | 0.9 | +0.1 (higher supply bar) |
 | | coordinatorMinIdleNearHome | 2 | +1 above Normal |
 | | coordinatorMinActiveArmy | 4 | **Lowered** (was 6), +2 above Normal |
-| | coordinatorHunterShare | 0.80 | +0.30 above Normal |
+| | coordinatorHunterShare | 0.80 | +0.15 above Normal |
 | | coordinatorHunterFloor | 3 | **Lowered** (was 4), +1 above Normal |
 | | villageDetourTolerance | 2 | -1 |
 | | villageCityDistanceLimit | 6 | -2 |
@@ -415,7 +415,7 @@ With no enemies, no fronts: exploration gets +2.5 (total 4.0), offensive gets -0
 | coordinatorMinIdleNearHome | 1 | 1 | 2 |
 | coordinatorMinSupplyRatio | 0.8 | 0.8 | 0.9 |
 | coordinatorHunterFloor | 1 | 2 | 3 |
-| coordinatorHunterShare | 0.5 | 0.5 | 0.80 |
+| coordinatorHunterShare | 0.5 | 0.65 | 0.80 |
 | advantageHunterShare | 0.5 | 0.65 | 0.95 |
 
 ### With 2 Starting Units

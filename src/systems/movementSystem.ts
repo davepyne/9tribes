@@ -45,6 +45,7 @@ export interface MovementPreview {
   totalCost: number;
   zocCost: number;
   entersZoC: boolean;
+  consumesAllMoves: boolean; // Terrain that ends movement on entry (swamp)
 }
 
 export function previewMove(
@@ -172,10 +173,14 @@ export function previewMove(
     : 1;
   totalCost = Math.max(minimumMoveCost, totalCost);
   
+  // Swamp: always enterable but consumes all remaining moves (difficult terrain)
+  const consumesAllMoves = targetTerrainId === 'swamp';
+
   return {
     totalCost,
     zocCost,
     entersZoC: entersEnemyZoC(unit.position, targetHex, unit, gameState, doctrine),
+    consumesAllMoves,
   };
 }
 
@@ -210,7 +215,12 @@ export function canMoveTo(
     return false;
   }
 
-  if (unit.movesRemaining < preview.totalCost) {
+  if (unit.movesRemaining < preview.totalCost && !preview.consumesAllMoves) {
+    return false;
+  }
+
+  // Consumes-all-moves terrain (swamp) still requires at least 1 move to enter
+  if (preview.consumesAllMoves && unit.movesRemaining < 1) {
     return false;
   }
 
@@ -238,7 +248,7 @@ export function moveUnit(
   const unit = gameState.units.get(unitId)!;
   const preview = previewMove(gameState, unitId, targetHex, map, rulesRegistry)!;
   const facing = getDirectionIndex(unit.position, targetHex) ?? unit.facing;
-  const movesRemaining = preview.entersZoC ? 0 : unit.movesRemaining - preview.totalCost;
+  const movesRemaining = (preview.entersZoC || preview.consumesAllMoves) ? 0 : unit.movesRemaining - preview.totalCost;
 
   // Create new units map with updated unit
   const newUnits = new Map(gameState.units);

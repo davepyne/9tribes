@@ -21,6 +21,7 @@ describe('worldViewModel play derivation', () => {
       kind: 'play',
       state,
       registry: session.getRegistry(),
+      playerFactionId: state.activeFactionId,
       reachableHexes: legalMoves,
       pathPreview: legalMoves.length > 0
         ? [
@@ -59,12 +60,42 @@ describe('worldViewModel play derivation', () => {
       kind: 'play',
       state: exhaustedState,
       registry: session.getRegistry(),
+      playerFactionId: exhaustedState.activeFactionId,
       reachableHexes: [],
       pathPreview: [],
     });
 
     const exhaustedUnit = world.units.find((unit) => unit.id === activeUnit!.id);
     expect(exhaustedUnit?.acted).toBe(true);
+  });
+
+  it('maps hill clan fortifications to the fortress sprite', () => {
+    const session = new GameSession({ type: 'fresh', seed: 42 });
+    const state = session.getState();
+    const hillFactionId = 'hill_clan' as never;
+    const hillUnit = Array.from(state.units.values()).find((unit) => unit.factionId === hillFactionId);
+
+    expect(hillUnit).toBeTruthy();
+
+    const fortId = 'improvement_test_fort' as never;
+    state.improvements.set(fortId, {
+      id: fortId,
+      type: 'fortification',
+      position: { ...hillUnit!.position },
+      ownerFactionId: hillFactionId,
+      defenseBonus: 1,
+    });
+
+    const world = buildWorldViewModel({
+      kind: 'play',
+      state,
+      registry: session.getRegistry(),
+      playerFactionId: hillFactionId,
+      reachableHexes: [],
+      pathPreview: [],
+    });
+
+    expect(world.improvements.find((improvement) => improvement.id === fortId)?.spriteKey).toBe('hill_fortress');
   });
 
   it('exposes ambush affordances for playable units', () => {
@@ -148,6 +179,7 @@ describe('worldViewModel play derivation', () => {
       kind: 'play',
       state: foggedState,
       registry,
+      playerFactionId: steppeFaction.id,
       reachableHexes: [],
       attackHexes: [],
       pathPreview: [],
@@ -209,6 +241,7 @@ describe('worldViewModel play derivation', () => {
       kind: 'play',
       state,
       registry,
+      playerFactionId: faction.id,
       reachableHexes: [],
       attackHexes: [],
       pathPreview: [],
@@ -225,6 +258,7 @@ describe('worldViewModel play derivation', () => {
       kind: 'play',
       state: boardedState,
       registry,
+      playerFactionId: faction.id,
       reachableHexes: [],
       attackHexes: [],
       pathPreview: [],

@@ -440,6 +440,91 @@ describe('strategic AI', () => {
     expect(['offensive', 'siege', 'balanced']).toContain(followThrough.posture);
   });
 
+  it('keeps only a home garrison on Normal while the rest of the army pushes an exposed enemy city', () => {
+    let state = buildMvpScenario(42, { registry });
+    trimState(state, ['hill_clan', 'steppe_clan']);
+    const hillId = 'hill_clan' as never;
+    const steppeId = 'steppe_clan' as never;
+    const hillFaction = state.factions.get(hillId)!;
+    const hillHome = state.cities.get(hillFaction.homeCityId!)!;
+    const hillBaseUnit = state.units.get(hillFaction.unitIds[0])!;
+    const steppeBaseUnit = state.units.get(state.factions.get(steppeId)!.unitIds[0])!;
+    const steppeCityId = state.factions.get(steppeId)!.cityIds[0];
+
+    for (let index = 0; index < 2; index += 1) {
+      const unitId = `hill_city_push_${index}` as never;
+      state.units.set(unitId, {
+        ...hillBaseUnit,
+        id: unitId,
+        position: { q: hillHome.position.q + index, r: hillHome.position.r + 2 },
+        hp: 100,
+        maxHp: 100,
+      });
+      hillFaction.unitIds.push(unitId);
+    }
+    state.factions.set(hillId, hillFaction);
+
+    state.units.set('steppe_city_guard' as never, {
+      ...steppeBaseUnit,
+      id: 'steppe_city_guard' as never,
+      position: { q: hillHome.position.q + 9, r: hillHome.position.r + 2 },
+      hp: 100,
+      maxHp: 100,
+    });
+    state.factions.set(steppeId, {
+      ...state.factions.get(steppeId)!,
+      unitIds: [...state.factions.get(steppeId)!.unitIds, 'steppe_city_guard' as never],
+    });
+
+    state.cities.set(steppeCityId, {
+      ...state.cities.get(steppeCityId)!,
+      position: { q: hillHome.position.q + 8, r: hillHome.position.r + 1 },
+      wallHP: 50,
+      maxWallHP: 50,
+    });
+
+    for (const [index, unitId] of hillFaction.unitIds.entries()) {
+      state.units.set(unitId, {
+        ...state.units.get(unitId)!,
+        position: { q: hillHome.position.q + (index % 2), r: hillHome.position.r + 1 + Math.floor(index / 2) },
+        hp: 100,
+        maxHp: 100,
+      });
+    }
+
+    const steppeUnitIds = state.factions.get(steppeId)!.unitIds;
+    for (const [index, unitId] of steppeUnitIds.entries()) {
+      state.units.set(unitId, {
+        ...state.units.get(unitId)!,
+        position: { q: hillHome.position.q + 8 + index, r: hillHome.position.r + 1 + (index % 2) },
+        hp: 100,
+        maxHp: 100,
+      });
+    }
+
+    state.economy.set(hillId, {
+      factionId: hillId,
+      productionPool: 0,
+      supplyIncome: 24,
+      supplyDemand: 20,
+    });
+
+    state = updateFogState(state, hillId);
+    state = updateFogState(state, steppeId);
+
+    const strategy = computeFactionStrategy(state, hillId, registry, 'normal');
+    const intents = Object.values(strategy.unitIntents);
+    const homeDefenders = intents.filter(
+      (intent) => intent.assignment === 'defender' && intent.objectiveCityId === hillHome.id,
+    );
+    const cityPushUnits = intents.filter((intent) => intent.objectiveCityId === steppeCityId);
+
+    expect(['offensive', 'siege']).toContain(strategy.posture);
+    expect(strategy.primaryCityObjectiveId).toBe(steppeCityId);
+    expect(homeDefenders).toHaveLength(1);
+    expect(cityPushUnits).toHaveLength(3);
+  });
+
   it('moves siege-assigned units toward the enemy city when no tactical attack is available', () => {
     let state = buildMvpScenario(42);
     trimState(state, ['hill_clan', 'steppe_clan']);

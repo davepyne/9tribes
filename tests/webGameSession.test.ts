@@ -68,6 +68,110 @@ function runSharedAiActivation(
   };
 }
 
+function setupHillFortState(options?: {
+  includeSupport?: boolean;
+  enemyPosition?: { q: number; r: number };
+  enemyHp?: number;
+  enemyRouted?: boolean;
+  cityPosition?: { q: number; r: number };
+  existingFortPosition?: { q: number; r: number };
+}) {
+  const registry = loadRulesRegistry();
+  const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
+  trimStateToFactions(state, ['hill_clan', 'steppe_clan']);
+
+  const hillFaction = state.factions.get('hill_clan' as never)!;
+  const enemyFaction = state.factions.get('steppe_clan' as never)!;
+  const unitId = hillFaction.unitIds[0];
+  const supportId = 'ai_hill_fort_support' as never;
+  const enemyId = enemyFaction.unitIds[0];
+  const unitBase = state.units.get(unitId as never)!;
+  const supportBase = state.units.get(hillFaction.unitIds[1] as never)!;
+  const enemyBase = state.units.get(enemyId as never)!;
+  const cityId = hillFaction.cityIds[0];
+  const includeSupport = options?.includeSupport ?? true;
+  const cityPosition = options?.cityPosition ?? { q: 11, r: 10 };
+  const enemyPosition = options?.enemyPosition ?? { q: 12, r: 10 };
+
+  state.research.get(hillFaction.id)!.completedNodes.push('fortress_t2' as never);
+
+  for (const key of [
+    '10,10',
+    '10,11',
+    `${cityPosition.q},${cityPosition.r}`,
+    `${enemyPosition.q},${enemyPosition.r}`,
+  ]) {
+    const tile = state.map!.tiles.get(key);
+    if (tile) {
+      tile.terrain = 'hill';
+    }
+  }
+
+  const units = new Map([
+    [unitId as never, {
+      ...unitBase,
+      position: { q: 10, r: 10 },
+      hp: unitBase.maxHp,
+      movesRemaining: unitBase.maxMoves,
+      attacksRemaining: 1,
+      routed: false,
+      status: 'ready',
+    }],
+    [enemyId as never, {
+      ...enemyBase,
+      position: enemyPosition,
+      hp: options?.enemyHp ?? enemyBase.maxHp,
+      movesRemaining: enemyBase.maxMoves,
+      attacksRemaining: 1,
+      routed: options?.enemyRouted ?? false,
+      status: 'ready',
+    }],
+  ]);
+  if (includeSupport) {
+    units.set(supportId, {
+      ...supportBase,
+      id: supportId,
+      position: { q: 10, r: 11 },
+      hp: supportBase.maxHp,
+      movesRemaining: 0,
+      attacksRemaining: 0,
+      routed: false,
+      status: 'spent',
+      activatedThisRound: true,
+    });
+  }
+  state.units = units;
+
+  state.cities.set(cityId, {
+    ...state.cities.get(cityId)!,
+    position: cityPosition,
+    besieged: false,
+    turnsUnderSiege: 0,
+  });
+
+  state.improvements = options?.existingFortPosition
+    ? new Map([
+        ['existing_hill_fort' as never, {
+          id: 'existing_hill_fort' as never,
+          type: 'fortification',
+          position: options.existingFortPosition,
+          ownerFactionId: hillFaction.id,
+          defenseBonus: 1,
+        }],
+      ])
+    : new Map();
+
+  state.factions.set(hillFaction.id, {
+    ...hillFaction,
+    unitIds: includeSupport ? [unitId, supportId] : [unitId],
+    cityIds: [cityId],
+  });
+  state.factions.set(enemyFaction.id, { ...enemyFaction, unitIds: [enemyId] });
+  state.activeFactionId = hillFaction.id;
+
+  return { registry, state, hillFaction, enemyFaction, unitId, enemyId };
+}
+
 describe('GameSession', () => {
   it('returns legal moves and applies movement', () => {
     const session = new GameSession({ type: 'fresh', seed: 42 });
@@ -984,9 +1088,10 @@ describe('GameSession', () => {
         ...supportBase,
         id: supportId,
         position: { q: 10, r: 11 },
-        movesRemaining: supportBase.maxMoves,
-        attacksRemaining: 1,
-        status: 'ready',
+        movesRemaining: 0,
+        attacksRemaining: 0,
+        status: 'spent',
+        activatedThisRound: true,
       }],
       [enemyId as never, {
         ...enemyBase,
@@ -1019,6 +1124,51 @@ describe('GameSession', () => {
     expect(session.getState().units.get(unitId as never)?.hillDugIn).toBe(
       expected.state.units.get(unitId as never)?.hillDugIn,
     );
+  });
+
+  it('does not build a field fort when the hill defender is isolated', () => {
+    const { registry, state, hillFaction, unitId } = setupHillFortState({ includeSupport: false });
+
+    const result = runSharedAiActivation(state, registry, hillFaction.id, unitId);
+    const builtFort = Array.from(result.state.improvements.values()).find(
+      (improvement) => improvement.position.q === 10 && improvement.position.r === 10,
+    );
+
+    expect(builtFort).toBeUndefined();
+  });
+
+  it('does not build a field fort when a nearby fort already covers the line', () => {
+    const { registry, state, hillFaction, unitId } = setupHillFortState({
+      existingFortPosition: { q: 10, r: 11 },
+    });
+
+    const result = runSharedAiActivation(state, registry, hillFaction.id, unitId);
+    const builtFort = Array.from(result.state.improvements.values()).find(
+      (improvement) => improvement.position.q === 10 && improvement.position.r === 10,
+    );
+    const nearbyForts = Array.from(result.state.improvements.values()).filter(
+      (improvement) => improvement.type === 'fortification',
+    );
+
+    expect(builtFort).toBeUndefined();
+    expect(nearbyForts).toHaveLength(1);
+  });
+
+  it('prefers a high-value attack over building a field fort', () => {
+    const { registry, state, hillFaction, unitId, enemyId } = setupHillFortState({
+      cityPosition: { q: 10, r: 9 },
+      enemyPosition: { q: 11, r: 10 },
+      enemyHp: 5,
+      enemyRouted: true,
+    });
+
+    const result = runSharedAiActivation(state, registry, hillFaction.id, unitId);
+    const builtFort = Array.from(result.state.improvements.values()).find(
+      (improvement) => improvement.position.q === 10 && improvement.position.r === 10,
+    );
+
+    expect(builtFort).toBeUndefined();
+    expect(result.state.units.get(enemyId as never)?.hp ?? 0).toBeLessThan(5);
   });
 
   it('matches shared AI transport-aware movement when a loaded transport is available', () => {

@@ -40,6 +40,9 @@ export class GameController {
     this.mode = options.mode;
     this.replay = options.mode === 'replay' ? options.replay : null;
     this.session = options.mode === 'play' ? options.session : null;
+    if (this.session) {
+      this.session.setOnAiComplete(() => this.emit());
+    }
   }
 
   subscribe(listener: Listener) {
@@ -335,6 +338,7 @@ export class GameController {
       kind: 'play',
       state: sessionState,
       registry: session.getRegistry(),
+      playerFactionId,
       reachableHexes: this.targetingMode === 'move' ? legalMoves : [],
       attackHexes: this.targetingMode === 'attack' ? attackTargets : [],
       pathPreview,

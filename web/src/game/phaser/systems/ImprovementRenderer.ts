@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { WorldViewModel } from '../../types/worldView';
-import { TEXTURES } from '../assets/keys';
+import { getUnitTextureSpec } from '../assets/keys';
 
 export class ImprovementRenderer {
   constructor(
@@ -23,9 +23,14 @@ export class ImprovementRenderer {
 
       const point = this.worldToScreen(improvement.q, improvement.r);
       const ownerColor = world.factions.find((faction) => faction.id === improvement.ownerFactionId)?.color ?? null;
-      const sprite = this.scene.add.image(point.x, point.y - 8, TEXTURES.hillFortress)
+      const texture = getUnitTextureSpec(improvement.spriteKey);
+      const sprite = (
+        texture.kind === 'sheet'
+          ? this.scene.add.image(point.x, point.y - texture.yOffset, texture.texture, texture.frame)
+          : this.scene.add.image(point.x, point.y - texture.yOffset, texture.texture)
+      )
         .setOrigin(0.5, 1)
-        .setDisplaySize(48, 64)
+        .setDisplaySize(texture.displayWidth, texture.displayHeight)
         .setAlpha(0.95);
 
       if (ownerColor) {
