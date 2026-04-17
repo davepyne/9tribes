@@ -1,0 +1,20 @@
+{
+  "sessions": [
+    {
+      "id": "76826592",
+      "created_at": "2026-04-17T20:58:03.802758400Z",
+      "updated_at": "2026-04-17T20:58:03.802758700Z",
+      "model": "MiniMax-M2.7",
+      "summary": "",
+      "message_count": 0
+    },
+    {
+      "id": "154b5276",
+      "created_at": "2026-04-17T21:01:35.361796500Z",
+      "updated_at": "2026-04-17T21:03:34.373238300Z",
+      "model": "MiniMax-M2.7",
+      "summary": "Create a Readme in this folder for uploading to Github. Ensure you note that ...",
+      "message_count": 17
+    }
+  ]
+}
