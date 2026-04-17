@@ -1,6 +1,6 @@
 # War-Civ V2
 
-> ⚠️ **This game is in beta-testing.** Features, balance, and code are actively evolving. Expect breaking changes.
+> ⚠️ **Active development.** Features, balance, and code are evolving. Expect breaking changes.
 
 ---
 
@@ -10,20 +10,43 @@
 
 ## Core Pillars
 
-- **Combat drives everything** — No separate economy minigame; resources and technology emerge from conflict
-- **Military identity emerges** — Terrain, battle outcomes, and doctrines shape each faction's personality
-- **Technology from environment + combat** — No linear tech trees; learn from what you fight and where you fight it
+- **Combat drives everything** — Technology and identity emerge from conflict, not separate economy screens
+- **Military identity is earned** — Terrain, battle outcomes, and doctrines shape each faction's personality over time
+- **Technology from environment + combat** — No linear tech trees; units learn from what they fight and where they fight it
 - **Units are persistent** — Veterans carry history; every battle leaves marks
-- **Prototypes over unit tiers** — Chassis + components create unit variety
+- **Prototypes over unit tiers** — 16 chassis × 34 components create unit variety without rigid upgrade ladders
+
+## Factions (9)
+
+Each faction has a home biome, unique starting units, a signature ability, and a native domain that shapes its research and hybrid potential.
+
+| Faction | Biome | Identity |
+|---------|-------|----------|
+| Jungle Clans | Jungle | Poison attrition, stealth, venom domain |
+| Druid Circle | Forest | Sustain, healing terrain control, nature domain |
+| Steppe Riders | Steppe/Plains | Cavalry shock, hit-and-run, charge domain |
+| Hill Engineers | Hills | Fortification, siege engines, fortress domain |
+| Pirate Lords | Coast | Naval raids, village capture, pistol skirmishers |
+| Desert Nomads | Desert | Camel mobility, desert endurance, heat domain |
+| Savannah Lions | Savannah | Elephant charges, pride domain |
+| River People | River | Transport, alligator ambush, river domain |
+| Arctic Wardens | Tundra | Polar bear riders, cold endurance, frost domain |
+
+## Terrain (12 types)
+
+Plains, forest, jungle, hill, desert, tundra, savannah, coast, river, swamp, mountain (impassable), ocean.
+
+Terrain is load-bearing: it determines faction identity formation, research bias, movement costs, and where signature abilities activate.
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-------------|
-| Game Engine | TypeScript (`src/`) |
-| Frontend | Vite + React 18 + Phaser 3 (`web/`) |
+|-------|-----------|
+| Simulation engine | TypeScript (`src/`) — pure, no framework |
+| Frontend | Vite 5 + React 18 + Phaser 3 (`web/`) |
 | Testing | Vitest |
-| Balance Optimization | Optuna |
+| Balance optimization | Optuna (via Python harness scripts) |
+| Deployment | Vercel (frontend only) |
 
 ## Getting Started
 
@@ -35,33 +58,34 @@
 ### Installation
 
 ```bash
-# Clone the repository
 git clone <repo-url>
 cd war-civ-v2
 
-# Install dependencies
+# Install backend/test dependencies
 npm install
+
+# Install frontend dependencies
+npm install --prefix web
 ```
 
-### Running the Game
+### Running
 
 ```bash
-# Start the backend dev server (game simulation)
-npm run dev
-
-# In a separate terminal, start the frontend dev server
+# Play the game (browser UI)
 npm run web:dev
-```
+# → open http://localhost:5173
 
-Open `http://localhost:5173` in your browser.
+# Run the headless simulation CLI (prints turn-by-turn trace)
+npm run dev
+```
 
 ### Build
 
 ```bash
-# Build backend
+# Type-check the backend
 npm run build
 
-# Build frontend
+# Build the frontend for production
 npm run web:build
 ```
 
@@ -71,10 +95,13 @@ npm run web:build
 # Run all tests
 npm test
 
-# Run architecture boundary tests
+# Single test file
+npx vitest run tests/combat.test.ts
+
+# Architecture boundary tests
 npm run test:architecture
 
-# Run balance harness (requires setup)
+# Balance harness (Optuna, requires Python setup)
 npm run balance:harness
 ```
 
@@ -82,74 +109,109 @@ npm run balance:harness
 
 ```
 war-civ-v2/
-├── src/                    # Game engine (TypeScript)
-│   ├── core/              # Primitives: hex math, grid, RNG, enums, IDs
-│   ├── content/base/      # JSON data: chassis, components, civilizations, terrains
-│   ├── data/              # Registry types, content loaders
-│   ├── features/         # Domain entities: units, factions, cities, villages
-│   ├── systems/          # 51 rule-execution modules (combat, movement, AI, etc.)
-│   ├── game/             # GameState, scenario builders, game loop
-│   ├── world/            # Map generation, terrain types
-│   ├── balance/          # Optuna balance evaluation
-│   └── replay/           # Replay recording/playback
+├── src/                       # Simulation engine (TypeScript)
+│   ├── core/                 # Hex math, grid, deterministic RNG, enums, IDs
+│   ├── content/base/         # JSON data: chassis, components, factions, terrains,
+│   │                         #   synergies, signature abilities, hybrid recipes, research
+│   ├── data/                 # Registry types, content loaders, effectiveness tables
+│   ├── features/             # Domain entities: units, factions, cities, villages, prototypes
+│   ├── systems/              # ~50 rule-execution modules (see below)
+│   │   ├── combat-action/    # Combat action types, preview, application helpers
+│   │   ├── simulation/       # Victory, environment effects, faction-turn effects, trace
+│   │   ├── strategic-ai/     # Front management, objectives, posture, difficulty coordinator
+│   │   └── unit-activation/  # Per-unit activation logic
+│   ├── game/                 # GameState types, scenario builders, game loop
+│   ├── world/                # Map generation, terrain types
+│   ├── balance/              # Optuna objective function, harness integration
+│   └── replay/               # Replay recording/export
 │
-├── web/                    # Frontend application
+├── web/                       # Frontend (Vite + React + Phaser 3)
 │   ├── src/
-│   │   ├── app/          # React app shell, routing, audio
+│   │   ├── app/              # React shell, audio (sfxManager), GameShell
 │   │   ├── game/
-│   │   │   ├── controller/  # GameSession, GameController
-│   │   │   ├── phaser/      # Phaser scenes and rendering systems
-│   │   │   └── view-model/  # UI state model
-│   │   └── ui/           # React components (HUD, inspectors, modals)
-│   └── public/assets/    # Sprites, audio
+│   │   │   ├── controller/   # GameSession.ts (player actions), GameController.ts
+│   │   │   ├── phaser/       # MapScene, UnitRenderer, FogRenderer, CombatAnimator
+│   │   │   └── view-model/   # worldViewModel — UI state + sprite key resolution
+│   │   └── ui/               # HUD panels, unit inspector, modals, tutorial overlay
+│   └── public/assets/
+│       ├── playtest-units/   # 86 unit sprites (48×64px, faction_unit.png naming)
+│       └── audio/sfx/        # ~20 gameplay sound effects
 │
-├── tests/                 # Vitest tests
-├── docs/                  # Implementation plans, reference docs
-└── .slim/                # Auto-generated architecture indexes
+├── tests/                     # Vitest tests (~40 files)
+├── docs/                      # Implementation plans, difficulty reference
+├── scripts/                   # Balance harness, replay export
+└── .slim/                     # Auto-generated architecture indexes (symbols, imports, digest)
 ```
 
-## Key Systems (51 total)
+## Key Systems
 
-- **Combat** — Attack resolution, counter-attacks, multi-axis attacks, kill-shot bonuses
-- **Movement** — Path execution, Zone of Control, opportunity attacks
-- **AI** — Strategic decisions, tactical positioning, production/research priorities
-- **Identity** — Faction identity, veterancy, signature abilities, sacrifice, learn-by-kill
-- **Progression** — Domain-based research, emergent synergies, knowledge tracking
-- **Conquest** — City capture, village capture, slaver mechanic, siege walls
-- **World** — Fog of war, healing, territory, supply lines
+### Core gameplay
+- **`combatSystem.ts`** — Attack resolution, counter-attacks, multi-axis attacks, kill-shot bonuses
+- **`movementSystem.ts`** — Path execution, Zone of Control (Civ-style: entry costs all remaining moves), opportunity attacks
+- **`siegeSystem.ts`** — Wall degradation, city capture
+- **`productionSystem.ts`** — City production queues, unit and city project creation
+- **`warEcologySimulation.ts`** — Central orchestrator; runs one complete turn across all factions (31 import dependencies)
+
+### Identity & progression
+- **`factionIdentitySystem.ts`** — Emergent identity from terrain + combat outcomes
+- **`veterancySystem.ts`** / **`xpSystem.ts`** — 4 veteran tiers; combat XP gain
+- **`learnByKillSystem.ts`** — Units absorb enemy ability domains on kill
+- **`sacrificeSystem.ts`** — Units encode learned abilities into faction research at home city
+- **`signatureAbilitySystem.ts`** — Faction signature powers (Frost Nova, Desert Swarm, etc.)
+- **`synergyEngine.ts`** — 55 pair-based faction synergies
+
+### AI
+- **`strategicAi.ts`** / **`strategic-ai/`** — High-level production, research, front management
+- **`aiTactics.ts`** — Tactical flanking and positioning
+- **`aiDifficulty.ts`** — Difficulty scaling (Normal vs Hard vs Easy profiles)
+
+### World & support
+- **`fogSystem.ts`** — Per-faction fog of war (explored/visible/hidden)
+- **`transportSystem.ts`** — Naval transport of land units via galleys
+- **`hybridSystem.ts`** — 18 hybrid recipes for late-game unit creation
+- **`captureSystem.ts`** — Slaver mechanic: capture enemy units instead of killing
 
 ## Architecture Notes
 
 ### Dual Combat Paths ⚠️
 
-**Critical:** Any combat mechanic must be implemented in **both** paths:
+**Critical:** Any combat mechanic must be implemented in **both** paths or they silently diverge:
 
 | Path | File | Used By |
 |------|------|---------|
-| AI/Autonomous simulation | `src/systems/warEcologySimulation.ts` | All AI turns |
-| Player-facing live-play | `web/src/game/controller/GameSession.ts` | Player actions |
+| AI / autonomous simulation | `src/systems/warEcologySimulation.ts` | All AI turns, headless sim |
+| Player-facing live-play | `web/src/game/controller/GameSession.ts` | Player actions via browser UI |
+
+What commonly drifts: siege gating, retreat/hit-and-run, learn-by-kill, sacrifice, capture behavior, multi-axis attacks, kill-shot bonuses.
 
 ### Feedback Chain
 
-For UI/audio feedback, follow this chain rather than scattering ad hoc calls:
+Route all UI/audio feedback through this chain — do not scatter `new Audio()` calls:
 
 ```
 GameSession.ts → GameController.ts → clientState.ts → sfxManager.ts
 ```
 
-## Contributing
+### External State
 
-This is an active development project. If you'd like to contribute:
+`FogState` and `TransportMap` are **not** part of `GameState`. Callers manage them separately.
 
-1. Check existing issues or create new ones for bugs/features
-2. Ensure `npm test` passes before submitting changes
-3. Run `npm run test:architecture` to verify architecture boundaries
+### History Arrays
 
-## License
+Capture cooldowns and many other transient states are tracked via `unit.history[]` / `faction.history[]` entries, not dedicated counters.
 
-Open-source project. See individual files for licensing terms.
+## Balance Optimization
+
+```bash
+npm run balance:harness              # Run Optuna optimization loop
+npm run balance:harness:stratified   # Stratified variant
+npm run balance:evaluate             # Score a candidate
+npm run balance:validate             # Validate a candidate
+```
+
+Optuna runs Python-side and calls back into the TypeScript harness via `balanceHarness.ts`.
 
 ---
 
 **Version:** 0.1.0-mvp  
-**Status:** Beta-testing
+**Status:** Active development
