@@ -1,12 +1,11 @@
-   SynergyChip (syn-*)
-   Arcane Confluence display in menubar
-   ═══════════════════════════════════════ */
+/* SynergyChip (syn-*) */
+/* Arcane Confluence display in menubar */
 
 .syn-chip-wrap {
   position: relative;
 }
 
-/* ── Compact Chip ── */
+/* Compact chip */
 
 .syn-chip {
   display: inline-flex;
@@ -128,7 +127,7 @@
   50% { text-shadow: 0 0 14px currentColor, 0 0 24px currentColor; }
 }
 
-/* ── Domain Dot (reusable) ── */
+/* Domain dot (reusable) */
 
 .syn-dot {
   display: inline-flex;
@@ -168,7 +167,7 @@
   display: none;
 }
 
-/* ── Backdrop ── */
+/* Backdrop */
 
 .syn-backdrop {
   position: fixed;
@@ -176,7 +175,7 @@
   z-index: 39;
 }
 
-/* ── Expanded Panel ── */
+/* Expanded panel */
 
 .syn-panel {
   position: absolute;
@@ -202,9 +201,11 @@
 .syn-panel::-webkit-scrollbar {
   width: 5px;
 }
+
 .syn-panel::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .syn-panel::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.1);
   border-radius: 3px;
@@ -215,6 +216,7 @@
     opacity: 0;
     transform: translateY(-8px) scale(0.97);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -297,7 +299,7 @@
   font-weight: 700;
 }
 
-/* ── Domain Constellation ── */
+/* Domain constellation */
 
 .syn-constellation {
   position: relative;
@@ -431,7 +433,7 @@
   opacity: 0.7;
 }
 
-/* ── Pair Synergies List ── */
+/* Pair synergies list */
 
 .syn-pair-list {
   list-style: none;
@@ -502,7 +504,7 @@
   line-height: 1.5;
 }
 
-/* ── Triple Active State ── */
+/* Triple active state */
 
 .syn-triple-active {
   display: flex;
@@ -524,6 +526,7 @@
   0%, 100% {
     box-shadow: 0 0 12px color-mix(in srgb, var(--syn-accent, #d6a34b) 8%, transparent);
   }
+
   50% {
     box-shadow: 0 0 24px color-mix(in srgb, var(--syn-accent, #d6a34b) 15%, transparent);
   }
@@ -560,7 +563,7 @@
   line-height: 1.4;
 }
 
-/* ── Emergent Rule Progress ── */
+/* Emergent rule progress */
 
 .syn-rule-list {
   display: flex;
@@ -672,7 +675,7 @@
   line-height: 1.5;
 }
 
-/* ── Panel Footer ── */
+/* Panel footer */
 
 .syn-panel__footer {
   padding: 10px 16px;

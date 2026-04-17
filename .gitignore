@@ -25,6 +25,7 @@ npm-debug.log*
 # Artifacts
 harness_output.json
 tmp/
+archived-beta-audio/
 docs/full-ui-implementation-plan.md
 .daem0nmcp/
 .playwright-mcp/

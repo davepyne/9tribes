@@ -1,7 +1,12 @@
 type MusicPhase = 'menu' | 'gameplay' | 'none';
 
 const TITLE_TRACK = '/assets/audio/music/title_screen.mp3';
-const GAMEPLAY_TRACKS = Array.from({ length: 13 }, (_, index) => `/assets/audio/music/track_${index + 1}.mp3`);
+const GAMEPLAY_TRACKS = [
+  '/assets/audio/music/track_1.mp3',
+  '/assets/audio/music/track_2.mp3',
+  '/assets/audio/music/track_3.mp3',
+  '/assets/audio/music/track_4.mp3',
+];
 const MENU_UI_SOUND = '/assets/audio/ui/menu-select.wav';
 
 class MusicManager {
@@ -140,7 +145,7 @@ function shuffle<T>(items: T[]) {
 const musicManager = new MusicManager();
 
 export function syncMusicForMode(mode: string | null) {
-  if (mode === 'play' || mode === 'replay') {
+  if (mode === 'play') {
     musicManager.setPhase('gameplay');
     return;
   }

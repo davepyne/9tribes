@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { MenuClient } from './app/routes/MenuClient';
 import { PlayClient } from './app/routes/PlayClient';
-import { ReplayClient } from './app/routes/ReplayClient';
 import { syncMusicForMode } from './app/audio/musicManager';
 
 function App() {
@@ -13,10 +12,6 @@ function App() {
 
   if (mode === 'play') {
     return <PlayClient />;
-  }
-
-  if (mode === 'replay') {
-    return <ReplayClient />;
   }
 
   return <MenuClient />;
