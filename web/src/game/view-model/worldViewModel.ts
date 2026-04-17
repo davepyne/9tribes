@@ -14,13 +14,12 @@ import { buildCityInspectorViewModel, buildSettlementPreview } from './inspector
 import { buildResearchInspectorViewModel } from './inspectors/researchInspectorViewModel.js';
 import type {
   CityInspectorViewModel,
-  ClientMode,
   ClientSelection,
   DebugViewModel,
   HudViewModel,
   ResearchInspectorViewModel,
 } from '../types/clientState';
-import type { ReplayAiIntentEvent, ReplayBundle, ReplayCombatEvent, ReplayFactionSummary, ReplayTurn } from '../types/replay';
+import type { ReplayCombatEvent } from '../types/replay';
 import type {
   AttackTargetView,
   BorderEdgeView,
@@ -31,17 +30,6 @@ import type {
   ReachableHexView,
   WorldViewModel,
 } from '../types/worldView';
-
-type ReplayWorldSource = {
-  kind: 'replay';
-  replay: ReplayBundle;
-  turnIndex: number;
-  selectedUnitId: string | null;
-  reachableHexes: ReachableHexView[];
-  attackHexes: AttackTargetView[];
-  pathPreview: PathPreviewNodeView[];
-  queuedPath: PathPreviewNodeView[];
-};
 
 type PlayWorldSource = {
   kind: 'play';
@@ -54,8 +42,6 @@ type PlayWorldSource = {
   queuedPath: PathPreviewNodeView[];
   lastMove: { unitId: string; destination: HexCoord } | null;
 };
-
-type WorldViewSource = ReplayWorldSource | PlayWorldSource;
 
 type CivilizationPalette = Record<string, {
   color?: string;
@@ -76,37 +62,26 @@ type SelectionInfo = {
   city: CityInspectorViewModel | null;
 };
 
-// ---------------------------------------------------------------------------
-// Public entry points (thin dispatchers)
-// ---------------------------------------------------------------------------
-
-export function buildWorldViewModel(source: WorldViewSource): WorldViewModel {
-  return source.kind === 'replay'
-    ? buildReplayWorldViewModel(source)
-    : buildPlayWorldViewModel(source);
+export function buildWorldViewModel(source: PlayWorldSource): WorldViewModel {
+  return buildPlayWorldViewModel(source);
 }
 
 export function buildHudViewModel(
-  source: ReplayBundle | GameState,
-  turnIndex: number,
-  mode: ClientMode,
+  source: GameState,
   selected: ClientSelection,
   hoveredKey: string | null,
   world: WorldViewModel,
   registry?: RulesRegistry,
   liveCombatEvents?: ReplayCombatEvent[],
 ): HudViewModel {
-  return mode === 'replay'
-    ? buildReplayHudViewModel(source as ReplayBundle, turnIndex, selected, hoveredKey, world)
-    : buildPlayHudViewModel(source as GameState, selected, hoveredKey, world, registry, liveCombatEvents);
+  return buildPlayHudViewModel(source, selected, hoveredKey, world, registry, liveCombatEvents);
 }
 
 export function buildDebugViewModel(
-  turn: ReplayTurn | null,
   events: Array<{ round: number; message: string }> = [],
 ): DebugViewModel {
   return {
-    turnEvents: turn ? turn.events.slice(0, 10) : events.slice(0, 10),
+    turnEvents: events.slice(0, 10),
   };
 }
 
@@ -115,116 +90,7 @@ export function getCombatSummary(event: ReplayCombatEvent) {
   return `${event.attackerPrototypeName} vs ${event.defenderPrototypeName} · ${effects || 'no triggers'}`;
 }
 
-export function getIntentSummary(intent: ReplayAiIntentEvent, factions: ReplayFactionSummary[]) {
-  const faction = factions.find((entry) => entry.id === intent.factionId);
-  return `${faction?.name ?? intent.factionId}: ${intent.intent} · ${intent.reason}`;
-}
-
 export { buildResearchInspectorViewModel };
-
-// ---------------------------------------------------------------------------
-// Replay world view
-// ---------------------------------------------------------------------------
-
-function buildReplayWorldViewModel(source: ReplayWorldSource): WorldViewModel {
-  const turn = source.replay.turns[source.turnIndex] ?? source.replay.turns[0];
-  const board = turn.snapshotEnd;
-  const factions = buildReplayFactions(source.replay);
-  const ownership = new Map<string, string>();
-
-  for (const city of board.cities) {
-    ownership.set(`${city.q},${city.r}`, city.factionId);
-  }
-  for (const village of board.villages) {
-    ownership.set(`${village.q},${village.r}`, village.factionId);
-  }
-
-  const hexes = source.replay.map.hexes.map((hex) => ({
-    key: hex.key,
-    q: hex.q,
-    r: hex.r,
-    terrain: hex.terrain,
-    visibility: 'visible' as const,
-    ownerFactionId: ownership.get(hex.key) ?? null,
-  }));
-
-  return {
-    activeFactionId: board.factions[0]?.id ?? null,
-    map: {
-      width: source.replay.map.width,
-      height: source.replay.map.height,
-      hexes,
-    },
-    factions,
-    units: board.units.map((unit) => {
-      const chassisId = inferChassisId(unit.prototypeName);
-      return {
-        id: unit.id,
-        factionId: unit.factionId,
-        q: unit.q,
-        r: unit.r,
-        hp: unit.hp,
-        maxHp: unit.maxHp,
-        attack: 0,
-        defense: 0,
-        effectiveDefense: 0,
-        range: 1,
-        movesRemaining: 0,
-        movesMax: 0,
-        acted: false,
-        canAct: unit.id === source.selectedUnitId && source.reachableHexes.length > 0,
-        isActiveFaction: unit.factionId === (board.factions[0]?.id ?? null),
-        status: 'inactive' as const,
-        prototypeId: unit.prototypeId,
-        prototypeName: unit.prototypeName,
-        chassisId,
-        role: chassisId,
-        spriteKey: getSpriteKeyForUnit(unit.factionId, unit.prototypeName, chassisId, undefined),
-        facing: unit.facing ?? 0,
-        visible: true,
-      };
-    }),
-    cities: board.cities.map((city) => ({
-      id: city.id,
-      name: city.name,
-      factionId: city.factionId,
-      q: city.q,
-      r: city.r,
-      visible: true,
-      remembered: true,
-      besieged: city.besieged,
-      wallHp: city.wallHp,
-      maxWallHp: city.maxWallHp,
-      turnsSinceCapture: 0,
-    })),
-    villages: board.villages.map((village) => ({
-      id: village.id,
-      name: village.name,
-      factionId: village.factionId,
-      q: village.q,
-      r: village.r,
-      visible: true,
-      remembered: true,
-    })),
-    improvements: [],
-    overlays: {
-      borders: buildBorderEdges(hexes, factions),
-      reachableHexes: source.reachableHexes,
-      attackHexes: source.attackHexes,
-      pathPreview: source.pathPreview,
-      queuedPath: source.queuedPath,
-      lastMove: null,
-    },
-    visibility: {
-      mode: 'full',
-      activeFactionId: board.factions[0]?.id ?? null,
-    },
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Play world view
-// ---------------------------------------------------------------------------
 
 function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
   const { state } = source;
@@ -301,7 +167,6 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
         && canUseAmbush(prototype, getTerrainAt(state, unit.position))
         && !hasAdjacentEnemy(state, unit);
       const baseDefense = prototype?.derivedStats.defense ?? 0;
-      // Compute effective defense including terrain, improvements, cities, villages
       const tile = state.map?.tiles.get(`${unit.position.q},${unit.position.r}`);
       const terrainDef = tile ? source.registry.getTerrain(tile.terrain) : undefined;
       const terrainMod = terrainDef?.defenseModifier ?? 0;
@@ -315,7 +180,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       if (improvementBonus === 0) {
         for (const [, city] of state.cities) {
           if (city.position.q === unit.position.q && city.position.r === unit.position.r) {
-            improvementBonus = 1; // +100% in cities
+            improvementBonus = 1;
             break;
           }
         }
@@ -323,7 +188,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       if (improvementBonus === 0) {
         for (const [, village] of state.villages) {
           if (village.position.q === unit.position.q && village.position.r === unit.position.r) {
-            improvementBonus = 0.5; // +50% in villages
+            improvementBonus = 0.5;
             break;
           }
         }
@@ -431,56 +296,6 @@ function thisChassisMovementClass(chassisId: string | undefined, registry: Rules
   return chassisId ? registry.getChassis(chassisId)?.movementClass : undefined;
 }
 
-// ---------------------------------------------------------------------------
-// HUD builders
-// ---------------------------------------------------------------------------
-
-function buildReplayHudViewModel(
-  replay: ReplayBundle,
-  turnIndex: number,
-  selected: ClientSelection,
-  hoveredKey: string | null,
-  world: WorldViewModel,
-): HudViewModel {
-  const turn = replay.turns[turnIndex] ?? replay.turns[0];
-  const board = turn.snapshotEnd;
-  const selectionInfo = describeReplaySelection(replay, turnIndex, selected, world);
-  const hoverTerrain = hoveredKey
-    ? replay.map.hexes.find((hex) => hex.key === hoveredKey)?.terrain ?? 'map'
-    : 'map';
-
-  return {
-    title: 'Replay Renderer',
-    subtitle: `Seed ${replay.seed} · round ${turn.round} of ${replay.maxTurns} · hover ${hoverTerrain}`,
-    victoryLabel: describeVictory(replay),
-    activeFactionName: world.factions.find((faction) => faction.id === world.activeFactionId)?.name ?? 'All factions',
-    phaseLabel: 'Replay',
-    selectedTitle: selectionInfo.title,
-    selectedDescription: selectionInfo.description,
-    selectedMeta: selectionInfo.meta,
-    selectedCity: null,
-    factionSummaries: board.factions.map((factionState) => {
-      const faction = replay.factions.find((entry) => entry.id === factionState.id);
-      return {
-        id: factionState.id,
-        name: faction?.name ?? factionState.id,
-        color: faction?.color ?? '#c8b68e',
-        livingUnits: factionState.livingUnits,
-        cities: factionState.cities,
-        villages: factionState.villages,
-        signatureUnit: faction?.signatureUnit ?? 'Unknown signature',
-      };
-    }),
-    recentCombat: turn.combatEvents.slice(0, 4),
-    recentSieges: turn.siegeEvents.slice(0, 4),
-    recentIntents: turn.aiIntentEvents.slice(0, 6),
-    researchChip: null,
-    settlementPreview: null,
-    supply: null,
-    exhaustion: null,
-  };
-}
-
 function buildPlayHudViewModel(
   state: GameState,
   selected: ClientSelection,
@@ -514,8 +329,6 @@ function buildPlayHudViewModel(
     recentCombat: (liveCombatEvents ?? []).filter(
       (e) => e.attackerFactionId === state.activeFactionId || e.defenderFactionId === state.activeFactionId,
     ),
-    recentSieges: [],
-    recentIntents: [],
     researchChip: registry
       ? buildResearchChip(state, registry)
       : null,
@@ -577,34 +390,6 @@ function buildResearchChip(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Selection description
-// ---------------------------------------------------------------------------
-
-function describeReplaySelection(
-  replay: ReplayBundle,
-  turnIndex: number,
-  selected: ClientSelection,
-  world: WorldViewModel,
-) {
-  const turn = replay.turns[turnIndex] ?? replay.turns[0];
-  if (!selected) {
-    return {
-      title: 'No selection',
-      description: 'Click a tile, unit, city, or village to inspect the replay snapshot.',
-      meta: [
-        { label: 'Units', value: String(turn.snapshotEnd.units.length) },
-        { label: 'Cities', value: String(turn.snapshotEnd.cities.length) },
-      ],
-    };
-  }
-
-  return describeSelectionFromWorld(selected, world, {
-    emptyTitle: 'No selection',
-    emptyDescription: 'Click a tile, unit, city, or village to inspect the replay snapshot.',
-  });
-}
-
 function describePlaySelection(
   state: GameState,
   selected: ClientSelection,
@@ -646,7 +431,7 @@ function describeSelectionFromWorld(
     return {
       title: empty.emptyTitle,
       description: empty.emptyDescription,
-      meta: [] as Array<{ label: string; value: string }>,
+      meta: [],
       city: null,
     };
   }
@@ -712,37 +497,6 @@ function describeSelectionFromWorld(
     ],
     city: null,
   };
-}
-
-// ---------------------------------------------------------------------------
-// Shared helpers
-// ---------------------------------------------------------------------------
-
-function describeVictory(replay: ReplayBundle) {
-  const winner = replay.victory.winnerFactionId
-    ? replay.factions.find((faction) => faction.id === replay.victory.winnerFactionId)?.name ?? replay.victory.winnerFactionId
-    : 'Unresolved';
-
-  if (
-    replay.victory.victoryType === 'domination'
-    && replay.victory.controlledCities !== null
-    && replay.victory.dominationThreshold !== null
-  ) {
-    return `${winner} ${replay.victory.controlledCities}/${replay.victory.dominationThreshold}`;
-  }
-
-  return `${winner} · ${replay.victory.victoryType}`;
-}
-
-function buildReplayFactions(replay: ReplayBundle): FactionView[] {
-  return replay.factions.map((faction) => ({
-    id: faction.id,
-    name: faction.name,
-    color: faction.color,
-    nativeDomain: faction.nativeDomain,
-    signatureUnit: faction.signatureUnit,
-    economyAngle: faction.economyAngle,
-  }));
 }
 
 function buildPlayFactions(state: GameState): FactionView[] {

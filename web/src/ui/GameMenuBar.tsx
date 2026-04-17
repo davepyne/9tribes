@@ -27,8 +27,6 @@ const reportsMenu: MenuEntry[] = [
   { label: 'Supply & Logistics', action: 'open_supply_report' },
   { label: 'Combat Log', action: 'open_combat_log' },
   { label: 'Research Tree', action: 'open_research' },
-  { divider: true, id: 'reports-divider-1' },
-  { label: 'AI Intents', action: 'open_ai_intents' },
 ];
 
 const viewMenu: MenuEntry[] = [
@@ -91,7 +89,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
 
         <div className="gmb-chip gmb-chip--round">
           <span className="gmb-chip-label">R</span>
-          <span>{state.turn}{state.mode === 'replay' ? `/${state.maxTurns}` : ''}</span>
+          <span>{state.turn}</span>
         </div>
 
         {researchChip ? (

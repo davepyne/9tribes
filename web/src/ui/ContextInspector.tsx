@@ -1,6 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import type { ClientState } from '../game/types/clientState';
-import { getCombatSummary, getIntentSummary } from '../game/view-model/worldViewModel';
 import abilityDomains from '../data/ability-domains.json';
 
 type ContextInspectorProps = {
@@ -612,32 +611,6 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
 
 
         {/* ── Replay-mode combat/intent details ── */}
-        {state.mode === 'replay' ? (
-          <div className="ci-section">
-            {state.hud.recentCombat.length > 0 ? (
-              <>
-                <p className="panel-kicker">Combat</p>
-                {state.hud.recentCombat.map((event, index) => (
-                  <div className="inspector-entry" key={`${event.attackerUnitId}-${event.defenderUnitId}`}>
-                    <strong>{event.summary}</strong>
-                    <p>{getCombatSummary(event)}</p>
-                  </div>
-                ))}
-              </>
-            ) : null}
-            {state.hud.recentIntents.length > 0 ? (
-              <>
-                <p className="panel-kicker">AI Intents</p>
-                {state.hud.recentIntents.map((intent) => (
-                  <div className="inspector-entry" key={intent.unitId}>
-                    <strong>{intent.intent}</strong>
-                    <p>{getIntentSummary(intent, state.replay?.factions ?? [])}</p>
-                  </div>
-                ))}
-              </>
-            ) : null}
-          </div>
-        ) : null}
       </div>
     </aside>
   );

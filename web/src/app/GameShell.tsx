@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type Phaser from 'phaser';
 import type { GameController } from '../game/controller/GameController';
 import type { ClientState } from '../game/types/clientState';
@@ -43,7 +43,6 @@ type ShellContentProps = {
   combatLogOpen: boolean;
   debugVisible: boolean;
   activeOverlay: string | null;
-  timelineMax: number;
   showPlayInstructions: boolean;
   onSetInstructionsDismissed: (v: boolean) => void;
   onSetTurnBanner: (v: string | null) => void;
@@ -72,7 +71,6 @@ function KnowledgeGainedShellContent({
   combatLogOpen,
   debugVisible,
   activeOverlay,
-  timelineMax,
   showPlayInstructions,
   onSetInstructionsDismissed,
   onSetTurnBanner,
@@ -133,9 +131,6 @@ function KnowledgeGainedShellContent({
         break;
       case 'open_supply_report':
         onSetActiveOverlay('supply_report');
-        break;
-      case 'open_ai_intents':
-        onSetActiveOverlay('ai_intents');
         break;
       case 'toggle_debug_overlay':
         onSetDebugVisible(!debugVisible);
@@ -216,8 +211,6 @@ function KnowledgeGainedShellContent({
 
       <CommandTray
         state={state}
-        timelineMax={timelineMax}
-        onSetTurn={(turnIndex) => controller.dispatch({ type: 'set_replay_turn', turnIndex })}
         onEndTurn={() => controller.dispatch({ type: 'end_turn' })}
         onSetTargetingMode={(mode) =>
           controller.dispatch({ type: 'set_targeting_mode', mode })
@@ -239,7 +232,7 @@ function KnowledgeGainedShellContent({
 
       {activeOverlay ? (
         <ReportsOverlay
-          reportType={activeOverlay as 'faction_summary' | 'combat_log' | 'supply_report' | 'ai_intents'}
+          reportType={activeOverlay as 'faction_summary' | 'combat_log' | 'supply_report'}
           state={state}
           onClose={() => onSetActiveOverlay(null)}
         />
@@ -327,7 +320,6 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
   const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
   const [debugVisible, setDebugVisible] = useState(false);
 
-  const timelineMax = useMemo(() => Math.max(0, (state.replay?.turns.length ?? 1) - 1), [state.replay?.turns.length]);
   const showPlayInstructions = state.mode === 'play' && !instructionsDismissed;
 
   const handleMenuAction = (action: string) => {
@@ -340,9 +332,6 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
         break;
       case 'open_supply_report':
         setActiveOverlay('supply_report');
-        break;
-      case 'open_ai_intents':
-        setActiveOverlay('ai_intents');
         break;
       case 'toggle_debug_overlay':
         setDebugVisible((v) => !v);
@@ -373,7 +362,6 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
           combatLogOpen={combatLogOpen}
           debugVisible={debugVisible}
           activeOverlay={activeOverlay}
-          timelineMax={timelineMax}
           showPlayInstructions={showPlayInstructions}
           onSetInstructionsDismissed={setInstructionsDismissed}
           onSetTurnBanner={setTurnBanner}
@@ -419,8 +407,6 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
 
       <BottomCommandBar
         state={state}
-        timelineMax={timelineMax}
-        onSetTurn={(turnIndex) => controller.dispatch({ type: 'set_replay_turn', turnIndex })}
         onEndTurn={() => controller.dispatch({ type: 'end_turn' })}
         onRestartSession={onRestartSession}
       />

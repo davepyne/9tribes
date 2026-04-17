@@ -1,5 +1,5 @@
 import type { ClientState } from '../game/types/clientState';
-import { getCombatSummary, getIntentSummary } from '../game/view-model/worldViewModel';
+import { getCombatSummary } from '../game/view-model/worldViewModel';
 
 type RightInspectorProps = {
   state: ClientState;
@@ -334,42 +334,19 @@ export function RightInspector({ state, onSetCityProduction }: RightInspectorPro
         </div>
       </section>
 
-      {state.mode === 'replay' ? (
-        <>
-          <section className="panel">
-            <div className="panel-heading compact">
-              <p className="panel-kicker">Combat</p>
-              <h2>Recent Exchanges</h2>
+      {state.hud.recentCombat.length > 0 ? (
+        <section className="panel">
+          <div className="panel-heading compact">
+            <p className="panel-kicker">Combat</p>
+            <h2>Recent Exchanges</h2>
+          </div>
+          {state.hud.recentCombat.map((event, index) => (
+            <div className="inspector-entry" key={`${event.attackerUnitId}-${event.defenderUnitId}-${index}`}>
+              <strong>{event.summary}</strong>
+              <p>{getCombatSummary(event)}</p>
             </div>
-            {state.hud.recentCombat.length === 0 ? (
-              <p className="quiet-copy">No structured battles this round.</p>
-            ) : (
-              state.hud.recentCombat.map((event, index) => (
-                <div className="inspector-entry" key={`${event.attackerUnitId}-${event.defenderUnitId}-${index}`}>
-                  <strong>{event.summary}</strong>
-                  <p>{getCombatSummary(event)}</p>
-                </div>
-              ))
-            )}
-          </section>
-
-          <section className="panel">
-            <div className="panel-heading compact">
-              <p className="panel-kicker">Orders</p>
-              <h2>AI Intents</h2>
-            </div>
-            {state.hud.recentIntents.length === 0 ? (
-              <p className="quiet-copy">No AI intents recorded this round.</p>
-            ) : (
-              state.hud.recentIntents.map((intent, index) => (
-                <div className="inspector-entry" key={`${intent.unitId}-${index}`}>
-                  <strong>{intent.intent}</strong>
-                  <p>{getIntentSummary(intent, state.replay?.factions ?? [])}</p>
-                </div>
-              ))
-            )}
-          </section>
-        </>
+          ))}
+        </section>
       ) : null}
     </aside>
   );

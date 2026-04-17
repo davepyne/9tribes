@@ -2,8 +2,6 @@ import type { ClientState } from '../game/types/clientState';
 
 type CommandTrayProps = {
   state: ClientState;
-  timelineMax: number;
-  onSetTurn: (turnIndex: number) => void;
   onEndTurn: () => void;
   onSetTargetingMode: (mode: 'move' | 'attack') => void;
   onBuildFort?: (unitId: string) => void;
@@ -18,7 +16,7 @@ function formatDomainName(domainId: string): string {
     .join(' ');
 }
 
-export function CommandTray({ state, timelineMax, onSetTurn, onEndTurn, onSetTargetingMode, onBuildFort, onBuildCity, onSacrifice }: CommandTrayProps) {
+export function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort, onBuildCity, onSacrifice }: CommandTrayProps) {
   const selectedUnitId = state.selected?.type === 'unit' ? state.selected.unitId : state.actions.selectedUnitId;
   const selectedUnit = selectedUnitId
     ? state.world.units.find((u) => u.id === selectedUnitId)
@@ -77,141 +75,112 @@ export function CommandTray({ state, timelineMax, onSetTurn, onEndTurn, onSetTar
 
   return (
     <section className="ct-root">
-      {state.mode === 'play' ? (
-        <>
-          <div className="ct-segment ct-segment--info">
-            {selectedUnit ? (
-              <>
-                <strong className="ct-unit-name">{selectedUnit.prototypeName}</strong>
-                <span className="ct-detail">
-                  {selectedUnit.movesRemaining}/{selectedUnit.movesMax} moves · {selectedUnit.q},{selectedUnit.r}
-                </span>
-                {showSacrificeFeedback ? (
-                  <span className="ct-codify-feedback">
-                    Sacrificed - unlocked: {sacrificeFeedback.domains.join(', ')}
-                  </span>
-                ) : null}
-
-                {selectedUnit.learnedAbilities && selectedUnit.learnedAbilities.length > 0 && !showSacrificeFeedback ? (
-                  <span className="ct-knowledge-hint">
-                    Carries: {selectedUnit.learnedAbilities.map((d) => formatDomainName(d)).join(', ')}
-                    {!canSacrifice ? ' \u2014 return to Home City to Sacrifice' : ''}
-                  </span>
-                ) : null}
-                {selectedUnit.isSettler && !settlementPreview ? (
-                  <span className="ct-knowledge-hint">Press 'b' to build a city</span>
-                ) : null}
-                {settlementPreview ? (
-                  <span className="ct-knowledge-hint">
-                    Site {settlementPreview.q},{settlementPreview.r} · {settlementPreview.terrain}
-                    {settlementPreview.productionBonus > 0 ? ` · +${settlementPreview.productionBonus} prod` : ''}
-                    {settlementPreview.supplyBonus > 0 ? ` · +${settlementPreview.supplyBonus} supply` : ''}
-                    {settlementPreview.villageCooldownReduction > 0 ? ` · village cooldown -${settlementPreview.villageCooldownReduction}` : ''}
-                    {settlementPreview.blockedReason ? ` · ${settlementPreview.blockedReason}` : ''}
-                  </span>
-                ) : null}
-              </>
-            ) : selectedCity ? (
-              <>
-                <strong className="ct-unit-name">{selectedCity.cityName}</strong>
-                <span className="ct-detail">
-                  {selectedCity.production.status === 'producing' && selectedCity.production.current
-                    ? selectedCity.production.current.costType === 'villages'
-                      ? `Building: ${selectedCity.production.current.name} (${selectedCity.production.current.progress}/${selectedCity.production.current.cost} villages)`
-                      : `Building: ${selectedCity.production.current.name} (${selectedCity.production.current.progress}/${selectedCity.production.current.cost})`
-                    : 'Idle'}
-                </span>
-              </>
-            ) : (
-              <span className="ct-detail">Select a unit to give orders</span>
-            )}
-          </div>
-
-          <div className="ct-segment ct-segment--actions">
-            {selectedUnit ? (
-              <>
-                <button
-                  type="button"
-                  className={`ct-mode-btn${state.actions.targetingMode === 'move' ? ' ct-mode-btn--active' : ''}`}
-                  onClick={() => onSetTargetingMode('move')}
-                >
-                  Move
-                </button>
-                <button
-                  type="button"
-                  className={`ct-mode-btn${state.actions.targetingMode === 'attack' ? ' ct-mode-btn--active' : ''}`}
-                  onClick={() => onSetTargetingMode('attack')}
-                >
-                  Attack
-                </button>
-                {canBuildFort ? (
-                  <button
-                    type="button"
-                    className="ct-mode-btn"
-                    onClick={() => onBuildFort?.(selectedUnitId!)}
-                  >
-                    Build Fort
-                  </button>
-                ) : null}
-                {canBuildCity ? (
-                  <button
-                    type="button"
-                    className="ct-mode-btn"
-                    onClick={() => onBuildCity?.(selectedUnitId!)}
-                  >
-                    Build City
-                  </button>
-                ) : null}
-                {canSacrifice ? (
-                  <button
-                    type="button"
-                    className="ct-btn-codify"
-                    onClick={() => onSacrifice(selectedUnitId!)}
-                  >
-                    Sacrifice
-                  </button>
-                ) : null}
-              </>
+      <div className="ct-segment ct-segment--info">
+        {selectedUnit ? (
+          <>
+            <strong className="ct-unit-name">{selectedUnit.prototypeName}</strong>
+            <span className="ct-detail">
+              {selectedUnit.movesRemaining}/{selectedUnit.movesMax} moves · {selectedUnit.q},{selectedUnit.r}
+            </span>
+            {showSacrificeFeedback ? (
+              <span className="ct-codify-feedback">
+                Sacrificed - unlocked: {sacrificeFeedback.domains.join(', ')}
+              </span>
             ) : null}
-          </div>
 
-          <div className="ct-segment ct-segment--end">
+            {selectedUnit.learnedAbilities && selectedUnit.learnedAbilities.length > 0 && !showSacrificeFeedback ? (
+              <span className="ct-knowledge-hint">
+                Carries: {selectedUnit.learnedAbilities.map((d) => formatDomainName(d)).join(', ')}
+                {!canSacrifice ? ' \u2014 return to Home City to Sacrifice' : ''}
+              </span>
+            ) : null}
+            {selectedUnit.isSettler && !settlementPreview ? (
+              <span className="ct-knowledge-hint">Press 'b' to build a city</span>
+            ) : null}
+            {settlementPreview ? (
+              <span className="ct-knowledge-hint">
+                Site {settlementPreview.q},{settlementPreview.r} · {settlementPreview.terrain}
+                {settlementPreview.productionBonus > 0 ? ` · +${settlementPreview.productionBonus} prod` : ''}
+                {settlementPreview.supplyBonus > 0 ? ` · +${settlementPreview.supplyBonus} supply` : ''}
+                {settlementPreview.villageCooldownReduction > 0 ? ` · village cooldown -${settlementPreview.villageCooldownReduction}` : ''}
+                {settlementPreview.blockedReason ? ` · ${settlementPreview.blockedReason}` : ''}
+              </span>
+            ) : null}
+          </>
+        ) : selectedCity ? (
+          <>
+            <strong className="ct-unit-name">{selectedCity.cityName}</strong>
+            <span className="ct-detail">
+              {selectedCity.production.status === 'producing' && selectedCity.production.current
+                ? selectedCity.production.current.costType === 'villages'
+                  ? `Building: ${selectedCity.production.current.name} (${selectedCity.production.current.progress}/${selectedCity.production.current.cost} villages)`
+                  : `Building: ${selectedCity.production.current.name} (${selectedCity.production.current.progress}/${selectedCity.production.current.cost})`
+                : 'Idle'}
+            </span>
+          </>
+        ) : (
+          <span className="ct-detail">Select a unit to give orders</span>
+        )}
+      </div>
+
+      <div className="ct-segment ct-segment--actions">
+        {selectedUnit ? (
+          <>
             <button
               type="button"
-              className="ct-btn-end-turn"
-              disabled={!state.actions.canEndTurn}
-              onClick={onEndTurn}
+              className={`ct-mode-btn${state.actions.targetingMode === 'move' ? ' ct-mode-btn--active' : ''}`}
+              onClick={() => onSetTargetingMode('move')}
             >
-              End Turn [Enter]
+              Move
             </button>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="ct-segment ct-segment--replay-controls">
-            <button type="button" className="ct-replay-btn" onClick={() => onSetTurn(0)}>Start</button>
-            <button type="button" className="ct-replay-btn" onClick={() => onSetTurn(Math.max(0, state.turnIndex - 1))}>Back</button>
-            <button type="button" className="ct-replay-btn" onClick={() => onSetTurn(Math.min(timelineMax, state.turnIndex + 1))}>Step</button>
-            <button type="button" className="ct-replay-btn" onClick={onEndTurn}>Advance</button>
-          </div>
+            <button
+              type="button"
+              className={`ct-mode-btn${state.actions.targetingMode === 'attack' ? ' ct-mode-btn--active' : ''}`}
+              onClick={() => onSetTargetingMode('attack')}
+            >
+              Attack
+            </button>
+            {canBuildFort ? (
+              <button
+                type="button"
+                className="ct-mode-btn"
+                onClick={() => onBuildFort?.(selectedUnitId!)}
+              >
+                Build Fort
+              </button>
+            ) : null}
+            {canBuildCity ? (
+              <button
+                type="button"
+                className="ct-mode-btn"
+                onClick={() => onBuildCity?.(selectedUnitId!)}
+              >
+                Build City
+              </button>
+            ) : null}
+            {canSacrifice ? (
+              <button
+                type="button"
+                className="ct-btn-codify"
+                onClick={() => onSacrifice(selectedUnitId!)}
+              >
+                Sacrifice
+              </button>
+            ) : null}
+          </>
+        ) : null}
+      </div>
 
-          <div className="ct-segment ct-segment--replay-slider">
-            <input
-              className="ct-timeline-slider"
-              type="range"
-              min={0}
-              max={timelineMax}
-              value={state.turnIndex}
-              onChange={(e) => onSetTurn(Number(e.target.value))}
-            />
-            <span className="ct-turn-label">R{state.turnIndex + 1}/{state.maxTurns}</span>
-          </div>
-
-          <div className="ct-segment ct-segment--replay-info">
-            <span className="ct-detail">{state.hud.activeFactionName}</span>
-          </div>
-        </>
-      )}
+      <div className="ct-segment ct-segment--end">
+        <button
+          type="button"
+          className="ct-btn-end-turn"
+          disabled={!state.actions.canEndTurn}
+          onClick={onEndTurn}
+        >
+          End Turn [Enter]
+        </button>
+      </div>
     </section>
   );
 }

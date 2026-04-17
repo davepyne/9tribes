@@ -37,7 +37,7 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
         </div>
         <div className="status-chip">
           <span className="chip-label">Round</span>
-          <strong>{state.turn}{state.mode === 'replay' ? ` / ${state.maxTurns}` : ''}</strong>
+          <strong>{state.turn}</strong>
         </div>
         {state.hud.researchChip ? (
           <div className="status-chip status-chip--research" role="button" tabIndex={0} onClick={onOpenResearch} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onOpenResearch?.(); }}>

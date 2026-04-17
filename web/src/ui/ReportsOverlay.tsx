@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import type { ClientState } from '../game/types/clientState';
 
 type ReportsOverlayProps = {
-  reportType: 'faction_summary' | 'combat_log' | 'supply_report' | 'ai_intents';
+  reportType: 'faction_summary' | 'combat_log' | 'supply_report';
   state: ClientState;
   onClose: () => void;
 };
@@ -11,7 +11,6 @@ const reportTitles: Record<string, string> = {
   faction_summary: 'Faction Summary',
   combat_log: 'Combat Log',
   supply_report: 'Supply & Logistics',
-  ai_intents: 'AI Intents',
 };
 
 export function ReportsOverlay({ reportType, state, onClose }: ReportsOverlayProps) {
@@ -71,20 +70,6 @@ export function ReportsOverlay({ reportType, state, onClose }: ReportsOverlayPro
                   <span>{faction.cities} cities · {faction.livingUnits} units</span>
                 </div>
               ))}
-            </div>
-          ) : null}
-
-          {reportType === 'ai_intents' ? (
-            <div className="rpt-intent-list">
-              {state.hud.recentIntents.length === 0 ? (
-                <p className="quiet-copy">No AI intent events recorded.</p>
-              ) : (
-                state.hud.recentIntents.map((intent) => (
-                  <div className="rpt-intent-entry" key={intent.unitId}>
-                    <strong>{intent.intent}</strong>
-                  </div>
-                ))
-              )}
             </div>
           ) : null}
         </div>

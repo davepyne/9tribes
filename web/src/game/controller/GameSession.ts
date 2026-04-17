@@ -2,7 +2,6 @@ import { buildMvpScenario } from '../../../../src/game/buildMvpScenario.js';
 import type { GameState, UnitId } from '../../../../src/game/types.js';
 import { createCityId } from '../../../../src/core/ids.js';
 import { hexDistance, hexToKey } from '../../../../src/core/grid.js';
-import { getMvpScenarioConfig } from '../../../../src/game/scenarios/mvp.js';
 import { loadRulesRegistry } from '../../../../src/data/loader/loadRulesRegistry.js';
 import type { RulesRegistry } from '../../../../src/data/registry/types.js';
 import { applyCombatAction, previewCombatAction } from '../../../../src/systems/combatActionSystem.js';
@@ -136,7 +135,6 @@ export type SessionSaveSnapshot = {
 export class GameSession {
   private state: GameState;
   private readonly registry: RulesRegistry;
-  private readonly maxTurns: number;
   private readonly humanControlledFactionIds: Set<string>;
   private readonly difficulty: DifficultyLevel;
   private readonly mapMode?: MapGenerationMode;
@@ -174,7 +172,6 @@ export class GameSession {
     options: GameSessionOptions = {},
   ) {
     this.registry = registry;
-    this.maxTurns = getMvpScenarioConfig().roundsToWin;
     this.difficulty = options.difficulty ?? 'easy';
     this.mapMode = options.mapMode;
     this.mapSize = options.mapSize;
@@ -194,10 +191,6 @@ export class GameSession {
 
   getRegistry() {
     return this.registry;
-  }
-
-  getMaxTurns() {
-    return this.maxTurns;
   }
 
   getEvents() {

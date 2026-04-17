@@ -1,8 +1,8 @@
-import type { ReplayAiIntentEvent, ReplayBundle, ReplayCombatEvent, ReplaySiegeEvent } from './replay';
+import type { ReplayCombatEvent } from './replay';
 import type { AttackTargetView, HexCoord, PathPreviewNodeView, ReachableHexView, WorldViewModel } from './worldView';
 import type { VictoryType } from '../../../../src/systems/warEcologySimulation.js';
 
-export type ClientMode = 'play' | 'replay';
+export type ClientMode = 'play';
 
 export type ClientSelection =
   | { type: 'hex'; q: number; r: number; key: string }
@@ -35,8 +35,6 @@ export type HudViewModel = {
     signatureUnit: string;
   }>;
   recentCombat: ReplayCombatEvent[];
-  recentSieges: ReplaySiegeEvent[];
-  recentIntents: ReplayAiIntentEvent[];
   researchChip: {
     activeNodeName: string | null;
     progress: number | null;
@@ -315,8 +313,6 @@ export type ResearchInspectorViewModel = {
 export type ClientState = {
   mode: ClientMode;
   turn: number;
-  turnIndex: number;
-  maxTurns: number;
   activeFactionId: string | null;
   selected: ClientSelection;
   hoveredHex: HexCoord | null;
@@ -325,7 +321,6 @@ export type ClientState = {
   hud: HudViewModel;
   actions: ClientActionState;
   debug: DebugViewModel;
-  replay: ReplayBundle | null;
   playFeedback: PlayFeedbackState | null;
   research: ResearchInspectorViewModel | null;
   productionPopupCityId: string | null;
@@ -350,7 +345,6 @@ export type GameAction =
   | { type: 'build_fort'; unitId: string }
   | { type: 'build_city'; unitId: string }
   | { type: 'end_turn' }
-  | { type: 'set_replay_turn'; turnIndex: number }
   | { type: 'start_research'; nodeId: string }
   | { type: 'cancel_research' }
   | { type: 'sacrifice_unit'; unitId: string }

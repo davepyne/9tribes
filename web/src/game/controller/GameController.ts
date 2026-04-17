@@ -1,5 +1,4 @@
 import type { ClientMode, ClientSelection, ClientState, GameAction } from '../types/clientState';
-import type { ReplayBundle } from '../types/replay';
 import type { AttackTargetView, PathPreviewNodeView, ReachableHexView } from '../types/worldView';
 import { GameSession, type SessionSaveSnapshot } from './GameSession';
 import type { PendingCombat } from './GameSession';
@@ -9,24 +8,17 @@ import { findPath } from '../../../../src/systems/pathfinder.js';
 
 type Listener = () => void;
 
-type ReplayControllerOptions = {
-  mode: 'replay';
-  replay: ReplayBundle;
-};
-
 type PlayControllerOptions = {
   mode: 'play';
   session: GameSession;
 };
 
-type GameControllerOptions = ReplayControllerOptions | PlayControllerOptions;
+type GameControllerOptions = PlayControllerOptions;
 
 export class GameController {
   private readonly listeners = new Set<Listener>();
   private readonly mode: ClientMode;
-  private readonly replay: ReplayBundle | null;
   private readonly session: GameSession | null;
-  private turnIndex = 0;
   private combatPendingListener: ((pending: PendingCombat) => void) | null = null;
   private selected: ClientSelection = null;
   private focusedUnitId: string | null = null;
@@ -38,7 +30,6 @@ export class GameController {
 
   constructor(options: GameControllerOptions) {
     this.mode = options.mode;
-    this.replay = options.mode === 'replay' ? options.replay : null;
     this.session = options.mode === 'play' ? options.session : null;
     if (this.session) {
       this.session.setOnAiComplete(() => this.emit());
@@ -53,11 +44,7 @@ export class GameController {
   }
 
   getState(): ClientState {
-    if (this.mode === 'play') {
-      return this.getPlayState();
-    }
-
-    return this.getReplayState();
+    return this.getPlayState();
   }
 
   dispatch(action: GameAction) {
@@ -195,13 +182,6 @@ export class GameController {
           this.clearSelectionIfInactive();
           // Process any AI combats queued during AI turn processing
           this.startAiCombats();
-        } else if (this.replay) {
-          this.turnIndex = Math.min(this.replay.turns.length - 1, this.turnIndex + 1);
-        }
-        break;
-      case 'set_replay_turn':
-        if (this.replay) {
-          this.turnIndex = Math.max(0, Math.min(this.replay.turns.length - 1, action.turnIndex));
         }
         break;
       case 'start_research':
@@ -235,61 +215,6 @@ export class GameController {
 
   getSaveSnapshot(): SessionSaveSnapshot | null {
     return this.session?.getSaveSnapshot() ?? null;
-  }
-
-  private getReplayState(): ClientState {
-    const replay = this.replay!;
-    const turn = replay.turns[this.turnIndex] ?? replay.turns[0];
-    const selectedUnitId = this.selected?.type === 'unit' ? this.selected.unitId : null;
-    const activeUnitId = this.focusedUnitId ?? selectedUnitId;
-    const reachableHexes: ReachableHexView[] = [];
-    const attackHexes: AttackTargetView[] = [];
-    const pathPreview: PathPreviewNodeView[] = [];
-    const hoveredMove = null;
-    const hoveredAttackTarget = null;
-    const world = buildWorldViewModel({
-      kind: 'replay',
-      replay,
-      turnIndex: this.turnIndex,
-      selectedUnitId,
-      reachableHexes,
-      attackHexes,
-      pathPreview,
-      queuedPath: [],
-    });
-
-    return {
-      mode: this.mode,
-      turn: turn.round,
-      turnIndex: this.turnIndex,
-      maxTurns: replay.maxTurns,
-      activeFactionId: world.activeFactionId,
-      selected: this.selected,
-      hoveredHex: this.hoveredKey ? keyToCoord(this.hoveredKey) : null,
-      camera: { zoom: this.zoom },
-      world,
-      hud: buildHudViewModel(replay, this.turnIndex, this.mode, this.selected, this.hoveredKey, world),
-      actions: {
-        selectedUnitId: activeUnitId,
-        targetingMode: 'move',
-        legalMoves: reachableHexes,
-        attackTargets: attackHexes,
-        pathPreview,
-        canEndTurn: this.turnIndex < replay.turns.length - 1,
-        interactionHint: 'Scrub the timeline or click entities to inspect the replay.',
-        hoveredMove,
-        hoveredAttackTarget,
-        queuedUnitId: null,
-        queuedPath: [],
-        estimatedTurnsToArrival: null,
-      },
-      debug: buildDebugViewModel(turn),
-      replay,
-      playFeedback: null,
-      research: null,
-      productionPopupCityId: null,
-      inspectorRequestId: this.inspectorRequestId,
-    };
   }
 
   private getPlayState(): ClientState {
@@ -349,14 +274,12 @@ export class GameController {
     return {
       mode: this.mode,
       turn: sessionState.round,
-      turnIndex: Math.max(0, sessionState.round - 1),
-      maxTurns: session.getMaxTurns(),
       activeFactionId: sessionState.activeFactionId,
       selected: this.selected,
       hoveredHex: this.hoveredKey ? keyToCoord(this.hoveredKey) : null,
       camera: { zoom: this.zoom },
       world,
-      hud: buildHudViewModel(sessionState, 0, this.mode, this.selected, this.hoveredKey, world, session.getRegistry(), feedback.liveCombatEvents),
+      hud: buildHudViewModel(sessionState, this.selected, this.hoveredKey, world, session.getRegistry(), feedback.liveCombatEvents),
       actions: {
         selectedUnitId: activeUnitId,
         targetingMode: this.targetingMode,
@@ -371,8 +294,7 @@ export class GameController {
         queuedPath: queuedPathDisplay,
         estimatedTurnsToArrival,
       },
-      debug: buildDebugViewModel(null, session.getEvents()),
-      replay: null,
+      debug: buildDebugViewModel(session.getEvents()),
       playFeedback: {
         eventSequence: feedback.eventSequence,
         moveCount: feedback.moveCount,
