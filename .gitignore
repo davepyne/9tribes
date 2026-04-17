@@ -60,3 +60,4 @@ write_design.js
 nul  
 nul  
 nul 
+*.timestamp-*.mjs
