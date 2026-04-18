@@ -144,7 +144,7 @@ export function calculateVisibility(state: GameState, factionId: FactionId): Fac
         .filter((v): v is NonNullable<typeof v> => !!v)
         .map((v) => ({ id: v.id, pos: v.position }));
       // eslint-disable-next-line no-console
-      console.log('[fog-grants] frost_wardens LOS at suspect hex. Units:', livingUnits, 'Cities:', cityList, 'Villages:', villageList);
+      console.log('[fog-grants] frost_wardens', JSON.stringify({ units: livingUnits, cities: cityList, villages: villageList }));
     }
   }
 
