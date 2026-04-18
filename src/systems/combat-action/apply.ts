@@ -60,6 +60,8 @@ export function applyCombatAction(
     healOnRetreatApplied: 0,
     totalKnockbackDistance: 0,
     pursuitDamageApplied: 0,
+    emergentSustainHealApplied: 0,
+    emergentSustainMinHpSaved: false,
   };
 
   const attacker = state.units.get(preview.attackerId);
@@ -92,9 +94,23 @@ export function applyCombatAction(
 
   const attackerIsRanged = attackerPrototype.derivedStats.role === 'ranged' || (attackerPrototype.derivedStats.range ?? 1) > 1;
 
+  const attackerFactionForDoctrine = state.factions.get(attacker.factionId);
+  const attackerDoctrine = attackerFactionForDoctrine
+    ? resolveCapabilityDoctrine(state.research.get(attacker.factionId), attackerFactionForDoctrine)
+    : undefined;
+
+  // E5 — Paladin minHp: can't drop below threshold from a single hit
+  const rawAttackerHp = attacker.hp - preview.result.attackerDamage;
+  const minHpFloor = preview.details.emergentSustainMinHp;
+  let attackerHp = Math.max(0, rawAttackerHp);
+  if (minHpFloor > 0 && rawAttackerHp <= 0 && attacker.hp > 0) {
+    attackerHp = Math.min(minHpFloor, attacker.hp);
+    baseResolution.emergentSustainMinHpSaved = true;
+  }
+
   let nextAttacker: Unit = {
     ...attacker,
-    hp: Math.max(0, attacker.hp - preview.result.attackerDamage),
+    hp: attackerHp,
     morale: Math.max(0, attacker.morale - preview.result.attackerMoraleLoss),
     routed: preview.result.attackerRouted || preview.result.attackerFled,
     hillDugIn: false,
@@ -113,7 +129,13 @@ export function applyCombatAction(
   };
 
   if (preview.attackerWasStealthed && nextAttacker.hp > 0) {
-    nextAttacker = { ...nextAttacker, isStealthed: false, turnsSinceStealthBreak: 1 };
+    const isDesertStealth = attackerDoctrine?.permanentStealthEnabled === true
+      && preview.details.attackerTerrainId === 'desert';
+    const isEmergentTerrainStealth = preview.details.emergentPermanentStealthTerrains.length > 0
+      && preview.details.emergentPermanentStealthTerrains.includes(preview.details.attackerTerrainId);
+    if (!isDesertStealth && !isEmergentTerrainStealth) {
+      nextAttacker = { ...nextAttacker, isStealthed: false, turnsSinceStealthBreak: 1 };
+    }
   }
   if (nextAttacker.preparedAbility) {
     nextAttacker = clearPreparedAbility(nextAttacker);
@@ -168,13 +190,27 @@ export function applyCombatAction(
   };
 
   const attackerFaction = current.factions.get(attacker.factionId);
-  const attackerDoctrine = attackerFaction
-    ? resolveCapabilityDoctrine(current.research.get(attacker.factionId), attackerFaction)
-    : undefined;
   const defenderFaction = current.factions.get(defender.factionId);
   const defenderDoctrine = defenderFaction
     ? resolveCapabilityDoctrine(current.research.get(defender.factionId), defenderFaction)
     : undefined;
+
+  // E5 — Paladin sustain: heal for % of damage dealt
+  let emergentSustainHealApplied = 0;
+  if (preview.details.emergentSustainHealPercent > 0 && nextAttacker.hp > 0 && preview.result.defenderDamage > 0) {
+    const sustainHeal = Math.floor(preview.result.defenderDamage * preview.details.emergentSustainHealPercent);
+    if (sustainHeal > 0) {
+      const sustainUnit = current.units.get(preview.attackerId);
+      if (sustainUnit && sustainUnit.hp > 0) {
+        const healedHp = Math.min(sustainUnit.maxHp, sustainUnit.hp + sustainHeal);
+        const afterSustain = new Map(current.units);
+        afterSustain.set(preview.attackerId, { ...sustainUnit, hp: healedHp });
+        current = { ...current, units: afterSustain };
+        emergentSustainHealApplied = sustainHeal;
+        baseResolution.emergentSustainHealApplied = sustainHeal;
+      }
+    }
+  }
 
   // Pursuit bonus: hitrun domain units press their advantage when winning the exchange
   const hasHitrunDomain = attackerFaction && (
@@ -208,6 +244,13 @@ export function applyCombatAction(
         greedyCaptureHpFraction: 0.25,
       }
     : null;
+  // E3/E4 — emergent capture bonus from Slave Empire (+0.20) and Desert Raider (+0.30 in desert)
+  const emergentCaptureBonus = preview.details.emergentCaptureBonus
+    + (preview.details.defenderTerrainId === 'desert' ? preview.details.emergentDesertCaptureBonus : 0);
+
+  // E5 — Paladin sustain overrides attackerDestroyed when minHp saved the unit
+  const attackerActuallyDestroyed = preview.result.attackerDestroyed && !baseResolution.emergentSustainMinHpSaved;
+
   let capturedOnKill = false;
   let retreatCaptured = false;
   if (
@@ -225,6 +268,7 @@ export function applyCombatAction(
           ? registry.getSignatureAbility(attacker.factionId)
           : null),
       current.rngState,
+      emergentCaptureBonus > 0 ? emergentCaptureBonus : undefined,
     );
     current = captureResult.state;
     capturedOnKill = captureResult.captured;
@@ -233,7 +277,7 @@ export function applyCombatAction(
   // Melee advance: melee attacker occupies defender's hex on kill (not capture)
   if (
     preview.result.defenderDestroyed
-    && !preview.result.attackerDestroyed
+    && !attackerActuallyDestroyed
     && !capturedOnKill
     && !attackerIsRanged
   ) {
@@ -273,7 +317,7 @@ export function applyCombatAction(
   if (preview.result.defenderDestroyed && !capturedOnKill) {
     current = destroyTransportIfApplicable(current, preview.defenderId, registry);
   }
-  if (preview.result.attackerDestroyed) {
+  if (attackerActuallyDestroyed) {
     current = destroyTransportIfApplicable(current, preview.attackerId, registry);
   }
 
@@ -289,7 +333,7 @@ export function applyCombatAction(
   if (preview.result.defenderDestroyed && !capturedOnKill) {
     current = updateCombatRecordOnWin(current, attacker.factionId as FactionId, current.round);
     current = updateCombatRecordOnLoss(current, defender.factionId as FactionId, current.round);
-  } else if (preview.result.attackerDestroyed) {
+  } else if (attackerActuallyDestroyed) {
     current = updateCombatRecordOnLoss(current, attacker.factionId as FactionId, current.round);
     current = updateCombatRecordOnWin(current, defender.factionId as FactionId, current.round);
   }
@@ -305,7 +349,7 @@ export function applyCombatAction(
       ),
     };
   }
-  if (preview.result.attackerDestroyed && defenderWarExhaustion) {
+  if (attackerActuallyDestroyed && defenderWarExhaustion) {
     current = {
       ...current,
       warExhaustion: new Map(current.warExhaustion).set(
@@ -362,7 +406,8 @@ export function applyCombatAction(
   updatedAttacker = current.units.get(preview.attackerId);
   updatedDefender = current.units.get(preview.defenderId);
 
-  const canInflictPoison = attackerPrototype.tags?.includes('poison') ?? false;
+  const canInflictPoison = (attackerPrototype.tags?.includes('poison') ?? false)
+    || (attackerDoctrine?.toxicBulwarkEnabled === true);
   let poisonApplied = false;
   if (!preview.result.defenderDestroyed && preview.result.defenderDamage > 0 && canInflictPoison && updatedDefender) {
     const extraStacks = attackerDoctrine?.poisonPersistenceEnabled ? 1 : 0;
@@ -568,6 +613,12 @@ export function applyCombatAction(
   if (pursuitDamageApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Pursuit', `Skirmisher pressed the advantage for +${pursuitDamageApplied} bonus damage.`, 'aftermath');
   }
+  if (emergentSustainHealApplied > 0) {
+    pushCombatEffect(triggeredEffects, 'Paladin Sustain', `Attacker recovered ${emergentSustainHealApplied} HP from damage dealt.`, 'aftermath');
+  }
+  if (baseResolution.emergentSustainMinHpSaved) {
+    pushCombatEffect(triggeredEffects, 'Undying Will', `Attacker survived a lethal blow at ${preview.details.emergentSustainMinHp} HP.`, 'aftermath');
+  }
 
   feedback = {
     ...feedback,
@@ -586,6 +637,8 @@ export function applyCombatAction(
       healOnRetreatApplied,
       totalKnockbackDistance,
       pursuitDamageApplied,
+      emergentSustainHealApplied: baseResolution.emergentSustainHealApplied,
+      emergentSustainMinHpSaved: baseResolution.emergentSustainMinHpSaved,
     },
   };
 

@@ -49,22 +49,43 @@ export interface CombatResult {
   routThresholdOverride: number | null;
   aoeDamage: number;
   damageReflection: number;
-}
-
-export interface MovementContext {
-  unitId: string;
-  unitTags: string[];
-  from: { x: number; y: number };
-  to: { x: number; y: number };
-  terrain: string;
-  isRetreat: boolean;
-}
-
-export interface MovementResult {
-  movementCost: number;
-  canTraverse: boolean;
-  finalPosition: { x: number; y: number };
-  ignoreTerrain: boolean;
+  // Phase 3A: synergy effect fields
+  instantKill: boolean;
+  lethalAmbushPoison: number;
+  chargeCooldownWaived: boolean;
+  formationCrushStacks: number;
+  stunDuration: number;
+  armorPiercing: number;
+  // Phase 3B: capture synergy fields
+  capturePoisonDamage: number;
+  capturePoisonStacks: number;
+  slaveDamageBonus: number;
+  slaveHealPenalty: number;
+  chargeCaptureChance: number;
+  retreatCaptureChance: number;
+  navalCaptureBonus: number;
+  stealthCaptureBonus: number;
+  // Phase 3C: lower-value synergy fields
+  captureEscapePrevented: boolean;
+  heavyRetreatDamageReduction: number;
+  coastalNomadDefense: number;
+  coastalNomadSpeed: number;
+  heavyNavalRamDamage: number;
+  slaveHealAmount: number;
+  heavyRegenPercent: number;
+  terrainSlaveSpeed: number;
+  sandstormAuraRadius: number;
+  sandstormAuraDebuff: number;
+  slaveArmyDamageBonus: number;
+  slaveArmyDefensePenalty: number;
+  slaveCoercionDamageBonus: number;
+  heavyMassStacks: number;
+  // Phase 4: emergent rule fields
+  emergentSustainHealPercent: number;
+  emergentSustainMinHp: number;
+  emergentPermanentStealthTerrains: string[];
+  emergentCaptureBonus: number;
+  emergentDesertCaptureBonus: number;
 }
 
 export interface HealingContext {
@@ -110,6 +131,43 @@ export function applyCombatSynergies(
     routThresholdOverride: null,
     aoeDamage: 0,
     damageReflection: 0,
+    // Phase 3A: synergy effect fields
+    instantKill: false,
+    lethalAmbushPoison: 0,
+    chargeCooldownWaived: false,
+    formationCrushStacks: 0,
+    stunDuration: 0,
+    armorPiercing: 0,
+    // Phase 3B: capture synergy fields
+    capturePoisonDamage: 0,
+    capturePoisonStacks: 0,
+    slaveDamageBonus: 0,
+    slaveHealPenalty: 0,
+    chargeCaptureChance: 0,
+    retreatCaptureChance: 0,
+    navalCaptureBonus: 0,
+    stealthCaptureBonus: 0,
+    // Phase 3C: lower-value synergy fields
+    captureEscapePrevented: false,
+    heavyRetreatDamageReduction: 0,
+    coastalNomadDefense: 0,
+    coastalNomadSpeed: 0,
+    heavyNavalRamDamage: 0,
+    slaveHealAmount: 0,
+    heavyRegenPercent: 0,
+    terrainSlaveSpeed: 0,
+    sandstormAuraRadius: 0,
+    sandstormAuraDebuff: 0,
+    slaveArmyDamageBonus: 0,
+    slaveArmyDefensePenalty: 0,
+    slaveCoercionDamageBonus: 0,
+    heavyMassStacks: 0,
+    // Phase 4: emergent rule fields
+    emergentSustainHealPercent: 0,
+    emergentSustainMinHp: 0,
+    emergentPermanentStealthTerrains: [],
+    emergentCaptureBonus: 0,
+    emergentDesertCaptureBonus: 0,
   };
 
   // Apply each active synergy effect
@@ -143,11 +201,6 @@ function applySynergyEffect(effect: SynergyEffect, context: CombatContext, resul
       result.additionalEffects.push('charge_shield');
       break;
 
-    case 'anti_displacement':
-      result.antiDisplacement = true;
-      result.additionalEffects.push('anti_displacement');
-      break;
-
     case 'dug_in':
       result.defense += effect.defenseBonus;
       result.additionalEffects.push('dug_in');
@@ -171,17 +224,6 @@ function applySynergyEffect(effect: SynergyEffect, context: CombatContext, resul
       result.additionalEffects.push('terrain_fortress');
       break;
 
-    case 'charge_cooldown_reset':
-      result.additionalEffects.push('charge_cooldown_reset');
-      break;
-
-    case 'rout_threshold':
-      result.routThresholdOverride = effect.threshold;
-      if (context.defenderHp < context.attackerHp * effect.threshold) {
-        result.routTriggered = true;
-      }
-      break;
-
     case 'ram_attack':
       result.knockbackDistance = Math.max(result.knockbackDistance, effect.knockbackDistance);
       result.additionalEffects.push('ram_attack');
@@ -189,15 +231,6 @@ function applySynergyEffect(effect: SynergyEffect, context: CombatContext, resul
 
     case 'combat_healing':
       result.additionalEffects.push(`combat_healing_${effect.healPercent * 100}%`);
-      break;
-
-    case 'stealth_charge':
-      // Always store the multiplier; let the caller decide when to apply it
-      result.stealthChargeMultiplier = effect.damageBonus;
-      if (context.isCharge && context.isStealthAttack) {
-        result.damage = Math.floor(result.damage * (1 + effect.damageBonus));
-        result.additionalEffects.push('stealth_charge');
-      }
       break;
 
     case 'sandstorm':
@@ -252,66 +285,8 @@ function applySynergyEffect(effect: SynergyEffect, context: CombatContext, resul
       result.additionalEffects.push('aura_overlap');
       break;
 
-    case 'wave_cavalry':
-      result.additionalEffects.push('wave_cavalry_amphibious');
-      break;
-
     case 'stealth_recharge':
       result.additionalEffects.push('stealth_recharge');
-      break;
-
-    case 'desert_fortress':
-      result.defense += 0.30;
-      result.additionalEffects.push('desert_fortress');
-      break;
-
-    case 'frostbite':
-      result.frostbiteColdDoT = effect.coldDamagePerTurn;
-      result.frostbiteSlow = effect.slowAmount;
-      result.frostbiteStacks += effect.coldDamagePerTurn;
-      result.slowDuration = Math.max(result.slowDuration, effect.slowAmount);
-      result.additionalEffects.push('frostbite');
-      break;
-
-    case 'frost_defense':
-      result.defense += effect.defenseBonus;
-      result.additionalEffects.push('frost_defense');
-      break;
-
-    case 'bear_charge':
-      result.knockbackDistance = Math.max(result.knockbackDistance, effect.knockbackDistance);
-      result.additionalEffects.push('bear_charge');
-      break;
-
-    case 'frost_speed':
-      result.additionalEffects.push(`frost_speed_movement_${effect.movementBonus}`);
-      break;
-
-    case 'bear_cover':
-      result.defense += effect.defenseBonus;
-      result.additionalEffects.push('bear_cover');
-      break;
-
-    case 'ice_zone':
-      result.additionalEffects.push('ice_zone_difficult_terrain');
-      break;
-
-    case 'frost_regen':
-      result.additionalEffects.push(`frost_regen_${effect.regenAmount}`);
-      break;
-
-    case 'bear_mount':
-      result.additionalEffects.push('bear_mount');
-      break;
-
-    case 'terrain_share':
-      result.additionalEffects.push('terrain_share');
-      break;
-
-    case 'pack_bonus':
-      result.damage = Math.floor(result.damage * (1 + effect.attackBonus));
-      result.defense += effect.defenseBonus;
-      result.additionalEffects.push('pack_bonus');
       break;
 
     case 'oasis':
@@ -345,6 +320,169 @@ function applySynergyEffect(effect: SynergyEffect, context: CombatContext, resul
       result.swarmSpeedBonus = effect.speedBonus;
       result.additionalEffects.push(`swarm_speed_${effect.speedBonus}`);
       break;
+
+    // Phase 3A: high-value dead synergies
+    case 'lethal_ambush':
+      if (context.isStealthAttack) {
+        result.instantKill = true;
+        result.lethalAmbushPoison = effect.poisonStacks;
+        result.poisonStacks += effect.poisonStacks;
+        result.additionalEffects.push('lethal_ambush');
+      }
+      break;
+
+    case 'ambush_charge':
+      if (context.isCharge && context.isStealthAttack) {
+        result.damage = Math.floor(result.damage * (1 + effect.damageBonus));
+        result.chargeCooldownWaived = true;
+        result.additionalEffects.push('ambush_charge');
+      }
+      break;
+
+    case 'formation_crush':
+      result.knockbackDistance = Math.max(result.knockbackDistance, effect.knockbackDistance);
+      result.stunDuration = Math.max(result.stunDuration, effect.stunDuration);
+      result.formationCrushStacks += 1;
+      result.additionalEffects.push(`formation_crush_stacks_${result.formationCrushStacks}`);
+      break;
+
+    case 'armor_shred':
+      if (context.isStealthAttack) {
+        result.armorPiercing = effect.armorPiercing;
+        result.additionalEffects.push(`armor_shred_${effect.armorPiercing}`);
+      }
+      break;
+
+    // Phase 3B: medium-value capture synergies
+    case 'poison_capture':
+      result.capturePoisonDamage = effect.damagePerTurn;
+      result.capturePoisonStacks = effect.damagePerTurn;
+      result.slaveDamageBonus = effect.slaveDamageBonus;
+      result.slaveHealPenalty = effect.slaveHealPenalty;
+      result.additionalEffects.push('poison_capture');
+      break;
+
+    case 'capture_charge':
+      if (context.isCharge) {
+        result.chargeCaptureChance = 0.50;
+        result.knockbackDistance = Math.max(result.knockbackDistance, effect.knockbackDistance);
+        result.additionalEffects.push('capture_charge');
+      }
+      break;
+
+    case 'capture_retreat':
+      if (context.isRetreat) {
+        result.retreatCaptureChance = effect.captureChance;
+        result.additionalEffects.push('capture_retreat');
+      }
+      break;
+
+    case 'naval_capture':
+      if (context.terrain === 'water' || context.terrain === 'river') {
+        result.navalCaptureBonus = effect.coastalCaptureBonus;
+        result.additionalEffects.push('naval_capture');
+      }
+      break;
+
+    case 'stealth_capture':
+      if (context.isStealthAttack) {
+        result.stealthCaptureBonus = effect.captureChance;
+        result.additionalEffects.push('stealth_capture');
+      }
+      break;
+
+    // Phase 3C: lower-value dead synergies
+    case 'heavy_poison':
+      result.poisonStacks += 1;
+      result.armorPiercing += effect.armorPiercing;
+      result.additionalEffects.push('heavy_poison');
+      break;
+
+    case 'prison_fortress':
+      result.defense += effect.defenseBonus;
+      result.captureEscapePrevented = true;
+      result.additionalEffects.push('prison_fortress');
+      break;
+
+    case 'heavy_fortress':
+      result.damageReflection += effect.damageReflection;
+      result.antiDisplacement = true;
+      result.additionalEffects.push('heavy_fortress');
+      break;
+
+    case 'heavy_charge':
+      result.stunDuration = Math.max(result.stunDuration, effect.stunDuration);
+      if (context.isCharge && result.knockbackDistance > 0) {
+        result.knockbackDistance = Math.ceil(result.knockbackDistance * 1.5);
+      }
+      result.additionalEffects.push('heavy_charge');
+      break;
+
+    case 'heavy_retreat':
+      if (context.isRetreat) {
+        result.heavyRetreatDamageReduction = effect.damageReduction;
+        result.additionalEffects.push('heavy_retreat');
+      }
+      break;
+
+    case 'coastal_nomad':
+      if (context.terrain === 'coast' || context.terrain === 'water') {
+        result.coastalNomadDefense = effect.defenseBonus;
+        result.coastalNomadSpeed = effect.speedBonus;
+        result.defense += effect.defenseBonus;
+        result.additionalEffects.push('coastal_nomad');
+      }
+      break;
+
+    case 'heavy_naval':
+      if (context.terrain === 'water' || context.terrain === 'coast') {
+        result.heavyNavalRamDamage = effect.ramDamage;
+        result.additionalEffects.push('heavy_naval');
+      }
+      break;
+
+    case 'slave_healing':
+      result.slaveHealAmount = effect.slaveHeal;
+      result.additionalEffects.push('slave_healing');
+      break;
+
+    case 'heavy_regen':
+      result.heavyRegenPercent = effect.regenPercent;
+      result.additionalEffects.push('heavy_regen');
+      break;
+
+    case 'terrain_slave':
+      if (context.terrain === 'desert') {
+        result.terrainSlaveSpeed = effect.speedBonus;
+        result.additionalEffects.push('terrain_slave');
+      }
+      break;
+
+    case 'sandstorm_aura':
+      if (context.terrain === 'desert') {
+        result.sandstormAuraRadius = effect.auraRadius;
+        result.sandstormAuraDebuff = effect.enemyAccuracyDebuff;
+        result.sandstormAccuracyDebuff += effect.enemyAccuracyDebuff;
+        result.additionalEffects.push('sandstorm_aura');
+      }
+      break;
+
+    case 'slave_army':
+      result.slaveArmyDamageBonus = effect.slaveDamageBonus;
+      result.slaveArmyDefensePenalty = effect.slaveDefensePenalty;
+      result.additionalEffects.push('slave_army');
+      break;
+
+    case 'slave_coercion':
+      result.slaveCoercionDamageBonus = effect.damageBonus;
+      result.additionalEffects.push('slave_coercion');
+      break;
+
+    case 'heavy_mass':
+      result.knockbackDistance = Math.max(result.knockbackDistance, effect.knockbackDistance);
+      result.heavyMassStacks += 1;
+      result.additionalEffects.push(`heavy_mass_stacks_${result.heavyMassStacks}`);
+      break;
   }
 }
 
@@ -355,6 +493,8 @@ function applyEmergentCombatEffects(
 ): void {
   switch (emergentRule.effect.type) {
     case 'sustain':
+      result.emergentSustainHealPercent = emergentRule.effect.healPercentOfDamage as number;
+      result.emergentSustainMinHp = emergentRule.effect.minHp as number;
       result.additionalEffects.push('paladin_sustain');
       break;
 
@@ -366,11 +506,13 @@ function applyEmergentCombatEffects(
       break;
 
     case 'permanent_stealth':
+      result.emergentPermanentStealthTerrains = (emergentRule.effect.terrainTypes ?? []) as string[];
       result.additionalEffects.push('permanent_stealth');
       break;
 
     case 'zone_of_control':
       result.defense += emergentRule.effect.defenseBonus as number;
+      result.antiDisplacement = true;
       result.additionalEffects.push(`zone_of_control_radius_${emergentRule.effect.radius}`);
       break;
 
@@ -387,10 +529,12 @@ function applyEmergentCombatEffects(
       break;
 
     case 'slave_empire':
+      result.emergentCaptureBonus = emergentRule.effect.captureChanceBonus as number;
       result.additionalEffects.push(`slave_empire_capture_aura_${emergentRule.effect.captureAuraRadius}`);
       break;
 
     case 'desert_raider':
+      result.emergentDesertCaptureBonus = emergentRule.effect.desertCaptureBonus as number;
       result.additionalEffects.push('desert_raider_capture_bonus');
       break;
 
@@ -420,40 +564,6 @@ function applyEmergentCombatEffects(
   }
 }
 
-export function applyMovementSynergies(
-  context: MovementContext,
-  synergies: ActiveSynergy[],
-): MovementResult {
-  let movementCost = 1;
-  let canTraverse = true;
-  let ignoreTerrain = context.unitTags.includes('camel');
-  const finalPosition = { ...context.to };
-
-  for (const synergy of synergies) {
-    const effect = synergy.effect;
-
-    // Terrain ignore from camel adaptation
-    if (effect.type === 'terrain_poison' || effect.type === 'oasis') {
-      ignoreTerrain = true;
-    }
-
-    // Swarm speed bonus
-    if (effect.type === 'swarm_speed') {
-      movementCost = Math.max(0, movementCost - (effect as { type: 'swarm_speed'; speedBonus: number }).speedBonus);
-    }
-
-    // Ghost army ignores all terrain (handled via emergent effects in triple stack)
-    // For pair synergies, terrain_share and nomad_network handle terrain ignore
-  }
-
-  return {
-    movementCost,
-    canTraverse,
-    finalPosition,
-    ignoreTerrain,
-  };
-}
-
 export function applyHealingSynergies(
   context: HealingContext,
   synergies: ActiveSynergy[],
@@ -474,15 +584,20 @@ export function applyHealingSynergies(
       healAmount = Math.max(healAmount, ext.selfHeal);
     }
 
-    // Frost regen
-    if (effect.type === 'frost_regen') {
-      healAmount += (effect as { regenAmount: number }).regenAmount;
-    }
-
     // Oasis effect
     if (effect.type === 'oasis') {
       // Oasis neutralizes terrain penalties for allies
       healAmount += 1;
+    }
+
+    // Phase 3C: slave healing — slaves heal nearby friendly units
+    if (effect.type === 'slave_healing') {
+      healAmount += (effect as { slaveHeal: number }).slaveHeal;
+    }
+
+    // Phase 3C: heavy regen — heavy units regenerate
+    if (effect.type === 'heavy_regen') {
+      healAmount += 3;
     }
   }
 

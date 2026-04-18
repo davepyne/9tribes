@@ -608,7 +608,14 @@ export function processFactionPhases(
 
     const cityProductionIncome = economy.productionPool / cityCount;
 
-    let updatedCity = advanceProduction(city, cityProductionIncome);
+    // E3 — Slave Empire emergent: captured slaves boost production
+    let slaveProductionBonus = 0;
+    if (tripleStack?.emergentRule.effect.type === 'slave_empire') {
+      const slaveEffect = tripleStack.emergentRule.effect as import('../synergyEngine.js').EmergentEffect & { type: 'slave_empire' };
+      slaveProductionBonus = cityProductionIncome * slaveEffect.slaveProductionBonus;
+    }
+
+    let updatedCity = advanceProduction(city, cityProductionIncome + slaveProductionBonus);
 
     if (canCompleteCurrentProduction(current, cityId, registry)) {
       current = completeProduction(current, cityId, registry);

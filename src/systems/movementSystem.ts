@@ -154,6 +154,10 @@ export function previewMove(
   if (targetTerrainId === 'desert' && doctrine.heatResistanceEnabled) {
     totalCost = Math.min(totalCost, 1);
   }
+  // E4 — Desert Raider emergent: allied units ignore desert movement penalty
+  if (targetTerrainId === 'desert' && faction?.activeTripleStack?.emergentRule.effect.type === 'desert_raider') {
+    totalCost = Math.min(totalCost, 1);
+  }
   // Winter campaign (camel_adaptation Tier 2): no tundra movement penalty
   if (targetTerrainId === 'tundra' && doctrine.winterCampaignEnabled) {
     totalCost = Math.min(totalCost, 1);

@@ -47,6 +47,12 @@ export interface CombatActionPreviewDetails {
   defenderSynergyEffects: string[];
   sneakAttackTriggered: boolean;
   stampedeTriggered: boolean;
+  // Phase 4: emergent rule fields
+  emergentSustainHealPercent: number;
+  emergentSustainMinHp: number;
+  emergentPermanentStealthTerrains: string[];
+  emergentCaptureBonus: number;
+  emergentDesertCaptureBonus: number;
 }
 
 export interface CombatActionFeedback {
@@ -71,6 +77,9 @@ export interface CombatActionResolution {
   healOnRetreatApplied: number;
   totalKnockbackDistance: number;
   pursuitDamageApplied: number;
+  // Phase 4: emergent rule resolution
+  emergentSustainHealApplied: number;
+  emergentSustainMinHpSaved: boolean;
 }
 
 export interface CombatActionApplyResult {

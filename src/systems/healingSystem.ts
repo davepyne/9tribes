@@ -203,6 +203,13 @@ export function applyHealingForFaction(
       }
     }
 
+    // E1 — Anchor emergent: faction units gain healPerTurn bonus from the anchor aura
+    const tripleStack = faction.activeTripleStack;
+    if (tripleStack?.emergentRule.effect.type === 'zone_of_control') {
+      const anchorEffect = tripleStack.emergentRule.effect as import('./synergyEngine.js').EmergentEffect & { type: 'zone_of_control' };
+      healRate += anchorEffect.healPerTurn;
+    }
+
     // Withering: nearby enemies reduce healing
     const healNeighbors = getNeighbors(unit.position);
     for (const hex of healNeighbors) {

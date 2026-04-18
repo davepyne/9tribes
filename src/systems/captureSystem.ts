@@ -93,7 +93,8 @@ export function attemptCapture(
   defender: Unit,
   registry: RulesRegistry,
   greedyAbility?: SignatureAbilityParams | null,
-  rngState?: RNGState
+  rngState?: RNGState,
+  captureChanceBonus?: number,
 ): { captured: boolean; state: GameState } {
   const attackerPrototype = state.prototypes.get(attacker.prototypeId);
   if (!attackerPrototype) {
@@ -132,7 +133,8 @@ export function attemptCapture(
 
   // Roll for capture
   const roll = rngState ? rngNextFloat(rngState) : Math.random();
-  const captureSucceeded = roll < chance;
+  const totalChance = Math.min(1, chance + (captureChanceBonus ?? 0));
+  const captureSucceeded = roll < totalChance;
 
   if (!captureSucceeded) {
     // Capture failed - normal destruction

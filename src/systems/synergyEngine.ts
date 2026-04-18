@@ -30,17 +30,13 @@ export interface EmergentRuleConfig {
 export type SynergyEffect =
   | { type: 'poison_aura'; damagePerTurn: number; radius: number }
   | { type: 'charge_shield' }
-  | { type: 'anti_displacement' }
   | { type: 'dug_in'; defenseBonus: number }
   | { type: 'land_aura'; defenseBonus: number; radius: number }
   | { type: 'extended_healing'; radius: number; selfHeal: number; allyHeal: number }
   | { type: 'stealth_aura'; revealRadius: number }
   | { type: 'terrain_fortress'; terrainTypes: string[]; defenseBonus: number }
-  | { type: 'charge_cooldown_reset' }
-  | { type: 'rout_threshold'; threshold: number }
   | { type: 'ram_attack'; knockbackDistance: number }
   | { type: 'combat_healing'; healPercent: number }
-  | { type: 'stealth_charge'; damageBonus: number }
   | { type: 'sandstorm'; aoeDamage: number; accuracyDebuff: number }
   | { type: 'double_charge' }
   | { type: 'poison_trap'; damagePerTurn: number; slowAmount: number }
@@ -50,19 +46,7 @@ export type SynergyEffect =
   | { type: 'terrain_poison'; damagePerTurn: number; terrainTypes: string[] }
   | { type: 'multiplier_stack'; multiplier: number }
   | { type: 'aura_overlap'; stackingBonus: number }
-  | { type: 'wave_cavalry' }
   | { type: 'stealth_recharge' }
-  | { type: 'desert_fortress' }
-  | { type: 'frostbite'; coldDamagePerTurn: number; slowAmount: number }
-  | { type: 'frost_defense'; defenseBonus: number }
-  | { type: 'bear_charge'; knockbackDistance: number }
-  | { type: 'frost_speed'; movementBonus: number }
-  | { type: 'bear_cover'; defenseBonus: number }
-  | { type: 'ice_zone' }
-  | { type: 'frost_regen'; regenAmount: number }
-  | { type: 'bear_mount' }
-  | { type: 'terrain_share' }
-  | { type: 'pack_bonus'; attackBonus: number; defenseBonus: number }
   | { type: 'oasis' }
   | { type: 'permanent_stealth_terrain'; terrainTypes: string[] }
   | { type: 'shadow_network' }
@@ -90,7 +74,6 @@ export type SynergyEffect =
   | { type: 'lethal_ambush'; poisonStacks: number; actionPointCost: number }
   | { type: 'ambush_charge'; damageBonus: number; revealUntilNextTurn: boolean }
   | { type: 'terrain_slave'; speedBonus: number }
-  | { type: 'heavy_desert'; desertDamageBonus: number }
   | { type: 'slave_army'; slaveDamageBonus: number; slaveDefensePenalty: number }
   | { type: 'slave_coercion'; damageBonus: number }
   | { type: 'heavy_mass'; knockbackDistance: number };

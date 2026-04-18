@@ -82,6 +82,7 @@ export function previewCombatAction(
   const isChargeAttack = canChargeAttack
     && (
       attackerDoctrine?.chargeTranscendenceEnabled === true
+      || attackerDoctrine?.forcedMarchEnabled === true
       || attacker.movesRemaining < attacker.maxMoves
     );
   const attackerOnFort = getImprovementBonus(state, attacker.position) > 0;
@@ -417,6 +418,12 @@ export function previewCombatAction(
       defenderSynergyEffects: defenderSynergyResult.additionalEffects,
       sneakAttackTriggered,
       stampedeTriggered,
+      // Phase 4: emergent rule fields
+      emergentSustainHealPercent: attackerSynergyResult.emergentSustainHealPercent,
+      emergentSustainMinHp: attackerSynergyResult.emergentSustainMinHp,
+      emergentPermanentStealthTerrains: attackerSynergyResult.emergentPermanentStealthTerrains,
+      emergentCaptureBonus: attackerSynergyResult.emergentCaptureBonus,
+      emergentDesertCaptureBonus: attackerSynergyResult.emergentDesertCaptureBonus,
     },
   );
 }
