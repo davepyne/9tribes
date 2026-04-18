@@ -577,7 +577,8 @@ export class GameSession {
   }
 
   private refreshFog(state: GameState) {
-    return refreshFogForAllFactions(state);
+    // Keep derived browser-only state in sync after any live mutation.
+    return updateSiegeState(refreshFogForAllFactions(state));
   }
 
   private isHumanControlledFaction(factionId: string | null) {
@@ -669,8 +670,6 @@ export class GameSession {
       difficulty: this.difficulty,
     });
     this.state = this.refreshFog(advanceTurn(this.state));
-    // Update siege state for all cities after turn advance
-    this.state = updateSiegeState(this.state);
     // Queued moves execute at end of human turn (via end_turn handler), not here.
     this.feedback.lastActiveFactionId = this.state.activeFactionId;
     this.feedback.lastTurnChange = this.state.activeFactionId

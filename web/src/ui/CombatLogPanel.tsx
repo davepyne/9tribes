@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReplayCombatEvent } from '../game/types/replay';
+import { CombatDetailModal } from './CombatDetailModal';
 
 type CombatLogPanelProps = {
   events: ReplayCombatEvent[];
@@ -82,6 +83,7 @@ function formatOutcome(event: ReplayCombatEvent): string {
 export function CombatLogPanel({ events, isOpen, onToggle }: CombatLogPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [localEvents, setLocalEvents] = useState<ReplayCombatEvent[]>(events);
+  const [detailEvent, setDetailEvent] = useState<ReplayCombatEvent | null>(null);
 
   // Sync incoming events into local state so we can clear independently
   useEffect(() => {
@@ -104,6 +106,10 @@ export function CombatLogPanel({ events, isOpen, onToggle }: CombatLogPanelProps
   const handleClear = () => {
     setLocalEvents([]);
   };
+
+  const handleInspect = useCallback((event: ReplayCombatEvent) => {
+    setDetailEvent(event);
+  }, []);
 
   return (
     <div className={`clp-root${isOpen ? ' clp-root--open' : ''}`}>
@@ -137,21 +143,25 @@ export function CombatLogPanel({ events, isOpen, onToggle }: CombatLogPanelProps
             <p className="clp-empty">No combat recorded yet.</p>
           ) : (
             localEvents.map((event, idx) => (
-              <CombatEntry key={`${event.attackerUnitId}-${event.defenderUnitId}-${event.round}-${idx}`} event={event} />
+              <CombatEntry key={`${event.attackerUnitId}-${event.defenderUnitId}-${event.round}-${idx}`} event={event} onInspect={handleInspect} />
             ))
           )}
         </div>
       </div>
+
+      {detailEvent && (
+        <CombatDetailModal event={detailEvent} onClose={() => setDetailEvent(null)} />
+      )}
     </div>
   );
 }
 
-function CombatEntry({ event }: { event: ReplayCombatEvent }) {
+function CombatEntry({ event, onInspect }: { event: ReplayCombatEvent; onInspect: (e: ReplayCombatEvent) => void }) {
   const modifiers = buildModifierEntries(event);
   const outcome = formatOutcome(event);
 
   return (
-    <div className="clp-entry">
+    <div className="clp-entry" onClick={() => onInspect(event)} title="Click for full breakdown">
       {/* Combat header */}
       <div className="clp-entry__header">
         <span className="clp-entry__units">

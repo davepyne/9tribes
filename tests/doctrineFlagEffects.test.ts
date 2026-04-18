@@ -124,6 +124,40 @@ describe('R1: forcedMarchEnabled — no cooldown on first charge', () => {
   });
 });
 
+describe('combat cleanup', () => {
+  it('removes defenders that hit zero hp from pursuit aftermath damage', () => {
+    const { state, lionsUnitId, jungleUnitId, lionsId } = setupTwoUnits();
+
+    state.factions.set(lionsId as never, {
+      ...state.factions.get(lionsId as never)!,
+      nativeDomain: 'hitrun',
+      learnedDomains: ['hitrun'],
+    });
+    state.units.set(jungleUnitId, {
+      ...state.units.get(jungleUnitId)!,
+      hp: 3,
+    });
+
+    const preview = previewCombatAction(state, registry, lionsUnitId, jungleUnitId);
+    expect(preview).toBeTruthy();
+
+    const result = applyCombatAction(state, registry, {
+      ...preview!,
+      result: {
+        ...preview!.result,
+        attackerDamage: 0,
+        defenderDamage: 1,
+        attackerDestroyed: false,
+        defenderDestroyed: false,
+      },
+    });
+
+    expect(result.feedback.resolution.pursuitDamageApplied).toBe(2);
+    expect(result.state.units.has(jungleUnitId)).toBe(false);
+    expect(result.state.factions.get('jungle_clan' as never)?.unitIds).not.toContain(jungleUnitId);
+  });
+});
+
 // ── R2: poisonBonusEnabled ──
 
 describe('R2: poisonBonusEnabled — +50% poison damage multiplier', () => {

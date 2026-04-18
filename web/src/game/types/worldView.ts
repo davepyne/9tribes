@@ -58,6 +58,7 @@ export type UnitView = {
   learnedAbilities?: string[];
   isStealthed?: boolean;
   poisoned?: boolean;
+  morale: number;
   routed?: boolean;
   preparedAbility?: string;
   isSettler?: boolean;

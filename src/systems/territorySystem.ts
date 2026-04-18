@@ -114,7 +114,7 @@ export function calculateTerritoryYield(
   return Number(totalYield.toFixed(2));
 }
 
-const ENCIRCLEMENT_THRESHOLD = 3;
+const ENCIRCLEMENT_THRESHOLD = 2;
 const ENCIRCLEMENT_RADIUS = 2;
 
 /**

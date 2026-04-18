@@ -166,6 +166,27 @@
   color: var(--muted);
 }
 
+/* ── Morale Bar ── */
+.ci-morale-value { color: #81c784; }
+.ci-morale-value--low { color: #ffb74d; }
+.ci-morale-value--routed { color: #ef5350; }
+
+.ci-morale-bar {
+  height: 4px;
+  background: var(--bg-soft);
+  border-radius: 2px;
+  margin: 0 0 4px;
+  overflow: hidden;
+}
+.ci-morale-bar__fill {
+  height: 100%;
+  background: #81c784;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+.ci-morale-bar__fill--low { background: #ffb74d; }
+.ci-morale-bar__fill--routed { background: #ef5350; }
+
 .ci-stat-label {
   font-size: 10px;
   font-weight: 700;

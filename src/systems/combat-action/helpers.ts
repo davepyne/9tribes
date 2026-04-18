@@ -96,6 +96,28 @@ export function writeUnitToState(state: GameState, unit: Unit | undefined): Game
   };
 }
 
+export function pruneDeadUnits(state: GameState): GameState {
+  let removedAny = false;
+  const units = new Map<UnitId, Unit>();
+  for (const [unitId, unit] of state.units) {
+    if (unit.hp > 0) {
+      units.set(unitId, unit);
+    } else {
+      removedAny = true;
+    }
+  }
+
+  if (!removedAny) {
+    return state;
+  }
+
+  return {
+    ...state,
+    units,
+    factions: removeDeadUnitsFromFactions(state.factions, units),
+  };
+}
+
 export function applyKnockbackDistance(
   state: GameState,
   attackerId: UnitId,

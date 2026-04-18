@@ -430,3 +430,41 @@ No significant changes detected.
 - `web/src/game/view-model/inspectors/researchInspectorViewModel.ts` imports: src/game/types.ts (GameState), src/data/registry/types.ts (RulesRegistry, ResearchNodeDef), src/systems/domainProgression.ts (getDomainProgression)
 - `src/systems/strategicAi.ts` — 28 dependencies
 - `src/systems/warEcologySimulation.ts` — 47 dependencies
+
+---
+
+## Digest — 2026-04-18T08:04:36.198455Z
+
+### New Files
+- `src/systems/combat-action/apply.ts` — 1 exports: applyCombatAction
+- `src/systems/combat-action/factionAbsorption.ts` — 1 exports: maybeAbsorbFaction
+- `src/systems/combat-action/helpers.ts` — 9 exports: WATER_TERRAIN, getImprovementBonus, removeDeadUnitsFromFactions, canAttackTarget, rotateUnitToward, ... (+4 more)
+- `src/systems/combat-action/labeling.ts` — 3 exports: formatPercent, humanizeCombatEffect, pushCombatEffect
+- `src/systems/combat-action/preview.ts` — 1 exports: previewCombatAction
+- `src/systems/combat-action/types.ts` — 7 exports: CombatActionEffectCategory, CombatActionEffect, CombatActionPreview, CombatActionPreviewDetails, CombatActionFeedback, ... (+2 more)
+- `src/systems/unit-activation/activateUnit.ts` — 3 exports: maybeExpirePreparedAbility, activateUnit, activateAiUnit
+- `src/systems/unit-activation/fieldFort.ts` — 6 exports: FIELD_FORT_ATTACK_MARGIN, FIELD_FORT_DECISION_SCORE, shouldBrace, getFieldFortOpportunity, buildFieldFortIfEligible, ... (+1 more)
+- `src/systems/unit-activation/helpers.ts` — 16 exports: getTerrainAt, describeCombatOutcome, formatCombatSummary, rotateUnitToward, getImprovementAtHex, ... (+11 more)
+- `src/systems/unit-activation/movement.ts` — 4 exports: buildFallbackIntent, resolveWaypoint, wouldBeUnsafeAfterMove, performStrategicMovement
+- `src/systems/unit-activation/targeting.ts` — 2 exports: findBestTargetChoice, findBestRangedTarget
+- `src/systems/unit-activation/transport.ts` — 2 exports: moveTransportAndDisembark, autoDisembark
+- `src/systems/unit-activation/types.ts` — 3 exports: UnitActivationCombatMode, UnitActivationOptions, UnitActivationResult
+
+### Removed Files
+- `src/systems/combatActionSystem.ts` — 9 exports lost: CombatActionEffectCategory, CombatActionEffect, CombatActionPreview, CombatActionPreviewDetails, CombatActionFeedback, ... (+4 more)
+- `src/systems/unitActivationSystem.ts` — 6 exports lost: UnitActivationCombatMode, UnitActivationOptions, UnitActivationResult, maybeExpirePreparedAbility, activateUnit, ... (+1 more)
+
+### Dependency Changes
+- `src/systems/combat-action/apply.ts` imports: src/core/grid.ts (getNeighbors, hexDistance, hexToKey), src/data/registry/types.ts (RulesRegistry), src/features/units/types.ts (Unit), src/game/types.ts (GameState), src/types.ts (FactionId)
+- `src/systems/combat-action/factionAbsorption.ts` imports: src/game/types.ts (GameState), src/types.ts (FactionId), src/data/registry/types.ts (RulesRegistry), src/systems/capabilitySystem.ts (applyContactTransfer), src/systems/historySystem.ts (updateCombatRecordOnElimination)
+- `src/systems/combat-action/helpers.ts` imports: src/core/grid.ts (getDirectionIndex, hexDistance, hexToKey), src/game/types.ts (GameState, UnitId), src/features/units/types.ts (Unit), src/types.ts (HexCoord), src/data/registry/types.ts (RulesRegistry)
+- `src/systems/combat-action/labeling.ts` imports: src/systems/combat-action/types.ts (CombatActionEffect, CombatActionEffectCategory)
+- `src/systems/combat-action/preview.ts` imports: src/core/grid.ts (getNeighbors, hexDistance, hexToKey), src/data/registry/types.ts (RulesRegistry), src/features/units/types.ts (Unit), src/game/types.ts (GameState, UnitId), src/systems/capabilityDoctrine.ts (resolveCapabilityDoctrine)
+- `src/systems/combat-action/types.ts` imports: src/types.ts (HexCoord), src/systems/combatSystem.ts (CombatResult), src/game/types.ts (UnitId)
+- `src/systems/unit-activation/activateUnit.ts` imports: src/core/grid.ts (hexDistance), src/data/registry/types.ts (RulesRegistry), src/game/types.ts (GameState, Unit), src/types.ts (HexCoord, UnitId), src/systems/combatActionSystem.ts (applyCombatAction, previewCombatAction)
+- `src/systems/unit-activation/fieldFort.ts` imports: src/core/ids.ts (createImprovementId), src/core/grid.ts (hexDistance, hexToKey), src/game/types.ts (GameState, UnitId), src/types.ts (FactionId), src/data/registry/types.ts (RulesRegistry)
+- `src/systems/unit-activation/helpers.ts` imports: src/core/grid.ts (getDirectionIndex, hexDistance, hexToKey), src/game/types.ts (GameState, Unit), src/types.ts (FactionId, HexCoord, UnitId), src/systems/abilitySystem.ts (getAbilityTerrainAt, hasAdjacentEnemy), src/systems/combat-action/helpers.ts (getImprovementBonus)
+- `src/systems/unit-activation/movement.ts` imports: src/core/grid.ts (hexDistance), src/data/registry/types.ts (RulesRegistry), src/game/types.ts (GameState, Unit), src/types.ts (HexCoord, UnitId), src/systems/abilitySystem.ts (getAbilityTerrainAt)
+- `src/systems/unit-activation/targeting.ts` imports: src/core/grid.ts (getHexesInRange, getNeighbors, hexDistance), src/data/registry/types.ts (RulesRegistry), src/data/roleEffectiveness.ts (getRoleEffectiveness), src/data/weaponEffectiveness.ts (getWeaponEffectiveness), src/game/types.ts (GameState)
+- `src/systems/unit-activation/transport.ts` imports: src/core/grid.ts (hexDistance, hexToKey), src/data/registry/types.ts (RulesRegistry), src/game/types.ts (GameState), src/types.ts (HexCoord, UnitId), src/systems/movementSystem.ts (moveUnit, getValidMoves)
+- `src/systems/unit-activation/types.ts` imports: src/game/types.ts (GameState), src/systems/combat-action/types.ts (CombatActionPreview), src/types.ts (FactionId), src/systems/warEcologySimulation.ts (SimulationTrace, TraceAiIntentEvent, TraceCombatEffect)

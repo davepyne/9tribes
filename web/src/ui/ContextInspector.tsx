@@ -112,6 +112,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
     ? state.world.units.find((u) => u.id === selectedUnitId)
     : null;
   const selectedCity = state.hud.selectedCity;
+  const showRestrictedEnemyCityInfo = !!selectedCity && !selectedCity.isFriendly;
   const settlementPreview = state.hud.settlementPreview;
   const hoveredKey = state.hoveredHex ? `${state.hoveredHex.q},${state.hoveredHex.r}` : null;
   const hoveredTile = hoveredKey ? state.world.map.hexes.find((hex) => hex.key === hoveredKey) : null;
@@ -180,6 +181,21 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                   <strong>{selectedUnit.veteranLevel}{selectedUnit.xp != null ? ` (${selectedUnit.xp} XP)` : ''}</strong>
                 </div>
               ) : null}
+              <div className="meta-row">
+                <span>Morale</span>
+                <strong>
+                  <span className={`ci-morale-value${selectedUnit.morale <= 25 ? ' ci-morale-value--routed' : selectedUnit.morale <= 60 ? ' ci-morale-value--low' : ''}`}>
+                    {selectedUnit.morale}
+                  </span>
+                  <span className="ci-stat-sub">/ 100</span>
+                </strong>
+              </div>
+              <div className="ci-morale-bar">
+                <div
+                  className={`ci-morale-bar__fill${selectedUnit.morale <= 25 ? ' ci-morale-bar__fill--routed' : selectedUnit.morale <= 60 ? ' ci-morale-bar__fill--low' : ''}`}
+                  style={{ width: `${selectedUnit.morale}%` }}
+                />
+              </div>
               <div className="meta-row">
                 <span>Position</span>
                 <strong>{selectedUnit.q}, {selectedUnit.r}</strong>
@@ -355,7 +371,8 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
         {/* ── City Inspector ── */}
         {selectedCity ? (
           <div className="ci-section">
-            <div className="ci-tabs-wrapper">
+            {!showRestrictedEnemyCityInfo ? (
+              <div className="ci-tabs-wrapper">
               {tabsCanScrollLeft && (
                 <button type="button" className="ci-tabs-arrow ci-tabs-arrow--left" aria-label="Scroll tabs left" onClick={scrollTabsLeft}>
                   ‹
@@ -379,9 +396,21 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                   ›
                 </button>
               )}
-            </div>
+              </div>
+            ) : null}
 
-            {cityTab === 'overview' ? (
+            {showRestrictedEnemyCityInfo ? (
+              <div className="ci-tab-content">
+                <div className="meta-row">
+                  <span>Faction</span>
+                  <strong>{selectedCity.factionName}</strong>
+                </div>
+                <div className="meta-row">
+                  <span>Besieged</span>
+                  <strong>{selectedCity.walls.besieged ? 'Yes' : 'No'}</strong>
+                </div>
+              </div>
+            ) : cityTab === 'overview' ? (
               <div className="ci-tab-content">
                 <div className="meta-row">
                   <span>Faction</span>
@@ -420,7 +449,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
               </div>
             ) : null}
 
-            {cityTab === 'production' ? (
+            {!showRestrictedEnemyCityInfo && cityTab === 'production' ? (
               <div className="ci-tab-content ci-prod-tab">
                 {/* ── Current Production ── */}
                 {selectedCity.production.current ? (

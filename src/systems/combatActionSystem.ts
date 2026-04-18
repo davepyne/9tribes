@@ -21,4 +21,4 @@ export { previewCombatAction } from './combat-action/preview.js';
 export { applyCombatAction } from './combat-action/apply.js';
 
 // Also re-export helpers that are used externally (e.g. by unitActivationSystem)
-export { canAttackTarget, getImprovementBonus, removeDeadUnitsFromFactions, writeUnitToState } from './combat-action/helpers.js';
+export { canAttackTarget, getImprovementBonus, pruneDeadUnits, removeDeadUnitsFromFactions, writeUnitToState } from './combat-action/helpers.js';

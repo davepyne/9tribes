@@ -5,6 +5,7 @@ import { resolveResearchDoctrine } from '../capabilityDoctrine.js';
 import { getHealingBonus } from '../factionIdentitySystem.js';
 import { getHexOwner } from '../territorySystem.js';
 import { getUnitAtHex } from '../occupancySystem.js';
+import { pruneDeadUnits } from '../combatActionSystem.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { SimulationTrace } from './traceTypes.js';
 import { log } from './traceRecorder.js';
@@ -178,7 +179,7 @@ export function applyEnvironmentalDamage(
     }
   }
 
-  return { ...current, units };
+  return pruneDeadUnits({ ...current, units });
 }
 
 function removeUnitFromFaction(

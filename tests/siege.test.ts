@@ -195,11 +195,10 @@ describe('city capture vulnerability with garrison', () => {
     const state = buildMvpScenario(42);
     const attackerId = Array.from(state.factions.keys())[1];
 
-    // Place 3+ enemy units within distance 2 (encircled)
+    // Place 2+ enemy units within distance 2 (encircled)
     const encirclementPositions = [
       { q: 1, r: 0 },   // dist 1
       { q: 1, r: -1 },  // dist 1
-      { q: 0, r: 1 },   // dist 1
     ];
     let placed = 0;
     for (const [id, unit] of state.units) {
@@ -235,11 +234,10 @@ describe('city capture vulnerability with garrison', () => {
     const state = buildMvpScenario(42);
     const attackerId = Array.from(state.factions.keys())[1];
 
-    // Place 3+ enemy units within distance 2 (encircled)
+    // Place 2+ enemy units within distance 2 (encircled)
     const encirclementPositions = [
       { q: 1, r: 0 },   // dist 1
       { q: 1, r: -1 },  // dist 1
-      { q: 0, r: 1 },   // dist 1
     ];
     let placed = 0;
     for (const [id, unit] of state.units) {

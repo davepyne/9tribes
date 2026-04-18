@@ -1,9 +1,9 @@
 {
   "_metadata": {
     "version": "2.0.0",
-    "last_run": "2026-04-17T17:31:58.497960Z",
+    "last_run": "2026-04-18T08:04:36.290853Z",
     "root": "C:\\Users\\fosbo\\war-civ-v2",
-    "file_count": 242
+    "file_count": 256
   },
   "files": {
     "src/systems/aiTactics.ts": {
@@ -29,6 +29,26 @@
             "aiTactics"
           ],
           "from": "tests/aiTactics.test.ts"
+        },
+        {
+          "names": [
+            "scoreAttackCandidate",
+            "scoreStrategicTarget"
+          ],
+          "from": "src/systems/unit-activation/targeting.ts"
+        },
+        {
+          "names": [
+            "computeRetreatRisk",
+            "shouldEngageTarget"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
+        },
+        {
+          "names": [
+            "scoreMoveCandidate"
+          ],
+          "from": "src/systems/unit-activation/movement.ts"
         }
       ]
     },
@@ -88,12 +108,6 @@
             "FactionPosture"
           ],
           "from": "src/systems/aiPersonality.ts"
-        },
-        {
-          "names": [
-            "UnitStrategicIntent"
-          ],
-          "from": "src/systems/unitActivationSystem.ts"
         },
         {
           "names": [
@@ -179,6 +193,12 @@
             "FactionStrategy"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "UnitStrategicIntent"
+          ],
+          "from": "src/systems/unit-activation/movement.ts"
         }
       ]
     },
@@ -358,7 +378,7 @@
           "names": [
             "findFleeHex"
           ],
-          "from": "src/systems/unitActivationSystem.ts"
+          "from": "src/systems/unit-activation/activateUnit.ts"
         }
       ]
     },
@@ -504,7 +524,19 @@
           "names": [
             "Unit"
           ],
-          "from": "src/systems/combatActionSystem.ts"
+          "from": "src/systems/combat-action/helpers.ts"
+        },
+        {
+          "names": [
+            "Unit"
+          ],
+          "from": "src/systems/combat-action/preview.ts"
+        },
+        {
+          "names": [
+            "Unit"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
         }
       ]
     },
@@ -896,23 +928,9 @@
         },
         {
           "names": [
-            "GameState",
-            "Unit"
-          ],
-          "from": "src/systems/unitActivationSystem.ts"
-        },
-        {
-          "names": [
             "GameState"
           ],
           "from": "tests/webGameSession.test.ts"
-        },
-        {
-          "names": [
-            "GameState",
-            "UnitId"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
         },
         {
           "names": [
@@ -954,12 +972,6 @@
             "UnitId"
           ],
           "from": "web/src/game/controller/movementExplorer.ts"
-        },
-        {
-          "names": [
-            "GameState"
-          ],
-          "from": "src/systems/warEcologySimulation.ts"
         },
         {
           "names": [
@@ -1058,10 +1070,94 @@
         },
         {
           "names": [
+            "GameState"
+          ],
+          "from": "src/systems/unit-activation/targeting.ts"
+        },
+        {
+          "names": [
+            "GameState",
+            "UnitId"
+          ],
+          "from": "src/systems/combat-action/helpers.ts"
+        },
+        {
+          "names": [
+            "GameState",
+            "UnitId"
+          ],
+          "from": "src/systems/combat-action/preview.ts"
+        },
+        {
+          "names": [
+            "GameState"
+          ],
+          "from": "src/systems/unit-activation/types.ts"
+        },
+        {
+          "names": [
             "GameState",
             "Unit"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "GameState"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
+        },
+        {
+          "names": [
+            "GameState"
+          ],
+          "from": "src/systems/combat-action/factionAbsorption.ts"
+        },
+        {
+          "names": [
+            "UnitId"
+          ],
+          "from": "src/systems/combat-action/types.ts"
+        },
+        {
+          "names": [
+            "GameState"
+          ],
+          "from": "src/systems/unit-activation/transport.ts"
+        },
+        {
+          "names": [
+            "GameState",
+            "Unit"
+          ],
+          "from": "src/systems/unit-activation/helpers.ts"
+        },
+        {
+          "names": [
+            "GameState",
+            "Unit"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
+        },
+        {
+          "names": [
+            "GameState"
+          ],
+          "from": "src/systems/warEcologySimulation.ts"
+        },
+        {
+          "names": [
+            "GameState",
+            "UnitId"
+          ],
+          "from": "src/systems/unit-activation/fieldFort.ts"
+        },
+        {
+          "names": [
+            "GameState",
+            "Unit"
+          ],
+          "from": "src/systems/unit-activation/movement.ts"
         }
       ]
     },
@@ -1460,21 +1556,6 @@
             "HexCoord",
             "UnitId"
           ],
-          "from": "src/systems/unitActivationSystem.ts"
-        },
-        {
-          "names": [
-            "FactionId",
-            "HexCoord"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
-            "FactionId",
-            "HexCoord",
-            "UnitId"
-          ],
           "from": "src/systems/strategicAi.ts"
         },
         {
@@ -1499,12 +1580,6 @@
             "UnitId"
           ],
           "from": "src/systems/simulation/environmentalEffects.ts"
-        },
-        {
-          "names": [
-            "FactionId"
-          ],
-          "from": "src/systems/warEcologySimulation.ts"
         },
         {
           "names": [
@@ -1605,11 +1680,90 @@
           "names": [
             "FactionId",
             "HexCoord",
+            "UnitId"
+          ],
+          "from": "src/systems/unit-activation/targeting.ts"
+        },
+        {
+          "names": [
+            "HexCoord"
+          ],
+          "from": "src/systems/combat-action/helpers.ts"
+        },
+        {
+          "names": [
+            "FactionId"
+          ],
+          "from": "src/systems/unit-activation/types.ts"
+        },
+        {
+          "names": [
+            "FactionId",
+            "HexCoord",
             "UnitId",
             "ChassisId",
             "PrototypeId"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "FactionId"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
+        },
+        {
+          "names": [
+            "FactionId"
+          ],
+          "from": "src/systems/combat-action/factionAbsorption.ts"
+        },
+        {
+          "names": [
+            "HexCoord"
+          ],
+          "from": "src/systems/combat-action/types.ts"
+        },
+        {
+          "names": [
+            "HexCoord",
+            "UnitId"
+          ],
+          "from": "src/systems/unit-activation/transport.ts"
+        },
+        {
+          "names": [
+            "FactionId",
+            "HexCoord",
+            "UnitId"
+          ],
+          "from": "src/systems/unit-activation/helpers.ts"
+        },
+        {
+          "names": [
+            "HexCoord",
+            "UnitId"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
+        },
+        {
+          "names": [
+            "FactionId"
+          ],
+          "from": "src/systems/warEcologySimulation.ts"
+        },
+        {
+          "names": [
+            "FactionId"
+          ],
+          "from": "src/systems/unit-activation/fieldFort.ts"
+        },
+        {
+          "names": [
+            "HexCoord",
+            "UnitId"
+          ],
+          "from": "src/systems/unit-activation/movement.ts"
         }
       ]
     },
@@ -1839,25 +1993,6 @@
         },
         {
           "names": [
-            "getDirectionIndex",
-            "getHexesInRange",
-            "getNeighbors",
-            "hexDistance",
-            "hexToKey"
-          ],
-          "from": "src/systems/unitActivationSystem.ts"
-        },
-        {
-          "names": [
-            "getDirectionIndex",
-            "getNeighbors",
-            "hexDistance",
-            "hexToKey"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
             "hexDistance",
             "hexToKey"
           ],
@@ -1946,11 +2081,78 @@
         },
         {
           "names": [
+            "getHexesInRange",
+            "getNeighbors",
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/systems/unit-activation/targeting.ts"
+        },
+        {
+          "names": [
+            "getDirectionIndex",
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/systems/combat-action/helpers.ts"
+        },
+        {
+          "names": [
+            "getNeighbors",
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/systems/combat-action/preview.ts"
+        },
+        {
+          "names": [
             "hexToKey",
             "hexDistance",
             "getNeighbors"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "getNeighbors",
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
+        },
+        {
+          "names": [
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/systems/unit-activation/transport.ts"
+        },
+        {
+          "names": [
+            "getDirectionIndex",
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/systems/unit-activation/helpers.ts"
+        },
+        {
+          "names": [
+            "hexDistance"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
+        },
+        {
+          "names": [
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/systems/unit-activation/fieldFort.ts"
+        },
+        {
+          "names": [
+            "hexDistance"
+          ],
+          "from": "src/systems/unit-activation/movement.ts"
         }
       ]
     },
@@ -2118,12 +2320,6 @@
         },
         {
           "names": [
-            "getHexVisibility"
-          ],
-          "from": "src/systems/unitActivationSystem.ts"
-        },
-        {
-          "names": [
             "getLastSeenEnemyCities"
           ],
           "from": "src/systems/strategic-ai/assignments.ts"
@@ -2149,6 +2345,12 @@
             "getExploredHexKeys"
           ],
           "from": "src/systems/strategic-ai/objectives.ts"
+        },
+        {
+          "names": [
+            "getHexVisibility"
+          ],
+          "from": "src/systems/unit-activation/movement.ts"
         }
       ]
     },
@@ -3172,6 +3374,12 @@
             "loadRulesRegistry"
           ],
           "from": "web/src/game/controller/GameSession.ts"
+        },
+        {
+          "names": [
+            "loadRulesRegistry"
+          ],
+          "from": "tests/combatEventContract.test.ts"
         }
       ]
     },
@@ -3505,6 +3713,12 @@
             "buildMvpScenario"
           ],
           "from": "web/src/game/controller/GameSession.ts"
+        },
+        {
+          "names": [
+            "buildMvpScenario"
+          ],
+          "from": "tests/combatEventContract.test.ts"
         }
       ]
     },
@@ -3742,6 +3956,12 @@
             "CombatResult"
           ],
           "from": "web/src/game/controller/GameSession.ts"
+        },
+        {
+          "names": [
+            "CombatResult"
+          ],
+          "from": "src/systems/combat-action/types.ts"
         }
       ]
     },
@@ -3764,7 +3984,7 @@
           "names": [
             "getRoleEffectiveness"
           ],
-          "from": "src/systems/unitActivationSystem.ts"
+          "from": "src/systems/unit-activation/targeting.ts"
         }
       ]
     },
@@ -3793,7 +4013,7 @@
           "names": [
             "getWeaponEffectiveness"
           ],
-          "from": "src/systems/unitActivationSystem.ts"
+          "from": "src/systems/unit-activation/targeting.ts"
         }
       ]
     },
@@ -3841,7 +4061,7 @@
           "names": [
             "applyCombatSignals"
           ],
-          "from": "src/systems/combatActionSystem.ts"
+          "from": "src/systems/combat-action/apply.ts"
         }
       ]
     },
@@ -4102,6 +4322,74 @@
         },
         {
           "names": [
+            "resetCombatRecordStreaks"
+          ],
+          "from": "src/systems/historySystem.ts"
+        },
+        {
+          "names": [
+            "GameState"
+          ],
+          "from": "src/game/types.ts"
+        },
+        {
+          "names": [
+            "FactionId"
+          ],
+          "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/data/registry/types.ts"
+        },
+        {
+          "names": [
+            "DifficultyLevel"
+          ],
+          "from": "src/systems/aiDifficulty.ts"
+        },
+        {
+          "names": [
+            "createSimulationTrace",
+            "log",
+            "recordCombatEvent",
+            "recordAiIntent",
+            "recordSnapshot",
+            "maybeRecordEndSnapshot"
+          ],
+          "from": "src/systems/simulation/traceRecorder.ts"
+        },
+        {
+          "names": [
+            "getVictoryStatus",
+            "getAliveFactions"
+          ],
+          "from": "src/systems/simulation/victory.ts"
+        },
+        {
+          "names": [
+            "summarizeFaction"
+          ],
+          "from": "src/systems/simulation/summarizeFaction.ts"
+        },
+        {
+          "names": [
+            "occupiesFriendlySettlement"
+          ],
+          "from": "src/systems/simulation/environmentalEffects.ts"
+        },
+        {
+          "names": [
+            "getSynergyEngine",
+            "calculateSynergyAttackBonus",
+            "calculateSynergyDefenseBonus"
+          ],
+          "from": "src/systems/synergyRuntime.ts"
+        },
+        {
+          "names": [
             "activateUnit"
           ],
           "from": "src/systems/unitActivationSystem.ts"
@@ -4293,6 +4581,28 @@
             "runWarEcologySimulation"
           ],
           "from": "tests/strategicAi.test.ts"
+        },
+        {
+          "names": [
+            "SimulationTrace",
+            "TraceAiIntentEvent",
+            "TraceCombatEffect"
+          ],
+          "from": "src/systems/unit-activation/types.ts"
+        },
+        {
+          "names": [
+            "createSimulationTrace",
+            "runWarEcologySimulation"
+          ],
+          "from": "tests/combatEventContract.test.ts"
+        },
+        {
+          "names": [
+            "log",
+            "type"
+          ],
+          "from": "src/systems/unit-activation/transport.ts"
         }
       ]
     },
@@ -4457,13 +4767,6 @@
         },
         {
           "names": [
-            "canUseCharge",
-            "clearPreparedAbility"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
             "canUseAmbush",
             "canUseBrace",
             "getTerrainAt",
@@ -4480,6 +4783,43 @@
             "prepareAbility"
           ],
           "from": "web/src/game/controller/GameSession.ts"
+        },
+        {
+          "names": [
+            "clearPreparedAbility"
+          ],
+          "from": "src/systems/combat-action/helpers.ts"
+        },
+        {
+          "names": [
+            "canUseCharge"
+          ],
+          "from": "src/systems/combat-action/preview.ts"
+        },
+        {
+          "names": [
+            "clearPreparedAbility"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
+        },
+        {
+          "names": [
+            "getAbilityTerrainAt",
+            "hasAdjacentEnemy"
+          ],
+          "from": "src/systems/unit-activation/helpers.ts"
+        },
+        {
+          "names": [
+            "canUseBrace"
+          ],
+          "from": "src/systems/unit-activation/fieldFort.ts"
+        },
+        {
+          "names": [
+            "getAbilityTerrainAt"
+          ],
+          "from": "src/systems/unit-activation/movement.ts"
         }
       ]
     },
@@ -4561,6 +4901,12 @@
             "getHealingBonus"
           ],
           "from": "src/systems/simulation/environmentalEffects.ts"
+        },
+        {
+          "names": [
+            "isUnitRiverStealthed"
+          ],
+          "from": "src/systems/unit-activation/targeting.ts"
         }
       ]
     },
@@ -4887,13 +5233,6 @@
         },
         {
           "names": [
-            "destroyTransport",
-            "isTransportUnit"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
             "getEmbarkedUnits"
           ],
           "from": "src/systems/strategic-ai/assignments.ts"
@@ -4914,6 +5253,20 @@
             "getUnitTransport"
           ],
           "from": "web/src/game/controller/GameSession.ts"
+        },
+        {
+          "names": [
+            "destroyTransport",
+            "isTransportUnit"
+          ],
+          "from": "src/systems/combat-action/helpers.ts"
+        },
+        {
+          "names": [
+            "isTransportUnit",
+            "updateEmbarkedPositions"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
         }
       ]
     },
@@ -5173,12 +5526,6 @@
         },
         {
           "names": [
-            "MAX_LEARNED_DOMAINS"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
             "getExposureDetails"
           ],
           "from": "src/systems/strategicAi.ts"
@@ -5199,6 +5546,12 @@
             "isUnlockPrototype"
           ],
           "from": "web/src/game/view-model/inspectors/cityInspectorViewModel.ts"
+        },
+        {
+          "names": [
+            "MAX_LEARNED_DOMAINS"
+          ],
+          "from": "src/systems/combat-action/factionAbsorption.ts"
         }
       ]
     },
@@ -5702,13 +6055,6 @@
         },
         {
           "names": [
-            "applyCombatAction",
-            "previewCombatAction"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
             "moveUnit"
           ],
           "from": "src/systems/movementSystem.ts"
@@ -5746,12 +6092,6 @@
             "advanceTurn"
           ],
           "from": "src/systems/turnSystem.ts"
-        },
-        {
-          "names": [
-            "activateAiUnit"
-          ],
-          "from": "src/systems/unitActivationSystem.ts"
         },
         {
           "names": [
@@ -5878,13 +6218,6 @@
         },
         {
           "names": [
-            "applyCombatAction",
-            "previewCombatAction"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
             "moveUnit"
           ],
           "from": "src/systems/movementSystem.ts"
@@ -5928,12 +6261,6 @@
             "advanceTurn"
           ],
           "from": "src/systems/turnSystem.ts"
-        },
-        {
-          "names": [
-            "activateAiUnit"
-          ],
-          "from": "src/systems/unitActivationSystem.ts"
         },
         {
           "names": [
@@ -6169,12 +6496,6 @@
           "names": [
             "createImprovementId"
           ],
-          "from": "src/systems/unitActivationSystem.ts"
-        },
-        {
-          "names": [
-            "createImprovementId"
-          ],
           "from": "web/src/game/controller/sessionUtils.ts"
         },
         {
@@ -6189,6 +6510,12 @@
             "createUnitId"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "createImprovementId"
+          ],
+          "from": "src/systems/unit-activation/fieldFort.ts"
         }
       ]
     },
@@ -6454,18 +6781,6 @@
           "names": [
             "RulesRegistry"
           ],
-          "from": "src/systems/unitActivationSystem.ts"
-        },
-        {
-          "names": [
-            "RulesRegistry"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
-            "RulesRegistry"
-          ],
           "from": "src/systems/strategicAi.ts"
         },
         {
@@ -6491,12 +6806,6 @@
             "RulesRegistry"
           ],
           "from": "web/src/game/controller/movementExplorer.ts"
-        },
-        {
-          "names": [
-            "RulesRegistry"
-          ],
-          "from": "src/systems/warEcologySimulation.ts"
         },
         {
           "names": [
@@ -6533,7 +6842,67 @@
           "names": [
             "RulesRegistry"
           ],
+          "from": "src/systems/unit-activation/targeting.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/systems/combat-action/helpers.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/systems/combat-action/preview.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/systems/combat-action/factionAbsorption.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/systems/unit-activation/transport.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/systems/warEcologySimulation.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/systems/unit-activation/fieldFort.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/systems/unit-activation/movement.ts"
         }
       ]
     },
@@ -6988,6 +7357,27 @@
             "HexCoord"
           ],
           "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "previewCombatAction"
+          ],
+          "from": "src/systems/combat-action/preview.ts"
+        },
+        {
+          "names": [
+            "applyCombatAction"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
+        },
+        {
+          "names": [
+            "canAttackTarget",
+            "getImprovementBonus",
+            "removeDeadUnitsFromFactions",
+            "writeUnitToState"
+          ],
+          "from": "src/systems/combat-action/helpers.ts"
         }
       ],
       "importedBy": [
@@ -7010,6 +7400,13 @@
             "previewCombatAction"
           ],
           "from": "web/src/game/controller/GameSession.ts"
+        },
+        {
+          "names": [
+            "applyCombatAction",
+            "previewCombatAction"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
         }
       ]
     },
@@ -7267,14 +7664,6 @@
         },
         {
           "names": [
-            "moveUnit",
-            "getValidMoves",
-            "canMoveTo"
-          ],
-          "from": "src/systems/unitActivationSystem.ts"
-        },
-        {
-          "names": [
             "getValidMoves"
           ],
           "from": "web/src/game/view-model/worldViewModel.ts"
@@ -7299,6 +7688,28 @@
             "moveUnit"
           ],
           "from": "web/src/game/controller/GameSession.ts"
+        },
+        {
+          "names": [
+            "moveUnit",
+            "getValidMoves"
+          ],
+          "from": "src/systems/unit-activation/transport.ts"
+        },
+        {
+          "names": [
+            "moveUnit",
+            "canMoveTo",
+            "getValidMoves"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
+        },
+        {
+          "names": [
+            "moveUnit",
+            "getValidMoves"
+          ],
+          "from": "src/systems/unit-activation/movement.ts"
         }
       ]
     },
@@ -7425,18 +7836,6 @@
         },
         {
           "names": [
-            "resolveResearchDoctrine"
-          ],
-          "from": "src/systems/unitActivationSystem.ts"
-        },
-        {
-          "names": [
-            "resolveCapabilityDoctrine"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
             "resolveCapabilityDoctrine"
           ],
           "from": "web/src/game/view-model/worldViewModel.ts"
@@ -7461,10 +7860,40 @@
         },
         {
           "names": [
+            "resolveCapabilityDoctrine"
+          ],
+          "from": "src/systems/combat-action/helpers.ts"
+        },
+        {
+          "names": [
+            "resolveCapabilityDoctrine"
+          ],
+          "from": "src/systems/combat-action/preview.ts"
+        },
+        {
+          "names": [
             "resolveResearchDoctrine",
             "prototypeHasComponent"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "resolveCapabilityDoctrine"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
+        },
+        {
+          "names": [
+            "resolveResearchDoctrine"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
+        },
+        {
+          "names": [
+            "resolveResearchDoctrine"
+          ],
+          "from": "src/systems/unit-activation/fieldFort.ts"
         }
       ]
     },
@@ -7706,6 +8135,36 @@
             "computeFactionStrategy"
           ],
           "from": "web/src/game/controller/GameSession.ts"
+        },
+        {
+          "names": [
+            "getUnitIntent"
+          ],
+          "from": "src/systems/unit-activation/targeting.ts"
+        },
+        {
+          "names": [
+            "getUnitIntent"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
+        },
+        {
+          "names": [
+            "getNearbySupportScore",
+            "getNearestFriendlyCity",
+            "getUnitIntent",
+            "scoreStrategicTerrain"
+          ],
+          "from": "src/systems/unit-activation/fieldFort.ts"
+        },
+        {
+          "names": [
+            "getNearbySupportScore",
+            "getNearestFriendlyCity",
+            "getUnitIntent",
+            "scoreStrategicTerrain"
+          ],
+          "from": "src/systems/unit-activation/movement.ts"
         }
       ]
     },
@@ -7773,13 +8232,6 @@
         },
         {
           "names": [
-            "getFactionCityIds",
-            "syncAllFactionSettlementIds"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
             "syncFactionSettlementIds"
           ],
           "from": "web/src/game/controller/GameSession.ts"
@@ -7795,6 +8247,13 @@
             "getFactionCityIds"
           ],
           "from": "src/systems/simulation/summarizeFaction.ts"
+        },
+        {
+          "names": [
+            "getFactionCityIds",
+            "syncAllFactionSettlementIds"
+          ],
+          "from": "src/systems/combat-action/factionAbsorption.ts"
         }
       ]
     },
@@ -8165,6 +8624,14 @@
             "hasCaptureAbility"
           ],
           "from": "src/systems/captureSystem.ts"
+        },
+        {
+          "names": [
+            "activateUnit",
+            "activateAiUnit",
+            "maybeExpirePreparedAbility"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
         }
       ],
       "importedBy": [
@@ -8183,12 +8650,6 @@
         },
         {
           "names": [
-            "activateUnit"
-          ],
-          "from": "src/systems/warEcologySimulation.ts"
-        },
-        {
-          "names": [
             "activateAiUnit"
           ],
           "from": "web/src/game/controller/GameSession.ts"
@@ -8198,6 +8659,12 @@
             "maybeExpirePreparedAbility"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "activateUnit"
+          ],
+          "from": "src/systems/warEcologySimulation.ts"
         }
       ]
     },
@@ -8259,12 +8726,6 @@
           "names": [
             "unlockHybridRecipes"
           ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
-            "unlockHybridRecipes"
-          ],
           "from": "web/src/game/controller/GameSession.ts"
         },
         {
@@ -8272,6 +8733,12 @@
             "unlockHybridRecipes"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "unlockHybridRecipes"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
         }
       ]
     },
@@ -8796,12 +9263,6 @@
         },
         {
           "names": [
-            "autoCompleteResearchForDomains"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
             "performSacrifice"
           ],
           "from": "web/src/game/controller/GameSession.ts"
@@ -8812,6 +9273,12 @@
             "performSacrifice"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "autoCompleteResearchForDomains"
+          ],
+          "from": "src/systems/combat-action/factionAbsorption.ts"
         }
       ]
     },
@@ -8967,12 +9434,6 @@
           "names": [
             "DifficultyLevel"
           ],
-          "from": "src/systems/warEcologySimulation.ts"
-        },
-        {
-          "names": [
-            "DifficultyLevel"
-          ],
           "from": "web/src/game/controller/GameSession.ts"
         },
         {
@@ -9004,6 +9465,12 @@
             "DifficultyLevel"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "DifficultyLevel"
+          ],
+          "from": "src/systems/warEcologySimulation.ts"
         }
       ]
     },
@@ -9082,19 +9549,13 @@
           "names": [
             "getUnitAtHex"
           ],
-          "from": "src/systems/unitActivationSystem.ts"
-        },
-        {
-          "names": [
-            "getUnitAtHex"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
-            "getUnitAtHex"
-          ],
           "from": "src/systems/simulation/environmentalEffects.ts"
+        },
+        {
+          "names": [
+            "getUnitAtHex"
+          ],
+          "from": "src/systems/combat-action/preview.ts"
         },
         {
           "names": [
@@ -9102,6 +9563,12 @@
             "getUnitAtHex"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "getUnitAtHex"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
         }
       ]
     },
@@ -9138,7 +9605,7 @@
           "names": [
             "awardCombatXP"
           ],
-          "from": "src/systems/combatActionSystem.ts"
+          "from": "src/systems/combat-action/apply.ts"
         }
       ]
     },
@@ -9175,13 +9642,7 @@
           "names": [
             "tryPromoteUnit"
           ],
-          "from": "src/systems/unitActivationSystem.ts"
-        },
-        {
-          "names": [
-            "tryPromoteUnit"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
+          "from": "src/systems/combat-action/apply.ts"
         }
       ]
     },
@@ -9230,19 +9691,19 @@
       "importedBy": [
         {
           "names": [
-            "attemptNonCombatCapture",
-            "getCaptureParams",
-            "hasCaptureAbility"
-          ],
-          "from": "src/systems/unitActivationSystem.ts"
-        },
-        {
-          "names": [
             "attemptCapture",
             "attemptNonCombatCapture",
             "hasCaptureAbility"
           ],
-          "from": "src/systems/combatActionSystem.ts"
+          "from": "src/systems/combat-action/apply.ts"
+        },
+        {
+          "names": [
+            "attemptNonCombatCapture",
+            "getCaptureParams",
+            "hasCaptureAbility"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
         }
       ]
     },
@@ -9755,17 +10216,16 @@
         },
         {
           "names": [
-            "calculateFlankingBonus",
-            "isRearAttack"
+            "calculateFlankingBonus"
           ],
-          "from": "src/systems/unitActivationSystem.ts"
+          "from": "src/systems/unit-activation/targeting.ts"
         },
         {
           "names": [
             "calculateFlankingBonus",
             "isRearAttack"
           ],
-          "from": "src/systems/combatActionSystem.ts"
+          "from": "src/systems/combat-action/preview.ts"
         }
       ]
     },
@@ -9952,7 +10412,7 @@
           "names": [
             "tryLearnFromKill"
           ],
-          "from": "src/systems/combatActionSystem.ts"
+          "from": "src/systems/combat-action/apply.ts"
         }
       ]
     },
@@ -10008,12 +10468,6 @@
           "names": [
             "getDomainProgression"
           ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
-            "getDomainProgression"
-          ],
           "from": "web/src/game/view-model/inspectors/researchInspectorViewModel.ts"
         },
         {
@@ -10021,6 +10475,12 @@
             "getDomainProgression"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "getDomainProgression"
+          ],
+          "from": "src/systems/combat-action/factionAbsorption.ts"
         }
       ]
     },
@@ -11044,6 +11504,12 @@
             "exportReplayBundle"
           ],
           "from": "tests/replay.test.ts"
+        },
+        {
+          "names": [
+            "exportReplayBundle"
+          ],
+          "from": "tests/combatEventContract.test.ts"
         }
       ]
     },
@@ -12455,13 +12921,6 @@
         },
         {
           "names": [
-            "addExhaustion",
-            "EXHAUSTION_CONFIG"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
             "calculateProductionPenalty",
             "calculateMoralePenalty"
           ],
@@ -12479,6 +12938,13 @@
             "applySupplyDeficitPenalties"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "addExhaustion",
+            "EXHAUSTION_CONFIG"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
         }
       ]
     },
@@ -12542,16 +13008,22 @@
         },
         {
           "names": [
-            "resetCombatRecordStreaks"
-          ],
-          "from": "src/systems/warEcologySimulation.ts"
-        },
-        {
-          "names": [
             "getBattleCount",
             "getKillCount"
           ],
           "from": "src/systems/simulation/summarizeFaction.ts"
+        },
+        {
+          "names": [
+            "updateCombatRecordOnElimination"
+          ],
+          "from": "src/systems/combat-action/factionAbsorption.ts"
+        },
+        {
+          "names": [
+            "resetCombatRecordStreaks"
+          ],
+          "from": "src/systems/warEcologySimulation.ts"
         }
       ]
     },
@@ -12600,18 +13072,6 @@
           "names": [
             "describeCapabilityLevels"
           ],
-          "from": "src/systems/unitActivationSystem.ts"
-        },
-        {
-          "names": [
-            "applyContactTransfer"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
-            "describeCapabilityLevels"
-          ],
           "from": "src/systems/simulation/summarizeFaction.ts"
         },
         {
@@ -12620,6 +13080,24 @@
             "applyForceCompositionPressure"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "applyContactTransfer"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
+        },
+        {
+          "names": [
+            "applyContactTransfer"
+          ],
+          "from": "src/systems/combat-action/factionAbsorption.ts"
+        },
+        {
+          "names": [
+            "describeCapabilityLevels"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
         }
       ]
     },
@@ -12919,13 +13397,6 @@
             "GameState"
           ],
           "from": "src/game/types.ts"
-        },
-        {
-          "names": [
-            "activateAiUnit",
-            "type"
-          ],
-          "from": "src/systems/unitActivationSystem.ts"
         }
       ],
       "importedBy": []
@@ -13445,17 +13916,23 @@
       "importedBy": [
         {
           "names": [
-            "getSynergyEngine",
-            "calculateSynergyAttackBonus",
-            "calculateSynergyDefenseBonus"
+            "getSynergyEngine"
           ],
-          "from": "src/systems/warEcologySimulation.ts"
+          "from": "src/systems/simulation/factionTurnEffects.ts"
         },
         {
           "names": [
             "getSynergyEngine"
           ],
-          "from": "src/systems/simulation/factionTurnEffects.ts"
+          "from": "src/systems/combat-action/factionAbsorption.ts"
+        },
+        {
+          "names": [
+            "getSynergyEngine",
+            "calculateSynergyAttackBonus",
+            "calculateSynergyDefenseBonus"
+          ],
+          "from": "src/systems/warEcologySimulation.ts"
         }
       ]
     },
@@ -13716,7 +14193,7 @@
           "names": [
             "getWallDefenseBonus"
           ],
-          "from": "src/systems/combatActionSystem.ts"
+          "from": "src/systems/combat-action/preview.ts"
         }
       ]
     },
@@ -13874,6 +14351,27 @@
             "getNatureHealingAura"
           ],
           "from": "src/systems/healingSystem.ts"
+        },
+        {
+          "names": [
+            "applyKnockback"
+          ],
+          "from": "src/systems/combat-action/helpers.ts"
+        },
+        {
+          "names": [
+            "getBulwarkDefenseBonus",
+            "getTidalCoastDebuff"
+          ],
+          "from": "src/systems/combat-action/preview.ts"
+        },
+        {
+          "names": [
+            "applyPoisonDoT",
+            "enterStealth",
+            "findRetreatHex"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
         }
       ]
     },
@@ -14522,7 +15020,14 @@
     },
     "src/replay/types.ts": {
       "imports": [],
-      "importedBy": []
+      "importedBy": [
+        {
+          "names": [
+            "ReplayCombatEvent"
+          ],
+          "from": "tests/combatEventContract.test.ts"
+        }
+      ]
     },
     "src/content/base/economy.json": {
       "imports": [],
@@ -15591,18 +16096,18 @@
       "importedBy": [
         {
           "names": [
-            "occupiesFriendlySettlement"
-          ],
-          "from": "src/systems/warEcologySimulation.ts"
-        },
-        {
-          "names": [
             "getTerrainAt",
             "occupiesFriendlySettlement",
             "applyEnvironmentalDamage",
             "getHealRate"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "occupiesFriendlySettlement"
+          ],
+          "from": "src/systems/warEcologySimulation.ts"
         }
       ]
     },
@@ -15643,6 +16148,12 @@
             "SimulationTrace"
           ],
           "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
+            "TraceCombatEvent"
+          ],
+          "from": "tests/combatEventContract.test.ts"
         }
       ]
     },
@@ -15676,6 +16187,14 @@
         },
         {
           "names": [
+            "log",
+            "recordFactionStrategy",
+            "recordSiegeEvent"
+          ],
+          "from": "src/systems/simulation/factionTurnEffects.ts"
+        },
+        {
+          "names": [
             "createSimulationTrace",
             "log",
             "recordCombatEvent",
@@ -15684,14 +16203,6 @@
             "maybeRecordEndSnapshot"
           ],
           "from": "src/systems/warEcologySimulation.ts"
-        },
-        {
-          "names": [
-            "log",
-            "recordFactionStrategy",
-            "recordSiegeEvent"
-          ],
-          "from": "src/systems/simulation/factionTurnEffects.ts"
         }
       ]
     },
@@ -15718,12 +16229,6 @@
         },
         {
           "names": [
-            "CombatActionPreview"
-          ],
-          "from": "src/systems/combatActionSystem.ts"
-        },
-        {
-          "names": [
             "ReplayCombatEvent"
           ],
           "from": "web/src/game/types/replay.ts"
@@ -15742,6 +16247,12 @@
             "type"
           ],
           "from": "web/src/game/controller/GameSession.ts"
+        },
+        {
+          "names": [
+            "buildPendingCombat"
+          ],
+          "from": "tests/combatEventContract.test.ts"
         }
       ]
     },
@@ -15818,6 +16329,198 @@
     },
     "src/systems/simulation/factionTurnEffects.ts": {
       "imports": [
+        {
+          "names": [
+            "GameState",
+            "Unit"
+          ],
+          "from": "src/game/types.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/data/registry/types.ts"
+        },
+        {
+          "names": [
+            "FactionId",
+            "HexCoord",
+            "UnitId",
+            "ChassisId",
+            "PrototypeId"
+          ],
+          "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "Prototype"
+          ],
+          "from": "src/features/prototypes/types.ts"
+        },
+        {
+          "names": [
+            "VeteranLevel",
+            "UnitStatus"
+          ],
+          "from": "src/core/enums.ts"
+        },
+        {
+          "names": [
+            "createImprovementId",
+            "createUnitId"
+          ],
+          "from": "src/core/ids.ts"
+        },
+        {
+          "names": [
+            "hexToKey",
+            "hexDistance",
+            "getNeighbors"
+          ],
+          "from": "src/core/grid.ts"
+        },
+        {
+          "names": [
+            "isHexOccupied",
+            "getUnitAtHex"
+          ],
+          "from": "src/systems/occupancySystem.ts"
+        },
+        {
+          "names": [
+            "resolveResearchDoctrine",
+            "prototypeHasComponent"
+          ],
+          "from": "src/systems/capabilityDoctrine.ts"
+        },
+        {
+          "names": [
+            "addResearchProgress",
+            "startResearch"
+          ],
+          "from": "src/systems/researchSystem.ts"
+        },
+        {
+          "names": [
+            "unlockHybridRecipes"
+          ],
+          "from": "src/systems/hybridSystem.ts"
+        },
+        {
+          "names": [
+            "deriveResourceIncome",
+            "getSupplyDeficit",
+            "advanceCaptureTimers"
+          ],
+          "from": "src/systems/economySystem.ts"
+        },
+        {
+          "names": [
+            "chooseStrategicProduction"
+          ],
+          "from": "src/systems/aiProductionStrategy.ts"
+        },
+        {
+          "names": [
+            "chooseStrategicResearch"
+          ],
+          "from": "src/systems/aiResearchStrategy.ts"
+        },
+        {
+          "names": [
+            "canSacrifice",
+            "performSacrifice"
+          ],
+          "from": "src/systems/sacrificeSystem.ts"
+        },
+        {
+          "names": [
+            "evaluateAndSpawnVillage"
+          ],
+          "from": "src/systems/villageSystem.ts"
+        },
+        {
+          "names": [
+            "isCityEncircled",
+            "isEncirclementBroken"
+          ],
+          "from": "src/systems/territorySystem.ts"
+        },
+        {
+          "names": [
+            "applyEcologyPressure",
+            "applyForceCompositionPressure"
+          ],
+          "from": "src/systems/capabilitySystem.ts"
+        },
+        {
+          "names": [
+            "getDomainProgression"
+          ],
+          "from": "src/systems/domainProgression.ts"
+        },
+        {
+          "names": [
+            "getSynergyEngine"
+          ],
+          "from": "src/systems/synergyRuntime.ts"
+        },
+        {
+          "names": [
+            "SynergyEngine",
+            "ActiveTripleStack"
+          ],
+          "from": "src/systems/synergyEngine.ts"
+        },
+        {
+          "names": [
+            "applyHealingSynergies",
+            "type"
+          ],
+          "from": "src/systems/synergyEffects.ts"
+        },
+        {
+          "names": [
+            "applySupplyDeficitPenalties"
+          ],
+          "from": "src/systems/warExhaustionSystem.ts"
+        },
+        {
+          "names": [
+            "DifficultyLevel"
+          ],
+          "from": "src/systems/aiDifficulty.ts"
+        },
+        {
+          "names": [
+            "FactionStrategy"
+          ],
+          "from": "src/systems/factionStrategy.ts"
+        },
+        {
+          "names": [
+            "SimulationTrace"
+          ],
+          "from": "src/systems/simulation/traceTypes.ts"
+        },
+        {
+          "names": [
+            "log",
+            "recordFactionStrategy",
+            "recordSiegeEvent"
+          ],
+          "from": "src/systems/simulation/traceRecorder.ts"
+        },
+        {
+          "names": [
+            "getTerrainAt",
+            "occupiesFriendlySettlement",
+            "applyEnvironmentalDamage",
+            "getHealRate"
+          ],
+          "from": "src/systems/simulation/environmentalEffects.ts"
+        },
         {
           "names": [
             "GameState",
@@ -16438,6 +17141,1043 @@
           "from": "src/systems/strategic-ai/learnLoopCoordinator.ts"
         }
       ]
+    },
+    "src/systems/unit-activation/targeting.ts": {
+      "imports": [
+        {
+          "names": [
+            "getHexesInRange",
+            "getNeighbors",
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/core/grid.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/data/registry/types.ts"
+        },
+        {
+          "names": [
+            "getRoleEffectiveness"
+          ],
+          "from": "src/data/roleEffectiveness.ts"
+        },
+        {
+          "names": [
+            "getWeaponEffectiveness"
+          ],
+          "from": "src/data/weaponEffectiveness.ts"
+        },
+        {
+          "names": [
+            "GameState"
+          ],
+          "from": "src/game/types.ts"
+        },
+        {
+          "names": [
+            "FactionId",
+            "HexCoord",
+            "UnitId"
+          ],
+          "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "isUnitRiverStealthed"
+          ],
+          "from": "src/systems/factionIdentitySystem.ts"
+        },
+        {
+          "names": [
+            "getUnitIntent"
+          ],
+          "from": "src/systems/strategicAi.ts"
+        },
+        {
+          "names": [
+            "scoreAttackCandidate",
+            "scoreStrategicTarget"
+          ],
+          "from": "src/systems/aiTactics.ts"
+        },
+        {
+          "names": [
+            "calculateFlankingBonus"
+          ],
+          "from": "src/systems/zocSystem.ts"
+        }
+      ],
+      "importedBy": [
+        {
+          "names": [
+            "findBestTargetChoice",
+            "findBestRangedTarget"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
+        }
+      ]
+    },
+    "src/systems/combat-action/helpers.ts": {
+      "imports": [
+        {
+          "names": [
+            "getDirectionIndex",
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/core/grid.ts"
+        },
+        {
+          "names": [
+            "GameState",
+            "UnitId"
+          ],
+          "from": "src/game/types.ts"
+        },
+        {
+          "names": [
+            "Unit"
+          ],
+          "from": "src/features/units/types.ts"
+        },
+        {
+          "names": [
+            "HexCoord"
+          ],
+          "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/data/registry/types.ts"
+        },
+        {
+          "names": [
+            "resolveCapabilityDoctrine"
+          ],
+          "from": "src/systems/capabilityDoctrine.ts"
+        },
+        {
+          "names": [
+            "clearPreparedAbility"
+          ],
+          "from": "src/systems/abilitySystem.ts"
+        },
+        {
+          "names": [
+            "applyKnockback"
+          ],
+          "from": "src/systems/signatureAbilitySystem.ts"
+        },
+        {
+          "names": [
+            "destroyTransport",
+            "isTransportUnit"
+          ],
+          "from": "src/systems/transportSystem.ts"
+        }
+      ],
+      "importedBy": [
+        {
+          "names": [
+            "WATER_TERRAIN",
+            "getImprovementBonus",
+            "canAttackTarget",
+            "createCombatActionPreviewRecord"
+          ],
+          "from": "src/systems/combat-action/preview.ts"
+        },
+        {
+          "names": [
+            "canAttackTarget",
+            "getImprovementBonus",
+            "removeDeadUnitsFromFactions",
+            "writeUnitToState"
+          ],
+          "from": "src/systems/combatActionSystem.ts"
+        },
+        {
+          "names": [
+            "getImprovementBonus"
+          ],
+          "from": "src/systems/unit-activation/helpers.ts"
+        }
+      ]
+    },
+    "src/systems/combat-action/preview.ts": {
+      "imports": [
+        {
+          "names": [
+            "getNeighbors",
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/core/grid.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/data/registry/types.ts"
+        },
+        {
+          "names": [
+            "Unit"
+          ],
+          "from": "src/features/units/types.ts"
+        },
+        {
+          "names": [
+            "GameState",
+            "UnitId"
+          ],
+          "from": "src/game/types.ts"
+        },
+        {
+          "names": [
+            "resolveCapabilityDoctrine"
+          ],
+          "from": "src/systems/capabilityDoctrine.ts"
+        },
+        {
+          "names": [
+            "canUseCharge"
+          ],
+          "from": "src/systems/abilitySystem.ts"
+        },
+        {
+          "names": [
+            "getBulwarkDefenseBonus",
+            "getTidalCoastDebuff"
+          ],
+          "from": "src/systems/signatureAbilitySystem.ts"
+        },
+        {
+          "names": [
+            "calculateFlankingBonus",
+            "isRearAttack"
+          ],
+          "from": "src/systems/zocSystem.ts"
+        },
+        {
+          "names": [
+            "getUnitAtHex"
+          ],
+          "from": "src/systems/occupancySystem.ts"
+        },
+        {
+          "names": [
+            "getWallDefenseBonus"
+          ],
+          "from": "src/systems/siegeSystem.ts"
+        },
+        {
+          "names": [
+            "formatPercent",
+            "humanizeCombatEffect",
+            "pushCombatEffect"
+          ],
+          "from": "src/systems/combat-action/labeling.ts"
+        },
+        {
+          "names": [
+            "WATER_TERRAIN",
+            "getImprovementBonus",
+            "canAttackTarget",
+            "createCombatActionPreviewRecord"
+          ],
+          "from": "src/systems/combat-action/helpers.ts"
+        }
+      ],
+      "importedBy": [
+        {
+          "names": [
+            "previewCombatAction"
+          ],
+          "from": "src/systems/combatActionSystem.ts"
+        },
+        {
+          "names": [
+            "previewCombatAction"
+          ],
+          "from": "tests/combatEventContract.test.ts"
+        }
+      ]
+    },
+    "src/systems/combat-action/labeling.ts": {
+      "imports": [
+        {
+          "names": [
+            "CombatActionEffect",
+            "CombatActionEffectCategory"
+          ],
+          "from": "src/systems/combat-action/types.ts"
+        }
+      ],
+      "importedBy": [
+        {
+          "names": [
+            "formatPercent",
+            "humanizeCombatEffect",
+            "pushCombatEffect"
+          ],
+          "from": "src/systems/combat-action/preview.ts"
+        },
+        {
+          "names": [
+            "pushCombatEffect"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
+        }
+      ]
+    },
+    "src/systems/combat-action/apply.ts": {
+      "imports": [
+        {
+          "names": [
+            "getNeighbors",
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/core/grid.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/data/registry/types.ts"
+        },
+        {
+          "names": [
+            "Unit"
+          ],
+          "from": "src/features/units/types.ts"
+        },
+        {
+          "names": [
+            "GameState"
+          ],
+          "from": "src/game/types.ts"
+        },
+        {
+          "names": [
+            "FactionId"
+          ],
+          "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "resolveCapabilityDoctrine"
+          ],
+          "from": "src/systems/capabilityDoctrine.ts"
+        },
+        {
+          "names": [
+            "clearPreparedAbility"
+          ],
+          "from": "src/systems/abilitySystem.ts"
+        },
+        {
+          "names": [
+            "applyCombatSignals"
+          ],
+          "from": "src/systems/combatSignalSystem.ts"
+        },
+        {
+          "names": [
+            "unlockHybridRecipes"
+          ],
+          "from": "src/systems/hybridSystem.ts"
+        },
+        {
+          "names": [
+            "awardCombatXP"
+          ],
+          "from": "src/systems/xpSystem.ts"
+        },
+        {
+          "names": [
+            "tryPromoteUnit"
+          ],
+          "from": "src/systems/veterancySystem.ts"
+        },
+        {
+          "names": [
+            "tryLearnFromKill"
+          ],
+          "from": "src/systems/learnByKillSystem.ts"
+        },
+        {
+          "names": [
+            "attemptCapture",
+            "attemptNonCombatCapture",
+            "hasCaptureAbility"
+          ],
+          "from": "src/systems/captureSystem.ts"
+        },
+        {
+          "names": [
+            "addExhaustion",
+            "EXHAUSTION_CONFIG"
+          ],
+          "from": "src/systems/warExhaustionSystem.ts"
+        },
+        {
+          "names": [
+            "applyContactTransfer"
+          ],
+          "from": "src/systems/capabilitySystem.ts"
+        },
+        {
+          "names": [
+            "applyPoisonDoT",
+            "enterStealth",
+            "findRetreatHex"
+          ],
+          "from": "src/systems/signatureAbilitySystem.ts"
+        },
+        {
+          "names": [
+            "getUnitAtHex"
+          ],
+          "from": "src/systems/occupancySystem.ts"
+        },
+        {
+          "names": [
+            "pushCombatEffect"
+          ],
+          "from": "src/systems/combat-action/labeling.ts"
+        },
+        {
+          "names": [
+            "maybeAbsorbFaction"
+          ],
+          "from": "src/systems/combat-action/factionAbsorption.ts"
+        }
+      ],
+      "importedBy": [
+        {
+          "names": [
+            "applyCombatAction"
+          ],
+          "from": "src/systems/combatActionSystem.ts"
+        }
+      ]
+    },
+    "src/systems/unit-activation/types.ts": {
+      "imports": [
+        {
+          "names": [
+            "GameState"
+          ],
+          "from": "src/game/types.ts"
+        },
+        {
+          "names": [
+            "CombatActionPreview"
+          ],
+          "from": "src/systems/combat-action/types.ts"
+        },
+        {
+          "names": [
+            "FactionId"
+          ],
+          "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "SimulationTrace",
+            "TraceAiIntentEvent",
+            "TraceCombatEffect"
+          ],
+          "from": "src/systems/warEcologySimulation.ts"
+        }
+      ],
+      "importedBy": [
+        {
+          "names": [
+            "UnitActivationOptions",
+            "UnitActivationResult"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
+        }
+      ]
+    },
+    "src/systems/combat-action/types.ts": {
+      "imports": [
+        {
+          "names": [
+            "HexCoord"
+          ],
+          "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "CombatResult"
+          ],
+          "from": "src/systems/combatSystem.ts"
+        },
+        {
+          "names": [
+            "UnitId"
+          ],
+          "from": "src/game/types.ts"
+        }
+      ],
+      "importedBy": [
+        {
+          "names": [
+            "CombatActionPreview"
+          ],
+          "from": "src/systems/unit-activation/types.ts"
+        },
+        {
+          "names": [
+            "CombatActionPreview"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
+        },
+        {
+          "names": [
+            "CombatActionEffect",
+            "CombatActionEffectCategory"
+          ],
+          "from": "src/systems/combat-action/labeling.ts"
+        }
+      ]
+    },
+    "tests/combatEventContract.test.ts": {
+      "imports": [
+        {
+          "names": [
+            "loadRulesRegistry"
+          ],
+          "from": "src/data/loader/loadRulesRegistry.ts"
+        },
+        {
+          "names": [
+            "buildMvpScenario"
+          ],
+          "from": "src/game/buildMvpScenario.ts"
+        },
+        {
+          "names": [
+            "previewCombatAction"
+          ],
+          "from": "src/systems/combat-action/preview.ts"
+        },
+        {
+          "names": [
+            "createSimulationTrace",
+            "runWarEcologySimulation"
+          ],
+          "from": "src/systems/warEcologySimulation.ts"
+        },
+        {
+          "names": [
+            "exportReplayBundle"
+          ],
+          "from": "src/replay/exportReplay.ts"
+        },
+        {
+          "names": [
+            "buildPendingCombat"
+          ],
+          "from": "web/src/game/controller/combatSession.ts"
+        },
+        {
+          "names": [
+            "ReplayCombatEvent"
+          ],
+          "from": "src/replay/types.ts"
+        },
+        {
+          "names": [
+            "TraceCombatEvent"
+          ],
+          "from": "src/systems/simulation/traceTypes.ts"
+        }
+      ],
+      "importedBy": []
+    },
+    "src/systems/combat-action/factionAbsorption.ts": {
+      "imports": [
+        {
+          "names": [
+            "GameState"
+          ],
+          "from": "src/game/types.ts"
+        },
+        {
+          "names": [
+            "FactionId"
+          ],
+          "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/data/registry/types.ts"
+        },
+        {
+          "names": [
+            "applyContactTransfer"
+          ],
+          "from": "src/systems/capabilitySystem.ts"
+        },
+        {
+          "names": [
+            "updateCombatRecordOnElimination"
+          ],
+          "from": "src/systems/historySystem.ts"
+        },
+        {
+          "names": [
+            "autoCompleteResearchForDomains"
+          ],
+          "from": "src/systems/sacrificeSystem.ts"
+        },
+        {
+          "names": [
+            "getDomainProgression"
+          ],
+          "from": "src/systems/domainProgression.ts"
+        },
+        {
+          "names": [
+            "MAX_LEARNED_DOMAINS"
+          ],
+          "from": "src/systems/knowledgeSystem.ts"
+        },
+        {
+          "names": [
+            "getSynergyEngine"
+          ],
+          "from": "src/systems/synergyRuntime.ts"
+        },
+        {
+          "names": [
+            "getFactionCityIds",
+            "syncAllFactionSettlementIds"
+          ],
+          "from": "src/systems/factionOwnershipSystem.ts"
+        }
+      ],
+      "importedBy": [
+        {
+          "names": [
+            "maybeAbsorbFaction"
+          ],
+          "from": "src/systems/combat-action/apply.ts"
+        }
+      ]
+    },
+    "src/systems/unit-activation/transport.ts": {
+      "imports": [
+        {
+          "names": [
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/core/grid.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/data/registry/types.ts"
+        },
+        {
+          "names": [
+            "GameState"
+          ],
+          "from": "src/game/types.ts"
+        },
+        {
+          "names": [
+            "HexCoord",
+            "UnitId"
+          ],
+          "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "moveUnit",
+            "getValidMoves"
+          ],
+          "from": "src/systems/movementSystem.ts"
+        },
+        {
+          "names": [
+            "log",
+            "type"
+          ],
+          "from": "src/systems/warEcologySimulation.ts"
+        }
+      ],
+      "importedBy": [
+        {
+          "names": [
+            "moveTransportAndDisembark"
+          ],
+          "from": "src/systems/unit-activation/movement.ts"
+        }
+      ]
+    },
+    "src/systems/unit-activation/helpers.ts": {
+      "imports": [
+        {
+          "names": [
+            "getDirectionIndex",
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/core/grid.ts"
+        },
+        {
+          "names": [
+            "GameState",
+            "Unit"
+          ],
+          "from": "src/game/types.ts"
+        },
+        {
+          "names": [
+            "FactionId",
+            "HexCoord",
+            "UnitId"
+          ],
+          "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "getAbilityTerrainAt",
+            "hasAdjacentEnemy"
+          ],
+          "from": "src/systems/abilitySystem.ts"
+        },
+        {
+          "names": [
+            "getImprovementBonus"
+          ],
+          "from": "src/systems/combat-action/helpers.ts"
+        }
+      ],
+      "importedBy": [
+        {
+          "names": [
+            "getTerrainAt",
+            "getImprovementAtHex",
+            "isFortificationHex",
+            "countFriendlyUnitsNearHex",
+            "countUnitsNearHex",
+            "countFortificationsNearHex"
+          ],
+          "from": "src/systems/unit-activation/fieldFort.ts"
+        },
+        {
+          "names": [
+            "getTerrainAt",
+            "isFortificationHex",
+            "mapAssignmentToIntent"
+          ],
+          "from": "src/systems/unit-activation/movement.ts"
+        }
+      ]
+    },
+    "src/systems/unit-activation/activateUnit.ts": {
+      "imports": [
+        {
+          "names": [
+            "hexDistance"
+          ],
+          "from": "src/core/grid.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/data/registry/types.ts"
+        },
+        {
+          "names": [
+            "GameState",
+            "Unit"
+          ],
+          "from": "src/game/types.ts"
+        },
+        {
+          "names": [
+            "HexCoord",
+            "UnitId"
+          ],
+          "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "applyCombatAction",
+            "previewCombatAction"
+          ],
+          "from": "src/systems/combatActionSystem.ts"
+        },
+        {
+          "names": [
+            "CombatActionPreview"
+          ],
+          "from": "src/systems/combat-action/types.ts"
+        },
+        {
+          "names": [
+            "resolveResearchDoctrine"
+          ],
+          "from": "src/systems/capabilityDoctrine.ts"
+        },
+        {
+          "names": [
+            "describeCapabilityLevels"
+          ],
+          "from": "src/systems/capabilitySystem.ts"
+        },
+        {
+          "names": [
+            "findFleeHex"
+          ],
+          "from": "src/systems/moraleSystem.ts"
+        },
+        {
+          "names": [
+            "moveUnit",
+            "canMoveTo",
+            "getValidMoves"
+          ],
+          "from": "src/systems/movementSystem.ts"
+        },
+        {
+          "names": [
+            "isTransportUnit",
+            "updateEmbarkedPositions"
+          ],
+          "from": "src/systems/transportSystem.ts"
+        },
+        {
+          "names": [
+            "getUnitIntent"
+          ],
+          "from": "src/systems/strategicAi.ts"
+        },
+        {
+          "names": [
+            "computeRetreatRisk",
+            "shouldEngageTarget"
+          ],
+          "from": "src/systems/aiTactics.ts"
+        },
+        {
+          "names": [
+            "attemptNonCombatCapture",
+            "getCaptureParams",
+            "hasCaptureAbility"
+          ],
+          "from": "src/systems/captureSystem.ts"
+        },
+        {
+          "names": [
+            "UnitActivationOptions",
+            "UnitActivationResult"
+          ],
+          "from": "src/systems/unit-activation/types.ts"
+        },
+        {
+          "names": [
+            "findBestTargetChoice",
+            "findBestRangedTarget"
+          ],
+          "from": "src/systems/unit-activation/targeting.ts"
+        },
+        {
+          "names": [
+            "performStrategicMovement"
+          ],
+          "from": "src/systems/unit-activation/movement.ts"
+        }
+      ],
+      "importedBy": [
+        {
+          "names": [
+            "activateUnit",
+            "activateAiUnit",
+            "maybeExpirePreparedAbility"
+          ],
+          "from": "src/systems/unitActivationSystem.ts"
+        }
+      ]
+    },
+    "src/systems/unit-activation/movement.ts": {
+      "imports": [
+        {
+          "names": [
+            "hexDistance"
+          ],
+          "from": "src/core/grid.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/data/registry/types.ts"
+        },
+        {
+          "names": [
+            "GameState",
+            "Unit"
+          ],
+          "from": "src/game/types.ts"
+        },
+        {
+          "names": [
+            "HexCoord",
+            "UnitId"
+          ],
+          "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "getAbilityTerrainAt"
+          ],
+          "from": "src/systems/abilitySystem.ts"
+        },
+        {
+          "names": [
+            "getNearbySupportScore",
+            "getNearestFriendlyCity",
+            "getUnitIntent",
+            "scoreStrategicTerrain"
+          ],
+          "from": "src/systems/strategicAi.ts"
+        },
+        {
+          "names": [
+            "scoreMoveCandidate"
+          ],
+          "from": "src/systems/aiTactics.ts"
+        },
+        {
+          "names": [
+            "getHexVisibility"
+          ],
+          "from": "src/systems/fogSystem.ts"
+        },
+        {
+          "names": [
+            "moveUnit",
+            "getValidMoves"
+          ],
+          "from": "src/systems/movementSystem.ts"
+        },
+        {
+          "names": [
+            "UnitStrategicIntent"
+          ],
+          "from": "src/systems/factionStrategy.ts"
+        },
+        {
+          "names": [
+            "getTerrainAt",
+            "isFortificationHex",
+            "mapAssignmentToIntent"
+          ],
+          "from": "src/systems/unit-activation/helpers.ts"
+        },
+        {
+          "names": [
+            "moveTransportAndDisembark"
+          ],
+          "from": "src/systems/unit-activation/transport.ts"
+        }
+      ],
+      "importedBy": [
+        {
+          "names": [
+            "performStrategicMovement"
+          ],
+          "from": "src/systems/unit-activation/activateUnit.ts"
+        }
+      ]
+    },
+    "src/systems/unit-activation/fieldFort.ts": {
+      "imports": [
+        {
+          "names": [
+            "createImprovementId"
+          ],
+          "from": "src/core/ids.ts"
+        },
+        {
+          "names": [
+            "hexDistance",
+            "hexToKey"
+          ],
+          "from": "src/core/grid.ts"
+        },
+        {
+          "names": [
+            "GameState",
+            "UnitId"
+          ],
+          "from": "src/game/types.ts"
+        },
+        {
+          "names": [
+            "FactionId"
+          ],
+          "from": "src/types.ts"
+        },
+        {
+          "names": [
+            "RulesRegistry"
+          ],
+          "from": "src/data/registry/types.ts"
+        },
+        {
+          "names": [
+            "resolveResearchDoctrine"
+          ],
+          "from": "src/systems/capabilityDoctrine.ts"
+        },
+        {
+          "names": [
+            "getNearbySupportScore",
+            "getNearestFriendlyCity",
+            "getUnitIntent",
+            "scoreStrategicTerrain"
+          ],
+          "from": "src/systems/strategicAi.ts"
+        },
+        {
+          "names": [
+            "canUseBrace"
+          ],
+          "from": "src/systems/abilitySystem.ts"
+        },
+        {
+          "names": [
+            "getTerrainAt",
+            "getImprovementAtHex",
+            "isFortificationHex",
+            "countFriendlyUnitsNearHex",
+            "countUnitsNearHex",
+            "countFortificationsNearHex"
+          ],
+          "from": "src/systems/unit-activation/helpers.ts"
+        }
+      ],
+      "importedBy": []
     }
   }
 }

@@ -66,7 +66,7 @@
     "wallDefenseMultiplier": 2
   },
   "plains_riders": {
-    "sneakAttackBonus": 0.5,
+    "sneakAttackBonus": 0,
     "summon": {
       "chassisId": "alligator_frame",
       "terrainTypes": ["river", "jungle", "swamp"],

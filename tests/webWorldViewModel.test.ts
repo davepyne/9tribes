@@ -69,6 +69,30 @@ describe('worldViewModel play derivation', () => {
     expect(exhaustedUnit?.acted).toBe(true);
   });
 
+  it('omits units with zero hp from the world model', () => {
+    const session = new GameSession({ type: 'fresh', seed: 42 });
+    const state = session.getState();
+    const doomedUnit = Array.from(state.units.values())[0]!;
+    const exhaustedState = {
+      ...state,
+      units: new Map(state.units).set(doomedUnit.id, {
+        ...doomedUnit,
+        hp: 0,
+      }),
+    };
+
+    const world = buildWorldViewModel({
+      kind: 'play',
+      state: exhaustedState,
+      registry: session.getRegistry(),
+      playerFactionId: exhaustedState.activeFactionId,
+      reachableHexes: [],
+      pathPreview: [],
+    });
+
+    expect(world.units.find((unit) => unit.id === doomedUnit.id)).toBeUndefined();
+  });
+
   it('maps hill clan fortifications to the fortress sprite', () => {
     const session = new GameSession({ type: 'fresh', seed: 42 });
     const state = session.getState();

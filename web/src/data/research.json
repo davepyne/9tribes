@@ -391,7 +391,7 @@
         "unlocks": [],
         "qualitativeEffect": {
           "type": "stealth_reveal",
-          "description": "Stealth units reveal enemies within 2 hexes",
+          "description": "Stealth units reveal stealthed enemies within 2 hexes",
           "effect": { "stealthRevealRange": 2 }
         }
       }

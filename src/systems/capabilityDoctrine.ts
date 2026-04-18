@@ -55,7 +55,7 @@ export interface ResearchDoctrine {
   healingAuraUpgradeEnabled: boolean; // nature_healing_t3 — healing aura range doubled to 2 hexes
   roughTerrainDefenseEnabled: boolean; // camel_adaptation_t3 — units in rough terrain gain +20% defense
   navalCoastalBonusEnabled: boolean;  // tidal_warfare_t3 — naval units gain +25% attack in coastal hexes
-  stealthRevealEnabled: boolean;      // river_stealth_t3 — stealth units reveal enemies within 2 hexes
+  stealthRevealEnabled: boolean;      // river_stealth_t3 — stealth units reveal stealthed enemies within 2 hexes
   autoCaptureEnabled: boolean;         // slaving_t3 — wounded enemies below 25% HP are auto-captured
   armorPenetrationEnabled: boolean;    // heavy_hitter_t3 — ignore 50% armor, units cannot be displaced
   natureHealingRegenBonus: number;     // nature_healing_t1/T3 — +1 HP/turn, or +3 HP/turn for native T3

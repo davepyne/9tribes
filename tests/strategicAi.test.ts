@@ -252,7 +252,7 @@ describe('strategic AI', () => {
     expect(secondFlankReason).toContain('steppe_exposed_city');
   });
 
-  it('foreign river stealth t3 reveals nearby stealthed enemies to fog consumers', () => {
+  it('foreign river stealth t3 lets stealth units reveal nearby stealthed enemies to fog consumers', () => {
     let state = buildMvpScenario(42);
     trimState(state, ['hill_clan', 'steppe_clan']);
     const hillId = 'hill_clan' as never;

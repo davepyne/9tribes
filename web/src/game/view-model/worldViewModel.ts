@@ -138,7 +138,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       hexes,
     },
     factions,
-    units: Array.from(state.units.values()).map((unit) => {
+    units: Array.from(state.units.values()).filter((unit) => unit.hp > 0).map((unit) => {
       const prototype = state.prototypes.get(unit.prototypeId as never);
       const chassisId = prototype?.chassisId ?? inferChassisId(prototype?.name ?? unit.prototypeId);
       const canAct = unit.factionId === state.activeFactionId
@@ -230,6 +230,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
         learnedAbilities: unit.learnedAbilities?.map((a) => a.domainId),
         isStealthed: unit.isStealthed,
         poisoned: (unit.poisoned || (unit.poisonStacks ?? 0) > 0) || undefined,
+        morale: unit.morale,
         routed: unit.routed || undefined,
         preparedAbility: unit.preparedAbility,
         isSettler: prototype?.tags?.includes('settler') || undefined,

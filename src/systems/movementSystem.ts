@@ -10,6 +10,7 @@ import { applyOpportunityAttacks } from './opportunityAttackSystem.js';
 import { getMovementCostModifier } from './factionIdentitySystem.js';
 import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import { canUseCharge } from './abilitySystem.js';
+import { pruneDeadUnits } from './combatActionSystem.js';
 import { destroyVillage } from './villageSystem.js';
 import { SynergyEngine } from './synergyEngine.js';
 import pairSynergiesData from '../content/base/pair-synergies.json' assert { type: 'json' };
@@ -302,7 +303,7 @@ export function moveUnit(
   // Opportunity attacks: melee enemies that the unit departed from get a free strike.
   newState = applyOpportunityAttacks(newState, unitId, unit.position, targetHex, rulesRegistry);
 
-  return newState;
+  return pruneDeadUnits(newState);
 }
 
 /**

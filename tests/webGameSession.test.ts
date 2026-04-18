@@ -1,4 +1,5 @@
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
+import { hexDistance } from '../src/core/grid';
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { GameSession } from '../web/src/game/controller/GameSession';
 import { createCuratedPlaytestPayload } from '../web/src/game/fixtures/curatedPlaytest';
@@ -276,14 +277,89 @@ describe('GameSession', () => {
       { humanControlledFactionIds: [attackerFactionId] },
     );
 
-    expect(session.getState().cities.get(defenderCityId)?.besieged).toBe(false);
+    expect(session.getState().cities.get(defenderCityId)?.besieged).toBe(true);
 
     session.dispatch({ type: 'end_turn' });
 
     const besiegedCity = session.getState().cities.get(defenderCityId);
     expect(session.getState().activeFactionId).toBe(attackerFactionId);
     expect(besiegedCity?.besieged).toBe(true);
-    expect(besiegedCity?.turnsUnderSiege).toBe(1);
+    expect(besiegedCity?.turnsUnderSiege).toBeGreaterThan(0);
+  });
+
+  it('updates live siege state immediately after a player move creates encirclement', () => {
+    const registry = loadRulesRegistry();
+    const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
+    trimStateToFactions(state, ['steppe_clan', 'hill_clan']);
+
+    const attackerFactionId = 'steppe_clan' as never;
+    const defenderFactionId = 'hill_clan' as never;
+    const attackerFaction = state.factions.get(attackerFactionId)!;
+    const defenderFaction = state.factions.get(defenderFactionId)!;
+    const defenderCityId = defenderFaction.cityIds[0];
+    const defenderCity = state.cities.get(defenderCityId)!;
+    const siegeCenter = { q: 8, r: 6 };
+    const moverId = attackerFaction.unitIds[0];
+    const supportId = 'live_siege_support' as never;
+    const moverBase = state.units.get(moverId as never)!;
+    const supportBase = state.units.get(attackerFaction.unitIds[1] as never)!;
+
+    state.cities.set(defenderCityId, {
+      ...defenderCity,
+      position: siegeCenter,
+      besieged: false,
+      turnsUnderSiege: 0,
+    });
+
+    state.units = new Map([
+      [moverId, {
+        ...moverBase,
+        position: { q: 11, r: 6 },
+        status: 'ready',
+        attacksRemaining: 1,
+        movesRemaining: moverBase.maxMoves,
+      }],
+      [supportId, {
+        ...supportBase,
+        id: supportId,
+        position: { q: 8, r: 5 },
+        status: 'ready',
+        attacksRemaining: 1,
+        movesRemaining: supportBase.maxMoves,
+      }],
+    ]);
+    state.factions.set(attackerFactionId, {
+      ...attackerFaction,
+      unitIds: [moverId, supportId],
+    });
+    state.factions.set(defenderFactionId, {
+      ...defenderFaction,
+      unitIds: [],
+      cityIds: [defenderCityId],
+    });
+    state.activeFactionId = attackerFactionId;
+
+    const session = new GameSession(
+      { type: 'serialized', payload: serializeGameState(state) },
+      registry,
+      { humanControlledFactionIds: [attackerFactionId] },
+    );
+
+    expect(session.getState().cities.get(defenderCityId)?.besieged).toBe(false);
+
+    const siegeMove = session.getLegalMoves(moverId).find((move) => hexDistance({ q: move.q, r: move.r }, siegeCenter) <= 2);
+    expect(siegeMove).toBeTruthy();
+
+    session.dispatch({
+      type: 'move_unit',
+      unitId: moverId,
+      destination: { q: siegeMove!.q, r: siegeMove!.r },
+    });
+
+    const besiegedCity = session.getState().cities.get(defenderCityId);
+    expect(session.getState().units.get(moverId)?.position).toEqual({ q: siegeMove!.q, r: siegeMove!.r });
+    expect(besiegedCity?.besieged).toBe(true);
+    expect(besiegedCity?.turnsUnderSiege).toBe(0);
   });
 
   it('supports multi-step movement plans in play mode', () => {

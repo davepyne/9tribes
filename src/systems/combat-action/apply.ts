@@ -32,6 +32,7 @@ import type {
 import { pushCombatEffect } from './labeling.js';
 import {
   WATER_TERRAIN,
+  pruneDeadUnits,
   removeDeadUnitsFromFactions,
   rotateUnitToward,
   writeUnitToState,
@@ -642,5 +643,5 @@ export function applyCombatAction(
     },
   };
 
-  return { state: current, feedback };
+  return { state: pruneDeadUnits(current), feedback };
 }
