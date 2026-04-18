@@ -223,7 +223,8 @@ export function reconstructSquads(
     // Travel-time-based staleness: compute timeout from actual distance & unit speed
     const slowestMoves = Math.max(1, ...livingEntries.map(e => {
       const unit = state.units.get(e.unitId);
-      return state.prototypes.get(unit?.prototypeId ?? '')?.derivedStats?.moves ?? 2;
+      const pid = unit?.prototypeId;
+      return pid ? (state.prototypes.get(pid)?.derivedStats?.moves ?? 2) : 2;
     }));
     const estimatedTravelTurns = Math.ceil(trailDist / slowestMoves);
     const STALE_BUFFER = 2;
