@@ -28,6 +28,7 @@ import {
 } from './objectives.js';
 import { applyDifficultyCoordinator } from './difficultyCoordinator.js';
 import { applyDifficultyLearnAndSacrificeCoordinator } from './learnLoopCoordinator.js';
+import { reconstructSquads, applySquadGate, type SquadState, type SquadGateStats } from './rendezvous.js';
 
 function chooseWeightedAssignment(
   personality: AiPersonalitySnapshot,
@@ -224,6 +225,7 @@ function applyWaitForAlliesGate(
 
   for (const [unitId, intent] of Object.entries(intents)) {
     if (!isAggressiveAssignment(intent.assignment)) continue;
+    if (intent.squadId) continue; // handled by applySquadGate
     const unit = state.units.get(unitId as UnitId);
     if (!unit || unit.hp <= 0) continue;
 
@@ -639,6 +641,19 @@ export function assignUnitIntents(
       )
     : [];
 
+  const squads = reconstructSquads(
+    state,
+    factionId,
+    previousStrategy,
+    intents,
+  );
+  const squadGateStats = applySquadGate(
+    state,
+    factionId,
+    squads,
+    intents,
+  );
+
   const waitForAlliesStats = applyWaitForAlliesGate(
     state,
     factionId,
@@ -661,9 +676,11 @@ export function assignUnitIntents(
 
   return {
     intents,
+    squads: Array.from(squads.values()),
     reasons: [
       summary ? `assignment_mix=${summary}` : 'assignment_mix=none',
       `target_budget=choices:${targetSelectionStats.choices},overfills:${targetSelectionStats.overfills}`,
+      `squad_gate=assembling:${squadGateStats.assembling},ready:${squadGateStats.ready},engaging:${squadGateStats.engaging},disbanded:${squadGateStats.disbanded}`,
       `squad_wait=waits:${waitForAlliesStats.waits},overrides:${waitForAlliesStats.overrides}`,
       `squad_count=${new Set(Object.values(squadPlan).map((entry) => entry.squadId)).size}`,
       ...coordinatorReasons,

@@ -66,6 +66,10 @@ export interface UnitStrategicIntent {
   isolationScore: number;
   isolated: boolean;
   reason: string;
+  // Squad rendezvous fields (stamped by coordinator)
+  squadId?: string;
+  rendezvousHex?: HexCoord;
+  squadRole?: 'primary' | 'flank' | 'harass' | 'solo';
 }
 
 export interface HybridGoal {
@@ -103,5 +107,6 @@ export interface FactionStrategy {
   peakArmySize: number;
   peakCityCount: number;
   lastStandState?: LastStandState;
+  squads?: import('./strategic-ai/rendezvous.js').SquadState[];
   debugReasons: string[];
 }

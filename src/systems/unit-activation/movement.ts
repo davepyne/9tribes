@@ -24,6 +24,7 @@ import type { UnitStrategicIntent } from '../factionStrategy.js';
 import { getTerrainAt, isFortificationHex } from './helpers.js';
 import { moveTransportAndDisembark } from './transport.js';
 import { mapAssignmentToIntent } from './helpers.js';
+import { RENDEZVOUS_READY_DISTANCE, HOLD_DEFENSE_RADIUS } from '../strategic-ai/rendezvous.js';
 
 export function buildFallbackIntent(state: GameState, unit: Unit): UnitStrategicIntent {
   const city = getNearestFriendlyCity(state, unit.factionId, unit.position);
@@ -59,6 +60,10 @@ export function buildFallbackIntent(state: GameState, unit: Unit): UnitStrategic
 }
 
 export function resolveWaypoint(state: GameState, unit: Unit, intent: UnitStrategicIntent): HexCoord {
+  // Squad assembly uses a staging hex before the final objective.
+  if (intent.squadId && intent.waypointKind === 'front_anchor') {
+    return intent.waypoint;
+  }
   if (intent.objectiveUnitId) {
     const liveTarget = state.units.get(intent.objectiveUnitId);
     if (liveTarget && liveTarget.hp > 0) {
@@ -128,7 +133,17 @@ export function performStrategicMovement(
     }
   }
 
-  const validMoves = getValidMoves(state, unitId, state.map, registry);
+  let validMoves = getValidMoves(state, unitId, state.map, registry);
+
+  // Phase D: restrict movement for units holding at squad rendezvous
+  if (unitIntent.squadId && unitIntent.rendezvousHex) {
+    const distToRendezvous = hexDistance(unit.position, unitIntent.rendezvousHex);
+    if (distToRendezvous <= RENDEZVOUS_READY_DISTANCE) {
+      validMoves = validMoves.filter(
+        m => hexDistance(m, unitIntent.rendezvousHex!) <= HOLD_DEFENSE_RADIUS
+      );
+    }
+  }
 
   // Pirate Lords: score boarding a transport as a move option alongside regular moves
   const isGreedyInfantry = faction.identityProfile.passiveTrait === 'greedy'

@@ -11,10 +11,11 @@ import {
   getSecondNearestEnemyCity,
   chooseAdaptivePressureCity,
   chooseEconomicDenialObjective,
-  chooseVillageFirstHunterTarget,
   getStrategicEnemyPressure,
   getHarassmentSuitability,
 } from './objectives.js';
+import { computeRendezvousHex } from './rendezvous.js';
+import { centroidHex } from './helpers.js';
 
 export function applyDifficultyCoordinator(
   state: GameState,
@@ -26,7 +27,7 @@ export function applyDifficultyCoordinator(
   previousStrategy: FactionStrategy | undefined,
 ): string[] {
   if (!difficultyProfile.strategy.coordinatorEnabled) {
-    return [];
+    return [`${difficultyProfile.difficulty}_coordinator=disabled`];
   }
   if (posture === 'last_stand') {
     return ['coordinator=skipped:last_stand'];
@@ -170,27 +171,48 @@ export function applyDifficultyCoordinator(
       }
       return compareUnitEntries(left, right);
     });
+  const squadDebugLines: string[] = [];
   const assignObjectiveGroup = (
     huntersToAssign: UnitWithPrototype[],
     assignedHunterIds: Set<UnitId>,
     objective: PressureObjective,
     assignment: UnitAssignment,
     pushReason: string,
+    squadRole?: 'primary' | 'flank' | 'harass',
   ) => {
     registerObjective(objective);
+    const squadCentroid = squadRole
+      ? centroidHex(huntersToAssign.map(h => h.unit.position))
+      : homeCity.position;
+    const rendezvous = squadRole
+      ? computeRendezvousHex(objective.waypoint, squadCentroid, state, factionId)
+      : undefined;
+    const squadId = squadRole
+      ? `sq_${factionId}_${state.round}_${squadRole}_${objective.targetId}`
+      : undefined;
     for (const hunter of huntersToAssign) {
       assignedHunterIds.add(hunter.unit.id);
       intents[hunter.unit.id] = {
         ...intents[hunter.unit.id],
         assignment,
-        waypointKind: objective.waypointKind,
-        waypoint: objective.waypoint,
+        waypointKind: rendezvous ? 'front_anchor' : objective.waypointKind,
+        waypoint: rendezvous ?? objective.waypoint,
         objectiveCityId: objective.objectiveCityId,
         objectiveUnitId: objective.objectiveUnitId,
         anchor: objective.anchor,
         isolated: false,
-        reason: `${pushReason} ${objective.reason}`,
+        squadId,
+        rendezvousHex: rendezvous,
+        squadRole,
+        reason: rendezvous
+          ? `${pushReason} rendezvous(${rendezvous.q},${rendezvous.r}) for ${objective.targetId} (${objective.reason})`
+          : `${pushReason} ${objective.reason}`,
       };
+    }
+    if (squadId && rendezvous) {
+      squadDebugLines.push(
+        `${coordinatorLabel}_squad=${squadId}:members=${huntersToAssign.length}:rendezvous=(${rendezvous.q},${rendezvous.r}):objective=${objective.targetId}`,
+      );
     }
   };
   const assignStagingGroup = (
@@ -215,7 +237,7 @@ export function applyDifficultyCoordinator(
       };
     }
   };
-  const chooseCityPressureObjective = (
+  const chooseCitySiegeObjective = (
     destinationCity: import('../../game/types.js').City,
   ): PressureObjective => {
     if (isLosing) {
@@ -236,22 +258,6 @@ export function applyDifficultyCoordinator(
       }
     }
 
-    const waypointVillage =
-      posture === 'offensive' || posture === 'siege' || difficultyProfile.strategy.economicDenialWeight > 0
-        ? chooseVillageFirstHunterTarget(state, factionId, homeCity.position, destinationCity, difficultyProfile)
-        : undefined;
-    if (waypointVillage) {
-      return {
-        waypointKind: 'cleanup_target',
-        waypoint: waypointVillage.position,
-        objectiveCityId: undefined,
-        objectiveUnitId: undefined,
-        villageId: waypointVillage.id,
-        anchor: destinationCity.position,
-        targetId: waypointVillage.id,
-        reason: `via village ${waypointVillage.id} before ${destinationCity.id}`,
-      };
-    }
     return {
       waypointKind: 'enemy_city',
       waypoint: destinationCity.position,
@@ -341,14 +347,15 @@ export function applyDifficultyCoordinator(
 
         if (primaryHunters.length >= multiAxisMinGroupSize && flankHunters.length >= multiAxisMinGroupSize) {
           const hunterIds = new Set<UnitId>();
-          const primaryObjective = chooseCityPressureObjective(targetCity);
-          const flankObjective = chooseCityPressureObjective(flankTargetCity);
+          const primaryObjective = chooseCitySiegeObjective(targetCity);
+          const flankObjective = chooseCitySiegeObjective(flankTargetCity);
           assignObjectiveGroup(
             harassmentHunters,
             hunterIds,
             harassObjective,
             'raider',
             `${coordinatorLabel} coordinator harassment wave`,
+            'harass',
           );
           if (shouldStaggerMainPush) {
             assignStagingGroup(
@@ -370,6 +377,7 @@ export function applyDifficultyCoordinator(
               primaryObjective,
               isLosing ? 'raider' : 'main_army',
               `${coordinatorLabel} coordinator main push`,
+              'primary',
             );
             assignObjectiveGroup(
               flankHunters,
@@ -377,6 +385,7 @@ export function applyDifficultyCoordinator(
               flankObjective,
               isLosing ? 'raider' : 'main_army',
               `${coordinatorLabel} coordinator flanking push`,
+              'flank',
             );
           }
 
@@ -398,6 +407,7 @@ export function applyDifficultyCoordinator(
             `${coordinatorLabel}_harass_target=${harassObjective.targetId}`,
             `${coordinatorLabel}_flank_target=${flankTargetCity.id}`,
             `${coordinatorLabel}_coordinator=active:supply=${supplyRatio.toFixed(2)},hunters=${hunterIds.size},defenders=${hunterPool.length - hunterIds.size + 1},mode=${isLosing ? 'denial' : isWinning ? 'advantage' : 'standard'}`,
+            ...squadDebugLines,
           ];
         }
       }
@@ -439,16 +449,18 @@ export function applyDifficultyCoordinator(
           assignObjectiveGroup(
             primaryHunters,
             hunterIds,
-            chooseCityPressureObjective(targetCity),
+            chooseCitySiegeObjective(targetCity),
             isLosing ? 'raider' : 'main_army',
             `${coordinatorLabel} coordinator hunter push`,
+            'primary',
           );
           assignObjectiveGroup(
             flankHunters,
             hunterIds,
-            chooseCityPressureObjective(secondTargetCity),
+            chooseCitySiegeObjective(secondTargetCity),
             isLosing ? 'raider' : 'main_army',
             `${coordinatorLabel} coordinator flanking push`,
+            'flank',
           );
 
           for (const defender of hunterPool) {
@@ -467,6 +479,7 @@ export function applyDifficultyCoordinator(
             `${coordinatorLabel}_multi_axis=double`,
             `${coordinatorLabel}_flank_target=${secondTargetCity.id}`,
             `${coordinatorLabel}_coordinator=active:supply=${supplyRatio.toFixed(2)},hunters=${hunterIds.size},defenders=${hunterPool.length - hunterIds.size + 1},mode=${isLosing ? 'denial' : isWinning ? 'advantage' : 'standard'}`,
+            ...squadDebugLines,
           ];
         }
       }
@@ -485,8 +498,8 @@ export function applyDifficultyCoordinator(
           excludedVillageIds: usedObjectives.villageIds,
           excludedCityIds: usedObjectives.cityIds,
         },
-      ) ?? chooseCityPressureObjective(targetCity)
-    : chooseCityPressureObjective(targetCity);
+      ) ?? chooseCitySiegeObjective(targetCity)
+    : chooseCitySiegeObjective(targetCity);
 
   const hunters = rankHuntersForObjective(hunterPool, {
     waypoint: singleAxisObjective.waypoint,
@@ -502,6 +515,7 @@ export function applyDifficultyCoordinator(
     singleAxisObjective,
     isLosing ? 'raider' : 'main_army',
     `${coordinatorLabel} coordinator hunter push`,
+    'primary',
   );
 
   for (const defender of hunterPool) {
@@ -520,5 +534,6 @@ export function applyDifficultyCoordinator(
     `${coordinatorLabel}_multi_axis=single`,
     `${coordinatorLabel}_target=${singleAxisObjective.targetId}`,
     `${coordinatorLabel}_coordinator=active:supply=${supplyRatio.toFixed(2)},hunters=${hunterIds.size},defenders=${hunterPool.length - hunterIds.size + 1},mode=${isLosing ? 'denial' : isWinning ? 'advantage' : 'standard'}`,
+    ...squadDebugLines,
   ];
 }

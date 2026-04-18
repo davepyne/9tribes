@@ -202,6 +202,7 @@ export function computeFactionStrategy(
     peakArmySize,
     peakCityCount,
     lastStandState,
+    squads: assignmentDecision.squads,
     debugReasons,
   };
 }

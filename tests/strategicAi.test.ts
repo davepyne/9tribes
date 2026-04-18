@@ -138,7 +138,7 @@ describe('strategic AI', () => {
     state.round += 1;
     const second = computeFactionStrategy(state, hillId, registry, 'hard');
 
-    expect(Object.values(second.unitIntents).some((intent) => intent.reason.includes('coordinator main push toward'))).toBe(true);
+    expect(Object.values(second.unitIntents).some((intent) => intent.reason.includes('coordinator main push') && intent.reason.includes('toward'))).toBe(true);
     expect(Object.values(second.unitIntents).some((intent) => intent.reason.includes('coordinator flanking push'))).toBe(true);
   });
 
@@ -639,7 +639,8 @@ describe('strategic AI', () => {
         // due to the global ID counter. threatenedCityCount captures the same info.
         reasons: event.reasons
           .map((r) => r.replace(/^threatened_city=[^:]+/, 'threatened_city'))
-          .map((r) => r.replace(/^assignment_[^=]+=/, 'assignment_unit=')),
+          .map((r) => r.replace(/^assignment_[^=]+=/, 'assignment_unit='))
+          .map((r) => r.replace(/garrison=unit_\d+/, 'garrison=unit_?')),
       }));
     expect(normalize(traceA.factionStrategyEvents)).toEqual(normalize(traceB.factionStrategyEvents));
   });

@@ -39,7 +39,7 @@ export function buildDebugReasons(
   const reasons = [`posture=${posture}`];
   reasons.push(...postureReasons.slice(0, 2));
   reasons.push(...focusReasons.slice(0, 2));
-  reasons.push(...assignmentReasons.slice(0, 4));
+  reasons.push(...assignmentReasons.slice(0, 8));
   if (threatenedCities[0]) reasons.push(`threatened_city=${threatenedCities[0].cityId}:${threatenedCities[0].threatScore}`);
   if (fronts[0]) reasons.push(`front=${hexToKey(fronts[0].anchor)}:${fronts[0].pressure}`);
   if (supplyDeficit > 0) reasons.push(`supply_deficit=${supplyDeficit}`);

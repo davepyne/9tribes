@@ -46,6 +46,7 @@ import {
 } from './fieldFort.js';
 import { findBestTargetChoice, findBestRangedTarget } from './targeting.js';
 import { performStrategicMovement } from './movement.js';
+import { RENDEZVOUS_READY_DISTANCE } from '../strategic-ai/rendezvous.js';
 
 const HIGH_VALUE_ATTACK_SCORE = 10;
 
@@ -126,6 +127,11 @@ export function activateUnit(
     unitRange <= 1 && (canUseCharge(prototype) || factionDoctrine.chargeTranscendenceEnabled);
   const strategy = current.factionStrategies.get(factionId);
   const unitIntent = getUnitIntent(strategy, unitId);
+  const holdingAtRendezvous = !!(
+    unitIntent?.squadId
+    && unitIntent.rendezvousHex
+    && hexDistance(activeUnit.position, unitIntent.rendezvousHex) <= RENDEZVOUS_READY_DISTANCE
+  );
   // For defender units: get the threatened city position for engagement scoring
   const threatenedCityForUnit = unitIntent?.threatenedCityId
     ? current.cities.get(unitIntent.threatenedCityId)
@@ -171,7 +177,7 @@ export function activateUnit(
   let chargeMove: HexCoord | null = null;
   let bestChargeScore = -Infinity;
 
-  if (!enemy && activeUnit.movesRemaining > 0 && canChargeAttack) {
+  if (!enemy && activeUnit.movesRemaining > 0 && canChargeAttack && !holdingAtRendezvous) {
     for (const move of getValidMoves(current, unitId, map, registry)) {
       const choice = findBestTargetChoice(current, unitId, move, factionId, prototype as any, registry, threatenedCityPosition);
       if (!choice.target) continue;

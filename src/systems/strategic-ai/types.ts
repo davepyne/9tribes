@@ -26,6 +26,7 @@ export interface FocusTargetDecision {
 export interface AssignmentDecision {
   intents: Record<string, import('../factionStrategy.js').UnitStrategicIntent>;
   reasons: string[];
+  squads?: import('./rendezvous.js').SquadState[];
 }
 
 export interface FocusTargetCandidate {
