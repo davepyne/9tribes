@@ -25,6 +25,7 @@ export interface AiDifficultyProfile {
     settlerArmyShortfallWeight: number;
     settlerUtilizationFloor: number;
     settlerUtilizationPenaltyWeight: number;
+    settlerUtilizationBonusWeight: number;
     settlerVisibleEnemyBasePenalty: number;
     settlerVisibleEnemyPerUnitPenalty: number;
     settlerReservePenaltyWeight: number;
@@ -33,6 +34,7 @@ export interface AiDifficultyProfile {
     signatureExploitWeight: number;
     aggressiveFillMargin: number | null;
     aggressiveFillWeight: number;
+    settlerVillageCost: number;
   };
   research: {
     stickyThreshold: number;
@@ -131,10 +133,11 @@ const EASY_PROFILE: AiDifficultyProfile = {
     settlerGateStrength: 1,
     settlerReserveFloor: 3,
     settlerReservePerCity: 2,
-    settlerArmyShortfallWeight: 3,
+    settlerArmyShortfallWeight: 1.5,
     settlerUtilizationFloor: 0.75,
     settlerUtilizationPenaltyWeight: 18,
-    settlerVisibleEnemyBasePenalty: 12,
+    settlerUtilizationBonusWeight: 4,
+    settlerVisibleEnemyBasePenalty: 3,
     settlerVisibleEnemyPerUnitPenalty: 1.5,
     settlerReservePenaltyWeight: 2.5,
     counterCompositionThreshold: 1,
@@ -142,6 +145,7 @@ const EASY_PROFILE: AiDifficultyProfile = {
     signatureExploitWeight: 0,
     aggressiveFillMargin: null,
     aggressiveFillWeight: 0,
+    settlerVillageCost: 6,
   },
   research: {
     stickyThreshold: 3,
@@ -240,10 +244,11 @@ const NORMAL_PROFILE: AiDifficultyProfile = {
     settlerGateStrength: 1,
     settlerReserveFloor: 3,
     settlerReservePerCity: 2,
-    settlerArmyShortfallWeight: 3,
+    settlerArmyShortfallWeight: 1.5,
     settlerUtilizationFloor: 0.75,
     settlerUtilizationPenaltyWeight: 18,
-    settlerVisibleEnemyBasePenalty: 12,
+    settlerUtilizationBonusWeight: 4,
+    settlerVisibleEnemyBasePenalty: 3,
     settlerVisibleEnemyPerUnitPenalty: 1.5,
     settlerReservePenaltyWeight: 2.5,
     counterCompositionThreshold: 0.4,
@@ -251,6 +256,7 @@ const NORMAL_PROFILE: AiDifficultyProfile = {
     signatureExploitWeight: 2.2,
     aggressiveFillMargin: 2,
     aggressiveFillWeight: 10,
+    settlerVillageCost: 4,
   },
   research: {
     stickyThreshold: 2.5,
@@ -308,10 +314,10 @@ const NORMAL_PROFILE: AiDifficultyProfile = {
     learnLoopMaxReturnShare: 0.4,
     strategicFogCheat: false,
     memoryDecayTurns: 20,
-    economicDenialWeight: 2,
-    freshVillageDenialTurns: 2,
+    economicDenialWeight: 4,
+    freshVillageDenialTurns: 5,
     settlerInterceptionEnabled: true,
-    settlerInterceptionRadius: 6,
+    settlerInterceptionRadius: 14,
     postureCommitmentLockTurns: 2,
     postureExplorationDeadline: 12,
     advantageHunterShare: 0.80,
@@ -349,10 +355,11 @@ const HARD_PROFILE: AiDifficultyProfile = {
     settlerGateStrength: 1.35,
     settlerReserveFloor: 4,
     settlerReservePerCity: 2.5,
-    settlerArmyShortfallWeight: 4,
+    settlerArmyShortfallWeight: 2,
     settlerUtilizationFloor: 0.85,
     settlerUtilizationPenaltyWeight: 24,
-    settlerVisibleEnemyBasePenalty: 14,
+    settlerUtilizationBonusWeight: 3,
+    settlerVisibleEnemyBasePenalty: 4,
     settlerVisibleEnemyPerUnitPenalty: 2,
     settlerReservePenaltyWeight: 3.25,
     counterCompositionThreshold: 0.4,
@@ -360,6 +367,7 @@ const HARD_PROFILE: AiDifficultyProfile = {
     signatureExploitWeight: 2.2,
     aggressiveFillMargin: 2,
     aggressiveFillWeight: 10,
+    settlerVillageCost: 3,
   },
   research: {
     stickyThreshold: 2.5,

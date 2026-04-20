@@ -212,6 +212,12 @@ export class MapScene extends Phaser.Scene {
     // Right-click is handled by handleRightClick — ignore here to avoid eating the selection
     if (MapScene.isRightClick(pointer)) return;
 
+    // Ctrl+Click → open terrain inspector for this hex
+    if (MapScene.isCtrlClick(pointer)) {
+      this.controller.dispatch({ type: 'inspect_terrain', q, r });
+      return;
+    }
+
     const key = `${q},${r}`;
     const selectedUnitId = state.actions.selectedUnitId;
     const attackTarget = state.actions.attackTargets.find((target) => target.key === key) ?? null;
@@ -298,6 +304,12 @@ export class MapScene extends Phaser.Scene {
 
     const unit = state.world.units.find((entry) => entry.id === unitId);
     if (!unit) {
+      return;
+    }
+
+    // Ctrl+Click on a unit → inspect the terrain under the unit
+    if (MapScene.isCtrlClick(pointer)) {
+      this.controller.dispatch({ type: 'inspect_terrain', q: unit.q, r: unit.r });
       return;
     }
 
@@ -433,6 +445,12 @@ export class MapScene extends Phaser.Scene {
   /** Check if a pointer event is a right-click (button 2) */
   private static isRightClick(pointer?: Phaser.Input.Pointer): boolean {
     return pointer?.event instanceof MouseEvent && pointer.event.button === 2;
+  }
+
+  /** Check if a pointer event has Ctrl (or Meta on Mac) held */
+  private static isCtrlClick(pointer?: Phaser.Input.Pointer): boolean {
+    if (!(pointer?.event instanceof MouseEvent)) return false;
+    return pointer.event.ctrlKey || pointer.event.metaKey;
   }
 
   /** Detect double-click on the same hex (within 400ms) */

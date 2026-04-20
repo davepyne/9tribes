@@ -47,6 +47,10 @@ import {
 import { findBestTargetChoice, findBestRangedTarget } from './targeting.js';
 import { performStrategicMovement } from './movement.js';
 import { RENDEZVOUS_READY_DISTANCE } from '../strategic-ai/rendezvous.js';
+import { isSettlerPrototype } from '../productionSystem.js';
+import { createCityId } from '../../core/ids.js';
+import { createCitySiteBonuses, findBestCitySiteForFaction, getSettlementOccupancyBlocker } from '../citySiteSystem.js';
+import { syncFactionSettlementIds } from '../factionOwnershipSystem.js';
 
 const HIGH_VALUE_ATTACK_SCORE = 10;
 
@@ -95,6 +99,97 @@ export function activateUnit(
   const actingUnit = current.units.get(unitId);
   if (!actingUnit || actingUnit.hp <= 0) {
     return { state: current, pendingCombat: null };
+  }
+
+  // --- Settler expansion: navigate to quality city site, then found ---
+  if (isSettlerPrototype(prototype) && actingUnit.status === 'ready') {
+    // Gate 1: must be at least 3 hexes from any existing city (minimum spacing)
+    let tooCloseToCity = false;
+    for (const city of current.cities.values()) {
+      if (hexDistance(actingUnit.position, city.position) < 3) {
+        tooCloseToCity = true;
+        break;
+      }
+    }
+
+    if (!tooCloseToCity) {
+      // Gate 2: compute best city site and only found if within 1 hex of it
+      const targetSite = findBestCitySiteForFaction(current, factionId, actingUnit.position);
+      const distToTarget = targetSite ? hexDistance(actingUnit.position, targetSite) : Infinity;
+
+      if (targetSite && distToTarget <= 1) {
+        // Close enough to target site — found the city
+        const blocker = getSettlementOccupancyBlocker(current, actingUnit.position);
+        if (blocker === null) {
+          const cityId = createCityId();
+          const cityName = faction.homeCityId ? `${faction.name} Settlement` : `${faction.name} Capital`;
+          const cities = new Map(current.cities);
+          cities.set(cityId, {
+            id: cityId,
+            factionId,
+            position: { ...actingUnit.position },
+            name: cityName,
+            productionQueue: [],
+            productionProgress: 0,
+            territoryRadius: 2,
+            wallHP: 100,
+            maxWallHP: 100,
+            besieged: false,
+            turnsUnderSiege: 0,
+            isCapital: !faction.homeCityId,
+            siteBonuses: createCitySiteBonuses(current.map, actingUnit.position, 2),
+            foundedRound: current.round,
+          });
+
+          const units = new Map(current.units);
+          units.delete(unitId);
+          const factions = new Map(current.factions);
+          factions.set(factionId, {
+            ...faction,
+            unitIds: faction.unitIds.filter((id) => id !== unitId),
+            cityIds: [...new Set([...faction.cityIds, cityId])],
+            homeCityId: faction.homeCityId ?? cityId,
+          });
+
+          current = syncFactionSettlementIds({
+            ...current,
+            cities,
+            units,
+            factions,
+          }, factionId);
+
+          log(trace, `${faction.name} founded ${cityName} at ${actingUnit.position.q},${actingUnit.position.r}`);
+          return { state: setUnitActivated(current, unitId), pendingCombat: null };
+        }
+      }
+    }
+
+    // Not ready to found — inject synthetic intent so performStrategicMovement navigates
+    // the settler toward the best city site
+    const targetSite = findBestCitySiteForFaction(current, factionId, actingUnit.position);
+    if (targetSite) {
+      const strategy = current.factionStrategies.get(factionId);
+      if (strategy) {
+        const updatedIntents = {
+          ...strategy.unitIntents,
+          [unitId]: {
+            assignment: 'reserve' as const,
+            waypointKind: 'front_anchor' as const,
+            waypoint: targetSite,
+            objectiveCityId: undefined,
+            objectiveUnitId: undefined,
+            anchor: actingUnit.position,
+            isolationScore: 0,
+            isolated: false,
+            reason: `settler navigating to city site at ${targetSite.q},${targetSite.r}`,
+          },
+        };
+        const updatedStrategies = new Map(current.factionStrategies);
+        updatedStrategies.set(factionId, { ...strategy, unitIntents: updatedIntents });
+        current = { ...current, factionStrategies: updatedStrategies };
+      }
+    }
+    // Fall through to movement (performStrategicMovement at line 521)
   }
 
   if (actingUnit.preparedAbility === 'ambush' && hasAdjacentEnemy(current, actingUnit)) {

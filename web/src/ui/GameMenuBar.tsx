@@ -13,14 +13,18 @@ type GameMenuBarProps = {
   onMenuAction: (action: string) => void;
 };
 
-const gameMenu: MenuEntry[] = [
-  { label: 'New Game', action: 'new_game' },
-  { label: 'Save', action: 'save' },
-  { label: 'Load', action: 'load' },
-  { label: 'Preferences', action: 'preferences', disabled: true },
-  { divider: true, id: 'game-divider-1' },
-  { label: 'Restart Session', action: 'restart_session' },
-];
+function buildGameMenu(canUndo: boolean): MenuEntry[] {
+  return [
+    { label: 'New Game', action: 'new_game' },
+    { label: 'Save', action: 'save' },
+    { label: 'Load', action: 'load' },
+    { label: 'Preferences', action: 'preferences', disabled: true },
+    { divider: true, id: 'game-divider-1' },
+    { label: 'Undo', action: 'undo', disabled: !canUndo },
+    { divider: true, id: 'game-divider-2' },
+    { label: 'Restart Session', action: 'restart_session' },
+  ];
+}
 
 const reportsMenu: MenuEntry[] = [
   { label: 'Faction Summary', action: 'open_faction_summary' },
@@ -75,7 +79,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
   return (
     <nav className="gmb-root" style={{ '--gmb-faction-color': factionColor } as CSSProperties}>
       <div className="gmb-menus">
-        <DropdownMenu label="Game" items={gameMenu} onAction={handleMenuAction} />
+        <DropdownMenu label="Game" items={buildGameMenu(state.actions.canUndo)} onAction={handleMenuAction} />
         <DropdownMenu label="Reports" items={reportsMenu} onAction={handleMenuAction} />
         <DropdownMenu label="View" items={viewMenu} onAction={handleMenuAction} />
         <DropdownMenu label="Help" items={helpMenu} onAction={handleMenuAction} />

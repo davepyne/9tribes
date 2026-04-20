@@ -49,6 +49,9 @@ export function useCombatBridge(
       // Pan camera to show AI-initiated combat (player isn't already looking at it)
       const aiInitiated = !isInstant && !attacker.isActiveFaction;
 
+      if (pending.result.attackerDamage > 0) {
+        console.warn(`[combat-bridge] attacker took ${pending.result.attackerDamage} damage — attackerFaction=${pending.attackerFactionId} defenderFaction=${pending.defenderFactionId} attackerName=${attacker.name} defenderName=${defender.name}`);
+      }
       setCombatLocked(true);
       scene.startCombatAnimation(
         {

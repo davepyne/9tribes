@@ -120,7 +120,7 @@ export function computeFactionStrategy(
         previousStrategy,
       );
   const posture = postureDecision.posture;
-  const primaryEnemyFactionId = choosePrimaryEnemyFaction(fronts, enemyUnits);
+  const primaryEnemyFactionId = choosePrimaryEnemyFaction(fronts, enemyUnits, state, factionId);
 
   let primaryCityObjectiveId = choosePrimaryCityObjective(
     fronts,
@@ -129,6 +129,7 @@ export function computeFactionStrategy(
     state,
     factionId,
     difficultyProfile,
+    primaryEnemyFactionId,
   );
 
   // Override objective for last stand counter phase

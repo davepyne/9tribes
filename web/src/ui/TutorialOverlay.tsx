@@ -16,7 +16,7 @@ const CONTENT: Partial<Record<TutorialStep, StepContent>> = {
   },
   production: {
     title: 'Queue Your Units',
-    body: 'Select a unit for production. Queue many units so you don\'t have to babysit the city. Notice in the overview the "Turns until next village" — villages give you supply and production to build more units (each city is capped at 6 villages). If you want to build a new city, settlers cost 4 villages.',
+    body: 'Select a unit for production. Queue many units so you don\'t have to babysit the city. Notice in the overview the "Turns until next village" — villages give you supply and production to build more units (each city is capped at 6 villages). If you want to build a new city, settlers cost 6 villages.',
   },
   explore: {
     title: 'Explore the World',
@@ -28,7 +28,7 @@ const CONTENT: Partial<Record<TutorialStep, StepContent>> = {
   },
   synergies: {
     title: 'Ability Synergies',
-    body: 'On the same top menu, to the far-right should be a small symbol: click on it. It contains "Ability Synergies". Here you will see your own ability, and as you learn others, they will show here. The "Emergent Rules" apply when you research 2 or more foreign domains to T2 — these unlock powerful faction-wide bonuses.',
+    body: 'On the same top menu, to the far-right should be a small symbol: click on it. It contains "Ability Synergies". Here you will see your own ability, and as you learn others, they will show here. The "Emergent Rules" apply when you research 3 or more foreign domains to T2 — these unlock powerful faction-wide bonuses.',
   },
   combat: {
     title: 'Engaging the Enemy',

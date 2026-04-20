@@ -78,6 +78,35 @@ describe('village destruction', () => {
     expect(result.cities.get(cityId)?.lastVillageSpawnRound).toBe(4);
   });
 
+  it('does not spawn villages on ocean tiles', () => {
+    const state = buildMvpScenario(42);
+    const factionId = Array.from(state.factions.keys())[0];
+    const cityId = state.factions.get(factionId)!.cityIds[0];
+    const city = state.cities.get(cityId)!;
+    const oceanHex = { q: city.position.q + 1, r: city.position.r };
+    const oceanKey = `${oceanHex.q},${oceanHex.r}`;
+
+    const map = state.map!;
+    const readyState: GameState = {
+      ...state,
+      round: 4,
+      map: {
+        ...map,
+        tiles: new Map(map.tiles).set(oceanKey, {
+          ...map.tiles.get(oceanKey)!,
+          terrain: 'ocean',
+        }),
+      },
+      cities: new Map(state.cities).set(cityId, { ...city, lastVillageSpawnRound: 0 }),
+    };
+
+    const directSpawn = spawnVillage(readyState, factionId, oceanHex, registry);
+    expect(directSpawn.villages.size).toBe(0);
+
+    const spawnedState = evaluateAndSpawnVillage(readyState, factionId, registry);
+    expect(Array.from(spawnedState.villages.values()).every((village) => village.position.q !== oceanHex.q || village.position.r !== oceanHex.r)).toBe(true);
+  });
+
   it('enemy movement onto a village destroys it', () => {
     const state = buildMvpScenario(42);
     const factionIds = Array.from(state.factions.keys());

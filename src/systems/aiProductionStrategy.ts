@@ -191,7 +191,9 @@ export function rankProductionPriorities(
       if (difficulty === 'easy') {
         return false;
       }
-      return canPaySettlerVillageCost(state, factionId, SETTLER_VILLAGE_COST);
+      const cityCount = state.factions.get(factionId)?.cityIds.length ?? 0;
+      const effectiveCost = cityCount >= 3 ? SETTLER_VILLAGE_COST : difficultyProfile.production.settlerVillageCost;
+      return canPaySettlerVillageCost(state, factionId, effectiveCost);
     });
   const availableMilitaryCosts = availablePrototypes
     .filter((prototype) => isMilitaryPrototype(prototype))
@@ -362,11 +364,13 @@ export function chooseStrategicProduction(
     getDomainIdsByTags(prototype.tags ?? []),
     prototype,
   );
+  const difficultyProfile = getAiDifficultyProfile(difficulty);
+  const cityCount = faction.cityIds.length;
   return {
     prototypeId: prototype.id,
     chassisId: prototype.chassisId,
     cost: getPrototypeCostType(prototype) === 'villages'
-      ? getPrototypeQueueCost(prototype)
+      ? (cityCount >= 3 ? SETTLER_VILLAGE_COST : difficultyProfile.production.settlerVillageCost)
       : cost,
     costType: getPrototypeCostType(prototype),
     reason: best.reason,
@@ -524,7 +528,9 @@ function scoreSettlerExpansionValue(
   }
 
   const villageCount = state.factions.get(factionId)?.villageIds.length ?? 0;
-  if (villageCount < SETTLER_VILLAGE_COST) {
+  const cityCount = state.factions.get(factionId)?.cityIds.length ?? 0;
+  const effectiveCost = cityCount >= 3 ? SETTLER_VILLAGE_COST : difficultyProfile.production.settlerVillageCost;
+  if (villageCount < effectiveCost) {
     return Number.NEGATIVE_INFINITY;
   }
   const economy = state.economy.get(factionId) ?? { supplyIncome: 0, supplyDemand: 0 };
@@ -534,7 +540,6 @@ function scoreSettlerExpansionValue(
     (unit) => unit.factionId === factionId && unit.hp > 0,
   ).length;
   const targetArmySize = getTargetArmySize(state, factionId);
-  const cityCount = state.factions.get(factionId)?.cityIds.length ?? 0;
   const reserveThreshold = Math.max(
     difficultyProfile.production.settlerReserveFloor,
     cityCount * difficultyProfile.production.settlerReservePerCity,
@@ -542,12 +547,12 @@ function scoreSettlerExpansionValue(
   const gateStrength = difficultyProfile.production.settlerGateStrength;
 
   const postureBonus =
-    strategy.posture === 'defensive' ? 10
-    : strategy.posture === 'recovery' ? 8
+    strategy.posture === 'defensive' ? 6
+    : strategy.posture === 'recovery' ? 5
     : strategy.posture === 'balanced' ? 4
-    : strategy.posture === 'exploration' ? 2
-    : strategy.posture === 'offensive' ? -8
-    : -4;
+    : strategy.posture === 'exploration' ? 3
+    : strategy.posture === 'offensive' ? 2
+    : 3;
 
   const armyShortfallPenalty =
     Math.max(0, targetArmySize - totalFriendlyUnits)
@@ -576,13 +581,15 @@ function scoreSettlerExpansionValue(
   return (
     strategy.personality.scalars.defenseBias * 14 +
     strategy.personality.scalars.caution * 8 +
-    Math.max(0, villageCount - SETTLER_VILLAGE_COST) * 1.5 +
-    postureBonus -
+    Math.max(0, villageCount - effectiveCost) * 1.5 +
+    postureBonus +
+    (cityCount <= 1 ? 15 : 0) +
+    (cityCount <= 1 ? 8 : 0) -
     armyShortfallPenalty -
     lowUtilizationPenalty -
     pressurePenalty -
     reservePenalty -
-    strategy.personality.scalars.aggression * 12 -
+    strategy.personality.scalars.aggression * 4 -
     strategy.personality.scalars.siegeBias * 4
   );
 }

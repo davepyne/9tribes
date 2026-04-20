@@ -128,6 +128,9 @@ function isValidSpawnHex(
 
   const tile = state.map.tiles.get(hexToKey(hex));
   if (!tile) return false;
+  if (tile.terrain === 'ocean') {
+    return false;
+  }
 
   const terrainDef = registry.getTerrain(tile.terrain);
   if (terrainDef && terrainDef.passable === false) {
@@ -152,11 +155,11 @@ export function spawnVillage(
   state: GameState,
   factionId: FactionId,
   position: HexCoord,
-  _registry: RulesRegistry,
+  registry: RulesRegistry,
   sourceCityId?: CityId,
 ): GameState {
   const faction = state.factions.get(factionId);
-  if (!faction) return state;
+  if (!faction || !isValidSpawnHex(state, position, registry)) return state;
 
   const villageId = createVillageId();
   const village: Village = {

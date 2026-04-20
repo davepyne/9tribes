@@ -248,7 +248,7 @@ function KnowledgeGainedModalInner({ event, onDismiss }: ModalInnerProps) {
 
         {/* Footer instruction */}
         <p className="kgm-instruction">
-          Return this unit to your Home City to sacrifice it and unlock this domain for your entire faction.
+          This domain is now unlocked for your faction automatically, including its Tier 1 research node.
         </p>
 
         {/* Dismiss button */}

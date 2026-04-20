@@ -1,7 +1,7 @@
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
 import { getNextExposureThreshold, gainExposure } from '../src/systems/knowledgeSystem';
-import { canSacrifice, performSacrifice } from '../src/systems/sacrificeSystem';
+import { canSacrifice, codifyDomainsForFaction, performSacrifice } from '../src/systems/sacrificeSystem';
 import { createResearchState, getResearchRate } from '../src/systems/researchSystem';
 import { getVictoryStatus } from '../src/systems/simulation/victory';
 import { SynergyEngine } from '../src/systems/synergyEngine';
@@ -121,6 +121,23 @@ describe('progression pipeline constants', () => {
 
       expect(next.factions.get(faction.id)!.learnedDomains).toContain(foreignDomain);
       expect(next.research.get(faction.id)!.completedNodes).toContain(t1NodeId);
+      expect(next.research.get(faction.id)!.completedNodes).not.toContain(`${foreignDomain}_t2`);
+    });
+  });
+
+  describe('automatic codification', () => {
+    it('codifies a newly learned combat domain immediately without sacrifice', () => {
+      const state = buildMvpScenario(42, { registry });
+      const faction = Array.from(state.factions.values())[0]!;
+      const foreignDomain = Array.from(state.factions.values()).find((entry) => entry.id !== faction.id)!.nativeDomain;
+
+      expect(state.factions.get(faction.id)!.learnedDomains).not.toContain(foreignDomain);
+      expect(state.research.get(faction.id)!.completedNodes).not.toContain(`${foreignDomain}_t1`);
+
+      const next = codifyDomainsForFaction(state, faction.id, [foreignDomain], registry);
+
+      expect(next.factions.get(faction.id)!.learnedDomains).toContain(foreignDomain);
+      expect(next.research.get(faction.id)!.completedNodes).toContain(`${foreignDomain}_t1`);
       expect(next.research.get(faction.id)!.completedNodes).not.toContain(`${foreignDomain}_t2`);
     });
   });

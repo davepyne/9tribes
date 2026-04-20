@@ -14,7 +14,36 @@ import { compareUnitEntries, compareUnits, dedupeHexes, nearestEnemySupportDista
 import { THREAT_RADIUS } from './types.js';
 import { getLivingEnemyUnits } from './fronts.js';
 
-export function choosePrimaryEnemyFaction(fronts: FrontLine[], enemyUnits: UnitWithPrototype[]): FactionId | undefined {
+export function choosePrimaryEnemyFaction(
+  fronts: FrontLine[],
+  enemyUnits: UnitWithPrototype[],
+  state?: GameState,
+  factionId?: FactionId,
+): FactionId | undefined {
+  // Target fastest-expanding faction if there's a clear runaway
+  if (state && factionId) {
+    const cityCounts = new Map<FactionId, number>();
+    for (const city of state.cities.values()) {
+      if (city.factionId === factionId) continue;
+      cityCounts.set(city.factionId, (cityCounts.get(city.factionId) ?? 0) + 1);
+    }
+    let maxCities = 0;
+    let maxFaction: FactionId | undefined;
+    let secondMax = 0;
+    for (const [fid, count] of cityCounts) {
+      if (count > maxCities) {
+        secondMax = maxCities;
+        maxCities = count;
+        maxFaction = fid;
+      } else if (count > secondMax) {
+        secondMax = count;
+      }
+    }
+    if (maxFaction && maxCities >= 3 && maxCities - secondMax >= 2) {
+      return maxFaction;
+    }
+  }
+
   if (fronts.length > 0) {
     return fronts[0].enemyFactionId;
   }
@@ -28,6 +57,7 @@ export function choosePrimaryCityObjective(
   state?: GameState,
   factionId?: FactionId,
   difficultyProfile?: AiDifficultyProfile,
+  preferredEnemyFactionId?: FactionId,
 ): CityId | undefined {
   if ((posture === 'defensive' || posture === 'recovery') && threatenedCities[0]) {
     return threatenedCities[0].cityId;
@@ -47,6 +77,25 @@ export function choosePrimaryCityObjective(
 
   const frontCity = fronts.find((front) => Boolean(front.enemyCityId))?.enemyCityId;
   if (frontCity) return frontCity;
+
+  // Runaway faction targeting: prefer the nearest city owned by the expanding threat
+  if (preferredEnemyFactionId && state && factionId) {
+    const homeCityId = state.factions.get(factionId)?.homeCityId;
+    const homeCity = homeCityId ? state.cities.get(homeCityId) : undefined;
+    const referencePosition = homeCity?.position ?? { q: 0, r: 0 };
+    let bestCityId: CityId | undefined;
+    let bestDist = 21; // max range for runaway targeting
+    for (const city of state.cities.values()) {
+      if (city.factionId === preferredEnemyFactionId) {
+        const dist = hexDistance(referencePosition, city.position);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestCityId = city.id;
+        }
+      }
+    }
+    if (bestCityId) return bestCityId;
+  }
 
   if (state && factionId && difficultyProfile?.strategy.strategicFogCheat) {
     const homeCityId = state.factions.get(factionId)?.homeCityId;
@@ -302,6 +351,7 @@ export function chooseAdaptivePressureCity(
   excludedCityId: CityId,
   difficultyProfile: AiDifficultyProfile,
   excludedCityIds: Set<CityId> = new Set(),
+  preferredEnemyFactionId?: FactionId,
 ): City | undefined {
   return Array.from(state.cities.values())
     .filter((city) => city.factionId !== factionId && city.id !== excludedCityId && !excludedCityIds.has(city.id))
@@ -318,11 +368,13 @@ export function chooseAdaptivePressureCity(
         difficultyProfile.strategy.freshVillageDenialTurns > 0 && cityAge <= difficultyProfile.strategy.freshVillageDenialTurns
           ? 6
           : 0;
+      const runawayBonus = preferredEnemyFactionId && city.factionId === preferredEnemyFactionId ? 8 : 0;
       const score =
         18
         + villageCount * difficultyProfile.strategy.economicDenialWeight * 0.5
         + vulnerableCaptureBonus
         + freshFoundingBonus
+        + runawayBonus
         + (city.isCapital ? 0 : 2)
         - distance * 0.75
         - defenders * 4

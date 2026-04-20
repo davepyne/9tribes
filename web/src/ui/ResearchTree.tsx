@@ -38,7 +38,7 @@ export function ResearchTree({ nodes, selectedNodeId, onSelectNode }: ResearchTr
         <p className="research-tree-empty__icon">&#9733;</p>
         <p>No domains unlocked yet.</p>
         <p className="research-tree-empty__hint">
-          Your native domain will appear here. Foreign domains can be learned through combat exposure and sacrifice.
+          Your native domain will appear here. Foreign domains are unlocked through combat learning, captures, and exposure.
         </p>
       </div>
     );

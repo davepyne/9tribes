@@ -113,19 +113,48 @@ export function performSacrifice(
     learnedAbilities: [],
   });
   let current: GameState = { ...state, units };
+  current = codifyDomainsForFaction(current, factionId, learnedDomains, registry, trace);
 
-  // Step 2: Add learned domains to faction (if not already present)
-  const newLearnedDomains = [...faction.learnedDomains];
-  for (const domainId of learnedDomains) {
-    if (!newLearnedDomains.includes(domainId)) {
-      newLearnedDomains.push(domainId);
+  // Log to trace
+  if (trace) {
+    const refreshedFaction = current.factions.get(factionId);
+    trace.lines.push(`[SACRIFICE] ${getUnitName(unit, state)} sacrificed at ${faction.name} capital`);
+    trace.lines.push(`  Learned abilities lost: ${learnedDomains.join(', ')}`);
+    trace.lines.push(`  Faction now knows domains: ${(refreshedFaction?.learnedDomains ?? faction.learnedDomains).join(', ')}`);
+    if (newlyUnlockedDomains.length > 0) {
+      trace.lines.push(`  Recent codified domains: ${newlyUnlockedDomains.join(', ')}`);
+    }
+    if (refreshedFaction?.activeTripleStack) {
+      trace.lines.push(`  Triple synergy activated: ${refreshedFaction.activeTripleStack.name}`);
     }
   }
 
-  // Step 3: Auto-complete research nodes for each learned domain
-  current = autoCompleteResearchForDomains(current, factionId, learnedDomains, registry, trace);
+  return current;
+}
 
-  // Step 4: Update faction with new learned domains and re-evaluate triple synergy immediately
+export function codifyDomainsForFaction(
+  state: GameState,
+  factionId: FactionId,
+  domainIds: string[],
+  registry: RulesRegistry,
+  trace?: SimulationTrace,
+): GameState {
+  const faction = state.factions.get(factionId);
+  if (!faction || domainIds.length === 0) {
+    return state;
+  }
+
+  const newLearnedDomains = [...faction.learnedDomains];
+  const newlyUnlockedDomains: string[] = [];
+  for (const domainId of domainIds) {
+    if (domainId === faction.nativeDomain || newLearnedDomains.includes(domainId)) {
+      continue;
+    }
+    newLearnedDomains.push(domainId);
+    newlyUnlockedDomains.push(domainId);
+  }
+
+  let current = autoCompleteResearchForDomains(state, factionId, domainIds, registry, trace);
   const updatedFaction = current.factions.get(factionId);
   if (!updatedFaction) {
     return current;
@@ -158,19 +187,6 @@ export function performSacrifice(
         recentCodifiedRound: state.round,
       });
       current = { ...current, research: researchMap };
-    }
-  }
-
-  // Log to trace
-  if (trace) {
-    trace.lines.push(`[SACRIFICE] ${getUnitName(unit, state)} sacrificed at ${faction.name} capital`);
-    trace.lines.push(`  Learned abilities lost: ${learnedDomains.join(', ')}`);
-    trace.lines.push(`  Faction now knows domains: ${newLearnedDomains.join(', ')}`);
-    if (newlyUnlockedDomains.length > 0) {
-      trace.lines.push(`  Recent codified domains: ${newlyUnlockedDomains.join(', ')}`);
-    }
-    if (tripleStack) {
-      trace.lines.push(`  Triple synergy activated: ${tripleStack.name}`);
     }
   }
 

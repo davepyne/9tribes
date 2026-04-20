@@ -38,6 +38,7 @@ export interface Unit {
   routed: boolean;
   poisoned?: boolean;
   poisonedBy?: FactionId; // Track which faction inflicted the poison
+  poisonSourcePrototypeId?: string; // Track which specific unit/prototype inflicted the poison (for per-unit poison overrides)
   activatedThisRound?: boolean;
   preparedAbility?: 'brace' | 'ambush';
   preparedAbilityExpiresOnRound?: number;

@@ -21,7 +21,7 @@ export interface UnitEconomicProfile {
   supplyCost: number;
 }
 
-export const SETTLER_VILLAGE_COST = 4;
+export const SETTLER_VILLAGE_COST = 6;
 
 // Unit production costs (in production points)
 export const UNIT_COSTS: Record<string, number> = {

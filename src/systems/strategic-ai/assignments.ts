@@ -10,6 +10,8 @@ import { hexDistance, hexToKey } from '../../core/grid.js';
 import { shouldCommitAttack } from '../aiPersonality.js';
 import { getEmbarkedUnits } from '../transportSystem.js';
 import { getLastSeenEnemyCities } from '../fogSystem.js';
+import { isSettlerPrototype } from '../productionSystem.js';
+import { findBestCitySiteForFaction, getSettlementOccupancyBlocker } from '../citySiteSystem.js';
 import {
   compareUnitEntries,
   nearestFriendlyDistance,
@@ -480,6 +482,39 @@ export function assignUnitIntents(
           continue;
         }
       }
+    }
+
+    // Settler expansion: assign waypoint toward best city site, avoid combat
+    const isSettler = isSettlerPrototype(entry.prototype);
+    if (isSettler) {
+      const targetSite = findBestCitySiteForFaction(state, factionId, entry.unit.position);
+      if (targetSite) {
+        assignment = 'reserve';
+        waypointKind = 'front_anchor';
+        waypoint = targetSite;
+        anchor = nearestHex(entry.unit.position, retreatAnchors) ?? homeCity?.position ?? entry.unit.position;
+        reason = `settler moving to found city near ${targetSite.q},${targetSite.r}`;
+      } else {
+        // No valid site found — send toward home city for safety
+        assignment = 'reserve';
+        waypointKind = 'friendly_city';
+        waypoint = homeCity?.position ?? entry.unit.position;
+        anchor = waypoint;
+        reason = 'settler waiting (no valid city site found)';
+      }
+      intents[entry.unit.id] = {
+        assignment,
+        waypointKind,
+        waypoint,
+        objectiveCityId,
+        objectiveUnitId: undefined,
+        anchor,
+        threatenedCityId: threatenedCity?.id,
+        isolationScore,
+        isolated: false,
+        reason,
+      };
+      continue;
     }
 
     const nearSiegeObjective = primaryObjectiveCity

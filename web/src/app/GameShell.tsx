@@ -26,8 +26,10 @@ import { useCombatBridge } from './hooks/useCombatBridge';
 import { useSessionAudio } from './hooks/useSessionAudio';
 import { useEscapeHandler } from './hooks/useEscapeHandler';
 import { useTutorial } from './hooks/useTutorial';
+import { useUndoHandler } from './hooks/useUndoHandler';
 import { TutorialOverlay } from '../ui/TutorialOverlay';
 import { VictoryOverlay } from '../ui/VictoryOverlay';
+import { TerrainPanel } from '../ui/TerrainPanel';
 
 const params = new URLSearchParams(window.location.search);
 const USE_V2_LAYOUT = params.get('layout') !== 'legacy';
@@ -109,11 +111,17 @@ function KnowledgeGainedShellContent({
 
   const { combatLocked } = useCombatBridge(controller, gameRef);
   useSessionAudio(state, combatLocked);
+  useUndoHandler(controller);
   const tutorial = useTutorial(state);
   const [victoryDismissed, setVictoryDismissed] = useState(false);
 
   const playerWon = state.playFeedback?.victory?.winnerFactionId === state.playFeedback?.playerFactionId
     && state.playFeedback?.victory?.victoryType !== 'unresolved';
+
+  const handleCloseTerrainInspector = useCallback(
+    () => controller.dispatch({ type: 'close_terrain_inspector' }),
+    [controller],
+  );
 
   useEscapeHandler({
     activeOverlay,
@@ -122,12 +130,14 @@ function KnowledgeGainedShellContent({
     inspectorOpen,
     combatLogOpen,
     debugVisible,
+    terrainInspectorOpen: state.terrainInspector !== null,
     onSetActiveOverlay,
     onSetHelpOpen,
     onSetResearchOpen,
     onSetInspectorOpen,
     onSetCombatLogOpen,
     onSetDebugVisible,
+    onCloseTerrainInspector: handleCloseTerrainInspector,
   });
 
   const activeFaction = state.world.factions.find((f) => f.id === state.activeFactionId);
@@ -159,6 +169,9 @@ function KnowledgeGainedShellContent({
       }
       case 'load':
         window.location.search = 'screen=load';
+        break;
+      case 'undo':
+        controller.dispatch({ type: 'undo' });
         break;
       default:
         break;
@@ -229,7 +242,6 @@ function KnowledgeGainedShellContent({
         }
         onBuildFort={(unitId) => controller.dispatch({ type: 'build_fort', unitId })}
         onBuildCity={(unitId) => controller.dispatch({ type: 'build_city', unitId })}
-        onSacrifice={(unitId) => controller.dispatch({ type: 'sacrifice_unit', unitId })}
       />
 
       {turnBannerData ? (
@@ -270,6 +282,11 @@ function KnowledgeGainedShellContent({
       {tutorial.popupVisible ? (
         <TutorialOverlay step={tutorial.step} onDismiss={tutorial.onDismiss} />
       ) : null}
+
+      <TerrainPanel
+        terrain={state.terrainInspector}
+        onClose={handleCloseTerrainInspector}
+      />
 
       {playerWon && !victoryDismissed && state.playFeedback?.victory ? (
         <VictoryOverlay

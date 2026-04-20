@@ -51,7 +51,6 @@ import {
   enterStealth,
   getNatureHealingAura,
 } from '../signatureAbilitySystem.js';
-import { canSacrifice, performSacrifice } from '../sacrificeSystem.js';
 import { evaluateAndSpawnVillage } from '../villageSystem.js';
 import { isCityEncircled, isEncirclementBroken } from '../territorySystem.js';
 import { applyEcologyPressure, applyForceCompositionPressure } from '../capabilitySystem.js';
@@ -817,25 +816,6 @@ export function processFactionPhases(
       // No cap — rapid domain learning during heavy combat (H-2-4-5)
       const amount = contactCount;
       current = gainExposure(current, factionId, domainId, amount, trace, registry);
-    }
-  }
-
-  const refreshedFactionForSacrifice = current.factions.get(factionId);
-  if (refreshedFactionForSacrifice) {
-    for (const unitIdStr of refreshedFactionForSacrifice.unitIds) {
-      const unit = current.units.get(unitIdStr as UnitId);
-      if (!unit || unit.hp <= 0) continue;
-
-      if (canSacrifice(unit, refreshedFactionForSacrifice, current)) {
-        const unitIntent = strategy?.unitIntents[unitIdStr as UnitId];
-        const hasReturnIntent = unitIntent?.assignment === 'return_to_sacrifice';
-
-        if (hasReturnIntent || !strategy) {
-          current = performSacrifice(unitIdStr as UnitId, factionId, current, registry, trace);
-          current = unlockHybridRecipes(current, factionId, registry);
-          log(trace, `${refreshedFactionForSacrifice.name} sacrificed unit at home city`);
-        }
-      }
     }
   }
 

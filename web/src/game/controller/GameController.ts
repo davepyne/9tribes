@@ -3,6 +3,7 @@ import type { AttackTargetView, PathPreviewNodeView, ReachableHexView } from '..
 import { GameSession, type SessionSaveSnapshot } from './GameSession';
 import type { PendingCombat } from './GameSession';
 import { buildDebugViewModel, buildHudViewModel, buildResearchInspectorViewModel, buildWorldViewModel } from '../view-model/worldViewModel';
+import { buildTerrainInspectorViewModel } from '../view-model/inspectors/terrainInspectorViewModel';
 import { getVictoryStatus } from '../../../../src/systems/warEcologySimulation.js';
 import { findPath } from '../../../../src/systems/pathfinder.js';
 
@@ -27,6 +28,7 @@ export class GameController {
   private zoom = 1.1;
   private productionPopupCityId: string | null = null;
   private inspectorRequestId = 0;
+  private inspectedTerrainPos: { q: number; r: number } | null = null;
 
   constructor(options: GameControllerOptions) {
     this.mode = options.mode;
@@ -196,6 +198,23 @@ export class GameController {
           this.session.dispatch(action);
         }
         break;
+      case 'inspect_terrain': {
+        const isSame = this.inspectedTerrainPos?.q === action.q && this.inspectedTerrainPos?.r === action.r;
+        this.inspectedTerrainPos = isSame ? null : { q: action.q, r: action.r };
+        break;
+      }
+      case 'close_terrain_inspector':
+        this.inspectedTerrainPos = null;
+        break;
+      case 'undo':
+        if (this.session?.canUndo()) {
+          this.session.dispatch(action);
+          this.selected = null;
+          this.targetingMode = 'move';
+          this.focusedUnitId = null;
+          this.productionPopupCityId = null;
+        }
+        break;
       default:
         return;
     }
@@ -293,6 +312,7 @@ export class GameController {
         queuedUnitId: queuedUnitIdDisplay,
         queuedPath: queuedPathDisplay,
         estimatedTurnsToArrival,
+        canUndo: session.canUndo(),
       },
       debug: buildDebugViewModel(session.getEvents()),
       playFeedback: {
@@ -335,6 +355,9 @@ export class GameController {
       research: buildResearchInspectorViewModel(sessionState, session.getRegistry()),
       productionPopupCityId: this.productionPopupCityId,
       inspectorRequestId: this.inspectorRequestId,
+      terrainInspector: this.inspectedTerrainPos
+        ? buildTerrainInspectorViewModel(sessionState, session.getRegistry(), this.inspectedTerrainPos, playerFactionId)
+        : null,
     };
   }
 
@@ -373,6 +396,7 @@ export class GameController {
     const pending = this.session?.getPendingCombat();
     if (!pending) return;
 
+    this.session!.takeUndoSnapshot();
     this.session!.applyResolvedCombat(pending);
     this.session!.clearPendingCombat();
 

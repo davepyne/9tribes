@@ -824,3 +824,371 @@
   font-weight: 500;
 }
 
+
+
+/* ═══════════════════════════════════════
+   TerrainPanel (ti-*)
+   Right-side slide-out, opens on Ctrl+Click
+   ═══════════════════════════════════════ */
+
+.ti-root {
+  position: fixed;
+  top: var(--menubar-height);
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--panel-glass);
+  backdrop-filter: blur(16px);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.3);
+  transform: translateX(320px);
+  opacity: 0;
+  transition:
+    width 260ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 260ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 180ms ease 60ms;
+  pointer-events: none;
+}
+
+.ti-root--open {
+  width: var(--inspector-width);
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ti-scroll {
+  padding: 14px 16px 24px;
+  opacity: 0;
+  animation: ti-fade-in 200ms ease 80ms forwards;
+}
+
+@keyframes ti-fade-in {
+  to { opacity: 1; }
+}
+
+/* ── Header ── */
+.ti-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding-left: 10px;
+}
+
+.ti-icon {
+  font-size: 28px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ti-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.ti-header-text h2 {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary, #f0e6d0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ti-owner {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 3px 0 0;
+}
+
+.ti-improvement {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+  margin: 2px 0 0;
+}
+
+.ti-close {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ti-close:hover {
+  color: var(--text);
+}
+
+/* ── Synergy badge row ── */
+.ti-synergy-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ti-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ti-badge--home {
+  background: rgba(214, 163, 75, 0.25);
+  color: var(--accent);
+  border: 1px solid rgba(214, 163, 75, 0.5);
+}
+
+.ti-badge--aligned {
+  background: rgba(80, 200, 100, 0.18);
+  color: #7ecb8c;
+  border: 1px solid rgba(80, 200, 100, 0.35);
+}
+
+.ti-badge--partial {
+  background: rgba(200, 180, 80, 0.14);
+  color: #c8b850;
+  border: 1px solid rgba(200, 180, 80, 0.3);
+}
+
+.ti-badge--none {
+  background: rgba(160, 140, 110, 0.12);
+  color: var(--muted);
+  border: 1px solid rgba(160, 140, 110, 0.2);
+}
+
+.ti-synergy-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ── Sections ── */
+.ti-section {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(227, 196, 136, 0.08);
+}
+
+.ti-section--flavor {
+  background: rgba(214, 163, 75, 0.06);
+  border-color: rgba(214, 163, 75, 0.12);
+}
+
+.ti-flavor {
+  font-size: 12px;
+  line-height: 1.55;
+  color: rgba(240, 230, 208, 0.8);
+  font-style: italic;
+  margin: 0;
+}
+
+.ti-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.ti-sub--muted {
+  color: rgba(160, 140, 110, 0.5);
+  font-style: italic;
+}
+
+/* ── Combat stat grid ── */
+.ti-stat-grid {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.ti-stat-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  border: 1px solid rgba(227, 196, 136, 0.1);
+}
+
+.ti-stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary, #f0e6d0);
+}
+
+.ti-stat-value--good {
+  color: #7ecb8c;
+}
+
+.ti-stat-value--bad {
+  color: #e07060;
+}
+
+.ti-stat-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* ── Domain pressure ── */
+.ti-domain-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.ti-domain-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ti-domain-row--synergy .ti-domain-label {
+  color: #d6c060;
+}
+
+.ti-domain-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ti-domain-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary, #c4b08a);
+}
+
+.ti-synergy-star {
+  font-size: 11px;
+  color: #d6a34b;
+  line-height: 1;
+}
+
+.ti-domain-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ti-pressure-bar {
+  flex: 1;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ti-pressure-fill {
+  height: 100%;
+  background: var(--accent, #d6a34b);
+  border-radius: 3px;
+  opacity: 0.75;
+}
+
+.ti-domain-row--synergy .ti-pressure-fill {
+  background: #d6c060;
+  opacity: 1;
+}
+
+.ti-domain-rate {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ── City bonus ── */
+.ti-city-stats {
+  display: flex;
+  gap: 10px;
+  margin: 8px 0 10px;
+}
+
+.ti-city-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+}
+
+.ti-city-value {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ti-trait-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ti-trait-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.ti-trait-label {
+  color: var(--text-secondary, #c4b08a);
+  font-weight: 600;
+}
+
+.ti-trait-effect {
+  color: #7ecb8c;
+  text-align: right;
+}
+
+/* ── Ecology tags ── */
+.ti-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.ti-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}

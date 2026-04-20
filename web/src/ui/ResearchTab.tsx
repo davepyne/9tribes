@@ -7,9 +7,9 @@ const PIPELINE_STEPS = [
     desc: 'Defeat enemies to learn their abilities',
   },
   {
-    icon: '🏛️',
-    label: 'Sacrifice',
-    desc: 'Bring the unit home and sacrifice to codify the domain',
+    icon: '✨',
+    label: 'Codify',
+    desc: 'Faction domains unlock automatically when they are learned',
   },
   {
     icon: '📖',

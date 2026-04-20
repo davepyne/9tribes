@@ -40,6 +40,8 @@ export function applyDifficultyCoordinator(
     return [`${coordinatorLabel}_coordinator=skipped:no_home_city`];
   }
 
+  const runawayFactionId = previousStrategy?.primaryEnemyFactionId;
+
   const activeArmy = friendlyUnits.filter((entry) => {
     const intent = intents[entry.unit.id];
     return intent && intent.assignment !== 'recovery' && intent.assignment !== 'return_to_sacrifice';
@@ -104,12 +106,30 @@ export function applyDifficultyCoordinator(
     ];
   }
 
-  const targetCity = getNearestEnemyCity(state, factionId, homeCity.position);
+  let targetCity = getNearestEnemyCity(state, factionId, homeCity.position);
   if (!targetCity) {
     return [
       `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
       `${coordinatorLabel}_coordinator=standby:no_enemy_city`,
     ];
+  }
+
+  // Override primary target toward runaway faction if within 1.5x nearest distance
+  if (runawayFactionId && targetCity.factionId !== runawayFactionId) {
+    const nearestDist = hexDistance(homeCity.position, targetCity.position);
+    let runawayCity: typeof targetCity | undefined;
+    let runawayDist = Infinity;
+    for (const city of state.cities.values()) {
+      if (city.factionId !== runawayFactionId) continue;
+      const d = hexDistance(homeCity.position, city.position);
+      if (d < runawayDist) {
+        runawayDist = d;
+        runawayCity = city;
+      }
+    }
+    if (runawayCity && runawayDist <= nearestDist * 1.5) {
+      targetCity = runawayCity;
+    }
   }
 
   const hunterPool = activeArmy.filter((entry) => entry.unit.id !== garrisonUnit.unit.id);
@@ -247,7 +267,7 @@ export function applyDifficultyCoordinator(
         homeCity.position,
         difficultyProfile,
         {
-          preferredEnemyFactionId: destinationCity.factionId,
+          preferredEnemyFactionId: runawayFactionId ?? destinationCity.factionId,
           excludedUnitIds: usedObjectives.unitIds,
           excludedVillageIds: usedObjectives.villageIds,
           excludedCityIds: usedObjectives.cityIds,
@@ -288,6 +308,7 @@ export function applyDifficultyCoordinator(
       targetCity.id,
       difficultyProfile,
       usedObjectives.cityIds,
+      runawayFactionId,
     );
     const harassObjective = chooseEconomicDenialObjective(
       state,
@@ -295,7 +316,7 @@ export function applyDifficultyCoordinator(
       homeCity.position,
       difficultyProfile,
       {
-        preferredEnemyFactionId: targetCity.factionId,
+        preferredEnemyFactionId: runawayFactionId ?? targetCity.factionId,
         excludedUnitIds: usedObjectives.unitIds,
         excludedVillageIds: usedObjectives.villageIds,
         excludedCityIds: usedObjectives.cityIds,
@@ -426,6 +447,7 @@ export function applyDifficultyCoordinator(
       targetCity.id,
       difficultyProfile,
       usedObjectives.cityIds,
+      runawayFactionId,
     ) ?? getSecondNearestEnemyCity(state, factionId, homeCity.position, targetCity.id);
     if (secondTargetCity) {
       const flankCount = Math.max(multiAxisMinGroupSize, Math.floor(hunterCount * difficultyProfile.strategy.multiAxisFlankShare || 0.4));
@@ -493,7 +515,7 @@ export function applyDifficultyCoordinator(
         homeCity.position,
         difficultyProfile,
         {
-          preferredEnemyFactionId: targetCity.factionId,
+          preferredEnemyFactionId: runawayFactionId ?? targetCity.factionId,
           excludedUnitIds: usedObjectives.unitIds,
           excludedVillageIds: usedObjectives.villageIds,
           excludedCityIds: usedObjectives.cityIds,

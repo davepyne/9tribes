@@ -55,7 +55,7 @@ export function ResearchDetail({
   } else if (node.state === 'locked' || node.isLocked) {
     buttonLabel = 'Locked';
     buttonHint = node.isLocked
-      ? 'Learn this domain from enemies, then sacrifice a carrier at your capital.'
+      ? 'Learn this domain from enemies or exposure to unlock its research track.'
       : 'Complete prerequisites first';
   } else if (node.state === 'completed') {
     buttonLabel = 'Completed';

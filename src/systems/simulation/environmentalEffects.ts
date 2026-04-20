@@ -112,14 +112,19 @@ export function applyEnvironmentalDamage(
     let died = false;
 
     if (unit.poisoned && safeInSettlement) {
-      updatedUnit = { ...updatedUnit, poisoned: false, poisonedBy: undefined, poisonStacks: 0, poisonTurnsRemaining: 0 };
+      updatedUnit = { ...updatedUnit, poisoned: false, poisonedBy: undefined, poisonSourcePrototypeId: undefined, poisonStacks: 0, poisonTurnsRemaining: 0 };
     }
 
     if (unit.poisoned && !safeInSettlement) {
+      // Serpent God (serpent_frame) deals 3 poison dmg/turn; other jungle units use faction's venomDamagePerTurn
+      const isSerpentGod = unit.poisonSourcePrototypeId
+        && current.prototypes.get(unit.poisonSourcePrototypeId)?.chassisId === 'serpent_frame';
       const basePoisonDamage = unit.poisonStacks > 0 ? unit.poisonStacks * doctrine.poisonDamagePerStack : (
-        unit.poisonedBy
-          ? registry.getSignatureAbility(unit.poisonedBy)?.venomDamagePerTurn ?? 1
-          : 1
+        isSerpentGod
+          ? 3
+          : unit.poisonedBy
+            ? registry.getSignatureAbility(unit.poisonedBy)?.venomDamagePerTurn ?? 1
+            : 1
       );
       const poisonDamage = doctrine.poisonBonusEnabled ? Math.round(basePoisonDamage * 1.5) : basePoisonDamage;
       updatedUnit = { ...updatedUnit, hp: Math.max(0, updatedUnit.hp - poisonDamage) };
@@ -129,7 +134,7 @@ export function applyEnvironmentalDamage(
       if (!doctrine.poisonPersistenceEnabled) {
         const remaining = (updatedUnit.poisonTurnsRemaining ?? 1) - 1;
         if (remaining <= 0) {
-          updatedUnit = { ...updatedUnit, poisoned: false, poisonedBy: undefined, poisonStacks: 0, poisonTurnsRemaining: 0 };
+          updatedUnit = { ...updatedUnit, poisoned: false, poisonedBy: undefined, poisonSourcePrototypeId: undefined, poisonStacks: 0, poisonTurnsRemaining: 0 };
         } else {
           updatedUnit = { ...updatedUnit, poisonTurnsRemaining: remaining };
         }

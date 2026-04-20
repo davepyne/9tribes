@@ -1,6 +1,6 @@
 import type { GameState } from '../../game/types.js';
 import type { City } from '../../game/types.js';
-import type { FactionId, HexCoord, UnitId } from '../../types.js';
+import type { FactionId, HexCoord } from '../../types.js';
 import type { UnitStrategicIntent } from '../factionStrategy.js';
 import type { AiDifficultyProfile } from '../aiDifficulty.js';
 import type { UnitWithPrototype } from './types.js';
@@ -37,45 +37,12 @@ export function applyDifficultyLearnAndSacrificeCoordinator(
 
   const fieldArmy = friendlyUnits.filter((entry) => {
     const intent = intents[entry.unit.id];
-    return intent && intent.assignment !== 'defender' && intent.assignment !== 'recovery' && intent.assignment !== 'return_to_sacrifice';
+    return intent && intent.assignment !== 'defender' && intent.assignment !== 'recovery';
   });
-
-  const returnCandidates = fieldArmy
-    .filter((entry) => (entry.unit.learnedAbilities?.length ?? 0) >= minAbilitiesToReturn)
-    .filter((entry) => hexDistance(entry.unit.position, homeCity.position) > farFromHomeDistance)
-    .sort((left, right) => {
-      const abilityDelta = (right.unit.learnedAbilities?.length ?? 0) - (left.unit.learnedAbilities?.length ?? 0);
-      if (abilityDelta !== 0) {
-        return abilityDelta;
-      }
-      const veteranDelta = left.unit.veteranLevel.localeCompare(right.unit.veteranLevel);
-      if (veteranDelta !== 0) {
-        return veteranDelta;
-      }
-      return hexDistance(right.unit.position, homeCity.position) - hexDistance(left.unit.position, homeCity.position);
-    });
-
-  const maxReturnCount = Math.min(
-    returnCandidates.length,
-    Math.max(0, fieldArmy.length - minFieldForce),
-    Math.max(1, Math.floor(fieldArmy.length * maxReturnShare)),
-  );
-
-  const returningIds = new Set<UnitId>();
-  for (const candidate of returnCandidates.slice(0, maxReturnCount)) {
-    returningIds.add(candidate.unit.id);
-    intents[candidate.unit.id] = {
-      ...intents[candidate.unit.id],
-      assignment: 'return_to_sacrifice',
-      waypointKind: 'friendly_city',
-      waypoint: homeCity.position,
-      objectiveCityId: homeCity.id,
-      objectiveUnitId: undefined,
-      anchor: homeCity.position,
-      isolated: false,
-      reason: `${difficultyProfile.difficulty} learn loop returning ${candidate.unit.learnedAbilities.length} learned abilities to ${faction.name} capital`,
-    };
-  }
+  void minAbilitiesToReturn;
+  void farFromHomeDistance;
+  void minFieldForce;
+  void maxReturnShare;
 
   const fallbackTargetCity = targetCity ?? getNearestEnemyCity(state, factionId, homeCity.position);
   const learnerTargetCity = difficultyProfile.strategy.learnLoopDomainTargetingEnabled
@@ -89,7 +56,6 @@ export function applyDifficultyLearnAndSacrificeCoordinator(
       )
     : fallbackTargetCity;
   const learnerPool = fieldArmy
-    .filter((entry) => !returningIds.has(entry.unit.id))
     .filter((entry) => (entry.unit.learnedAbilities?.length ?? 0) <= maxAbilitiesToLearn)
     .filter((entry) => entry.unit.status === 'ready')
     .filter((entry) => hexDistance(entry.unit.position, homeCity.position) <= idleHomeRadius)
@@ -118,7 +84,7 @@ export function applyDifficultyLearnAndSacrificeCoordinator(
   }
 
   return [
-    `${learnLoopLabel}=returners:${returningIds.size},learners:${learnerPool.length}`,
+    `${learnLoopLabel}=returners:0,learners:${learnerPool.length}`,
   ];
 }
 

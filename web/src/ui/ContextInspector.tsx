@@ -238,7 +238,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                       </div>
                     ))}
                     <p className="ci-knowledge__hint">
-                      Return this unit to your Home City and Sacrifice it to codify this domain for your faction.
+                      Learned domains are codified for your faction automatically and appear in the research tree right away.
                     </p>
                   </>
                 ) : null}

@@ -400,7 +400,7 @@ export function SynergyChip({ state }: SynergyChipProps) {
                 })}
               </div>
               {resolved.allDomains.length <= 1 && (
-                <p className="syn-empty">No foreign domains unlocked yet. Defeat enemies, then sacrifice carriers at your capital.</p>
+                <p className="syn-empty">No foreign domains unlocked yet. Defeat enemies, capture rivals, or stay in contact long enough to learn one.</p>
               )}
             </section>
 
@@ -504,7 +504,7 @@ export function SynergyChip({ state }: SynergyChipProps) {
 
             {/* Footer hint */}
             <div className="syn-panel__footer">
-              <span>Domains are learned through sacrifice, then upgraded through research: T2 feeds emergent rules and T3 activates pair synergies.</span>
+              <span>Domains unlock automatically when learned, then research pushes them to T2 for emergent rules and T3 for full pair activation.</span>
             </div>
           </div>
         </>

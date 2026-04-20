@@ -15,6 +15,8 @@ import { syncFactionSettlementIds } from './factionOwnershipSystem.js';
 import { tryLearnFromCityCapture } from './learnByKillSystem.js';
 import { destroyVillagesInCityTerritory } from './villageSystem.js';
 import { MAX_LEARNED_DOMAINS } from './knowledgeSystem.js';
+import { loadRulesRegistry } from '../data/loader/loadRulesRegistry.js';
+import { codifyDomainsForFaction } from './sacrificeSystem.js';
 
 export const SIEGE_CONFIG = {
   WALL_DAMAGE_PER_TURN: 20,
@@ -221,12 +223,12 @@ export function captureCityWithResult(
       loserDomain === victorFaction.nativeDomain ||
       victorFaction.learnedDomains.includes(loserDomain);
     if (!alreadyHas && victorFaction.learnedDomains.length < MAX_LEARNED_DOMAINS - 1) {
-      const updatedFactions = new Map(learnResult.state.factions);
-      updatedFactions.set(newOwnerFactionId, {
-        ...victorFaction,
-        learnedDomains: [...victorFaction.learnedDomains, loserDomain],
-      });
-      currentState = { ...learnResult.state, factions: updatedFactions };
+      currentState = codifyDomainsForFaction(
+        learnResult.state,
+        newOwnerFactionId,
+        [loserDomain],
+        loadRulesRegistry(),
+      );
     } else {
       currentState = learnResult.state;
     }

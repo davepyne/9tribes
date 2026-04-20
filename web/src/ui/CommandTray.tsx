@@ -6,7 +6,6 @@ type CommandTrayProps = {
   onSetTargetingMode: (mode: 'move' | 'attack') => void;
   onBuildFort?: (unitId: string) => void;
   onBuildCity?: (unitId: string) => void;
-  onSacrifice: (unitId: string) => void;
 };
 
 function formatDomainName(domainId: string): string {
@@ -16,27 +15,13 @@ function formatDomainName(domainId: string): string {
     .join(' ');
 }
 
-export function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort, onBuildCity, onSacrifice }: CommandTrayProps) {
+export function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort, onBuildCity }: CommandTrayProps) {
   const selectedUnitId = state.selected?.type === 'unit' ? state.selected.unitId : state.actions.selectedUnitId;
   const selectedUnit = selectedUnitId
     ? state.world.units.find((u) => u.id === selectedUnitId)
     : null;
   const selectedCity = state.hud.selectedCity;
   const settlementPreview = state.hud.settlementPreview;
-
-  const canSacrifice = (() => {
-    if (!selectedUnit) return false;
-    if (!selectedUnit.learnedAbilities || selectedUnit.learnedAbilities.length === 0) return false;
-    if (!selectedUnit.isActiveFaction) return false;
-
-    const faction = state.world.factions.find((f) => f.id === selectedUnit.factionId);
-    if (!faction?.homeCityId) return false;
-
-    const homeCity = state.world.cities.find((c) => c.id === faction.homeCityId);
-    if (!homeCity) return false;
-
-    return selectedUnit.q === homeCity.q && selectedUnit.r === homeCity.r;
-  })();
 
   const canBuildFort = (() => {
     if (!selectedUnit) return false;
@@ -70,9 +55,6 @@ export function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort,
     return !hasCity && !hasVillage && !hasImprovement;
   })();
 
-  const sacrificeFeedback = state.playFeedback?.lastSacrifice ?? null;
-  const showSacrificeFeedback = sacrificeFeedback && sacrificeFeedback.unitId === selectedUnitId;
-
   return (
     <section className="ct-root">
       <div className="ct-segment ct-segment--info">
@@ -82,16 +64,9 @@ export function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort,
             <span className="ct-detail">
               {selectedUnit.movesRemaining}/{selectedUnit.movesMax} moves · {selectedUnit.q},{selectedUnit.r}
             </span>
-            {showSacrificeFeedback ? (
-              <span className="ct-codify-feedback">
-                Sacrificed - unlocked: {sacrificeFeedback.domains.join(', ')}
-              </span>
-            ) : null}
-
-            {selectedUnit.learnedAbilities && selectedUnit.learnedAbilities.length > 0 && !showSacrificeFeedback ? (
+            {selectedUnit.learnedAbilities && selectedUnit.learnedAbilities.length > 0 ? (
               <span className="ct-knowledge-hint">
                 Carries: {selectedUnit.learnedAbilities.map((d) => formatDomainName(d)).join(', ')}
-                {!canSacrifice ? ' \u2014 return to Home City to Sacrifice' : ''}
               </span>
             ) : null}
             {selectedUnit.isSettler && !settlementPreview ? (
@@ -156,15 +131,6 @@ export function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort,
                 onClick={() => onBuildCity?.(selectedUnitId!)}
               >
                 Build City
-              </button>
-            ) : null}
-            {canSacrifice ? (
-              <button
-                type="button"
-                className="ct-btn-codify"
-                onClick={() => onSacrifice(selectedUnitId!)}
-              >
-                Sacrifice
               </button>
             ) : null}
           </>

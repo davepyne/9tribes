@@ -169,6 +169,11 @@ export class GameSession {
   private _aiCombatQueue: PendingCombat[] = [];
   private _aiTurnContext: AiTurnContext | null = null;
 
+  private _undoSnapshot: {
+    state: SerializedGameState;
+    feedback: SessionFeedback;
+  } | null = null;
+
   constructor(
     source: PlayStateSource = { type: 'fresh' },
     registry = loadRulesRegistry(),
@@ -232,6 +237,46 @@ export class GameSession {
     return this.difficulty;
   }
 
+  takeUndoSnapshot(): void {
+    this._undoSnapshot = {
+      state: serializeGameState(this.state),
+      feedback: this.getFeedback(),
+    };
+  }
+
+  canUndo(): boolean {
+    if (!this._undoSnapshot) return false;
+    if (this._pendingCombat) return false;
+    if (!this.state.activeFactionId) return false;
+    if (!this.humanControlledFactionIds.has(this.state.activeFactionId)) return false;
+    if (this.feedback.aiProcessing) return false;
+    return true;
+  }
+
+  performUndo(): void {
+    if (!this._undoSnapshot) return;
+    this.state = deserializeGameState(this._undoSnapshot.state);
+    const snap = this._undoSnapshot.feedback;
+    Object.assign(this.feedback, {
+      eventSequence: snap.eventSequence,
+      moveCount: snap.moveCount,
+      endTurnCount: snap.endTurnCount,
+      lastActiveFactionId: snap.lastActiveFactionId,
+      lastMove: snap.lastMove,
+      lastTurnChange: snap.lastTurnChange,
+      lastSacrifice: snap.lastSacrifice,
+      lastLearnedDomain: snap.lastLearnedDomain,
+      lastResearchCompletion: snap.lastResearchCompletion,
+      hitAndRunRetreat: snap.hitAndRunRetreat,
+      lastSettlerVillageSpend: snap.lastSettlerVillageSpend,
+      absorbedDomains: snap.absorbedDomains,
+      liveCombatEvents: snap.liveCombatEvents,
+      aiProcessing: snap.aiProcessing,
+    });
+    this._undoSnapshot = null;
+    this._pendingCombat = null;
+  }
+
   getMaxRounds(): number {
     return this.maxRounds;
   }
@@ -259,6 +304,7 @@ export class GameSession {
   dispatch(action: GameAction) {
     switch (action.type) {
       case 'move_unit':
+        this.takeUndoSnapshot();
         this.applyMove(action.unitId as UnitId, action.destination);
         return;
       case 'queue_move':
@@ -271,15 +317,19 @@ export class GameSession {
         this._pendingCombat = this.resolveAttack(action.attackerId as UnitId, action.defenderId as UnitId);
         return;
       case 'prepare_ability':
+        this.takeUndoSnapshot();
         this.applyPrepareAbility(action.unitId, action.ability);
         return;
       case 'board_transport':
+        this.takeUndoSnapshot();
         this.applyBoardTransport(action.unitId, action.transportId);
         return;
       case 'disembark_unit':
+        this.takeUndoSnapshot();
         this.applyDisembarkUnit(action.unitId, action.transportId, action.destination);
         return;
       case 'end_turn':
+        this._undoSnapshot = null;
         // Execute pending move queues at end of turn (before MP refresh) so units
         // arrive at their destination but start the next turn with full MP.
         this.state = this.executeMoveQueues(this.state);
@@ -317,6 +367,7 @@ export class GameSession {
         this.continueAiUntilHumanTurn();
         return;
       case 'set_city_production':
+        this.takeUndoSnapshot();
         this.setCityProduction(action.cityId, action.prototypeId);
         return;
       case 'cancel_city_production':
@@ -332,13 +383,19 @@ export class GameSession {
         this.applyCancelResearch();
         return;
       case 'sacrifice_unit':
+        this._undoSnapshot = null;
         this.applySacrifice(action.unitId);
         return;
       case 'build_fort':
+        this.takeUndoSnapshot();
         this.applyBuildFort(action.unitId);
         return;
       case 'build_city':
+        this._undoSnapshot = null;
         this.applyBuildCity(action.unitId);
+        return;
+      case 'undo':
+        this.performUndo();
         return;
       default:
         return;
@@ -613,6 +670,7 @@ export class GameSession {
    * Resumes via setTimeout until a human faction is active or safety is hit.
    */
   private continueAiUntilHumanTurn(): void {
+    this._undoSnapshot = null;
     this.feedback.aiProcessing = true;
     const result = this.runAiChunk();
     if (!result.done) {
@@ -875,6 +933,7 @@ export class GameSession {
       turnsUnderSiege: 0,
       isCapital: !faction.homeCityId,
       siteBonuses: createCitySiteBonuses(this.state.map, unit.position, 2),
+      foundedRound: this.state.round,
     });
 
     const units = new Map(this.state.units);

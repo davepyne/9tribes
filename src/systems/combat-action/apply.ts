@@ -15,6 +15,7 @@ import { addExhaustion, EXHAUSTION_CONFIG } from '../warExhaustionSystem.js';
 import { applyContactTransfer } from '../capabilitySystem.js';
 import { applyPoisonDoT, enterStealth, findRetreatHex } from '../signatureAbilitySystem.js';
 import { getUnitAtHex } from '../occupancySystem.js';
+import { codifyDomainsForFaction } from '../sacrificeSystem.js';
 import {
   recordBattleFought,
   recordEnemyKilled,
@@ -323,6 +324,14 @@ export function applyCombatAction(
   }
 
   current = applyCombatSignals(current, attacker.factionId, preview.result.signals);
+  if (feedback.lastLearnedDomain) {
+    current = codifyDomainsForFaction(
+      current,
+      attacker.factionId as FactionId,
+      [feedback.lastLearnedDomain.domainId],
+      registry,
+    );
+  }
   current = applyContactTransfer(current, attacker.factionId, defender.factionId, 'contact');
   const absorbResult = maybeAbsorbFaction(current, attacker.factionId as FactionId, defender.factionId as FactionId, registry);
   current = absorbResult.state;
@@ -417,7 +426,7 @@ export function applyCombatAction(
       attackerDoctrine?.poisonDamagePerStack ?? 1,
       3,
     );
-    updatedDefender = { ...updatedDefender, poisonedBy: attacker.factionId } as Unit;
+    updatedDefender = { ...updatedDefender, poisonedBy: attacker.factionId, poisonSourcePrototypeId: attacker.prototypeId } as Unit;
     current = writeUnitToState(current, updatedDefender);
     poisonApplied = true;
   }

@@ -187,6 +187,7 @@ export type ClientActionState = {
   queuedUnitId: string | null;
   queuedPath: PathPreviewNodeView[];
   estimatedTurnsToArrival: number | null;
+  canUndo: boolean;
 };
 
 export type PlayFeedbackState = {
@@ -315,6 +316,38 @@ export type ResearchInspectorViewModel = {
   hasKnowledgeDiscount: boolean;
 };
 
+export type TerrainDomainPressureEntry = {
+  domainId: string;
+  label: string;
+  pressure: number;
+  playerSeed: number;
+  isSynergy: boolean;
+};
+
+export type TerrainInspectorViewModel = {
+  q: number;
+  r: number;
+  terrainId: string;
+  terrainName: string;
+  flavor: string;
+  movementCost: number;
+  defenseModifier: number;
+  passable: boolean;
+  navalOnly: boolean;
+  isHomeTerrain: boolean;
+  ecologyTags: string[];
+  domainPressure: TerrainDomainPressureEntry[];
+  synergyScore: number;
+  cityBonus: {
+    productionBonus: number;
+    supplyBonus: number;
+    traits: Array<{ key: string; label: string; effect: string; active: boolean }>;
+  } | null;
+  ownerFactionName: string | null;
+  improvement: string | null;
+  playerFactionName: string | null;
+};
+
 export type ClientState = {
   mode: ClientMode;
   turn: number;
@@ -330,6 +363,7 @@ export type ClientState = {
   research: ResearchInspectorViewModel | null;
   productionPopupCityId: string | null;
   inspectorRequestId: number;
+  terrainInspector: TerrainInspectorViewModel | null;
 };
 
 export type GameAction =
@@ -356,4 +390,7 @@ export type GameAction =
   | { type: 'open_city_production'; cityId: string }
   | { type: 'close_city_production' }
   | { type: 'queue_move'; unitId: string; destination: HexCoord }
-  | { type: 'cancel_queue'; unitId: string };
+  | { type: 'cancel_queue'; unitId: string }
+  | { type: 'undo' }
+  | { type: 'inspect_terrain'; q: number; r: number }
+  | { type: 'close_terrain_inspector' };

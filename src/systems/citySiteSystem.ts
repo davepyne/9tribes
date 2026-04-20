@@ -1,4 +1,5 @@
-import { getHexesInRange, hexToKey } from '../core/grid.js';
+import { hexDistance, getHexesInRange, hexToKey } from '../core/grid.js';
+import { keyToHex } from '../core/hex.js';
 import type { CitySiteBonuses, CitySiteTrait } from '../features/cities/types.js';
 import type { City, GameState } from '../game/types.js';
 import type { FactionId, HexCoord } from '../types.js';
@@ -142,6 +143,122 @@ export function formatSettlementOccupancyBlocker(
     default:
       return undefined;
   }
+}
+
+/**
+ * Find the best hex on the map for a faction to found a new city.
+ * Scores by terrain bonuses, distance from existing settlements (both friendly and enemy),
+ * and proximity to the settler's current position.
+ */
+export function findBestCitySiteForFaction(
+  state: GameState,
+  factionId: FactionId,
+  settlerPosition: HexCoord,
+  options: { maxCandidateDistance?: number } = {},
+): HexCoord | null {
+  const map = state.map;
+  if (!map) return null;
+
+  const maxDist = options.maxCandidateDistance ?? 20;
+
+  // Collect positions of all existing cities (friendly + enemy) for spacing
+  const allCityPositions: HexCoord[] = [];
+  const friendlyCityPositions: HexCoord[] = [];
+  for (const city of state.cities.values()) {
+    allCityPositions.push(city.position);
+    if (city.factionId === factionId) {
+      friendlyCityPositions.push(city.position);
+    }
+  }
+
+  // Collect positions of all villages for spacing
+  const villagePositions: HexCoord[] = [];
+  for (const village of state.villages.values()) {
+    villagePositions.push(village.position);
+  }
+
+  let bestHex: HexCoord | null = null;
+  let bestScore = -Infinity;
+
+  for (const [key, tile] of map.tiles) {
+    const hex = keyToHex(key);
+
+    // Skip impassable terrain
+    if (tile.terrain === 'mountain' || tile.terrain === 'ocean') {
+      continue;
+    }
+
+    // Must not be too far from the settler
+    const distFromSettler = hexDistance(settlerPosition, hex);
+    if (distFromSettler > maxDist) continue;
+
+    // Must not overlap existing settlement
+    if (getSettlementOccupancyBlocker(state, hex) !== null) continue;
+
+    // Must be at least 3 hexes from any existing city (minimum spacing)
+    let tooClose = false;
+    for (const cityPos of allCityPositions) {
+      if (hexDistance(hex, cityPos) < 3) {
+        tooClose = true;
+        break;
+      }
+    }
+    if (tooClose) continue;
+
+    // Must be at least 2 hexes from any village
+    for (const villagePos of villagePositions) {
+      if (hexDistance(hex, villagePos) < 2) {
+        tooClose = true;
+        break;
+      }
+    }
+    if (tooClose) continue;
+
+    // Score the hex
+    const bonuses = evaluateCitySiteBonuses(map, hex, 2);
+    let score = 0;
+
+    // Terrain bonus score
+    score += bonuses.productionBonus * 10;
+    score += bonuses.supplyBonus * 8;
+    score += bonuses.villageCooldownReduction * 6;
+
+    // Prefer distance from settler (closer is better)
+    score -= distFromSettler * 0.5;
+
+    // Prefer moderate distance from friendly cities (spread out but not isolated)
+    let minFriendlyCityDist = Infinity;
+    for (const fcp of friendlyCityPositions) {
+      minFriendlyCityDist = Math.min(minFriendlyCityDist, hexDistance(hex, fcp));
+    }
+    if (friendlyCityPositions.length === 0) minFriendlyCityDist = 0;
+    // Sweet spot around 5-8 hexes from existing friendly city
+    if (minFriendlyCityDist >= 4 && minFriendlyCityDist <= 8) {
+      score += 5;
+    } else if (minFriendlyCityDist < 4) {
+      score -= 3;
+    }
+
+    // Slight penalty for being very close to enemy cities
+    for (const ecp of allCityPositions) {
+      const enemyDist = hexDistance(hex, ecp);
+      if (enemyDist < 4) {
+        score -= (4 - enemyDist) * 3;
+      }
+    }
+
+    // Prefer coast/river tiles slightly
+    if (tile.terrain === 'coast' || tile.terrain === 'river') {
+      score += 3;
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestHex = hex;
+    }
+  }
+
+  return bestHex;
 }
 
 function countTerrainsInRange(
