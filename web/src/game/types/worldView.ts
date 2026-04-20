@@ -79,6 +79,7 @@ export type CityView = {
   visible: boolean;
   remembered: boolean;
   besieged?: boolean;
+  siegeTurnsUntilCapture?: number;
   wallHp?: number;
   maxWallHp?: number;
   turnsSinceCapture?: number;

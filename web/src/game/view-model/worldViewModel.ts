@@ -7,6 +7,7 @@ import { resolveCapabilityDoctrine } from '../../../../src/systems/capabilityDoc
 import { deriveResourceIncome, getSupplyDeficit } from '../../../../src/systems/economySystem.js';
 import { isUnitEffectivelyStealthed } from '../../../../src/systems/fogSystem.js';
 import { getValidMoves } from '../../../../src/systems/movementSystem.js';
+import { SIEGE_CONFIG } from '../../../../src/systems/siegeSystem.js';
 import { getVictoryStatus } from '../../../../src/systems/warEcologySimulation.js';
 import { getHexOwner } from '../../../../src/systems/territorySystem.js';
 import { canBoardTransport, getUnitTransport, getValidDisembarkHexes } from '../../../../src/systems/transportSystem.js';
@@ -254,6 +255,9 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
         : (hexVisibility.get(hexToKey(city.position)) ?? 'hidden') === 'visible',
       remembered: true,
       besieged: city.besieged,
+      siegeTurnsUntilCapture: city.besieged
+        ? Math.ceil(city.wallHP / SIEGE_CONFIG.WALL_DAMAGE_PER_TURN)
+        : undefined,
       wallHp: city.wallHP,
       maxWallHp: city.maxWallHP,
       turnsSinceCapture: city.turnsSinceCapture,

@@ -21,6 +21,28 @@ export class SettlementRenderer {
       if (!city.visible) continue;
       const point = this.worldToScreen(city.q, city.r);
       const factionColor = Phaser.Display.Color.HexStringToColor(world.factions.find((faction) => faction.id === city.factionId)?.color ?? '#c8b68e').color;
+      if (city.besieged) {
+        const siegeTurns = city.siegeTurnsUntilCapture ?? 0;
+        const siegeFlagY = point.y - 86;
+        const siegeFlag = this.scene.add.rectangle(point.x, siegeFlagY, 196, 22, 0x4a120d, 0.94)
+          .setStrokeStyle(2, 0xf2643d, 0.95);
+        this.layer.add(siegeFlag);
+        const siegeLabel = this.scene.add.text(
+          point.x,
+          siegeFlagY,
+          `Siege: Turns until capture = ${siegeTurns}`,
+          {
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '11px',
+            fontStyle: 'bold',
+            color: '#fff0cf',
+            stroke: '#240905',
+            strokeThickness: 2,
+            align: 'center',
+          },
+        ).setOrigin(0.5, 0.5);
+        this.layer.add(siegeLabel);
+      }
       const backing = this.scene.add.ellipse(point.x, point.y - 16, 58, 30, 0x120f0c, 0.72)
         .setStrokeStyle(3, factionColor, 0.82);
       this.layer.add(backing);
@@ -30,7 +52,8 @@ export class SettlementRenderer {
       sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => callbacks.onCitySelected(city.id, pointer));
       this.layer.add(sprite);
 
-      const label = this.scene.add.text(point.x, point.y - 60, city.name, {
+      const labelY = city.besieged ? point.y - 62 : point.y - 60;
+      const label = this.scene.add.text(point.x, labelY, city.name, {
         fontFamily: 'Georgia, serif',
         fontSize: '12px',
         color: '#f7e7bf',

@@ -293,4 +293,32 @@ describe('worldViewModel play derivation', () => {
     expect(embarkedUnit?.transportId).toBe(transportId);
     expect(embarkedUnit?.validDisembarkHexes?.some((hex) => hex.q === 12 && hex.r === 10)).toBe(true);
   });
+
+  it('exposes siege turns until capture for besieged cities', () => {
+    const session = new GameSession({ type: 'fresh', seed: 42 });
+    const state = session.getState();
+    const cityId = state.factions.get(state.activeFactionId as never)!.cityIds[0];
+    const city = state.cities.get(cityId)!;
+    const besiegedState = {
+      ...state,
+      cities: new Map(state.cities).set(cityId, {
+        ...city,
+        besieged: true,
+        wallHP: 61,
+      }),
+    };
+
+    const world = buildWorldViewModel({
+      kind: 'play',
+      state: besiegedState,
+      registry: session.getRegistry(),
+      playerFactionId: besiegedState.activeFactionId,
+      reachableHexes: [],
+      attackHexes: [],
+      pathPreview: [],
+      lastMove: null,
+    });
+
+    expect(world.cities.find((entry) => entry.id === cityId)?.siegeTurnsUntilCapture).toBe(4);
+  });
 });
