@@ -521,3 +521,24 @@ No significant changes detected.
 ### Dependency Changes
 - `src/systems/combat-action/helpers.ts` — 16 dependencies
 - `src/systems/fogSystem.ts` — 14 dependencies
+
+---
+
+## Digest — 2026-04-19T14:36:10.948545Z
+
+### Modified Files
+- `src/systems/villageSystem.ts` — +2 exports (countVillagesInCityTerritory, destroyVillagesInCityTerritory)
+
+### Dependency Changes
+- `src/systems/villageSystem.ts` — 17 dependencies
+
+---
+
+## Digest — 2026-04-20T05:00:12.352010Z
+
+### New Files
+- `POISON_DAMAGE_INVESTIGATION.md` — 1 exports: applyPoisonDoT
+- `web/src/ui/TechDiscoveryModal.tsx` — 3 exports: useTechDiscoveryModal, useTechDiscoveryDetector, TechDiscoveryModalProvider
+
+### Dependency Changes
+- `web/src/ui/TechDiscoveryModal.tsx` imports: web/src/data/research.json (researchData)
