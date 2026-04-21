@@ -13,7 +13,7 @@ import {
  * Create initial research state for a new faction.
  * Native domain T1 is auto-completed.
  */
-export function createResearchState(factionId: FactionId, nativeDomain?: string): ResearchState {
+export function createResearchState(factionId: FactionId, nativeDomain?: string, researchPerTurn?: number): ResearchState {
   const completedNodes: ResearchNodeId[] = [];
   if (nativeDomain) {
     completedNodes.push(`${nativeDomain}_t1` as ResearchNodeId);
@@ -24,7 +24,7 @@ export function createResearchState(factionId: FactionId, nativeDomain?: string)
     activeNodeId: null,
     progressByNodeId: {},
     completedNodes,
-    researchPerTurn: 4,
+    researchPerTurn: researchPerTurn ?? 4,
     recentCodifiedDomainIds: [],
   };
 }

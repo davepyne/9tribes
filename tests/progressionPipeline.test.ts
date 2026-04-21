@@ -28,39 +28,45 @@ describe('progression pipeline constants', () => {
   });
 
   describe('research speed', () => {
-    it('researchPerTurn is 5', () => {
+    it('researchPerTurn is 4 for human players', () => {
       const research = createResearchState('hill_clan' as never, 'fortress');
-      expect(research.researchPerTurn).toBe(5);
-      expect(getResearchRate(research)).toBe(5);
+      expect(research.researchPerTurn).toBe(4);
+      expect(getResearchRate(research)).toBe(4);
+    });
+
+    it('researchPerTurn is 6 for AI players', () => {
+      const research = createResearchState('hill_clan' as never, 'fortress', 6);
+      expect(research.researchPerTurn).toBe(6);
+      expect(getResearchRate(research)).toBe(6);
     });
   });
 
   describe('domination threshold', () => {
-    it('4 of 9 cities triggers domination (40% threshold)', () => {
+    it('5 of 9 cities triggers domination (51% threshold)', () => {
       const state = buildMvpScenario(42);
       const cityIds = Array.from(state.cities.keys());
-      // Give 3 non-home cities to savannah_lions (total 4 including their own = 40% of 9)
+      // Give 4 non-home cities to savannah_lions (total 5 including their own = 56% of 9)
+      const nonSavannahCities = cityIds.filter(id => state.cities.get(id)!.factionId !== 'savannah_lions');
+      for (const cityId of nonSavannahCities.slice(0, 4)) {
+        const city = state.cities.get(cityId)!;
+        state.cities.set(cityId, { ...city, factionId: 'savannah_lions' as never, besieged: false });
+      }
+      const victory = getVictoryStatus(state);
+      expect(victory.dominationThreshold).toBe(5);
+      expect(victory.victoryType).toBe('domination');
+    });
+
+    it('4 of 9 cities does NOT trigger domination', () => {
+      const state = buildMvpScenario(42);
+      const cityIds = Array.from(state.cities.keys());
+      // Give only 3 non-home cities to savannah_lions (total 4 including their own = 44% of 9)
       const nonSavannahCities = cityIds.filter(id => state.cities.get(id)!.factionId !== 'savannah_lions');
       for (const cityId of nonSavannahCities.slice(0, 3)) {
         const city = state.cities.get(cityId)!;
         state.cities.set(cityId, { ...city, factionId: 'savannah_lions' as never, besieged: false });
       }
       const victory = getVictoryStatus(state);
-      expect(victory.dominationThreshold).toBe(4);
-      expect(victory.victoryType).toBe('domination');
-    });
-
-    it('3 of 9 cities does NOT trigger domination', () => {
-      const state = buildMvpScenario(42);
-      const cityIds = Array.from(state.cities.keys());
-      // Give only 2 non-home cities to savannah_lions (total 3 including their own)
-      const nonSavannahCities = cityIds.filter(id => state.cities.get(id)!.factionId !== 'savannah_lions');
-      for (const cityId of nonSavannahCities.slice(0, 2)) {
-        const city = state.cities.get(cityId)!;
-        state.cities.set(cityId, { ...city, factionId: 'savannah_lions' as never, besieged: false });
-      }
-      const victory = getVictoryStatus(state);
-      expect(victory.dominationThreshold).toBe(4);
+      expect(victory.dominationThreshold).toBe(5);
       expect(victory.victoryType).toBe('unresolved');
     });
   });
