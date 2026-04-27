@@ -66,8 +66,9 @@ export class SelectionRenderer {
       this.layer.add(
         this.scene.add.image(point.x, point.y, TEXTURES.selection, 0)
           .setOrigin(0.5, 1)
-          .setAlpha(0.92)
-          .setTint(selected.type === 'unit' ? 0xf7e7bf : 0xd9b86a),
+          .setScale(selected.type === 'unit' ? 1.1 : 1)
+          .setAlpha(selected.type === 'unit' ? 0.9 : 0.92)
+          .setTint(selected.type === 'unit' ? 0xffd84d : 0xd9b86a),
       );
     }
 
