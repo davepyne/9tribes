@@ -77,7 +77,7 @@
   font-weight: 500;
   color: var(--text);
   border: none;
-  cursor: default;
+  cursor: pointer;
 }
 
 .gmb-chip--research {
