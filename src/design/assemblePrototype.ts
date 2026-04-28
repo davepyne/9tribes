@@ -18,6 +18,8 @@ export interface AssemblePrototypeOptions {
   tags?: string[];
   sourceRecipeId?: string;
   productionCost?: number;
+  rangeBonus?: number;
+  movesBonus?: number;
 }
 
 /**
@@ -56,6 +58,8 @@ export function assemblePrototype(
 
   // Calculate derived stats
   const derivedStats = calculatePrototypeStats(chassis, components);
+  derivedStats.range += options.rangeBonus ?? 0;
+  derivedStats.moves += options.movesBonus ?? 0;
 
   // Generate unique prototype ID
   const nextIndex = existingPrototypeIds.length + 1;
@@ -91,5 +95,7 @@ export function assemblePrototype(
     tags,
     sourceRecipeId: options.sourceRecipeId,
     productionCost: options.productionCost,
+    rangeBonus: options.rangeBonus,
+    movesBonus: options.movesBonus,
   };
 }
