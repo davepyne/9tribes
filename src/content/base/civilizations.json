@@ -69,8 +69,8 @@
       "stealth": 2
     },
     "startingUnits": [
-      { "chassisId": "infantry_frame", "componentIds": ["basic_spear", "skirmish_drill"], "name": "Steppe Warrior", "costOverride": 17, "positionOffset": { "q": -1, "r": 0 } },
-      { "chassisId": "ranged_frame", "componentIds": ["basic_bow", "skirmish_drill", "light_mount"], "name": "Horse Archer", "costOverride": 23, "positionOffset": { "q": 0, "r": -1 } }
+      { "chassisId": "ranged_frame", "componentIds": ["basic_bow", "skirmish_drill", "light_mount"], "name": "Horse Archer", "costOverride": 23, "positionOffset": { "q": -1, "r": 0 }, "tags": ["cavalry", "mounted", "ranged", "skirmish"] },
+      { "chassisId": "infantry_frame", "componentIds": ["basic_spear", "skirmish_drill"], "name": "Steppe Warrior", "costOverride": 17, "positionOffset": { "q": 1, "r": 0 } }
     ],
     "uniqueMechanic": "horse_archers",
     "homeBiome": "plains",
@@ -234,8 +234,8 @@
       "endurance": 4
     },
     "startingUnits": [
-      { "chassisId": "infantry_frame", "componentIds": ["basic_spear", "frost_forge"], "name": "Frost Guard", "costOverride": 23, "positionOffset": { "q": 0, "r": 1 } },
-      { "chassisId": "ranged_frame", "componentIds": ["basic_bow", "cold_provisions"], "name": "Ice Archer", "costOverride": 15, "positionOffset": { "q": 1, "r": 1 } }
+      { "chassisId": "infantry_frame", "componentIds": ["basic_spear", "frost_forge"], "name": "Frost Guard", "costOverride": 23, "positionOffset": { "q": 0, "r": 1 }, "tags": ["frost", "infantry"] },
+      { "chassisId": "ranged_frame", "componentIds": ["basic_bow", "cold_provisions"], "name": "Ice Archer", "costOverride": 15, "positionOffset": { "q": 1, "r": 0 }, "tags": ["frost", "ranged"] }
     ],
     "uniqueMechanic": "cold_hardened",
     "homeBiome": "tundra",

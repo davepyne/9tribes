@@ -300,10 +300,13 @@ function applySummonAbility(
   const summonDuration = abilities.summonDuration ?? 5;
   const cooldownDuration = abilities.cooldownDuration ?? 5;
 
+  const hasSummonedBefore = faction.summonState?.summoned === true;
+  const initialCooldown = hasSummonedBefore ? 0 : 4;
+
   let summonState = faction.summonState ?? {
     summoned: false,
     turnsRemaining: 0,
-    cooldownRemaining: 0,
+    cooldownRemaining: initialCooldown,
     unitId: null,
   };
 
@@ -342,13 +345,16 @@ function applySummonAbility(
   }
   else {
     let validUnit: Unit | null = null;
+    const neededTags = new Set(['cavalry', 'beast', 'frost', 'river', 'poison', 'jungle']);
     for (const unitId of faction.unitIds) {
       const unit = state.units.get(unitId);
       if (unit && unit.hp > 0) {
         const terrainId = getTerrainAt(state, unit.position);
         if (summonConfig.terrainTypes.includes(terrainId)) {
           const prototype = state.prototypes.get(unit.prototypeId);
-          if (prototype && (prototype.tags ?? []).includes('priest')) {
+          const unitTags = new Set(prototype?.tags ?? []);
+          const hasNeededTag = [...neededTags].some(tag => unitTags.has(tag));
+          if (prototype && hasNeededTag) {
             validUnit = unit;
             break;
           }
