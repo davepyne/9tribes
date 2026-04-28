@@ -27,6 +27,22 @@ function formatDomainName(domainId: string): string {
     .join(' ');
 }
 
+const NATIVE_DOMAIN_DISPLAY_NAMES: Record<string, string> = {
+  venom: 'Venom',
+  nature_healing: 'Healer',
+  hitrun: 'Hit & Run',
+  fortress: 'Fortify',
+  slaving: 'Slavery',
+  camel_adaptation: 'Desert-Adept',
+  charge: 'Charge',
+  river_stealth: 'Stealth',
+  heavy_hitter: 'Shock',
+};
+
+function formatNativeDomainName(domainId: string): string {
+  return NATIVE_DOMAIN_DISPLAY_NAMES[domainId] ?? formatDomainName(domainId);
+}
+
 function getDomainDescription(domainId: string): string | undefined {
   const domain = (abilityDomains.domains as Record<string, { baseEffect?: { description?: string } }>)[domainId];
   return domain?.baseEffect?.description;
@@ -138,9 +154,9 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
           <div className="ci-section">
             <p className="ci-desc">{state.hud.selectedDescription}</p>
 
-            {/* Combat Stats */}
+            {/* Movement/Combat Modifiers */}
             <div className="ci-unit-combat">
-              <p className="panel-kicker">Combat Stats</p>
+              <p className="panel-kicker">Movement/Combat Modifiers</p>
               <div className="ci-stat-grid">
                 <div className="ci-stat-cell">
                   <span className="ci-stat-value">{selectedUnit.hp}</span>
@@ -183,7 +199,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
               </div>
               {selectedUnit.veteranLevel ? (
                 <div className="meta-row">
-                  <span>Veterancy</span>
+                  <span>Experience Level</span>
                   <strong>{selectedUnit.veteranLevel}{selectedUnit.xp != null ? ` (${selectedUnit.xp} XP)` : ''}</strong>
                 </div>
               ) : null}
@@ -204,14 +220,20 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
               </div>
             </div>
 
-            {/* Domains */}
-            {(selectedUnit.nativeDomain || (selectedUnit.learnedAbilities && selectedUnit.learnedAbilities.length > 0)) ? (
+            {/* Skills */}
+            {(selectedUnit.factionId || (selectedUnit.learnedAbilities && selectedUnit.learnedAbilities.length > 0)) ? (
               <div className="ci-domains">
-                <p className="panel-kicker">Domains</p>
+                <p className="panel-kicker">Skills</p>
+                {selectedUnit.factionId && (
+                  <div className="meta-row">
+                    <span>Faction</span>
+                    <strong className="ci-domain--native">{selectedUnit.factionId}</strong>
+                  </div>
+                )}
                 {selectedUnit.nativeDomain && (
                   <div className="meta-row">
-                    <span>Native Domain</span>
-                    <strong className="ci-domain--native">{formatDomainName(selectedUnit.nativeDomain)}</strong>
+                    <span>Native Ability</span>
+                    <strong className="ci-domain--native">{formatNativeDomainName(selectedUnit.nativeDomain)}</strong>
                   </div>
                 )}
                 {selectedUnit.learnedAbilities && selectedUnit.learnedAbilities.length > 0 ? (
@@ -221,7 +243,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                     </div>
                     {selectedUnit.learnedAbilities.map((domainId) => (
                       <div key={domainId} className="ci-learned-ability">
-                        <span className="ci-knowledge__pip">{formatDomainName(domainId)}</span>
+                        <span className="ci-knowledge__pip">{formatNativeDomainName(domainId)}</span>
                         {getDomainDescription(domainId) && (
                           <p className="ci-learned-ability__desc">{getDomainDescription(domainId)}</p>
                         )}
