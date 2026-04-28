@@ -1,8 +1,68 @@
+import { useState } from 'react';
 import type { TerrainInspectorViewModel } from '../game/types/clientState';
 
 type TerrainPanelProps = {
   terrain: TerrainInspectorViewModel | null;
   onClose: () => void;
+};
+
+const CAPABILITY_DESCRIPTIONS: Record<string, { name: string; description: string }> = {
+  formation_warfare: {
+    name: 'Formation Warfare',
+    description: 'Units fighting in formation get bonuses. Works best in open terrain with adjacent allies.',
+  },
+  horsemanship: {
+    name: 'Horsemanship',
+    description: 'Proficiency with mounted units. Better for cavalry and horse-based tactics.',
+  },
+  charge: {
+    name: 'Charge',
+    description: 'Units deal extra damage when charging. The longer the approach, the harder the hit.',
+  },
+  shock_resistance: {
+    name: 'Shock Resistance',
+    description: 'Defensive bonus against charge attacks. Reduces damage from high-momentum impacts.',
+  },
+  hill_fighting: {
+    name: 'Hill Fighting',
+    description: 'Combat advantage on elevated terrain. Grants bonus when defending from hills.',
+  },
+  fortification: {
+    name: 'Fortification',
+    description: 'Ability to build and benefit from defensive structures. Works with forts and walls.',
+  },
+  stealth: {
+    name: 'Stealth',
+    description: 'Hidden from enemy view when not moving. Better in dense terrain with cover.',
+  },
+  woodcraft: {
+    name: 'Woodcraft',
+    description: 'Forest and jungle proficiency. Bonus movement and combat in wooded hexes.',
+  },
+  endurance: {
+    name: 'Endurance',
+    description: 'Resist attrition and terrain penalties. Sustains units over long campaigns.',
+  },
+  mobility: {
+    name: 'Mobility',
+    description: 'Faster movement across all terrain. Reduces movement point costs.',
+  },
+  desert_survival: {
+    name: 'Desert Survival',
+    description: 'Operate effectively in desert conditions. Reduces desert movement penalties.',
+  },
+  seafaring: {
+    name: 'Seafaring',
+    description: 'Naval unit proficiency. Required for water-based operations.',
+  },
+  navigation: {
+    name: 'Navigation',
+    description: 'Sea travel and coastal operations. Better movement on water hexes.',
+  },
+  poisoncraft: {
+    name: 'Poisoncraft',
+    description: 'Apply poison effects on attacks. Works best in jungle and swamp terrain.',
+  },
 };
 
 const TERRAIN_ICONS: Record<string, string> = {
@@ -62,9 +122,19 @@ function SynergyBadge({ score, isHome }: { score: number; isHome: boolean }) {
 
 export function TerrainPanel({ terrain, onClose }: TerrainPanelProps) {
   const isOpen = terrain !== null;
+  const [selectedInfo, setSelectedInfo] = useState<{ title: string; description: string } | null>(null);
 
   return (
     <aside className={`ti-root${isOpen ? ' ti-root--open' : ''}`}>
+      {selectedInfo && (
+        <div className="ti-info-popup-overlay" onClick={() => setSelectedInfo(null)}>
+          <div className="ti-info-popup" onClick={(e) => e.stopPropagation()}>
+            <button className="ti-info-popup__close" onClick={() => setSelectedInfo(null)}>×</button>
+            <h3 className="ti-info-popup__title">{selectedInfo.title}</h3>
+            <p className="ti-info-popup__desc">{selectedInfo.description}</p>
+          </div>
+        </div>
+      )}
       {isOpen && terrain && (
         <div className="ti-scroll">
           <div className="ti-header">
@@ -96,7 +166,7 @@ export function TerrainPanel({ terrain, onClose }: TerrainPanelProps) {
           )}
 
           <div className="ti-section">
-            <p className="panel-kicker">Combat Stats</p>
+            <p className="panel-kicker">Movement/Combat Modifiers</p>
             <div className="ti-stat-grid">
               <div className="ti-stat-cell">
                 <span className={`ti-stat-value${!terrain.passable ? ' ti-stat-value--bad' : ''}`}>
@@ -115,13 +185,18 @@ export function TerrainPanel({ terrain, onClose }: TerrainPanelProps) {
 
           {terrain.domainPressure.length > 0 && (
             <div className="ti-section">
-              <p className="panel-kicker">Domain Pressure</p>
+              <p className="panel-kicker">Terrain XP</p>
               <p className="ti-sub">Units operating here gain these domains over time.</p>
               <ul className="ti-domain-list">
                 {terrain.domainPressure.map((entry) => {
                   const maxPressure = Math.max(...terrain.domainPressure.map((d) => d.pressure));
+                  const info = CAPABILITY_DESCRIPTIONS[entry.domainId];
                   return (
-                    <li key={entry.domainId} className={`ti-domain-row${entry.isSynergy ? ' ti-domain-row--synergy' : ''}`}>
+                    <li
+                      key={entry.domainId}
+                      className={`ti-domain-row${entry.isSynergy ? ' ti-domain-row--synergy' : ''}${info ? ' ti-domain-row--clickable' : ''}`}
+                      onClick={() => info && setSelectedInfo({ title: info.name, description: info.description })}
+                    >
                       <div className="ti-domain-info">
                         <span className="ti-domain-label">{entry.label}</span>
                         {entry.isSynergy && (
@@ -141,7 +216,7 @@ export function TerrainPanel({ terrain, onClose }: TerrainPanelProps) {
 
           {terrain.cityBonus && (
             <div className="ti-section">
-              <p className="panel-kicker">City Founded Here</p>
+              <p className="panel-kicker">Settlement Bonus</p>
               <div className="ti-city-stats">
                 {terrain.cityBonus.productionBonus > 0 && (
                   <div className="ti-city-stat">
@@ -174,16 +249,6 @@ export function TerrainPanel({ terrain, onClose }: TerrainPanelProps) {
             </div>
           )}
 
-          {terrain.ecologyTags.length > 0 && (
-            <div className="ti-section">
-              <p className="panel-kicker">Ecology</p>
-              <div className="ti-tag-row">
-                {terrain.ecologyTags.map((tag) => (
-                  <span key={tag} className="ti-tag">{tag.replace(/_/g, ' ')}</span>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </aside>

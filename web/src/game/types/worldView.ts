@@ -12,6 +12,7 @@ export type HexView = {
   terrain: string;
   visibility: VisibilityState;
   ownerFactionId: string | null;
+  ownerFactionName: string | null;
 };
 
 export type FactionView = {
@@ -30,6 +31,7 @@ export type UnitStatusView = 'ready' | 'fortified' | 'spent' | 'inactive';
 export type UnitView = {
   id: string;
   factionId: string;
+  factionName: string;
   q: number;
   r: number;
   hp: number;
@@ -70,6 +72,7 @@ export type UnitView = {
   validDisembarkHexes?: HexCoord[];
   supplyCost?: number;
   isPrototype?: boolean;
+  summonTurnsRemaining?: number;
 };
 
 export type CityView = {

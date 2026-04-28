@@ -185,10 +185,10 @@ export const helpContent: HelpContent = {
       color: '#b98a2f',
       nativeDomain: 'hitrun',
       homeBiome: 'Plains',
-      intro: 'Speed is life for the Steppe Riders. These horse lords race across open plains, striking where enemies are weakest and vanishing before reinforcements arrive. Their Foraging Riders passive means their cavalry doesn\'t slow down to resupply — they eat on the move, keeping pressure on from turn one. Their signature Warlord unit rallies nearby cavalry with an aura boost, turning already-fast units into an absolute blur. If you like keeping opponents off-balance and never fighting fair, this is your faction.',
+      intro: 'Speed is life for the Steppe Riders. These horse lords race across open plains, striking where enemies are weakest and vanishing before reinforcements arrive. Their Foraging Riders passive gives cavalry +15% attack, +20% defense, and faster movement on plains and savannah — plus extra production and supply income from these regions. Their signature Warlord unit rallies nearby cavalry with an aura boost, turning already-fast units into an absolute blur. If you like keeping opponents off-balance and never fighting fair, this is your faction.',
       strengths: [
         'You dictate when and where fights happen. Your Skirmish Pursuit domain deals +2 bonus damage whenever you win an exchange — press the advantage before enemies can recover.',
-        'Supply isn\'t your problem. The Foraging Riders passive means long cavalry raids don\'t need logistics planning, letting you operate deep in enemy territory.',
+        'Foraging Riders gives your cavalry +15% attack and +20% defense on open ground, plus faster movement — you win any fair fight on plains or savannah.',
         'Slow, stationary armies are free food. Your horse archers punish anyone who tries to form a static firing line on open ground.',
       ],
       weaknesses: [
@@ -270,7 +270,7 @@ export const helpContent: HelpContent = {
       tip: 'Don\'t charge headlong into spear walls. Angle your approach so War Elephants hit the flank or rear of enemy formations — the charge bonus is just as devastating from the side, but the defensive penalty is much worse for them.',
     },
     {
-      id: 'plains_riders',
+      id: 'river_people',
       name: 'River People',
       color: '#4f86c6',
       nativeDomain: 'river_stealth',

@@ -107,13 +107,16 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
   const hexVisibility = buildHexVisibilityMap(state, source.playerFactionId);
   const hexes = Array.from(state.map.tiles.values()).map((tile) => {
     const key = hexToKey(tile.position);
+    const ownerFactionId = getHexOwner(tile.position, state) ?? null;
+    const ownerFaction = ownerFactionId ? state.factions.get(ownerFactionId) : null;
     return {
       key,
       q: tile.position.q,
       r: tile.position.r,
       terrain: tile.terrain,
       visibility: hexVisibility.get(key) ?? 'hidden' as const,
-      ownerFactionId: getHexOwner(tile.position, state) ?? null,
+      ownerFactionId,
+      ownerFactionName: ownerFaction?.name ?? ownerFactionId,
     };
   });
 
@@ -202,6 +205,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       return {
         id: unit.id,
         factionId: unit.factionId,
+        factionName: faction?.name ?? unit.factionId,
         q: unit.position.q,
         r: unit.position.r,
         hp: unit.hp,
@@ -246,6 +250,10 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
         validDisembarkHexes: validDisembarkHexes.length > 0 ? validDisembarkHexes : undefined,
         supplyCost: prototype ? getUnitSupplyCost(prototype, source.registry) : 1,
         isPrototype: prototype ? isUnlockPrototype(prototype) : false,
+        summonTurnsRemaining: (() => {
+          const fs = unit.factionId ? state.factions.get(unit.factionId)?.summonState : undefined;
+          return fs?.summoned && fs.unitId === unit.id ? fs.turnsRemaining : undefined;
+        })(),
       };
     }),
     cities: Array.from(state.cities.values()).map((city) => ({

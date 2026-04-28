@@ -93,12 +93,12 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
         </div>
 
         <div className="gmb-chip gmb-chip--round">
-          <span className="gmb-chip-label">R</span>
+          <span className="gmb-chip-label">Round</span>
           <span>{state.turn}</span>
         </div>
 
         <div
-          className="gmb-chip gmb-chip--villages"
+          className={`gmb-chip gmb-chip--villages${(activeFactionSummary?.villages ?? 0) > 5 ? ' gmb-chip--villages-surplus' : ''}`}
           title={`${state.hud.activeFactionName} controls ${activeFactionSummary?.villages ?? 0} villages.`}
         >
           <span className="gmb-chip-label">Villages</span>

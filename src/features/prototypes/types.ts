@@ -22,4 +22,6 @@ export interface Prototype {
   sourceRecipeId?: string;
   productionCost?: number;
   supplyCost?: number;
+  rangeBonus?: number;
+  movesBonus?: number;
 }
