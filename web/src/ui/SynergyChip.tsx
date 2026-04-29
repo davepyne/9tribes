@@ -331,9 +331,6 @@ export function SynergyChip({ state }: SynergyChipProps) {
     setExpanded((v) => !v);
   }, []);
 
-  const handleClose = useCallback(() => setExpanded(false), []);
-  const handlePanelClick = useCallback((e: React.MouseEvent) => e.stopPropagation(), []);
-
   const [emergentPopup, setEmergentPopup] = useState<EmergentRule | null>(null);
 
   const handleEmergentClick = useCallback((e: React.MouseEvent, rule: EmergentRule) => {
@@ -342,6 +339,9 @@ export function SynergyChip({ state }: SynergyChipProps) {
   }, []);
 
   const handleEmergentClose = useCallback(() => setEmergentPopup(null), []);
+
+  const handleClose = useCallback(() => setExpanded(false), []);
+  const handlePanelClick = useCallback((e: React.MouseEvent) => e.stopPropagation(), []);
 
   const hasContent = resolved.foreignDomains.length > 0 || resolved.activePairs.length > 0;
 

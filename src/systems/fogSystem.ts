@@ -163,6 +163,14 @@ export function calculateVisibility(state: GameState, factionId: FactionId): Fac
   const hexVisibility = new Map<string, HexVisibility>();
   const lastSeen = new Map<string, LastSeenSnapshot>(previousLastSeen);
 
+  // First, preserve previously visible/explored oasis hexes permanently
+  for (const [key, prevVis] of previousVisibility) {
+    const tile = state.map?.tiles.get(key);
+    if (tile?.terrain === 'oasis' && (prevVis === 'visible' || prevVis === 'explored')) {
+      hexVisibility.set(key, 'visible');
+    }
+  }
+
   // Keys in new visible set → 'visible'
   for (const key of newVisibleKeys) {
     const tile = state.map?.tiles.get(key);
@@ -180,13 +188,19 @@ export function calculateVisibility(state: GameState, factionId: FactionId): Fac
     }
   }
 
-  // Keys that were 'visible' or 'explored' before → 'explored'
+  // Keys that were 'visible' or 'explored' before → keep visibility for oasis
   for (const [key, visibility] of previousVisibility) {
     if (visibility === 'visible' || visibility === 'explored') {
       if (!newVisibleKeys.has(key)) {
-        // Transitioning from visible to explored - capture snapshot
-        captureLastSeenSnapshot(state, key, lastSeen);
-        hexVisibility.set(key, 'explored');
+        const tile = state.map?.tiles.get(key);
+        // Once an oasis is spotted, it stays visible forever
+        if (tile?.terrain === 'oasis') {
+          hexVisibility.set(key, 'visible');
+        } else {
+          // Transitioning from visible to explored - capture snapshot
+          captureLastSeenSnapshot(state, key, lastSeen);
+          hexVisibility.set(key, 'explored');
+        }
       }
     }
   }

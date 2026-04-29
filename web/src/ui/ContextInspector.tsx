@@ -12,6 +12,7 @@ type ContextInspectorProps = {
   onSetCityProduction: (cityId: string, prototypeId: string) => void;
   onCancelCityProduction: (cityId: string) => void;
   onRemoveFromQueue: (cityId: string, queueIndex: number) => void;
+  onReorderQueue: (cityId: string, fromIndex: number, toIndex: number) => void;
   onSetTargetingMode: (mode: 'move' | 'attack') => void;
   onPrepareAbility: (unitId: string, ability: 'brace' | 'ambush') => void;
   onBoardTransport: (unitId: string, transportId: string) => void;
@@ -50,10 +51,12 @@ function getDomainDescription(domainId: string): string | undefined {
   return domain?.baseEffect?.description;
 }
 
-export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProduction, onCancelCityProduction, onRemoveFromQueue, onSetTargetingMode, onPrepareAbility, onBoardTransport, onDisembarkUnit, onDeselect, onCloseCityProduction }: ContextInspectorProps) {
+export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProduction, onCancelCityProduction, onRemoveFromQueue, onReorderQueue, onSetTargetingMode, onPrepareAbility, onBoardTransport, onDisembarkUnit, onDeselect, onCloseCityProduction }: ContextInspectorProps) {
   const [cityTab, setCityTab] = useState<CityTab>('overview');
   const [factionPopup, setFactionPopup] = useState<FactionInfo | null>(null);
   const [domainPopup, setDomainPopup] = useState<{domainId: string; name: string; description: string} | null>(null);
+  const [unitPopupOpen, setUnitPopupOpen] = useState(false);
+  const [draggedQueueIndex, setDraggedQueueIndex] = useState<number | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [tabsCanScrollLeft, setTabsCanScrollLeft] = useState(false);
   const [tabsCanScrollRight, setTabsCanScrollRight] = useState(false);
@@ -73,7 +76,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
 
     onOpen();
     if (state.selected.type === 'city') {
-      setCityTab('overview');
+      setCityTab('production');
     }
   }, [state.inspectorRequestId, onOpen]);
 
@@ -159,7 +162,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
             </div>
             <div className="faction-popup__section">
               <span className="faction-popup__label">Signature Unit</span>
-              <span>{factionPopup.signatureUnit}</span>
+              <span className="signature-unit-click" onClick={() => setUnitPopupOpen(true)}>{factionPopup.signatureUnit}</span>
             </div>
             <div className="faction-popup__section">
               <span className="faction-popup__label">Special Ability</span>
@@ -182,6 +185,28 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
               <span className="faction-popup__label">Tip</span>
               <p className="faction-popup__tip">{factionPopup.tip}</p>
             </div>
+          </div>
+        </div>
+      )}
+      {unitPopupOpen && factionPopup?.unitStats && (
+        <div className="faction-popup-overlay" onClick={() => setUnitPopupOpen(false)}>
+          <div className="faction-popup unit-stats-popup" onClick={(e) => e.stopPropagation()}>
+            <button className="faction-popup__close" onClick={() => setUnitPopupOpen(false)}>×</button>
+            <h3 className="unit-stats-panel__name" style={{ color: factionPopup.color }}>{factionPopup.unitStats.attack} / {factionPopup.unitStats.defense} / {factionPopup.unitStats.health}</h3>
+            <div className="unit-stats-panel__stats">
+              <div><span>Attack</span><strong>{factionPopup.unitStats.attack}</strong></div>
+              <div><span>Defense</span><strong>{factionPopup.unitStats.defense}</strong></div>
+              <div><span>Health</span><strong>{factionPopup.unitStats.health}</strong></div>
+              <div><span>Moves</span><strong>{factionPopup.unitStats.moves}</strong></div>
+              <div><span>Range</span><strong>{factionPopup.unitStats.range}</strong></div>
+            </div>
+            <div className="unit-stats-panel__tags">
+              {factionPopup.unitStats.tags.map((tag, i) => <span key={i} className="unit-tag">{tag}</span>)}
+            </div>
+            <div className="unit-stats-panel__ability">
+              <strong>Ability:</strong> {factionPopup.unitStats.ability}
+            </div>
+            <p className="unit-stats-panel__desc">{factionPopup.unitStats.description}</p>
           </div>
         </div>
       )}
@@ -267,7 +292,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                 <span>Morale</span>
                 <strong>
                   <span className={`ci-morale-value${selectedUnit.morale <= 25 ? ' ci-morale-value--routed' : selectedUnit.morale <= 60 ? ' ci-morale-value--low' : ''}`}>
-                    {selectedUnit.morale}
+                    {Math.round(selectedUnit.morale)}
                   </span>
                   <span className="ci-stat-sub">/ 100</span>
                 </strong>
@@ -275,7 +300,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
               <div className="ci-morale-bar">
                 <div
                   className={`ci-morale-bar__fill${selectedUnit.morale <= 25 ? ' ci-morale-bar__fill--routed' : selectedUnit.morale <= 60 ? ' ci-morale-bar__fill--low' : ''}`}
-                  style={{ width: `${selectedUnit.morale}%` }}
+                  style={{ width: `${Math.round(selectedUnit.morale)}%` }}
                 />
               </div>
             </div>
@@ -395,20 +420,6 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
             {/* Action Buttons (play mode only) */}
             {state.mode === 'play' ? (
               <div className="ci-actions">
-                <button
-                  type="button"
-                  className={`ci-action-btn${state.actions.targetingMode === 'move' ? ' ci-action-btn--active' : ''}`}
-                  onClick={() => onSetTargetingMode('move')}
-                >
-                  Move
-                </button>
-                <button
-                  type="button"
-                  className={`ci-action-btn${state.actions.targetingMode === 'attack' ? ' ci-action-btn--active' : ''}`}
-                  onClick={() => onSetTargetingMode('attack')}
-                >
-                  Attack
-                </button>
                 {selectedUnit.canBrace ? (
                   <button
                     type="button"
@@ -543,6 +554,57 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
 
             {!showRestrictedEnemyCityInfo && cityTab === 'production' ? (
               <div className="ci-tab-content ci-prod-tab">
+                {/* ── Available Units ── */}
+                <div className="pq-divider">
+                  <span>{selectedCity.canManageProduction ? 'TRAIN' : 'AVAILABLE UNITS'}</span>
+                </div>
+
+                {!selectedCity.canManageProduction ? (
+                  <p className="pq-readonly-hint">
+                    {selectedCity.walls.besieged
+                      ? 'Besieged — production locked'
+                      : selectedCity.isFriendly
+                        ? 'Only the active city can manage production'
+                        : 'Enemy city — read only'}
+                  </p>
+                ) : null}
+
+                <div className="pq-unit-list">
+                  {selectedCity.productionOptions.map((option) => (
+                    <button
+                      key={option.prototypeId}
+                      type="button"
+                      className={`pq-unit-card${option.disabled ? ' pq-unit-card--disabled' : ''}`}
+                      disabled={option.disabled}
+                      onClick={() => onSetCityProduction(selectedCity.cityId, option.prototypeId)}
+                    >
+                      <div className="pq-unit-card__header">
+                        <span className="pq-unit-card__name">{option.name}</span>
+                        <span className="pq-unit-card__cost">
+                          {option.costModifierReason ? (
+                            <>
+                              <span className="pq-base-cost">{option.baseCost}</span>
+                              {option.cost}
+                            </>
+                          ) : option.cost}
+                          <span className="pq-unit-card__cost-label">prod</span>
+                        </span>
+                      </div>
+                      <div className="pq-unit-card__stats">
+                        <span className="pq-stat pq-stat--atk">ATK {option.attack}</span>
+                        <span className="pq-stat pq-stat--def">DEF {option.defense}</span>
+                        <span className="pq-stat pq-stat--hp">HP {option.hp}</span>
+                        {option.moves > 1 && <span className="pq-stat pq-stat--mov">MOV {option.moves}</span>}
+                        {option.range > 1 && <span className="pq-stat pq-stat--rng">RNG {option.range}</span>}
+                        {!option.isPrototype && <span className="pq-stat pq-stat--sup">SUP {option.supplyCost}</span>}
+                      </div>
+                      {option.costModifierReason && (
+                        <span className="pq-shock-note">{option.costModifierReason}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
                 {/* ── Current Production ── */}
                 {selectedCity.production.current ? (
                   <div className="pq-current">
@@ -605,7 +667,20 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                       <span className="pq-queue__count">{selectedCity.production.queue.length}</span>
                     </div>
                     {selectedCity.production.queue.map((item, index) => (
-                      <div className="pq-queue-item" key={`${item.type}-${item.id}-${index}`}>
+                      <div
+                        className={`pq-queue-item${draggedQueueIndex === index ? ' pq-queue-item--dragging' : ''}`}
+                        key={`${item.type}-${item.id}-${index}`}
+                        draggable={selectedCity.canManageProduction}
+                        onDragStart={() => setDraggedQueueIndex(index)}
+                        onDragEnd={() => setDraggedQueueIndex(null)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={() => {
+                          if (draggedQueueIndex !== null && draggedQueueIndex !== index) {
+                            onReorderQueue(selectedCity.cityId, draggedQueueIndex, index);
+                          }
+                          setDraggedQueueIndex(null);
+                        }}
+                      >
                         <span className="pq-queue-item__index">{index + 1}</span>
                         <span className="pq-queue-item__name">{item.name}</span>
                         <span className="pq-queue-item__cost">
@@ -633,57 +708,6 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                     ))}
                   </div>
                 )}
-
-                {/* ── Available Units ── */}
-                <div className="pq-divider">
-                  <span>{selectedCity.canManageProduction ? 'TRAIN' : 'AVAILABLE UNITS'}</span>
-                </div>
-
-                {!selectedCity.canManageProduction ? (
-                  <p className="pq-readonly-hint">
-                    {selectedCity.walls.besieged
-                      ? 'Besieged — production locked'
-                      : selectedCity.isFriendly
-                        ? 'Only the active city can manage production'
-                        : 'Enemy city — read only'}
-                  </p>
-                ) : null}
-
-                <div className="pq-unit-list">
-                  {selectedCity.productionOptions.map((option) => (
-                    <button
-                      key={option.prototypeId}
-                      type="button"
-                      className={`pq-unit-card${option.disabled ? ' pq-unit-card--disabled' : ''}`}
-                      disabled={option.disabled}
-                      onClick={() => onSetCityProduction(selectedCity.cityId, option.prototypeId)}
-                    >
-                      <div className="pq-unit-card__header">
-                        <span className="pq-unit-card__name">{option.name}</span>
-                        <span className="pq-unit-card__cost">
-                          {option.costModifierReason ? (
-                            <>
-                              <span className="pq-base-cost">{option.baseCost}</span>
-                              {option.cost}
-                            </>
-                          ) : option.cost}
-                          <span className="pq-unit-card__cost-label">prod</span>
-                        </span>
-                      </div>
-                      <div className="pq-unit-card__stats">
-                        <span className="pq-stat pq-stat--atk">ATK {option.attack}</span>
-                        <span className="pq-stat pq-stat--def">DEF {option.defense}</span>
-                        <span className="pq-stat pq-stat--hp">HP {option.hp}</span>
-                        {option.moves > 1 && <span className="pq-stat pq-stat--mov">MOV {option.moves}</span>}
-                        {option.range > 1 && <span className="pq-stat pq-stat--rng">RNG {option.range}</span>}
-                        {!option.isPrototype && <span className="pq-stat pq-stat--sup">SUP {option.supplyCost}</span>}
-                      </div>
-                      {option.costModifierReason && (
-                        <span className="pq-shock-note">{option.costModifierReason}</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
               </div>
             ) : null}
           </div>

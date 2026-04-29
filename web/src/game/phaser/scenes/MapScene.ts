@@ -109,6 +109,15 @@ export class MapScene extends Phaser.Scene {
     // Block right-click from triggering any default browser behavior or move actions.
     this.input.mouse?.disableContextMenu();
 
+    // Ensure canvas doesn't show context menu - add both Phaser and native handlers
+    const canvas = this.game.canvas as HTMLCanvasElement;
+    if (canvas) {
+      canvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }, { capture: true, passive: false });
+    }
+
     this.input.keyboard?.on('keydown-A', () => {
       const state = this.latestState;
       const selectedUnitId = state?.selected?.type === 'unit' ? state.selected.unitId : null;
@@ -242,9 +251,9 @@ export class MapScene extends Phaser.Scene {
       }
     }
 
-    // Left-click on own unit → focus (select for movement, no UI popout)
+    // Left-click on own unit → select (show side popout)
     if (state.mode === 'play' && clickedUnit?.isActiveFaction) {
-      this.controller.dispatch({ type: 'focus_unit', unitId: clickedUnit.id });
+      this.controller.dispatch({ type: 'select_unit', unitId: clickedUnit.id });
       return;
     }
 
@@ -325,18 +334,14 @@ export class MapScene extends Phaser.Scene {
 
     const key = `${unit.q},${unit.r}`;
 
-    // Double-click on any unit → open unit inspector side panel
-    if (this.isDoubleClick(key)) {
-      const city = this.findCityAtHex(state, unit.q, unit.r);
-      if (city) {
-        this.controller.dispatch({ type: 'select_city', cityId: city.id });
-      } else {
-        this.controller.dispatch({ type: 'select_unit', unitId });
-      }
-      return;
+    // Single left-click on any unit → open unit inspector side panel
+    const city = this.findCityAtHex(state, unit.q, unit.r);
+    if (city) {
+      this.controller.dispatch({ type: 'select_city', cityId: city.id });
+    } else {
+      this.controller.dispatch({ type: 'select_unit', unitId });
     }
-
-    this.handleSingleClickUnit(state, unitId);
+    return;
   }
 
   private handleCitySelection(state: ClientState, cityId: string, pointer?: Phaser.Input.Pointer) {
@@ -405,9 +410,9 @@ export class MapScene extends Phaser.Scene {
       return;
     }
 
-    // Left-click on own unit → focus (select for movement, no UI popout)
+    // Left-click on own unit → select (show side popout)
     if (state.mode === 'play' && unit.isActiveFaction) {
-      this.controller.dispatch({ type: 'focus_unit', unitId });
+      this.controller.dispatch({ type: 'select_unit', unitId });
       return;
     }
     // Left-click on enemy unit → no-op
@@ -433,10 +438,30 @@ export class MapScene extends Phaser.Scene {
 
     const key = `${coord.q},${coord.r}`;
     const selectedUnitId = state.actions.selectedUnitId;
-
-    // Right-click on a unit → select it (shows side popout)
     const clickedUnit = state.world.units.find((u) => u.q === coord.q && u.r === coord.r);
-    if (clickedUnit) {
+
+    // Right-click on enemy unit with friendly selected → attack if in range, else move towards
+    if (clickedUnit && !clickedUnit.isActiveFaction && selectedUnitId) {
+      const attackTarget = state.actions.attackTargets.find((t) => t.unitId === clickedUnit.id);
+      if (attackTarget) {
+        this.controller.dispatch({
+          type: 'attack_unit',
+          attackerId: selectedUnitId,
+          defenderId: clickedUnit.id,
+        });
+        return;
+      }
+      // Not in range → queue move towards enemy
+      this.controller.dispatch({
+        type: 'queue_move',
+        unitId: selectedUnitId,
+        destination: { q: coord.q, r: coord.r },
+      });
+      return;
+    }
+
+    // Right-click on own unit → select it
+    if (clickedUnit && clickedUnit.isActiveFaction) {
       this.controller.dispatch({ type: 'select_unit', unitId: clickedUnit.id });
       return;
     }

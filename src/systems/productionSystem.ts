@@ -216,8 +216,8 @@ export function completeProduction(
     facing: 0,
     hp: prototype.derivedStats.hp,
     maxHp: prototype.derivedStats.hp,
-    movesRemaining: prototype.derivedStats.moves,
-    maxMoves: prototype.derivedStats.moves,
+    movesRemaining: prototype.derivedStats.moves + (prototype.movesBonus ?? 0),
+    maxMoves: prototype.derivedStats.moves + (prototype.movesBonus ?? 0),
     attacksRemaining: 1,
     xp: 0,
     veteranLevel: 'green' as any,
@@ -453,6 +453,25 @@ export function canProducePrototype(
     return false;
   }
 
+  // Desert Immortals: max 1 on map
+  const prototypeTags = prototype.tags ?? [];
+  if (prototypeTags.includes('self_heal')) {
+    const immortalCount = Array.from(state.units.values()).filter(
+      (u) => u.factionId === factionId && u.hp > 0,
+    ).filter((u) => {
+      const proto = state.prototypes.get(u.prototypeId);
+      return proto?.tags?.includes('self_heal') ?? false;
+    }).length;
+    if (immortalCount >= 1) {
+      return false;
+    }
+  }
+
+  // Summon-only units (like Warlord): cannot be produced, only summoned
+  if (prototypeTags.includes('summon')) {
+    return false;
+  }
+
   // If faction already has a prototype using this chassis (e.g. starting unit),
   // they've proven they can build it — skip domain gate.
   const hasExistingChassisPrototype = Array.from(state.prototypes.values()).some(
@@ -528,6 +547,21 @@ export function removeFromQueue(city: City, index: number): City {
   return {
     ...city,
     productionQueue: city.productionQueue.filter((_, i) => i !== index),
+  };
+}
+
+/**
+ * Reorder items in the production queue.
+ */
+export function reorderQueue(city: City, fromIndex: number, toIndex: number): City {
+  if (fromIndex < 0 || fromIndex >= city.productionQueue.length) return city;
+  if (toIndex < 0 || toIndex >= city.productionQueue.length) return city;
+  const queue = [...city.productionQueue];
+  const [moved] = queue.splice(fromIndex, 1);
+  queue.splice(toIndex, 0, moved);
+  return {
+    ...city,
+    productionQueue: queue,
   };
 }
 

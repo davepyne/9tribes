@@ -299,7 +299,7 @@ function applySummonAbility(
   const summonConfig = abilities.summon;
   if (!summonConfig) return state;
 
-  const summonDuration = abilities.summonDuration ?? 5;
+const summonDuration = abilities.summonDuration ?? 5;
   const cooldownDuration = abilities.cooldownDuration ?? 5;
 
   const hasSummonedBefore = faction.summonState?.summoned === true;

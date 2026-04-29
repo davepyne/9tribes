@@ -13,6 +13,7 @@ type TopHudProps = {
 export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
   const [factionPopup, setFactionPopup] = useState<boolean>(false);
   const [supplyPopup, setSupplyPopup] = useState<boolean>(false);
+  const [unitPopupOpen, setUnitPopupOpen] = useState<boolean>(false);
   const activeFactionColor = state.world.factions.find((faction) => faction.id === state.activeFactionId)?.color ?? '#d6a34b';
   const recoveringCityCount = state.world.cities.filter(
     (city) => city.factionId === state.activeFactionId && city.turnsSinceCapture !== undefined,
@@ -24,6 +25,11 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
     return getFactionInfo(id) ?? null;
   }, [state.activeFactionId]);
 
+  const handleFactionClick = () => {
+    console.log('Faction click handler called, factionInfo:', factionInfo);
+    setFactionPopup(true);
+  };
+
   return (
     <header className="top-hud">
       {factionPopup && factionInfo && (
@@ -32,7 +38,7 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
             <button className="faction-popup__close" onClick={() => setFactionPopup(false)}>×</button>
             <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.name}</h3>
             <div className="faction-popup__section">
-              <span className="faction-popup__label">Native Domain</span>
+              <span className="faction-popup__label">Native Ability</span>
               <span>{factionInfo.nativeDomain}</span>
             </div>
             <div className="faction-popup__section">
@@ -45,7 +51,11 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
             </div>
             <div className="faction-popup__section">
               <span className="faction-popup__label">Signature Unit</span>
-              <span>{factionInfo.signatureUnit}</span>
+              <span className="signature-unit-click" onClick={() => setUnitPopupOpen(true)}>{factionInfo.signatureUnit}</span>
+            </div>
+            <div className="faction-popup__section">
+              <span className="faction-popup__label">Special Ability</span>
+              <span>{factionInfo.specialAbility}</span>
             </div>
             <p className="faction-popup__intro">{factionInfo.intro}</p>
             <div className="faction-popup__section">
@@ -67,6 +77,28 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
           </div>
         </div>
       )}
+      {unitPopupOpen && factionInfo?.unitStats && (
+        <div className="faction-popup-overlay" onClick={() => setUnitPopupOpen(false)}>
+          <div className="faction-popup unit-stats-popup" onClick={(e) => e.stopPropagation()}>
+            <button className="faction-popup__close" onClick={() => setUnitPopupOpen(false)}>×</button>
+            <h3 className="unit-stats-panel__name" style={{ color: factionInfo.color }}>{factionInfo.unitStats.attack} / {factionInfo.unitStats.defense} / {factionInfo.unitStats.health}</h3>
+            <div className="unit-stats-panel__stats">
+              <div><span>Attack</span><strong>{factionInfo.unitStats.attack}</strong></div>
+              <div><span>Defense</span><strong>{factionInfo.unitStats.defense}</strong></div>
+              <div><span>Health</span><strong>{factionInfo.unitStats.health}</strong></div>
+              <div><span>Moves</span><strong>{factionInfo.unitStats.moves}</strong></div>
+              <div><span>Range</span><strong>{factionInfo.unitStats.range}</strong></div>
+            </div>
+            <div className="unit-stats-panel__tags">
+              {factionInfo.unitStats.tags.map((tag, i) => <span key={i} className="unit-tag">{tag}</span>)}
+            </div>
+            <div className="unit-stats-panel__ability">
+              <strong>Ability:</strong> {factionInfo.unitStats.ability}
+            </div>
+            <p className="unit-stats-panel__desc">{factionInfo.unitStats.description}</p>
+          </div>
+        </div>
+      )}
       <div>
         <p className="eyebrow">War-Civ 2</p>
         <h1>{state.hud.title}</h1>
@@ -79,13 +111,10 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
           <span className="chip-label">Mode</span>
           <strong>{state.mode}</strong>
         </div>
-        <div
-          className="status-chip status-chip--active-faction"
+<div
+          className="status-chip status-chip--active-faction faction-click-target"
           style={{ '--chip-color': activeFactionColor } as CSSProperties}
-          role="button"
-          tabIndex={0}
-          onClick={() => { setFactionPopup(true); }}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') factionInfo && setFactionPopup(true); }}
+          onClick={handleFactionClick}
         >
           <span className="chip-label">Faction</span>
           <strong>{state.hud.activeFactionName}</strong>

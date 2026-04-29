@@ -47,7 +47,7 @@ import {
 import { findBestTargetChoice, findBestRangedTarget } from './targeting.js';
 import { performStrategicMovement } from './movement.js';
 import { RENDEZVOUS_READY_DISTANCE } from '../strategic-ai/rendezvous.js';
-import { isSettlerPrototype } from '../productionSystem.js';
+import { isSettlerPrototype, getAvailableProductionPrototypes, getPrototypeQueueCost, queueUnit } from '../productionSystem.js';
 import { createCityId } from '../../core/ids.js';
 import { createCitySiteBonuses, findBestCitySiteForFaction, getSettlementOccupancyBlocker } from '../citySiteSystem.js';
 import { syncFactionSettlementIds } from '../factionOwnershipSystem.js';
@@ -141,6 +141,16 @@ export function activateUnit(
             foundedRound: current.round,
           });
 
+          // Set default production to cheapest available prototype
+          const availableProtos = getAvailableProductionPrototypes(current, factionId, registry);
+          if (availableProtos.length > 0) {
+            const firstProto = availableProtos[0];
+            const cost = getPrototypeQueueCost(firstProto);
+            let updatedCity = cities.get(cityId)!;
+            updatedCity = queueUnit(updatedCity, firstProto.id, firstProto.chassisId, cost);
+            cities.set(cityId, updatedCity);
+          }
+
           const units = new Map(current.units);
           units.delete(unitId);
           const factions = new Map(current.factions);
@@ -216,7 +226,8 @@ export function activateUnit(
   }
 
   let activeUnit = current.units.get(unitId)!;
-  const unitRange = prototype.derivedStats.range ?? 1;
+  const baseRange = prototype.derivedStats.range ?? 1;
+  const unitRange = baseRange + (prototype.rangeBonus ?? 0);
   const factionDoctrine = resolveResearchDoctrine(current.research.get(factionId), faction);
   const canChargeAttack =
     unitRange <= 1 && (canUseCharge(prototype) || factionDoctrine.chargeTranscendenceEnabled);
