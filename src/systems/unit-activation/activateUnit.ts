@@ -508,10 +508,10 @@ export function activateUnit(
     return { state: current, pendingCombat: null };
   }
 
-  // Slave Galley: non-combat capture — attempt to enslave enemies within range 3
-  // (Unit-based, not faction passive — only fires when unit has capture ability via slaver_net component)
-  if (isTransportUnit(prototype, registry)
-    && hasCaptureAbility(prototype, registry)
+  // Non-combat capture — attempt to enslave enemies within range 4
+  // Fires when unit has capture ability (slaver_net, pirate_collar, etc.)
+  // Also fires for transport units with capture ability (galley_frame with slaver_net)
+  if (hasCaptureAbility(prototype, registry)
     && (activeUnit?.attacksRemaining ?? 0) > 0) {
     const greedyAbility = registry.getSignatureAbility(factionId);
     const captureParams = getCaptureParams(prototype, registry);
@@ -522,11 +522,15 @@ export function activateUnit(
 
     let bestCaptureTarget: UnitId | null = null;
     let bestCaptureDist = Infinity;
-    // Find enemy units within range 3 (prioritize weaker, closer targets)
+    // Find enemy units within range 4 (prioritize weaker, closer targets)
     for (const [, enemy] of current.units) {
       if (enemy.factionId === factionId || enemy.hp <= 0) continue;
+      const enemyProto = current.prototypes.get(enemy.prototypeId);
+      const enemyChassis = enemyProto ? registry.getChassis(enemyProto.chassisId) : null;
+      const enemyMaxHp = enemyChassis?.hp ?? 10;
+      if (enemy.hp > enemyMaxHp * hpFraction) continue;
       const dist = hexDistance(activeUnit.position, enemy.position);
-      if (dist > 3) continue;
+      if (dist > 4) continue;
       // Prefer lower HP targets
       const currentBest = bestCaptureTarget ? current.units.get(bestCaptureTarget) : null;
       if (dist < bestCaptureDist || (dist === bestCaptureDist && enemy.hp < (currentBest?.hp ?? Infinity))) {

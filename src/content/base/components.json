@@ -554,7 +554,8 @@
     "compatibleChassis": [
       "infantry_frame",
       "heavy_infantry_frame",
-      "galley_frame"
+      "galley_frame",
+      "naval_frame"
     ],
     "tags": [
       "spear",
@@ -562,7 +563,7 @@
       "formation"
     ],
     "captureChance": 0.5,
-    "captureCooldown": 3,
+    "captureCooldown": 2,
     "captureHpFraction": 0.5,
     "capabilityPressure": {
       "formation_warfare": 1
@@ -572,7 +573,7 @@
     "id": "pirate_collar",
     "name": "Pirate Collar",
     "slotType": "weapon",
-    "attackBonus": 1,
+    "attackAttack": 1,
     "compatibleChassis": [
       "infantry_frame",
       "heavy_infantry_frame"
@@ -583,7 +584,7 @@
       "formation"
     ],
     "captureChance": 0.5,
-    "captureCooldown": 3,
+    "captureCooldown": 2,
     "captureHpFraction": 0.5,
     "capabilityPressure": {
       "formation_warfare": 1

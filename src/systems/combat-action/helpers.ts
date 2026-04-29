@@ -66,6 +66,12 @@ export function canAttackTarget(state: GameState, registry: RulesRegistry, attac
     return true;
   }
 
+  // Amphibious-tagged naval units can attack land targets
+  const isAmphibious = attackerPrototype.tags?.includes('amphibious') ?? false;
+  if (isAmphibious) {
+    return true;
+  }
+
   const defenderTerrain = state.map?.tiles.get(hexToKey(defender.position))?.terrain ?? '';
   return WATER_TERRAIN.has(defenderTerrain);
 }

@@ -22,7 +22,20 @@
     "summonDuration": 7,
     "cooldownDuration": 3
   },
-  "hill_clan": {},
+  "hill_clan": {
+    "summon": {
+      "chassisId": "siege_golem_frame",
+      "terrainTypes": ["hill", "city"],
+      "hp": 22,
+      "attack": 6,
+      "defense": 5,
+      "moves": 2,
+      "tags": ["beast", "summon", "siege", "fortress"],
+      "name": "Siege Golem"
+    },
+    "summonDuration": 7,
+    "cooldownDuration": 4
+  },
   "jungle_clan": {
     "venomDamagePerTurn": 1,
     "summon": {
@@ -60,7 +73,7 @@
     "villageCaptureDestroys": true,
     "villageCaptureCooldownRounds": 3,
     "greedyCaptureChance": 0.5,
-    "greedyCaptureCooldown": 4,
+    "greedyCaptureCooldown": 3,
     "greedyCaptureHpFraction": 0.5,
     "greedyNonCombatCaptureChance": 0.4,
     "wallDefenseMultiplier": 2

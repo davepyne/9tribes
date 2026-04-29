@@ -112,7 +112,8 @@ function stampTerrainPatch(
   state: GameState,
   center: { q: number; r: number },
   terrain: TerrainType,
-  radius = 2
+  radius = 2,
+  preserveCenter = false,
 ): void {
   const map = state.map;
   if (!map) {
@@ -120,6 +121,7 @@ function stampTerrainPatch(
   }
 
   for (const hex of getHexesInRange(center, radius)) {
+    if (preserveCenter && hex.q === center.q && hex.r === center.r) continue;
     const tile = map.tiles.get(hexToKey(hex));
     if (tile) {
       tile.terrain = terrain;
@@ -179,7 +181,9 @@ export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions 
 
     for (const factionConfig of factionConfigs) {
       const patchRadius = factionConfig.terrainBias === 'jungle' ? 3 : 2;
-      stampTerrainPatch(state, factionConfig.startHex, factionConfig.terrainBias, patchRadius);
+      // Preserve the city hex as land when stamping coast so land units can spawn adjacent
+      const preserveCenter = factionConfig.terrainBias === 'coast';
+      stampTerrainPatch(state, factionConfig.startHex, factionConfig.terrainBias, patchRadius, preserveCenter);
       startingPositions.set(factionConfig.id, factionConfig.startHex);
     }
 

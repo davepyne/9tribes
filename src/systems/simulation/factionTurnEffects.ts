@@ -15,13 +15,15 @@ import { deriveResourceIncome, getSupplyDeficit, advanceCaptureTimers } from '..
 import {
   advanceProduction,
   canCompleteCurrentProduction,
+  canSpawnAt,
   completeProduction,
   getAvailableProductionPrototypes,
   getProjectedSupplyDemandWithPrototype,
+  getUnitCost,
   isSettlerPrototype,
   queueUnit,
 } from '../productionSystem.js';
-import { chooseStrategicProduction } from '../aiProductionStrategy.js';
+import { chooseStrategicProduction, rankProductionPriorities } from '../aiProductionStrategy.js';
 import { chooseStrategicResearch } from '../aiResearchStrategy.js';
 import {
   degradeWalls,
@@ -56,7 +58,7 @@ import { evaluateAndSpawnVillage } from '../villageSystem.js';
 import { isCityEncircled, isEncirclementBroken } from '../territorySystem.js';
 import { applyEcologyPressure, applyForceCompositionPressure } from '../capabilitySystem.js';
 import { getDomainProgression } from '../domainProgression.js';
-import { gainExposure } from '../knowledgeSystem.js';
+import { gainExposure, calculatePrototypeCost, getDomainIdsByTags } from '../knowledgeSystem.js';
 import {
   computeFactionStrategy,
 } from '../strategicAi.js';
@@ -345,7 +347,7 @@ function applySummonAbility(
   }
   else {
     let validUnit: Unit | null = null;
-    const neededTags = new Set(['cavalry', 'beast', 'frost', 'river', 'poison', 'jungle']);
+    const neededTags = new Set(['cavalry', 'beast', 'frost', 'river', 'poison', 'jungle', 'fortress', 'siege']);
     for (const unitId of faction.unitIds) {
       const unit = state.units.get(unitId);
       if (unit && unit.hp > 0) {
@@ -657,25 +659,44 @@ export function processFactionPhases(
     }
 
     if (!updatedCity.currentProduction && updatedCity.productionQueue.length === 0 && !updatedCity.besieged) {
-      const choice = chooseStrategicProduction(current, factionId, strategy, registry, difficulty);
-      if (choice) {
+      // Try production candidates in priority order; fall through to next if spawn/supply gate blocks
+      const rankedChoices = rankProductionPriorities(current, factionId, strategy, registry, difficulty);
+      let queued = false;
+      for (const priority of rankedChoices) {
+        const proto = current.prototypes.get(priority.prototypeId as never);
+        if (!proto) continue;
+
+        // Spawn feasibility gate: skip if the unit can't physically spawn adjacent to this city
+        if (!canSpawnAt(current, updatedCity.position, registry, proto)) {
+          log(trace, `${faction.name} skipped ${proto.chassisId} at ${updatedCity.name} — no valid spawn hex`);
+          continue;
+        }
         // Supply gate: don't produce military units if projected demand would exceed income.
-        // Settlers are exempt (they cost villages, not supply upkeep).
-        const prototype = current.prototypes.get(choice.prototypeId as never);
-        const isSettler = prototype && isSettlerPrototype(prototype);
+        const isSettler = isSettlerPrototype(proto);
         if (!isSettler) {
-          const economy = current.economy.get(factionId);
-          if (economy && prototype) {
-            const projectedDemand = getProjectedSupplyDemandWithPrototype(current, factionId, prototype, registry);
-            if (projectedDemand > economy.supplyIncome) {
-              log(trace, `${faction.name} skipped ${choice.chassisId} — supply capped (${projectedDemand.toFixed(1)} demand > ${economy.supplyIncome.toFixed(1)} income)`);
-              citiesMap.set(cityId, updatedCity);
+          const econ = current.economy.get(factionId);
+          if (econ) {
+            const projectedDemand = getProjectedSupplyDemandWithPrototype(current, factionId, proto, registry);
+            if (projectedDemand > econ.supplyIncome) {
+              log(trace, `${faction.name} skipped ${proto.chassisId} — supply capped (${projectedDemand.toFixed(1)} demand > ${econ.supplyIncome.toFixed(1)} income)`);
               continue;
             }
           }
         }
-        updatedCity = queueUnit(updatedCity, choice.prototypeId, choice.chassisId, choice.cost, choice.costType);
-        log(trace, `${faction.name} queued ${choice.chassisId} at ${updatedCity.name} (${choice.reason})`);
+
+        const cityCount = faction.cityIds.length;
+        const domains = getDomainIdsByTags(proto.tags ?? []);
+        const cost = isSettler
+          ? (cityCount >= 3 ? 6 : 6)
+          : calculatePrototypeCost(getUnitCost(proto.chassisId), faction, domains, proto);
+        const costType = isSettler ? 'villages' as const : 'production' as const;
+        updatedCity = queueUnit(updatedCity, proto.id, proto.chassisId, cost, costType);
+        log(trace, `${faction.name} queued ${proto.chassisId} at ${updatedCity.name} (${priority.reason})`);
+        queued = true;
+        break;
+      }
+      if (!queued && rankedChoices.length > 0) {
+        log(trace, `${faction.name} unable to queue any production at ${updatedCity.name} — all candidates blocked`);
       }
     }
 

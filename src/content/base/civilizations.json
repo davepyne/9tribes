@@ -109,7 +109,8 @@
     "economyAngle": "durable holdings with strong siege resistance",
     "terrainDependence": "most efficient around hills and choke points",
     "lateGameHybridPotential": "molten engineers and fortress marines",
-    "nativeDomain": "fortress"
+    "nativeDomain": "fortress",
+    "startingLearnedDomains": ["fortification"]
   },
   "coral_people": {
     "id": "coral_people",
@@ -126,7 +127,7 @@
     "startingUnits": [
       { "chassisId": "infantry_frame", "componentIds": ["pirate_collar", "simple_armor"], "name": "Boarding Party", "costOverride": 20, "positionOffset": { "q": 0, "r": -1 } },
       { "chassisId": "ranged_frame", "componentIds": ["pistol", "simple_armor"], "name": "Pistol Gunner", "costOverride": 23, "positionOffset": { "q": -1, "r": 0 } },
-      { "chassisId": "naval_frame", "componentIds": ["basic_spear", "simple_armor"], "name": "Slave Galley", "costOverride": 18, "positionOffset": { "q": 1, "r": 0 } }
+      { "chassisId": "naval_frame", "componentIds": ["slaver_net", "simple_armor"], "name": "Slave Galley", "costOverride": 18, "positionOffset": { "q": 1, "r": 0 } }
     ],
     "uniqueMechanic": "greedy",
     "homeBiome": "coast",

@@ -198,7 +198,14 @@ export function completeProduction(
 
   // Find spawn position (adjacent empty hex)
   const spawnHex = findSpawnHex(state, city.position, registry, prototype);
-  if (!spawnHex) return state; // No room to spawn
+  if (!spawnHex) {
+    // Deadlock: production complete but no valid spawn hex.
+    // Cancel current production so the city can re-evaluate next turn.
+    const { city: clearedCity } = cancelCurrentProduction(city);
+    const newCities = new Map(state.cities);
+    newCities.set(cityId, clearedCity);
+    return { ...state, cities: newCities };
+  }
 
   // Create the unit
   const unitId = createUnitId();
@@ -299,6 +306,18 @@ export function completeProduction(
     ...currentState,
     cities: newCities,
   };
+}
+
+/**
+ * Check whether a prototype can be spawned adjacent to a given position.
+ */
+export function canSpawnAt(
+  state: GameState,
+  position: { q: number; r: number },
+  registry: RulesRegistry,
+  prototype: Pick<Prototype, 'chassisId' | 'tags'>,
+): boolean {
+  return findSpawnHex(state, position, registry, prototype) !== null;
 }
 
 /**
