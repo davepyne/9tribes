@@ -125,7 +125,8 @@
     },
     "startingUnits": [
       { "chassisId": "infantry_frame", "componentIds": ["pirate_collar", "simple_armor"], "name": "Boarding Party", "costOverride": 20, "positionOffset": { "q": 0, "r": -1 } },
-      { "chassisId": "ranged_frame", "componentIds": ["pistol", "simple_armor"], "name": "Pistol Gunner", "costOverride": 23, "positionOffset": { "q": -1, "r": 0 } }
+      { "chassisId": "ranged_frame", "componentIds": ["pistol", "simple_armor"], "name": "Pistol Gunner", "costOverride": 23, "positionOffset": { "q": -1, "r": 0 } },
+      { "chassisId": "naval_frame", "componentIds": ["basic_spear", "simple_armor"], "name": "Slave Galley", "costOverride": 18, "positionOffset": { "q": 1, "r": 0 } }
     ],
     "uniqueMechanic": "greedy",
     "homeBiome": "coast",
@@ -137,7 +138,8 @@
     "economyAngle": "coastal raiding, village plunder, and ocean trade routes",
     "terrainDependence": "dominant on coast and ocean, weak deep inland",
     "lateGameHybridPotential": "galley transports and captured slave armies",
-    "nativeDomain": "slaving"
+    "nativeDomain": "slaving",
+    "startingLearnedDomains": ["seafaring"]
   },
   "desert_nomads": {
     "id": "desert_nomads",
