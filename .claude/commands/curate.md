@@ -89,6 +89,8 @@ List files or systems that should cause this memory to be rechecked.
 
 Update `.claude/memory/MEMORY.md` whenever adding, renaming, deleting, or marking a memory stale.
 
+Organize the index with `##` headings by topic domain (e.g., Combat & AI, Build & Dev, User Preferences), not by type or chronologically. Group related memories so a reader can scan one section and understand a whole domain. Reorganize headings as the memory set evolves — a flat list becomes unreadable past ~15 entries.
+
 Keep index entries short:
 
 ```markdown

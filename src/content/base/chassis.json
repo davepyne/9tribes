@@ -245,6 +245,20 @@
     },
     "nativeFaction": "hill_clan"
   },
+  "siege_golem_frame": {
+    "id": "siege_golem_frame",
+    "name": "Siege Golem",
+    "role": "melee",
+    "slotTypes": [],
+    "baseHp": 22,
+    "baseMoves": 2,
+    "baseAttack": 6,
+    "baseDefense": 5,
+    "movementClass": "infantry",
+    "supplyCost": 2.5,
+    "tags": ["beast", "summon", "siege", "fortress"],
+    "capabilityPressure": {}
+  },
   "ranged_naval_frame": {
     "id": "ranged_naval_frame",
     "name": "Ranged Warship",

@@ -591,3 +591,15 @@ No significant changes detected.
 - `src/systems/combat-action/apply.ts` — 95 dependencies
 - `src/systems/learnByKillSystem.ts` — 15 dependencies
 - `src/systems/researchSystem.ts` — 9 dependencies
+
+---
+
+## Digest — 2026-04-28T11:00:13.027171Z
+
+### Modified Files
+- `src/features/cities/types.ts` — ~1 signatures (CitySiteTraitKey)
+- `src/systems/citySiteSystem.ts` — +1 exports (CITY_SITE_RESEARCH_BONUS)
+
+### Dependency Changes
+- `src/features/cities/types.ts` — 2 dependencies
+- `src/systems/citySiteSystem.ts` — 16 dependencies

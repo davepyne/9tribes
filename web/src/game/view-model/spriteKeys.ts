@@ -63,6 +63,7 @@ export function getSpriteKeyForUnit(factionId: string, prototypeName: string, ch
   if (chassisId === 'galley_frame') return 'pirate_galley';
   if (chassisId === 'polar_bear_frame') return 'frost_polar_bear';
   if (chassisId === 'alligator_frame') return 'river_crocodile';
+  if (chassisId === 'siege_golem_frame') return 'hill_siege_golem';
 
   // Starting units by faction
   const startingMap: Record<string, Record<string, string>> = {
