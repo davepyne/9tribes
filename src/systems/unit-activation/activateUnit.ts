@@ -538,7 +538,7 @@ export function activateUnit(
       if (enemy.factionId === factionId || enemy.hp <= 0) continue;
       const enemyProto = current.prototypes.get(enemy.prototypeId);
       const enemyChassis = enemyProto ? registry.getChassis(enemyProto.chassisId) : null;
-      const enemyMaxHp = enemyChassis?.hp ?? 10;
+      const enemyMaxHp = enemyChassis?.baseHp ?? 10;
       if (enemy.hp > enemyMaxHp * hpFraction) continue;
       const dist = hexDistance(activeUnit.position, enemy.position);
       if (dist > 4) continue;
