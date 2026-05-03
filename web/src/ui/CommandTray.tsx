@@ -1,4 +1,5 @@
 import type { ClientState } from '../game/types/clientState';
+import { hexDistance } from '../../../src/core/grid.js';
 
 type CommandTrayProps = {
   state: ClientState;
@@ -8,6 +9,7 @@ type CommandTrayProps = {
   onDestroyFort?: (unitId: string) => void;
   onBuildCity?: (unitId: string) => void;
   onSummon?: (unitId: string) => void;
+  onSacrifice?: (unitId: string) => void;
 };
 
 function formatDomainName(domainId: string): string {
@@ -17,7 +19,7 @@ function formatDomainName(domainId: string): string {
     .join(' ');
 }
 
-export function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort, onDestroyFort, onBuildCity, onSummon }: CommandTrayProps) {
+export function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort, onDestroyFort, onBuildCity, onSummon, onSacrifice }: CommandTrayProps) {
   const selectedUnitId = state.selected?.type === 'unit' ? state.selected.unitId : state.actions.selectedUnitId;
   const selectedUnit = selectedUnitId
     ? state.world.units.find((u) => u.id === selectedUnitId)
@@ -75,6 +77,23 @@ export function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort,
     const hasVillage = state.world.villages.some((village) => village.q === selectedUnit.q && village.r === selectedUnit.r);
     const hasImprovement = state.world.improvements.some((improvement) => improvement.q === selectedUnit.q && improvement.r === selectedUnit.r);
     return !hasCity && !hasVillage && !hasImprovement;
+  })();
+
+  const canSacrifice = (() => {
+    if (!selectedUnit) return false;
+    if (!selectedUnit.isActiveFaction) return false;
+    const learned = selectedUnit.learnedAbilities ?? [];
+    if (learned.length === 0) return false;
+
+    const faction = state.world.factions.find((f) => f.id === selectedUnit.factionId);
+    if (!faction || !faction.homeCityId) return false;
+
+    const homeCity = state.world.cities.find((c) => c.id === faction.homeCityId);
+    if (!homeCity || homeCity.factionId !== faction.id || homeCity.besieged) return false;
+
+    if (hexDistance({ q: selectedUnit.q, r: selectedUnit.r }, { q: homeCity.q, r: homeCity.r }) > 1) return false;
+
+    return true;
   })();
 
   return (
@@ -161,6 +180,15 @@ export function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort,
             ) : null}
             {!selectedUnit.canSummon && selectedUnit.summonName && selectedUnit.summonBlockedReason && selectedUnit.isActiveFaction ? (
               <span className="ct-detail ct-summon-reason">{selectedUnit.summonBlockedReason}</span>
+            ) : null}
+            {canSacrifice ? (
+              <button
+                type="button"
+                className="ct-btn-codify"
+                onClick={() => onSacrifice?.(selectedUnitId!)}
+              >
+                Sacrifice to Codify
+              </button>
             ) : null}
           </>
         ) : null}

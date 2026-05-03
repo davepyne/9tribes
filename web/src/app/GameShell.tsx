@@ -256,6 +256,7 @@ function KnowledgeGainedShellContent({
         onDestroyFort={(unitId) => controller.dispatch({ type: 'destroy_fort', unitId })}
         onBuildCity={(unitId) => controller.dispatch({ type: 'build_city', unitId })}
         onSummon={(unitId) => controller.dispatch({ type: 'summon_unit', unitId })}
+        onSacrifice={(unitId) => controller.dispatch({ type: 'sacrifice_unit', unitId })}
       />
 
       {turnBannerData ? (
