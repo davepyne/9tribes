@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+﻿import type { CSSProperties } from 'react';
 import { useState, useEffect } from 'react';
 import type { ClientState } from '../game/types/clientState';
 import { getFactionInfo } from '../data/faction-info';
@@ -128,7 +128,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
     <nav className="gmb-root" style={{ '--gmb-faction-color': factionColor } as CSSProperties}>
       {factionPopupOpen && factionInfo && (
         <div className="faction-info-panel" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '50px', left: '200px', zIndex: 999 }}>
-          <button className="faction-popup__close" onClick={() => setFactionPopupOpen(false)}>×</button>
+          <button className="faction-popup__close" onClick={() => setFactionPopupOpen(false)}>├ù</button>
           <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.name}</h3>
           <div className="faction-popup__section">
             <span className="faction-popup__label">Native Ability</span>
@@ -172,7 +172,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
       {traitPopupOpen && factionInfo && (
         <div className="trait-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
           <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360, marginTop: 100 }}>
-            <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>×</button>
+            <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>├ù</button>
             <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.specialTrait}</h3>
             <p className="faction-popup__intro" style={{ fontSize: 14, lineHeight: 1.6 }}>{factionInfo.specialAbility}</p>
           </div>
@@ -180,7 +180,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
       )}
       {unitPopupOpen && unitStats && (
         <div className="unit-stats-panel" onClick={(e) => e.stopPropagation()}>
-          <button className="unit-stats-panel__close" onClick={() => setUnitPopupOpen(false)}>×</button>
+          <button className="unit-stats-panel__close" onClick={() => setUnitPopupOpen(false)}>├ù</button>
           <h3 className="unit-stats-panel__name" style={{ color: factionColor }}>{factionInfo?.signatureUnit ?? 'Signature Unit'}</h3>
           <div className="unit-stats-panel__stats">
             <div><span>Attack</span><strong>{unitStats.attack}</strong></div>
@@ -200,7 +200,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
       )}
       {summonPopupOpen && unitStats && (
         <div className="unit-stats-panel" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '60px', right: '20px', width: '320px', zIndex: 9999 }}>
-          <button className="unit-stats-panel__close" onClick={() => setSummonPopupOpen(false)}>×</button>
+          <button className="unit-stats-panel__close" onClick={() => setSummonPopupOpen(false)}>├ù</button>
           <h3 className="unit-stats-panel__name" style={{ color: '#fff', display: 'block', textAlign: 'center' }}>{factionInfo?.signatureUnit ?? 'Signature Unit'}</h3>
           <div className="unit-stats-panel__stats">
             <div><span>Attack</span><strong>{unitStats.attack}</strong></div>

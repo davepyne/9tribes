@@ -1,4 +1,4 @@
-import type { ReplayCombatEvent } from './replay';
+﻿import type { ReplayCombatEvent } from './replay';
 import type { AttackTargetView, HexCoord, PathPreviewNodeView, ReachableHexView, WorldViewModel } from './worldView';
 import type { DifficultyLevel } from '../../../../src/systems/aiDifficulty.js';
 import type { VictoryType } from '../../../../src/systems/warEcologySimulation.js';
@@ -275,7 +275,7 @@ export type PlayFeedbackState = {
   aiProcessing: boolean;
 };
 
-// ── Research Inspector View Model ──
+// ΓöÇΓöÇ Research Inspector View Model ΓöÇΓöÇ
 
 export type ResearchNodeViewState =
   | 'completed'

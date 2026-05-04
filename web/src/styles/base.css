@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap');
 
 :root {
   color-scheme: dark;
@@ -12,7 +12,7 @@
   --danger: #f2643d;
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
 
-  /* ── Panel glass system ── */
+  /* ΓöÇΓöÇ Panel glass system ΓöÇΓöÇ */
   --panel-glass: rgba(23, 19, 14, 0.88);
   --panel-glass-hover: rgba(30, 24, 18, 0.92);
   --panel-blur: blur(16px);
@@ -21,13 +21,13 @@
   --panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   --panel-shadow-heavy: 0 24px 64px rgba(0, 0, 0, 0.5);
 
-  /* ── Layout dimensions ── */
+  /* ΓöÇΓöÇ Layout dimensions ΓöÇΓöÇ */
   --menubar-height: 64px;
   --command-tray-height: 56px;
   --inspector-width: 320px;
   --inspector-width-narrow: 280px;
 
-  /* ── Animation curves ── */
+  /* ΓöÇΓöÇ Animation curves ΓöÇΓöÇ */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.4, 0, 0.2, 1);
   --duration-slide: 280ms;

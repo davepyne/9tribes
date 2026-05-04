@@ -1,6 +1,6 @@
-/* ═══════════════════════════════════════
+﻿/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
    [NEW] ContextInspector (ci-*)
-   ═══════════════════════════════════════ */
+   ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
 
 .ci-root {
   position: absolute;
@@ -153,7 +153,7 @@
   margin: 10px 0;
 }
 
-/* ── Unit Inspector: Combat Stats Grid ── */
+/* ΓöÇΓöÇ Unit Inspector: Combat Stats Grid ΓöÇΓöÇ */
 .ci-unit-combat {
   margin-bottom: 12px;
 }
@@ -197,7 +197,7 @@
   color: var(--muted);
 }
 
-/* ── Morale Bar ── */
+/* ΓöÇΓöÇ Morale Bar ΓöÇΓöÇ */
 .ci-morale-value { color: #81c784; }
 .ci-morale-value--low { color: #ffb74d; }
 .ci-morale-value--routed { color: #ef5350; }
@@ -226,12 +226,12 @@
   color: var(--muted);
 }
 
-/* ── Unit Inspector: Details Section ── */
+/* ΓöÇΓöÇ Unit Inspector: Details Section ΓöÇΓöÇ */
 .ci-unit-details {
   margin: 8px 0;
 }
 
-/* ── Unit Inspector: Domains ── */
+/* ΓöÇΓöÇ Unit Inspector: Domains ΓöÇΓöÇ */
 .ci-domains {
   margin-top: 12px;
   padding: 10px 12px;
@@ -251,7 +251,7 @@
   margin-top: 2px;
 }
 
-/* ── Unit Inspector: Conditions / Special Skills ── */
+/* ΓöÇΓöÇ Unit Inspector: Conditions / Special Skills ΓöÇΓöÇ */
 .ci-conditions {
   margin-top: 12px;
   padding: 10px 12px;
@@ -307,7 +307,7 @@
   border-color: var(--accent);
 }
 
-/* ── Learned Knowledge (ContextInspector) ── */
+/* ΓöÇΓöÇ Learned Knowledge (ContextInspector) ΓöÇΓöÇ */
 .ci-knowledge {
   margin-top: 12px;
   padding: 10px 12px;
@@ -484,9 +484,9 @@
   margin: 14px 0 8px;
 }
 
-/* ═══════════════════════════════════════
-   Production Queue (pq-*) — compact layout
-   ═══════════════════════════════════════ */
+/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+   Production Queue (pq-*) ΓÇö compact layout
+   ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
 
 .ci-prod-tab {
   display: flex;
@@ -494,7 +494,7 @@
   gap: 12px;
 }
 
-/* ── Current Production Card ── */
+/* ΓöÇΓöÇ Current Production Card ΓöÇΓöÇ */
 .pq-current {
   padding: 10px 12px;
   border-radius: 12px;
@@ -594,7 +594,7 @@
   border-color: rgba(227, 196, 136, 0.25);
 }
 
-/* ── Idle State ── */
+/* ΓöÇΓöÇ Idle State ΓöÇΓöÇ */
 .pq-idle {
   display: flex;
   align-items: center;
@@ -614,7 +614,7 @@
   opacity: 0.5;
 }
 
-/* ── Queue List ── */
+/* ΓöÇΓöÇ Queue List ΓöÇΓöÇ */
 .pq-queue {
   display: flex;
   flex-direction: column;
@@ -719,7 +719,7 @@
   color: #d4745a;
 }
 
-/* ── Divider ── */
+/* ΓöÇΓöÇ Divider ΓöÇΓöÇ */
 .pq-divider {
   display: flex;
   align-items: center;
@@ -742,7 +742,7 @@
   white-space: nowrap;
 }
 
-/* ── Read-only hint ── */
+/* ΓöÇΓöÇ Read-only hint ΓöÇΓöÇ */
 .pq-readonly-hint {
   font-size: 11px;
   color: var(--muted);
@@ -750,14 +750,14 @@
   margin: -4px 0 2px;
 }
 
-/* ── Unit Option Rows (compact) ── */
+/* ΓöÇΓöÇ Unit Option Rows (compact) ΓöÇΓöÇ */
 .pq-unit-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-/* ── Production Unit Card ── */
+/* ΓöÇΓöÇ Production Unit Card ΓöÇΓöÇ */
 .pq-unit-card {
   display: flex;
   flex-direction: column;
@@ -862,10 +862,10 @@
 
 
 
-/* ═══════════════════════════════════════
+/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
    TerrainPanel (ti-*)
    Right-side slide-out, opens on Ctrl+Click
-   ═══════════════════════════════════════ */
+   ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
 
 .ti-root {
   position: fixed;
@@ -906,7 +906,7 @@
   to { opacity: 1; }
 }
 
-/* ── Header ── */
+/* ΓöÇΓöÇ Header ΓöÇΓöÇ */
 .ti-header {
   display: flex;
   align-items: flex-start;
@@ -968,7 +968,7 @@
   color: var(--text);
 }
 
-/* ── Synergy badge row ── */
+/* ΓöÇΓöÇ Synergy badge row ΓöÇΓöÇ */
 .ti-synergy-row {
   display: flex;
   align-items: center;
@@ -1015,7 +1015,7 @@
   color: var(--muted);
 }
 
-/* ── Sections ── */
+/* ΓöÇΓöÇ Sections ΓöÇΓöÇ */
 .ti-section {
   margin-bottom: 14px;
   padding: 10px 12px;
@@ -1048,7 +1048,7 @@
   font-style: italic;
 }
 
-/* ── Combat stat grid ── */
+/* ΓöÇΓöÇ Combat stat grid ΓöÇΓöÇ */
 .ti-stat-grid {
   display: flex;
   gap: 12px;
@@ -1089,7 +1089,7 @@
   margin-top: 3px;
 }
 
-/* ── Domain pressure ── */
+/* ΓöÇΓöÇ Domain pressure ΓöÇΓöÇ */
 .ti-domain-list {
   list-style: none;
   margin: 8px 0 0;
@@ -1177,7 +1177,7 @@
   text-align: right;
 }
 
-/* ── City bonus ── */
+/* ΓöÇΓöÇ City bonus ΓöÇΓöÇ */
 .ti-city-stats {
   display: flex;
   gap: 10px;
@@ -1226,7 +1226,7 @@
   text-align: right;
 }
 
-/* ── Ecology tags ── */
+/* ΓöÇΓöÇ Ecology tags ΓöÇΓöÇ */
 .ti-tag-row {
   display: flex;
   flex-wrap: wrap;
@@ -1259,7 +1259,7 @@
   background: rgba(255, 255, 255, 0.18);
 }
 
-/* ── Info popup ── */
+/* ΓöÇΓöÇ Info popup ΓöÇΓöÇ */
 .ti-info-popup-overlay {
   position: absolute;
   inset: 0;
