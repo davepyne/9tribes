@@ -3,18 +3,42 @@
     "endlessStride": true,
     "desertSwarmThreshold": 3,
     "desertSwarmAttackBonus": 1,
-    "desertSwarmDefenseMultiplier": 1.1
+    "desertSwarmDefenseMultiplier": 1.1,
+    "summon": {
+      "chassisId": "desert_immortals_frame",
+      "terrainTypes": ["desert", "city"],
+      "hp": 12,
+      "attack": 2,
+      "defense": 3,
+      "moves": 3,
+      "tags": ["camel", "mounted", "self_heal"],
+      "name": "Desert Immortals"
+    },
+    "summonDuration": 5,
+    "cooldownDuration": 5
   },
   "savannah_lions": {
-    "stampedeBonus": 0.3
+    "stampedeBonus": 0.3,
+    "summon": {
+      "chassisId": "war_elephant_frame",
+      "terrainTypes": ["savannah", "plains", "city"],
+      "hp": 14,
+      "attack": 4,
+      "defense": 2,
+      "moves": 3,
+      "tags": ["beast", "charge", "trample"],
+      "name": "War Elephant"
+    },
+    "summonDuration": 5,
+    "cooldownDuration": 5
   },
   "frost_wardens": {
     "summon": {
       "chassisId": "polar_bear_frame",
-      "terrainTypes": ["tundra"],
-      "hp": 30,
-      "attack": 9,
-      "defense": 4,
+      "terrainTypes": ["tundra", "city"],
+      "hp": 25,
+      "attack": 7,
+      "defense": 3,
       "moves": 3,
       "tags": ["beast", "summon", "frost"],
       "name": "Polar Bear"
@@ -26,9 +50,9 @@
     "summon": {
       "chassisId": "siege_golem_frame",
       "terrainTypes": ["hill", "city"],
-      "hp": 28,
-      "attack": 8,
-      "defense": 7,
+      "hp": 22,
+      "attack": 6,
+      "defense": 5,
       "moves": 2,
       "tags": ["beast", "summon", "siege", "fortress"],
       "name": "Siege Golem"
@@ -40,10 +64,10 @@
     "venomDamagePerTurn": 1,
     "summon": {
       "chassisId": "serpent_frame",
-      "terrainTypes": ["jungle"],
-      "hp": 24,
-      "attack": 8,
-      "defense": 3,
+      "terrainTypes": ["jungle", "swamp"],
+      "hp": 18,
+      "attack": 5,
+      "defense": 2,
       "moves": 3,
       "tags": ["beast", "summon", "jungle", "poison"],
       "name": "Serpent God"
@@ -51,16 +75,29 @@
     "summonDuration": 5,
     "cooldownDuration": 5
   },
-  "druid_circle": {},
+  "druid_circle": {
+    "summon": {
+      "chassisId": "druid_wizard_frame",
+      "terrainTypes": ["forest", "jungle", "city"],
+      "hp": 8,
+      "attack": 3,
+      "defense": 3,
+      "moves": 3,
+      "tags": ["magic", "ranged", "healing"],
+      "name": "Druid Wizard"
+    },
+    "summonDuration": 5,
+    "cooldownDuration": 5
+  },
   "steppe_clan": {
     "hitAndRun": true,
     "summon": {
       "chassisId": "warlord_frame",
       "terrainTypes": ["plains", "savannah"],
-      "hp": 25,
-      "attack": 8,
-      "defense": 4,
-      "moves": 4,
+      "hp": 20,
+      "attack": 5,
+      "defense": 3,
+      "moves": 3,
       "tags": ["cavalry", "mounted", "warlord", "summon", "aura"],
       "name": "Warlord"
     },
@@ -76,16 +113,28 @@
     "greedyCaptureCooldown": 3,
     "greedyCaptureHpFraction": 0.5,
     "greedyNonCombatCaptureChance": 0.4,
-    "wallDefenseMultiplier": 2
+    "wallDefenseMultiplier": 2,
+    "summon": {
+      "chassisId": "galley_frame",
+      "terrainTypes": ["coast", "ocean", "city"],
+      "hp": 14,
+      "attack": 3,
+      "defense": 2,
+      "moves": 5,
+      "tags": ["naval", "ranged", "transport"],
+      "name": "Galley"
+    },
+    "summonDuration": 5,
+    "cooldownDuration": 5
   },
   "river_people": {
     "sneakAttackBonus": 0,
     "summon": {
       "chassisId": "alligator_frame",
       "terrainTypes": ["river", "jungle", "swamp"],
-      "hp": 22,
-      "attack": 7,
-      "defense": 3,
+      "hp": 15,
+      "attack": 5,
+      "defense": 2,
       "moves": 3,
       "tags": ["beast", "summon", "river"],
       "name": "Ancient Alligator"

@@ -27,7 +27,7 @@ export interface FactionInfo {
 }
 
 const FACTION_INFO_MAP: Record<string, FactionInfo> = {
-jungle_clan: {
+  jungle_clan: {
     id: 'jungle_clan', name: 'Jungle Clans', color: '#2f7d4a', nativeDomain: 'Venomcraft', homeBiome: 'Jungle',
     intro: 'The Jungle Clans thrive where others fear to tread — deep in the canopy, where poison drips from every leaf and visibility ends at arm\'s reach.',
     strengths: ['Jungle interiors are your kingdom', 'Poison warfare means attrition advantage', 'Enemies fight blind while you strike from concealment'],
@@ -35,9 +35,9 @@ jungle_clan: {
     tip: 'Lure enemies into the jungle by retreating, then spring your real force on them.',
     signatureUnit: 'Serpent God', specialTrait: 'Jungle Stalkers', specialAbility: 'Poison on attacks + stealth in jungle',
     uniqueMechanic: 'jungle_poison', passiveTrait: 'jungle_stalkers',
-    summonCondition: 'Your unit must be standing in Jungle terrain.',
+    summonCondition: 'Your unit must be standing in Jungle or Swamp terrain.',
     unitStats: {
-      attack: 16, defense: 8, health: 90, moves: 4, range: 1,
+      attack: 5, defense: 2, health: 18, moves: 3, range: 1,
       tags: ['beast', 'jungle', 'poison', 'melee'],
       ability: 'Poison Venom: Attacks apply poison dealing 5 damage/turn for 3 turns. Immune to jungle attrition.',
       description: 'The colossal Serpent God coils through the jungle, its venomous bite capable of felling the toughest warriors.',
@@ -51,8 +51,9 @@ jungle_clan: {
     tip: 'Plant your forces just inside a forest edge and let enemies commit.',
     signatureUnit: 'Druid Wizard', specialTrait: 'Healing Aura', specialAbility: 'Aura boosts nearby units defense',
     uniqueMechanic: 'healing_druids', passiveTrait: 'forest_regeneration',
+    summonCondition: 'Your unit must be standing in Forest, Jungle, or City terrain.',
     unitStats: {
-      attack: 10, defense: 12, health: 60, moves: 4, range: 3,
+      attack: 3, defense: 3, health: 8, moves: 3, range: 3,
       tags: ['magic', 'ranged', 'healing'],
       ability: 'Nature\'s Grace: Healing aura restores 10 health to all nearby friendly units each turn.',
       description: 'The Druid Wizard channels the forest\'s power, weaving spells that mend wounds and strengthen resolve.'
@@ -64,14 +65,14 @@ jungle_clan: {
     strengths: ['Hill terrain gives massive defense bonus', 'Fortress structures are incredibly strong', 'Shock resistance is innate'],
     weaknesses: ['Need hills to be effective', 'Slow movement on flat ground'],
     tip: 'Secure high ground early and fortify. Let enemies come to you.',
-    signatureUnit: 'War Tower', specialTrait: 'Hill Defenders', specialAbility: 'City garrison morale boost',
+    signatureUnit: 'Siege Golem', specialTrait: 'Hill Defenders', specialAbility: 'City garrison morale boost',
     uniqueMechanic: 'fortressDefense', passiveTrait: 'hill_defenders',
     summonCondition: 'Your unit must be standing in Hill or City terrain.',
     unitStats: {
-      attack: 8, defense: 18, health: 120, moves: 2, range: 3,
-      tags: ['defensive', 'siege', 'structure'],
+      attack: 6, defense: 5, health: 22, moves: 2, range: 1,
+      tags: ['beast', 'siege', 'fortress'],
       ability: 'Fortress Garrison: +30% defense when garrisoning a city. Cannot move voluntarily.',
-      description: 'The imposing War Tower stands as a bastion of hill defense, its elevated position commanding the battlefield.',
+      description: 'The imposing Siege Golem stands as a bastion of hill defense, its elevated position commanding the battlefield.',
     },
   },
   savannah_lions: {
@@ -82,8 +83,9 @@ jungle_clan: {
     tip: 'Angle your approach so War Elephants hit the flank — the bonus is just as devastating.',
     signatureUnit: 'War Elephant', specialTrait: 'Charge Momentum', specialAbility: 'Elephant tramples enemies',
     uniqueMechanic: 'charge_momentum', passiveTrait: 'elephant_charge',
+    summonCondition: 'Your unit must be standing in Savannah, Plains, or City terrain.',
     unitStats: {
-      attack: 18, defense: 12, health: 150, moves: 4, range: 1,
+      attack: 4, defense: 2, health: 14, moves: 3, range: 1,
       tags: ['beast', 'charge', 'trample'],
       ability: 'Trample: Deal 10 damage to any unit in the target tile before combat. +50% attack when charging.',
       description: 'The massive War Elephant crashes into enemy lines with terrifying force, trampling all who stand in its path.'
@@ -97,8 +99,9 @@ jungle_clan: {
     tip: 'Use the desert as your highway. Enemies struggle where you thrive.',
     signatureUnit: 'Desert Immortals', specialTrait: 'Desert Adaptation', specialAbility: 'Full HP regen each turn',
     uniqueMechanic: 'desert_adaptation', passiveTrait: 'camel_mobility',
+    summonCondition: 'Your unit must be standing in Desert or City terrain.',
     unitStats: {
-      attack: 5, defense: 11, health: 18, moves: 2, range: 1,
+      attack: 2, defense: 3, health: 12, moves: 3, range: 1,
       tags: ['camel', 'mounted', 'self_heal'],
       ability: 'Self-Heal: Fully regenerates HP at the end of each turn.',
       description: 'The legendary Desert Immortals are unstoppable — they heal from any wound and march forever. Limited to 1 on map.'
@@ -114,8 +117,8 @@ jungle_clan: {
     uniqueMechanic: 'horse_archers', passiveTrait: 'foraging_riders',
     summonCondition: 'Your unit must be standing in Plains or Savannah terrain.',
     unitStats: {
-      attack: 12, defense: 8, health: 80, moves: 5, range: 1,
-      tags: ['cavalry', 'mounted', 'ranged'],
+      attack: 5, defense: 3, health: 20, moves: 3, range: 1,
+      tags: ['cavalry', 'mounted', 'warlord', 'summon', 'aura'],
       ability: 'Hit & Run: Deal bonus damage when moving before attacking.',
       description: 'The mighty Warlord leads the Steppe Riders with unmatched mobility and tactical flexibility.',
     },
@@ -128,9 +131,10 @@ jungle_clan: {
     tip: 'Raid coastal settlements and capture valuable units.',
     signatureUnit: 'Galley', specialTrait: 'Capturer', specialAbility: 'Loot increases faction income',
     uniqueMechanic: 'greedy', passiveTrait: 'capturer',
+    summonCondition: 'Your unit must be standing in Coast, Ocean, or City terrain.',
     unitStats: {
-      attack: 10, defense: 10, health: 80, moves: 5, range: 1,
-      tags: ['naval', 'transport', 'capture'],
+      attack: 3, defense: 2, health: 14, moves: 5, range: 3,
+      tags: ['naval', 'ranged', 'transport'],
       ability: 'Capture: Defeated enemy units have 50% chance to join your faction instead of being destroyed.',
       description: 'The versatile Galley carries raiders across shallow waters, perfect for coastal raids and capturing enemies.'
     },
@@ -145,9 +149,9 @@ jungle_clan: {
     uniqueMechanic: 'amphibious_assault', passiveTrait: 'river_assault',
     summonCondition: 'Your unit must be standing in River, Jungle, or Swamp terrain.',
     unitStats: {
-      attack: 16, defense: 8, health: 100, moves: 5, range: 1,
+      attack: 5, defense: 2, health: 15, moves: 3, range: 1,
       tags: ['beast', 'river', 'ambush', 'amphibious'],
-ability: 'River Ambush: +50% attack when attacking from river tiles. Can emerge from any river hex.',
+      ability: 'River Ambush: +50% attack when attacking from river tiles. Can emerge from any river hex.',
       description: 'The Ancient Alligator lurks beneath river surfaces, emerging to drag unlucky foes into the depths.',
     },
   },
@@ -159,11 +163,11 @@ ability: 'River Ambush: +50% attack when attacking from river tiles. Can emerge 
     tip: 'Own the frozen positions. Let opponents fight over "good" land.',
     signatureUnit: 'Polar Bear', specialTrait: 'Cold-Hardened', specialAbility: 'Attacks chill nearby enemies',
     uniqueMechanic: 'cold_hardened', passiveTrait: 'heavy_defense',
-    summonCondition: 'Your unit must be standing in Tundra terrain.',
+    summonCondition: 'Your unit must be standing in Tundra or City terrain.',
     unitStats: {
-      attack: 18, defense: 14, health: 120, moves: 4, range: 1,
+      attack: 7, defense: 3, health: 25, moves: 3, range: 1,
       tags: ['beast', 'frost', 'cold'],
-ability: 'Chilling Presence: Attacks apply Cold (-5 defense) for 2 turns. +50% attack in cold terrain.',
+      ability: 'Chilling Presence: Attacks apply Cold (-5 defense) for 2 turns. +50% attack in cold terrain.',
       description: 'The mighty Polar Bear is the apex predator of the frozen north, its icy roar freezing all who oppose the Wardens.',
     },
   },
