@@ -157,15 +157,87 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
           </div>
         ) : null}
         {state.hud.exhaustion ? (
-          <div
-            className={`status-chip${state.hud.exhaustion.points > 0 ? ' status-chip--exhaustion' : ''}`}
-            role="button"
-            tabIndex={0}
-            onClick={() => { setWarExhaustionPopup(true); }}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setWarExhaustionPopup(true); }}
-          >
-            <span className="chip-label">War Exhaustion</span>
-            <strong>{Math.round(state.hud.exhaustion.points)}</strong>
+          <div className="we-chip-wrap">
+            <div
+              className={`status-chip${state.hud.exhaustion.points > 0 ? ' status-chip--exhaustion' : ''}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => { setWarExhaustionPopup((v) => !v); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setWarExhaustionPopup((v) => !v); }}
+            >
+              <span className="chip-label">War Exhaustion</span>
+              <strong>{Math.round(state.hud.exhaustion.points)}</strong>
+            </div>
+            {warExhaustionPopup && state.hud.exhaustion && (
+              <>
+                <div className="syn-backdrop" onClick={() => setWarExhaustionPopup(false)} />
+                <div className="we-panel" onClick={(e) => e.stopPropagation()}>
+                  <div className="syn-panel__header">
+                    <h3 className="syn-panel__title">War Exhaustion</h3>
+                    <button type="button" className="syn-panel__close" onClick={() => setWarExhaustionPopup(false)}>&#x2715;</button>
+                  </div>
+                  <div className="supply-popup__stat">
+                    <span>Current Points</span>
+                    <strong>{Math.round(state.hud.exhaustion.points)}</strong>
+                  </div>
+                  <div className="supply-popup__stat">
+                    <span>Production Penalty</span>
+                    <strong className={state.hud.exhaustion.productionPenalty > 0 ? 'supply-popup--deficit' : 'supply-popup--surplus'}>
+                      {state.hud.exhaustion.productionPenalty > 0 ? `-${Math.round(state.hud.exhaustion.productionPenalty * 100)}%` : 'None'}
+                    </strong>
+                  </div>
+                  <div className="supply-popup__stat">
+                    <span>Morale Penalty</span>
+                    <strong className={state.hud.exhaustion.moralePenalty > 0 ? 'supply-popup--deficit' : 'supply-popup--surplus'}>
+                      {state.hud.exhaustion.moralePenalty > 0 ? `-${state.hud.exhaustion.moralePenalty} per unit` : 'None'}
+                    </strong>
+                  </div>
+                  <div className="supply-popup__divider">Causes</div>
+                  <div className="supply-popup__stat supply-popup__stat--penalty">
+                    <span>Unit Lost</span>
+                    <span>+8 per unit</span>
+                  </div>
+                  <div className="supply-popup__stat supply-popup__stat--penalty">
+                    <span>Enemy Unit Killed</span>
+                    <span>+5</span>
+                  </div>
+                  <div className="supply-popup__stat supply-popup__stat--penalty">
+                    <span>City Captured (attacker)</span>
+                    <span>+5</span>
+                  </div>
+                  <div className="supply-popup__stat supply-popup__stat--penalty">
+                    <span>City Captured (defender)</span>
+                    <span>+15</span>
+                  </div>
+                  <div className="supply-popup__stat supply-popup__stat--penalty">
+                    <span>Village Lost</span>
+                    <span>+3</span>
+                  </div>
+                  <div className="supply-popup__stat supply-popup__stat--penalty">
+                    <span>Supply Deficit</span>
+                    <span>+2 per deficit</span>
+                  </div>
+                  <div className="supply-popup__stat supply-popup__stat--penalty">
+                    <span>Besieged City</span>
+                    <span>+2 per turn</span>
+                  </div>
+                  <div className="supply-popup__divider">Recovery</div>
+                  <div className="supply-popup__stat">
+                    <span>No losses (3+ turns)</span>
+                    <span>-4 per turn</span>
+                  </div>
+                  {state.hud.exhaustion.marchingStaminaEnabled && (
+                    <div className="supply-popup__stat">
+                      <span>Hit & Run Foundation</span>
+                      <span>-1 per turn</span>
+                    </div>
+                  )}
+                  <div className="supply-popup__note">
+                    Turns without loss: {state.hud.exhaustion.turnsWithoutLoss}{state.hud.exhaustion.turnsWithoutLoss < 3 ? ` (${3 - state.hud.exhaustion.turnsWithoutLoss} more to decay)` : ' (decay active)'}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         ) : null}
       </div>
@@ -210,73 +282,6 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
                 ⚠ {recoveringCityCount} city{recoveringCityCount !== 1 ? 'ies' : 'y'} recovering from capture
               </div>
             )}
-          </div>
-        </div>
-      )}
-      {warExhaustionPopup && state.hud.exhaustion && (
-        <div className="supply-popup-overlay" onClick={() => setWarExhaustionPopup(false)} style={{ alignItems: 'flex-start' }}>
-          <div className="supply-popup" onClick={(e) => e.stopPropagation()} style={{ marginTop: 200 }}>
-            <button className="supply-popup__close" onClick={() => setWarExhaustionPopup(false)}>×</button>
-            <h3 className="supply-popup__title">War Exhaustion</h3>
-            <div className="supply-popup__stat">
-              <span>Current Points</span>
-              <strong>{Math.round(state.hud.exhaustion.points)}</strong>
-            </div>
-            <div className="supply-popup__stat">
-              <span>Production Penalty</span>
-              <strong className={state.hud.exhaustion.productionPenalty > 0 ? 'supply-popup--deficit' : 'supply-popup--surplus'}>
-                {state.hud.exhaustion.productionPenalty > 0 ? `-${Math.round(state.hud.exhaustion.productionPenalty * 100)}%` : 'None'}
-              </strong>
-            </div>
-            <div className="supply-popup__stat">
-              <span>Morale Penalty</span>
-              <strong className={state.hud.exhaustion.moralePenalty > 0 ? 'supply-popup--deficit' : 'supply-popup--surplus'}>
-                {state.hud.exhaustion.moralePenalty > 0 ? `-${state.hud.exhaustion.moralePenalty} per unit` : 'None'}
-              </strong>
-            </div>
-            <div className="supply-popup__divider">Causes</div>
-            <div className="supply-popup__stat supply-popup__stat--penalty">
-              <span>Unit Lost</span>
-              <span>+8 per unit</span>
-            </div>
-            <div className="supply-popup__stat supply-popup__stat--penalty">
-              <span>Enemy Unit Killed</span>
-              <span>+5</span>
-            </div>
-            <div className="supply-popup__stat supply-popup__stat--penalty">
-              <span>City Captured (attacker)</span>
-              <span>+5</span>
-            </div>
-            <div className="supply-popup__stat supply-popup__stat--penalty">
-              <span>City Captured (defender)</span>
-              <span>+15</span>
-            </div>
-            <div className="supply-popup__stat supply-popup__stat--penalty">
-              <span>Village Lost</span>
-              <span>+3</span>
-            </div>
-            <div className="supply-popup__stat supply-popup__stat--penalty">
-              <span>Supply Deficit</span>
-              <span>+2 per deficit</span>
-            </div>
-            <div className="supply-popup__stat supply-popup__stat--penalty">
-              <span>Besieged City</span>
-              <span>+2 per turn</span>
-            </div>
-            <div className="supply-popup__divider">Recovery</div>
-            <div className="supply-popup__stat">
-              <span>No losses (3+ turns)</span>
-              <span>-4 per turn</span>
-            </div>
-            {state.hud.exhaustion.marchingStaminaEnabled && (
-              <div className="supply-popup__stat">
-                <span>Hit & Run Foundation</span>
-                <span>-1 per turn</span>
-              </div>
-            )}
-            <div className="supply-popup__note">
-              Turns without loss: {state.hud.exhaustion.turnsWithoutLoss}{state.hud.exhaustion.turnsWithoutLoss < 3 ? ` (${3 - state.hud.exhaustion.turnsWithoutLoss} more to decay)` : ' (decay active)'}
-            </div>
           </div>
         </div>
       )}
