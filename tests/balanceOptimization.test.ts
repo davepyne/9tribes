@@ -18,6 +18,7 @@ function runCommand(command: string, args: string[], input?: string): string {
     cwd: repoRoot,
     input,
     encoding: 'utf8',
+    stdio: ['pipe', 'pipe', 'pipe'],
   });
 }
 

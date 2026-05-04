@@ -1,4 +1,4 @@
-﻿import type { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import { useState, useEffect } from 'react';
 import type { ClientState } from '../game/types/clientState';
 import { getFactionInfo } from '../data/faction-info';

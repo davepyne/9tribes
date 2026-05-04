@@ -1,4 +1,4 @@
-﻿import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import type { ClientState } from '../game/types/clientState';
 import abilityDomains from '../data/ability-domains.json';
 import { getFactionInfo } from '../data/faction-info';

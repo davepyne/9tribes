@@ -1,4 +1,4 @@
-﻿import type { GameState } from '../game/types.js';
+import type { GameState } from '../game/types.js';
 import type { Faction } from '../features/factions/types.js';
 import type { Unit } from '../features/units/types.js';
 import type { TerrainDef } from '../data/registry/types.js';

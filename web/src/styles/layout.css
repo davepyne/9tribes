@@ -1,4 +1,4 @@
-﻿.game-shell {
+.game-shell {
   min-height: 100vh;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;

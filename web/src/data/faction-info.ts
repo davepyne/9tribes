@@ -1,4 +1,4 @@
-﻿export interface FactionInfo {
+export interface FactionInfo {
   id: string;
   name: string;
   color: string;
