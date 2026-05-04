@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { BorderEdgeView, WorldViewModel } from '../../types/worldView';
-import { TILE_HALF_WIDTH, TILE_HALF_HEIGHT } from '../assets/keys';
+import { TILE_HEIGHT, TILE_WIDTH } from '../assets/keys';
 
 export class BorderRenderer {
   constructor(
@@ -14,35 +14,36 @@ export class BorderRenderer {
     const graphics = this.scene.add.graphics();
 
     for (const edge of world.overlays.borders) {
-      const { x, y } = this.worldToScreen(edge.q, edge.r);
+      const point = this.worldToScreen(edge.q, edge.r);
       const color = Phaser.Display.Color.HexStringToColor(edge.color).color;
-
       graphics.lineStyle(5, color, 0.95);
-      this.drawHexEdge(graphics, x, y, edge.side);
+      drawEdge(graphics, point.x, point.y, edge);
       graphics.lineStyle(2, 0xf7e7bf, 0.22);
-      this.drawHexEdge(graphics, x, y, edge.side);
+      drawEdge(graphics, point.x, point.y, edge);
     }
 
     this.layer.add(graphics);
   }
+}
 
-  private drawHexEdge(graphics: Phaser.GameObjects.Graphics, x: number, y: number, side: BorderEdgeView['side']) {
-    const HW = TILE_HALF_WIDTH;
-    const TH = TILE_HALF_HEIGHT;
+function drawEdge(graphics: Phaser.GameObjects.Graphics, x: number, y: number, edge: BorderEdgeView) {
+  const left = x - TILE_WIDTH / 2;
+  const right = x + TILE_WIDTH / 2;
+  const top = y - TILE_HEIGHT / 2;
+  const bottom = y + TILE_HEIGHT / 2;
 
-    switch (side) {
-      case 'west':
-        graphics.lineBetween(x - HW, y - TH, x - HW, y + TH);
-        break;
-      case 'east':
-        graphics.lineBetween(x + HW, y - TH, x + HW, y + TH);
-        break;
-      case 'north':
-        graphics.lineBetween(x, y - TH, x - HW, y - TH);
-        break;
-      case 'south':
-        graphics.lineBetween(x, y + TH, x + HW, y + TH);
-        break;
-    }
+  switch (edge.side) {
+    case 'north':
+      graphics.lineBetween(x, top, right, y);
+      break;
+    case 'east':
+      graphics.lineBetween(right, y, x, bottom);
+      break;
+    case 'south':
+      graphics.lineBetween(x, bottom, left, y);
+      break;
+    case 'west':
+      graphics.lineBetween(left, y, x, top);
+      break;
   }
 }
