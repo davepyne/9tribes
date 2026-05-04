@@ -10,8 +10,10 @@ import type {
   TraceFactionStrategyEvent,
   TraceResearchEvent,
   TraceDomainLearnedEvent,
+  TraceAbilityLearnedEvent,
   TraceTripleStackEvent,
   TraceSynergyPairEvent,
+  TraceUnitSacrificedEvent,
 } from './traceTypes.js';
 
 export function createSimulationTrace(recordSnapshots: boolean = false): SimulationTrace {
@@ -136,6 +138,10 @@ export function recordResearch(trace: SimulationTrace | undefined, event: TraceR
   trace?.researchEvents?.push(event);
 }
 
+export function recordAbilityLearned(trace: SimulationTrace | undefined, event: TraceAbilityLearnedEvent): void {
+  trace?.abilityLearnedEvents?.push(event);
+}
+
 export function recordDomainLearned(trace: SimulationTrace | undefined, event: TraceDomainLearnedEvent): void {
   trace?.domainLearnedEvents?.push(event);
 }
@@ -146,6 +152,10 @@ export function recordTripleStack(trace: SimulationTrace | undefined, event: Tra
 
 export function recordSynergyPair(trace: SimulationTrace | undefined, event: TraceSynergyPairEvent): void {
   trace?.synergyPairEvents?.push(event);
+}
+
+export function recordUnitSacrificed(trace: SimulationTrace | undefined, event: TraceUnitSacrificedEvent): void {
+  trace?.unitSacrificedEvents?.push(event);
 }
 
 export function maybeRecordEndSnapshot(state: GameState, trace: SimulationTrace | undefined): void {

@@ -25,6 +25,8 @@ import { canPriestSummon, attemptPriestSummon } from '../summonSystem.js';
 import {
   log,
   recordCombatEvent,
+  recordAbilityLearned,
+  recordUnitSacrificed,
 } from '../warEcologySimulation.js';
 
 import type { UnitActivationOptions, UnitActivationResult } from './types.js';
@@ -49,6 +51,7 @@ import { findBestTargetChoice, findBestRangedTarget } from './targeting.js';
 import { performStrategicMovement } from './movement.js';
 import { RENDEZVOUS_READY_DISTANCE } from '../strategic-ai/rendezvous.js';
 import { isSettlerPrototype, getAvailableProductionPrototypes, getPrototypeQueueCost, queueUnit } from '../productionSystem.js';
+import { canSacrifice, performSacrifice } from '../sacrificeSystem.js';
 import { createCityId } from '../../core/ids.js';
 import { createCitySiteBonuses, findBestCitySiteForFaction, getSettlementOccupancyBlocker } from '../citySiteSystem.js';
 import { syncFactionSettlementIds } from '../factionOwnershipSystem.js';
@@ -311,6 +314,25 @@ export function activateUnit(
     return { state: setUnitActivated(current, unitId), pendingCombat: null };
   }
 
+  // --- Sacrifice execution: codify learned abilities at home city ---
+  const sacrificeIntent = getUnitIntent(current.factionStrategies.get(factionId), unitId);
+  if (sacrificeIntent?.assignment === 'return_to_sacrifice') {
+    const sacrificeUnit = current.units.get(unitId);
+    const sacrificeFaction = current.factions.get(factionId);
+    if (sacrificeUnit && sacrificeFaction && canSacrifice(sacrificeUnit, sacrificeFaction, current)) {
+      const sacrificedDomains = sacrificeUnit.learnedAbilities.map(a => a.domainId);
+      current = performSacrifice(unitId, factionId, current, registry, trace);
+      recordUnitSacrificed(trace, {
+        round: current.round,
+        unitId,
+        factionId,
+        learnedDomains: sacrificedDomains,
+      });
+      return { state: setUnitActivated(current, unitId), pendingCombat: null };
+    }
+    // Not adjacent to home city yet — fall through to movement
+  }
+
   let activeUnit = current.units.get(unitId)!;
   const baseRange = prototype.derivedStats.range ?? 1;
   const unitRange = baseRange + (prototype.rangeBonus ?? 0);
@@ -465,6 +487,16 @@ export function activateUnit(
     const resolution = appliedCombat.feedback.resolution;
     const updatedAttacker = current.units.get(activeUnit.id) ?? { ...activeUnit, hp: 0, morale: 0, routed: true };
     const updatedDefender = current.units.get(enemy.id) ?? { ...enemy, hp: 0, morale: 0, routed: true };
+
+    if (appliedCombat.feedback.lastLearnedDomain) {
+      recordAbilityLearned(trace, {
+        round: current.round,
+        unitId: appliedCombat.feedback.lastLearnedDomain.unitId as UnitId,
+        factionId,
+        domainId: appliedCombat.feedback.lastLearnedDomain.domainId,
+        fromFactionId: enemy.factionId,
+      });
+    }
 
     if (resolution.capturedOnKill) {
       log(trace, `${faction.name} ${prototype.name} CAPTURED ${enemyPrototype.name}!`);
@@ -689,6 +721,15 @@ export function activateUnit(
           const postMoveResolution = postMoveCombat.feedback.resolution;
           const postMoveUpdatedAttacker = current.units.get(movedUnit.id) ?? { ...movedUnit, hp: 0, morale: 0, routed: true };
           const postMoveUpdatedDefender = current.units.get(postMoveEnemy.id) ?? { ...postMoveEnemy, hp: 0, morale: 0, routed: true };
+          if (postMoveCombat.feedback.lastLearnedDomain) {
+            recordAbilityLearned(trace, {
+              round: current.round,
+              unitId: postMoveCombat.feedback.lastLearnedDomain.unitId as UnitId,
+              factionId,
+              domainId: postMoveCombat.feedback.lastLearnedDomain.domainId,
+              fromFactionId: postMoveEnemy.factionId,
+            });
+          }
           log(trace, `${faction.name} ${prototype.name} attacked ${enemyProto?.name ?? 'enemy'} after movement`);
           recordCombatEvent(trace, {
             round: current.round,

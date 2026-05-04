@@ -31,7 +31,7 @@ export type {
   TraceAbilityLearnedEvent,
   TraceUnitSacrificedEvent,
 } from './simulation/traceTypes.js';
-export { createSimulationTrace, log, recordCombatEvent, recordAiIntent } from './simulation/traceRecorder.js';
+export { createSimulationTrace, log, recordCombatEvent, recordAiIntent, recordAbilityLearned, recordUnitSacrificed } from './simulation/traceRecorder.js';
 export { getVictoryStatus, isFactionEliminated } from './simulation/victory.js';
 export { getAliveFactions } from './simulation/victory.js';
 export { processFactionPhases } from './simulation/factionTurnEffects.js';
