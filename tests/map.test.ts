@@ -2,7 +2,7 @@
 
 import TERRAIN_DEFINITIONS from '../src/content/base/terrains.json';
 import { createMap } from '../src/world/map/createMap';
-import { getTile, getTileByKey, hasTile } from '../src/world/map/getTile';
+import { getTile } from '../src/world/map/getTile';
 import { generateMvpMap } from '../src/world/generation/generateMvpMap';
 import { generateClimateBandMap } from '../src/world/generation/generateClimateBandMap';
 import { createRNG } from '../src/core/rng';
@@ -96,20 +96,6 @@ describe('getTile', () => {
     const map = createMap(5, 5);
     expect(getTile(map, { q: 10, r: 10 })).toBeUndefined();
     expect(getTile(map, { q: -1, r: 0 })).toBeUndefined();
-  });
-
-  it('getTileByKey works with "q,r" format', () => {
-    const map = createMap(5, 5);
-    const tile = getTileByKey(map, '2,3');
-    expect(tile).toBeDefined();
-    expect(tile?.position).toEqual({ q: 2, r: 3 });
-  });
-
-  it('hasTile returns true for valid coords, false for invalid', () => {
-    const map = createMap(5, 5);
-    expect(hasTile(map, { q: 0, r: 0 })).toBe(true);
-    expect(hasTile(map, { q: 4, r: 4 })).toBe(true);
-    expect(hasTile(map, { q: 10, r: 10 })).toBe(false);
   });
 });
 

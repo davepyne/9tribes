@@ -46,8 +46,7 @@ function isMilitaryPrototype(
   prototype: Pick<Prototype, 'derivedStats' | 'tags'>,
 ): boolean {
   const tags = prototype.tags ?? [];
-  return prototype.derivedStats.role !== 'support'
-    && !tags.includes('transport')
+  return !tags.includes('transport')
     && !tags.includes('naval')
     && !tags.includes('settler');
 }
@@ -681,7 +680,6 @@ function scoreEnemyCounterPressure(enemyUnits: GameState['units'] extends Map<an
     if (enemyRole === 'mounted' && role === 'melee') score += 1.5;
     if (enemyRole === 'ranged' && role === 'mounted') score += 1.25;
     if (enemyRole === 'melee' && role === 'ranged') score += 0.75;
-    if (enemyRole === 'support' && role !== 'support') score += 0.5;
   }
   return score;
 }

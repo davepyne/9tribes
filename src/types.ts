@@ -20,9 +20,3 @@ export interface TileCoord {
 
 // Backwards-compatible alias — remove after full migration
 export type HexCoord = TileCoord;
-
-// Base entity interface (placeholder)
-export interface Entity {
-  id: string;
-  // TODO: Add common entity properties
-}

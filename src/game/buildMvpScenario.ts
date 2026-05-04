@@ -9,7 +9,7 @@ import { assemblePrototype } from '../design/assemblePrototype.js';
 import { createFactionId, createUnitId, createCityId, createImprovementId, createPrototypeId } from '../core/ids.js';
 import { createCombatRecord } from '../features/factions/types.js';
 import { createWarExhaustion } from '../systems/warExhaustionSystem.js';
-import type { UnitId, CityId, PrototypeId, VillageId, FactionId } from '../types.js';
+import type { CityId, ChassisId, ComponentId, PrototypeId } from '../types.js';
 import type { Faction } from '../game/types.js';
 import { getHexesInRange, getNeighbors, hexToKey } from '../core/grid.js';
 import { createResearchState } from '../systems/researchSystem.js';
@@ -261,10 +261,10 @@ export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions 
 
     const settlerPrototype = assemblePrototype(
       factionId,
-      'infantry_frame' as any,
-      ['basic_spear', 'simple_armor'] as any,
+      'infantry_frame' as ChassisId,
+      ['basic_spear', 'simple_armor'] as unknown as ComponentId[],
       registry,
-      existingPrototypeIds as any,
+      existingPrototypeIds as PrototypeId[],
       {
         faction,
         validation: {
@@ -333,10 +333,10 @@ export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions 
       // Assemble prototype
       const prototype = assemblePrototype(
         factionId,
-        unitConfig.chassisId as any,
-        unitConfig.componentIds as any,
+        unitConfig.chassisId as ChassisId,
+        unitConfig.componentIds as unknown as ComponentId[],
         registry,
-        existingPrototypeIds as any,
+        existingPrototypeIds as PrototypeId[],
         {
           faction,
           name: (unitConfig as { name?: string }).name,

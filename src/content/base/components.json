@@ -592,7 +592,7 @@
     "id": "pirate_collar",
     "name": "Pirate Collar",
     "slotType": "weapon",
-    "attackAttack": 1,
+    "attackBonus": 1,
     "compatibleChassis": [
       "infantry_frame",
       "heavy_infantry_frame"

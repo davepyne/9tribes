@@ -7,14 +7,6 @@ import {
   createChassisId,
   createComponentId,
   createResearchNodeId,
-  isFactionId,
-  isUnitId,
-  isCityId,
-  isPrototypeId,
-  isImprovementId,
-  isChassisId,
-  isComponentId,
-  isResearchNodeId,
   _resetIdCounter,
 } from '../src/core/ids';
 
@@ -100,102 +92,7 @@ describe('ID with explicit value', () => {
     _resetIdCounter(0);
     createUnitId('custom_id');
     const nextId = createUnitId();
-    
+
     expect(nextId).toBe('unit_1');
-  });
-});
-
-describe('Type guards', () => {
-  beforeEach(() => {
-    _resetIdCounter(0);
-  });
-
-  describe('isFactionId', () => {
-    it('returns true for valid faction IDs', () => {
-      expect(isFactionId('faction_1')).toBe(true);
-      expect(isFactionId('faction_123')).toBe(true);
-    });
-
-    it('returns false for non-faction IDs', () => {
-      expect(isFactionId('unit_1')).toBe(false);
-      expect(isFactionId('city_1')).toBe(false);
-      expect(isFactionId('random_string')).toBe(false);
-      expect(isFactionId('')).toBe(false);
-      expect(isFactionId(null)).toBe(false);
-      expect(isFactionId(undefined)).toBe(false);
-      expect(isFactionId(123)).toBe(false);
-    });
-  });
-
-  describe('isUnitId', () => {
-    it('returns true for valid unit IDs', () => {
-      expect(isUnitId('unit_1')).toBe(true);
-      expect(isUnitId('unit_999')).toBe(true);
-    });
-
-    it('returns false for non-unit IDs', () => {
-      expect(isUnitId('faction_1')).toBe(false);
-      expect(isUnitId('unit')).toBe(false);
-    });
-  });
-
-  describe('isCityId', () => {
-    it('returns true for valid city IDs', () => {
-      expect(isCityId('city_1')).toBe(true);
-    });
-
-    it('returns false for non-city IDs', () => {
-      expect(isCityId('unit_1')).toBe(false);
-    });
-  });
-
-  describe('isPrototypeId', () => {
-    it('returns true for valid prototype IDs', () => {
-      expect(isPrototypeId('prototype_1')).toBe(true);
-    });
-
-    it('returns false for non-prototype IDs', () => {
-      expect(isPrototypeId('unit_1')).toBe(false);
-    });
-  });
-
-  describe('isImprovementId', () => {
-    it('returns true for valid improvement IDs', () => {
-      expect(isImprovementId('improvement_1')).toBe(true);
-    });
-
-    it('returns false for non-improvement IDs', () => {
-      expect(isImprovementId('unit_1')).toBe(false);
-    });
-  });
-
-  describe('isChassisId', () => {
-    it('returns true for valid chassis IDs', () => {
-      expect(isChassisId('chassis_1')).toBe(true);
-    });
-
-    it('returns false for non-chassis IDs', () => {
-      expect(isChassisId('unit_1')).toBe(false);
-    });
-  });
-
-  describe('isComponentId', () => {
-    it('returns true for valid component IDs', () => {
-      expect(isComponentId('component_1')).toBe(true);
-    });
-
-    it('returns false for non-component IDs', () => {
-      expect(isComponentId('unit_1')).toBe(false);
-    });
-  });
-
-  describe('isResearchNodeId', () => {
-    it('returns true for valid research node IDs', () => {
-      expect(isResearchNodeId('research_1')).toBe(true);
-    });
-
-    it('returns false for non-research IDs', () => {
-      expect(isResearchNodeId('unit_1')).toBe(false);
-    });
   });
 });

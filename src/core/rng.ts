@@ -31,15 +31,6 @@ export function rngInt(rng: RNGState, min: number, max: number): number {
   return min + Math.floor(next(rng) * range);
 }
 
-// Pick a random element from an array
-export function rngPick<T>(rng: RNGState, array: T[]): T {
-  if (array.length === 0) {
-    throw new Error('rngPick: cannot pick from empty array');
-  }
-  const index = Math.floor(next(rng) * array.length);
-  return array[index];
-}
-
 // Returns true with the given probability (0-1)
 export function rngChance(rng: RNGState, probability: number): boolean {
   if (probability < 0 || probability > 1) {

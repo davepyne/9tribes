@@ -123,7 +123,7 @@ function toReplaySnapshot(snapshot: TurnSnapshot, finalState: GameState): Replay
       id: unit.id,
       factionId: unit.factionId,
       prototypeId: unit.prototypeId,
-      prototypeName: finalState.prototypes.get(unit.prototypeId as never)?.name ?? unit.prototypeId,
+      prototypeName: finalState.prototypes.get(unit.prototypeId)?.name ?? unit.prototypeId,
       q: unit.q,
       r: unit.r,
       hp: unit.hp,
@@ -132,7 +132,7 @@ function toReplaySnapshot(snapshot: TurnSnapshot, finalState: GameState): Replay
     })),
     cities: snapshot.cities.map((city): ReplayTurnCity => ({
       id: city.id,
-      name: finalState.cities.get(city.id as never)?.name ?? city.id,
+      name: finalState.cities.get(city.id)?.name ?? city.id,
       factionId: city.factionId,
       q: city.q,
       r: city.r,
@@ -143,7 +143,7 @@ function toReplaySnapshot(snapshot: TurnSnapshot, finalState: GameState): Replay
     })),
     villages: snapshot.villages.map((village): ReplayTurnVillage => ({
       id: village.id,
-      name: finalState.villages.get(village.id as never)?.name ?? village.id,
+      name: finalState.villages.get(village.id)?.name ?? village.id,
       factionId: village.factionId,
       q: village.q,
       r: village.r,

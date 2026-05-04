@@ -4,7 +4,7 @@ import type { GameMap, TerrainType } from '../map/types.js';
 import type { RNGState } from '../../core/rng.js';
 import { createMap } from '../map/createMap.js';
 import { hexToKey, hexDistance, getNeighbors } from '../../core/grid.js';
-import { rngChance, rngNextFloat } from '../../core/rng.js';
+import { rngNextFloat } from '../../core/rng.js';
 
 /**
  * Generate an MVP map with random terrain distribution plus deterministic river corridors.

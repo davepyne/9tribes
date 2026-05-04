@@ -34,12 +34,6 @@ import type { TransportMap } from '../systems/transportSystem.js';
 import type { VillageCaptureCooldownMap } from '../systems/villageCaptureSystem.js';
 import type { FactionFogState } from '../systems/fogSystem.js';
 
-// Turn state for current turn
-export interface TurnState {
-  currentFactionId: FactionId;
-  unitsActedThisTurn: UnitId[];
-}
-
 // Main game state
 export interface GameState {
   seed: number;

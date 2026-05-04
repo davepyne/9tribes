@@ -389,34 +389,6 @@ export class MapScene extends Phaser.Scene {
     this.controller.dispatch({ type: 'select_village', villageId });
   }
 
-  private handleSingleClickUnit(state: ClientState, unitId: string) {
-    const unit = state.world.units.find((entry) => entry.id === unitId);
-    if (!unit) {
-      return;
-    }
-
-    // Left-click: only handle attack targeting; unit selection (popout) is via right-click.
-    if (
-      state.mode === 'play'
-      && state.actions.targetingMode === 'attack'
-      && !unit.isActiveFaction
-      && state.actions.selectedUnitId
-    ) {
-      this.controller.dispatch({
-        type: 'attack_unit',
-        attackerId: state.actions.selectedUnitId,
-        defenderId: unitId,
-      });
-      return;
-    }
-
-    // Left-click on own unit → select (show side popout)
-    if (state.mode === 'play' && unit.isActiveFaction) {
-      this.controller.dispatch({ type: 'select_unit', unitId });
-      return;
-    }
-    // Left-click on enemy unit → no-op
-  }
 
   private handleUnitPointerDown(_state: ClientState, _unitId: string, _pointer: Phaser.Input.Pointer) {
     // Left-click selection is handled by handleUnitSelection.

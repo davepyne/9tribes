@@ -7,7 +7,7 @@ export interface UnitStats {
   hp: number;
   moves: number;
   range: number;
-  role: string;
+  role: 'melee' | 'ranged' | 'mounted';
 }
 
 export interface Prototype {

@@ -34,7 +34,7 @@ export function recordSnapshot(
 
   const factions: TurnSnapshot['factions'] = [];
   for (const [id, faction] of state.factions) {
-    const livingUnits = faction.unitIds.filter((uid) => state.units.has(uid as never));
+    const livingUnits = faction.unitIds.filter((uid) => state.units.has(uid));
     factions.push({
       id,
       name: faction.name,

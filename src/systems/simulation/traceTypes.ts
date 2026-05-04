@@ -1,4 +1,4 @@
-import type { FactionId, HexCoord, UnitId, PrototypeId } from '../../types.js';
+import type { FactionId, HexCoord, UnitId, PrototypeId, CityId, VillageId } from '../../types.js';
 import type { FactionStrategy } from '../factionStrategy.js';
 
 export interface TurnSnapshot {
@@ -14,7 +14,7 @@ export interface TurnSnapshot {
   units: {
     id: UnitId;
     factionId: FactionId;
-    prototypeId: string;
+    prototypeId: PrototypeId;
     q: number;
     r: number;
     hp: number;
@@ -22,7 +22,7 @@ export interface TurnSnapshot {
     facing?: number;
   }[];
   cities: {
-    id: string;
+    id: CityId;
     factionId: FactionId;
     q: number;
     r: number;
@@ -32,7 +32,7 @@ export interface TurnSnapshot {
     turnsUnderSiege: number;
   }[];
   villages: {
-    id: string;
+    id: VillageId;
     factionId: FactionId;
     q: number;
     r: number;

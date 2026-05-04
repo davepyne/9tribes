@@ -70,7 +70,7 @@ const TOP_LEVEL_KEYS = new Set(['terrainYields', 'chassis', 'components', 'facti
 const TERRAIN_OVERRIDE_KEYS = new Set(['productionYield']);
 const CHASSIS_OVERRIDE_KEYS = new Set(['baseHp', 'baseMoves', 'baseAttack', 'baseDefense', 'baseRange', 'supplyCost']);
 const COMPONENT_OVERRIDE_KEYS = new Set(['attackBonus', 'defenseBonus', 'rangeBonus', 'hpBonus', 'movesBonus']);
-const FACTION_OVERRIDE_KEYS = new Set(['capabilitySeeds']);
+const FACTION_OVERRIDE_KEYS = new Set(['capabilitySeeds', 'researchRate']);
 const SCENARIO_OVERRIDE_KEYS = new Set(['roundsToWin', 'mapWidth', 'mapHeight']);
 const SIGNATURE_ABILITY_OVERRIDE_KEYS = new Set([
   'endlessStride', 'stampedeBonus', 'summon',

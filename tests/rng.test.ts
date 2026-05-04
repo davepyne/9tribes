@@ -1,4 +1,4 @@
-import { createRNG, rngInt, rngPick, rngChance, rngShuffle, type RNGState } from '../src/core/rng';
+import { createRNG, rngInt, rngChance, rngShuffle, type RNGState } from '../src/core/rng';
 
 describe('createRNG', () => {
   it('creates RNG with the given seed', () => {
@@ -59,35 +59,6 @@ describe('rngInt', () => {
     const value2 = rngInt(rng2, 0, 1000);
     
     expect(value1).not.toBe(value2);
-  });
-});
-
-describe('rngPick', () => {
-  it('returns an element from the array', () => {
-    const rng = createRNG(42);
-    const arr = [1, 2, 3, 4, 5];
-    for (let i = 0; i < 20; i++) {
-      expect(arr).toContain(rngPick(rng, arr));
-    }
-  });
-
-  it('returns the only element from single-element array', () => {
-    const rng = createRNG(42);
-    expect(rngPick(rng, ['only'])).toBe('only');
-  });
-
-  it('throws on empty array', () => {
-    const rng = createRNG(42);
-    expect(() => rngPick(rng, [])).toThrow('cannot pick from empty array');
-  });
-
-  it('is deterministic for same seed', () => {
-    const rng1 = createRNG(999);
-    const rng2 = createRNG(999);
-    const arr = ['a', 'b', 'c', 'd', 'e'];
-    
-    expect(rngPick(rng1, arr)).toBe(rngPick(rng2, arr));
-    expect(rngPick(rng1, arr)).toBe(rngPick(rng2, arr));
   });
 });
 
@@ -188,16 +159,14 @@ describe('RNG state mutation', () => {
 
   it('shared state affects subsequent calls', () => {
     const rng = createRNG(100);
-    
-    // Call sequence: int, pick, chance
+
+    // Call sequence: int, chance
     const v1 = rngInt(rng, 0, 100);
-    const v2 = rngPick(rng, ['a', 'b', 'c']);
-    const v3 = rngChance(rng, 0.5);
-    
+    const v2 = rngChance(rng, 0.5);
+
     // Same sequence with fresh RNG should match
     const rng2 = createRNG(100);
     expect(rngInt(rng2, 0, 100)).toBe(v1);
-    expect(rngPick(rng2, ['a', 'b', 'c'])).toBe(v2);
-    expect(rngChance(rng2, 0.5)).toBe(v3);
+    expect(rngChance(rng2, 0.5)).toBe(v2);
   });
 });

@@ -16,17 +16,6 @@ export const MVP_SCENARIO_CONFIG = {
   mapMode: 'randomClimateBands' as MapGenerationMode,
   mapWidth: 40,
   mapHeight: 30,
-  terrainDistribution: {
-    plains: 0.25,
-    forest: 0.15,
-    jungle: 0.10,
-    hill: 0.10,
-    desert: 0.10,
-    tundra: 0.10,
-    savannah: 0.10,
-    coast: 0.09,
-    river: 0.08,
-  },
   roundsToWin: 150,
 };
 
@@ -107,9 +96,3 @@ export function getStartingUnits(factionIndex: number, overrides?: BalanceOverri
 }
 
 export const MVP_IMPROVEMENTS: Array<{ hex: { q: number; r: number }; type: string }> = [];
-
-export const MVP_RESEARCH_CONFIG = {
-  domainId: 'river_stealth',
-  initialNode: 'river_stealth_t2',
-  initialProgress: 0,
-};

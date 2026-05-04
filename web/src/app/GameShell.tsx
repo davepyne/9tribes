@@ -449,9 +449,6 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
     }
   };
 
-  const handleDeselect = () => {
-    controller.dispatch({ type: 'select_hex', q: -1, r: -1 });
-  };
 
   // ── V2 Layout ──
   if (USE_V2_LAYOUT) {

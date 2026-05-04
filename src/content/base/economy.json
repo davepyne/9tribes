@@ -43,5 +43,9 @@
   "coast": {
     "terrainId": "coast",
     "productionYield": 0.14
+  },
+  "oasis": {
+    "terrainId": "oasis",
+    "productionYield": 0.10
   }
 }

@@ -62,24 +62,21 @@ export function loadRulesRegistry(overrides?: BalanceOverrides): RulesRegistry {
   }
 
   for (const [terrainId, override] of Object.entries(overrides?.terrainYields ?? {})) {
-    terrainYields[terrainId] = {
-      ...terrainYields[terrainId],
-      ...override,
-    };
+    const base = terrainYields[terrainId];
+    if (!base) continue;
+    terrainYields[terrainId] = { ...base, ...override };
   }
 
   for (const [chassisId, override] of Object.entries(overrides?.chassis ?? {})) {
-    chassis[chassisId] = {
-      ...chassis[chassisId],
-      ...override,
-    };
+    const base = chassis[chassisId];
+    if (!base) continue;
+    chassis[chassisId] = { ...base, ...override };
   }
 
   for (const [componentId, override] of Object.entries(overrides?.components ?? {})) {
-    components[componentId] = {
-      ...components[componentId],
-      ...override,
-    };
+    const base = components[componentId];
+    if (!base) continue;
+    components[componentId] = { ...base, ...override };
   }
 
   return {

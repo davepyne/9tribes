@@ -10,17 +10,3 @@ import { hexToKey } from '../../core/grid.js';
 export function getTile(map: GameMap, coord: HexCoord): Tile | undefined {
   return map.tiles.get(hexToKey(coord));
 }
-
-/**
- * Get tile by string key (format: "q,r")
- */
-export function getTileByKey(map: GameMap, key: string): Tile | undefined {
-  return map.tiles.get(key);
-}
-
-/**
- * Check if a tile exists at given coordinates
- */
-export function hasTile(map: GameMap, coord: HexCoord): boolean {
-  return map.tiles.has(hexToKey(coord));
-}

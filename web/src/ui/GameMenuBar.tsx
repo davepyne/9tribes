@@ -96,16 +96,6 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
       onOpenResearch();
       return;
     }
-    if (action.startsWith('hover_select_unit:')) {
-      const unitId = action.replace('hover_select_unit:', '');
-      window.selectUnitDirect?.(unitId);
-      return;
-    }
-    if (action.startsWith('hover_select_city:')) {
-      const cityId = action.replace('hover_select_city:', '');
-      window.selectCityDirect?.(cityId);
-      return;
-    }
     if (action === 'open_how_to_play') {
       onOpenHelp?.();
       return;

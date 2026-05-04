@@ -350,7 +350,7 @@
     "componentIds": [
       "basic_spear",
       "fortress_training",
-      "heavy_armor"
+      "simple_armor"
     ],
     "tier": "mid",
     "minLearnedDomains": 4,

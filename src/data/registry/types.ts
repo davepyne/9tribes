@@ -18,7 +18,7 @@ export interface TerrainDef {
 export interface ChassisDef {
   id: string;
   name: string;
-  role?: string; // "melee" | "ranged" | "mounted" — determines role effectiveness
+  role?: 'melee' | 'ranged' | 'mounted'; // determines role effectiveness
   slotTypes: string[];
   baseHp: number;
   baseMoves: number;
@@ -119,10 +119,9 @@ export interface HybridRecipeDef {
   movesBonus?: number;
 }
 
-export interface TerrainYieldDef {
-  terrainId: string;
-  productionYield: number;
-}
+import type { TerrainYieldDef } from '../../features/economy/types.js';
+
+export type { TerrainYieldDef };
 
 export interface FactionAiBaseline {
   factionId: string;
