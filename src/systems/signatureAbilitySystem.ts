@@ -1,4 +1,4 @@
-// Signature Ability System - Helper functions for faction-specific abilities
+﻿// Signature Ability System - Helper functions for faction-specific abilities
 import type { GameState, Unit, HexCoord } from '../game/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
 import type { FactionId, UnitId, PrototypeId, ChassisId } from '../types.js';
@@ -200,7 +200,7 @@ export function findRetreatHex(
 // ============================================================
 
 /**
- * applyKnockback — push defender to adjacent hex after combat.
+ * applyKnockback ΓÇö push defender to adjacent hex after combat.
  * Pushes defender away from attacker to the most logical adjacent hex.
  * Returns the knockback target hex, or null if no valid hex found.
  */
@@ -248,7 +248,7 @@ export function applyKnockback(
 }
 
 /**
- * applyStrikeFirst — cavalry charge deals damage before defender retaliates.
+ * applyStrikeFirst ΓÇö cavalry charge deals damage before defender retaliates.
  * Returns true if the strike-first effect applies (no retaliation damage).
  * If the defender is killed by the strike-first attack, attacker takes 0 damage.
  */
@@ -274,7 +274,7 @@ export function applyStrikeFirst(
 }
 
 /**
- * applyPoisonDoT — apply poison stacks to target.
+ * applyPoisonDoT ΓÇö apply poison stacks to target.
  * Each stack deals damagePerTurn damage for duration turns.
  * Returns the updated unit with poison stacks applied.
  */
@@ -294,7 +294,7 @@ export function applyPoisonDoT(
 }
 
 /**
- * resolveStealth — return stealth status for a unit.
+ * resolveStealth ΓÇö return stealth status for a unit.
  * Stealth-tagged units can enter stealth if turnsSinceStealthBreak >= 1.
  * Being stealthed grants ambush bonus on first attack.
  */
@@ -313,7 +313,7 @@ export function resolveStealth(unit: Unit, prototypeTags: string[]): boolean {
 }
 
 /**
- * getStealthAmbushBonus — return the damage bonus for attacking from stealth.
+ * getStealthAmbushBonus ΓÇö return the damage bonus for attacking from stealth.
  * Reads from ability-domains.json river_stealth domain.
  */
 export function getStealthAmbushBonus(): number {
@@ -324,7 +324,7 @@ export function getStealthAmbushBonus(): number {
 }
 
 /**
- * breakStealth — break a unit's stealth after attacking.
+ * breakStealth ΓÇö break a unit's stealth after attacking.
  */
 export function breakStealth(unit: Unit): Unit {
   return {
@@ -335,7 +335,7 @@ export function breakStealth(unit: Unit): Unit {
 }
 
 /**
- * tickStealthCooldown — decrement turnsSinceStealthBreak for a unit.
+ * tickStealthCooldown ΓÇö decrement turnsSinceStealthBreak for a unit.
  * Called at the start of each round for stealth-tagged units.
  */
 export function tickStealthCooldown(unit: Unit): Unit {
@@ -346,7 +346,7 @@ export function tickStealthCooldown(unit: Unit): Unit {
 }
 
 /**
- * enterStealth — attempt to enter stealth for a stealth-tagged unit.
+ * enterStealth ΓÇö attempt to enter stealth for a stealth-tagged unit.
  * Only succeeds if turnsSinceStealthBreak === 0.
  */
 export function enterStealth(unit: Unit, prototypeTags: string[]): Unit {
@@ -356,7 +356,7 @@ export function enterStealth(unit: Unit, prototypeTags: string[]): Unit {
 }
 
 /**
- * getNatureHealingAura — return healing values from ability-domains.json.
+ * getNatureHealingAura ΓÇö return healing values from ability-domains.json.
  * Returns { selfHeal, allyHeal } for units with healing/druid tags.
  */
 export function getNatureHealingAura(): { selfHeal: number; allyHeal: number } {
@@ -369,7 +369,7 @@ export function getNatureHealingAura(): { selfHeal: number; allyHeal: number } {
 }
 
 /**
- * getTidalCoastDebuff — return the defense debuff from tidal_warfare domain.
+ * getTidalCoastDebuff ΓÇö return the defense debuff from tidal_warfare domain.
  */
 export function getTidalCoastDebuff(): number {
   const tidalDomain = getDomainForTag('naval');
@@ -378,7 +378,7 @@ export function getTidalCoastDebuff(): number {
 }
 
 /**
- * getStampedeDistance — return knockback distance from charge domain.
+ * getStampedeDistance ΓÇö return knockback distance from charge domain.
  */
 export function getStampedeDistance(): number {
   const stampedeDomain = getDomainForTag('elephant');
@@ -393,7 +393,7 @@ export interface PriestSummonCheck {
 }
 
 /**
- * canPriestSummon — check if a priest unit can summon its faction's creature.
+ * canPriestSummon ΓÇö check if a priest unit can summon its faction's creature.
  * Requirements: priest tag, ready status, on matching terrain, summon not active,
  * cooldown expired, and an adjacent empty passable hex exists.
  */
@@ -457,8 +457,8 @@ export function canPriestSummon(
 }
 
 /**
- * attemptPriestSummon — spawn the faction's summon creature adjacent to a priest unit.
- * Returns updated GameState. Does not check eligibility — caller must use canPriestSummon first.
+ * attemptPriestSummon ΓÇö spawn the faction's summon creature adjacent to a priest unit.
+ * Returns updated GameState. Does not check eligibility ΓÇö caller must use canPriestSummon first.
  */
 export function attemptPriestSummon(
   state: GameState,

@@ -1,4 +1,4 @@
-import type { GameState, Unit } from '../../game/types.js';
+﻿import type { GameState, Unit } from '../../game/types.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { FactionId, HexCoord, UnitId, ChassisId } from '../../types.js';
 import type { PrototypeId } from '../../types.js';
@@ -481,7 +481,7 @@ export function processFactionPhases(
     progression.emergentEligibleDomains,
   );
   if (tripleStack) {
-    log(trace, `${faction.name} activates ${tripleStack.name} — ${tripleStack.emergentRule.name} emergent!`);
+    log(trace, `${faction.name} activates ${tripleStack.name} ΓÇö ${tripleStack.emergentRule.name} emergent!`);
   }
 
   if (tripleStack) {
@@ -522,7 +522,7 @@ export function processFactionPhases(
 
     const cityProductionIncome = economy.productionPool / cityCount;
 
-    // E3 — Slave Empire emergent: captured slaves boost production
+    // E3 ΓÇö Slave Empire emergent: captured slaves boost production
     let slaveProductionBonus = 0;
     if (tripleStack?.emergentRule.effect.type === 'slave_empire') {
       const slaveEffect = tripleStack.emergentRule.effect as import('../synergyEngine.js').EmergentEffect & { type: 'slave_empire' };
@@ -560,7 +560,7 @@ export function processFactionPhases(
 
         // Spawn feasibility gate: skip if the unit can't physically spawn adjacent to this city
         if (!canSpawnAt(current, updatedCity.position, registry, proto)) {
-          log(trace, `${faction.name} skipped ${proto.chassisId} at ${updatedCity.name} — no valid spawn hex`);
+          log(trace, `${faction.name} skipped ${proto.chassisId} at ${updatedCity.name} ΓÇö no valid spawn hex`);
           continue;
         }
         // Supply gate: don't produce military units if projected demand would exceed income.
@@ -570,7 +570,7 @@ export function processFactionPhases(
           if (econ) {
             const projectedDemand = getProjectedSupplyDemandWithPrototype(current, factionId, proto, registry);
             if (projectedDemand > econ.supplyIncome) {
-              log(trace, `${faction.name} skipped ${proto.chassisId} — supply capped (${projectedDemand.toFixed(1)} demand > ${econ.supplyIncome.toFixed(1)} income)`);
+              log(trace, `${faction.name} skipped ${proto.chassisId} ΓÇö supply capped (${projectedDemand.toFixed(1)} demand > ${econ.supplyIncome.toFixed(1)} income)`);
               continue;
             }
           }
@@ -588,7 +588,7 @@ export function processFactionPhases(
         break;
       }
       if (!queued && rankedChoices.length > 0) {
-        log(trace, `${faction.name} unable to queue any production at ${updatedCity.name} — all candidates blocked`);
+        log(trace, `${faction.name} unable to queue any production at ${updatedCity.name} ΓÇö all candidates blocked`);
       }
     }
 
@@ -743,7 +743,7 @@ export function processFactionPhases(
       }
     }
     for (const [domainId, contactCount] of seenEnemyDomains) {
-      // No cap — rapid domain learning during heavy combat (H-2-4-5)
+      // No cap ΓÇö rapid domain learning during heavy combat (H-2-4-5)
       const amount = contactCount;
       current = gainExposure(current, factionId, domainId, amount, trace, registry);
     }
@@ -813,7 +813,7 @@ export function processFactionPhases(
             }
             log(trace, `${city.name} captured by ${capturingFaction}!`);
             if (captureResult.learnedDomain) {
-              log(trace, `  → ${captureResult.learnedDomain.unitId} learned ${captureResult.learnedDomain.domainId} from capturing ${city.name}`);
+              log(trace, `  ΓåÆ ${captureResult.learnedDomain.unitId} learned ${captureResult.learnedDomain.domainId} from capturing ${city.name}`);
             }
             siegeCities = new Map(current.cities);
             continue;

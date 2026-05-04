@@ -1,4 +1,4 @@
-// War Exhaustion System
+﻿// War Exhaustion System
 // Faction-level mechanic: prolonged combat and losses accumulate exhaustion,
 // creating production pressure and strategic incentive to stop fighting.
 
