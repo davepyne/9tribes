@@ -192,7 +192,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
         <div className="faction-popup-overlay" onClick={() => setUnitPopupOpen(false)}>
           <div className="faction-popup unit-stats-popup" onClick={(e) => e.stopPropagation()}>
             <button className="faction-popup__close" onClick={() => setUnitPopupOpen(false)}>×</button>
-            <h3 className="unit-stats-panel__name" style={{ color: factionPopup.color }}>{factionPopup.unitStats.attack} / {factionPopup.unitStats.defense} / {factionPopup.unitStats.health}</h3>
+            <h3 className="unit-stats-panel__name" style={{ color: factionPopup.color }}>{factionPopup.signatureUnit}</h3>
             <div className="unit-stats-panel__stats">
               <div><span>Attack</span><strong>{factionPopup.unitStats.attack}</strong></div>
               <div><span>Defense</span><strong>{factionPopup.unitStats.defense}</strong></div>
