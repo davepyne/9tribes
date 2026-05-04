@@ -439,7 +439,7 @@ function buildResearchChip(
       activeNodeCost = domain.nodes[research.activeNodeId]?.xpCost ?? 0;
 
       const nodes = Object.values(domain.nodes).sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0));
-      const completed = new Set(research.completedNodes);
+      const completed = new Set<string>(research.completedNodes);
       let nextNode = null;
       for (const node of nodes) {
         if (!completed.has(node.id) && node.id !== research.activeNodeId) {

@@ -3,6 +3,7 @@ import type Phaser from 'phaser';
 import type { GameController } from '../game/controller/GameController';
 import type { ClientState } from '../game/types/clientState';
 import type { SaveGameSummary } from './savegames';
+import type { SessionSaveSnapshot } from '../game/controller/GameSession';
 import { createGame } from '../game/phaser/createGame';
 
 // Legacy components
@@ -66,7 +67,7 @@ type ShellContentProps = {
   onSetSaveOpen: (v: boolean) => void;
   onRestartSession?: () => void;
   onSaveGame?: () => SaveGameSummary | null;
-  getSaveSnapshot?: () => { preview: { playerFactionName: string | null; activeFactionName: string; round: number }; payload: unknown } | null;
+  getSaveSnapshot?: () => SessionSaveSnapshot | null;
 };
 
 function KnowledgeGainedShellContent({
