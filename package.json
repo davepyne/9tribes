@@ -15,6 +15,7 @@
     "balance:evaluate": "tsx scripts/evaluateBalance.ts",
     "balance:validate": "tsx scripts/validateBalanceCandidate.ts",
     "web:dev": "npm --prefix web run dev",
+    "sim:scenario": "tsx scripts/runScenario.ts",
     "web:build": "npm --prefix web run build"
   },
   "devDependencies": {
