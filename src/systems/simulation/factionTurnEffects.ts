@@ -867,16 +867,19 @@ export function processFactionPhases(
   if (weState) {
     const hadLoss = faction.combatRecord.lastLossRound === current.round;
     const tickedWE = tickWarExhaustion(weState, hadLoss);
-    const weMap = new Map(current.warExhaustion);
-    weMap.set(factionId, tickedWE);
-    current = { ...current, warExhaustion: weMap };
-
     const weResearch = current.research.get(factionId);
     const weDoctrine = resolveResearchDoctrine(weResearch, faction);
-    const effectiveExhaustionPoints = weDoctrine.marchingStaminaEnabled
-      ? Math.max(0, tickedWE.exhaustionPoints - 1)
-      : tickedWE.exhaustionPoints;
-    const moralePenalty = calculateMoralePenalty(effectiveExhaustionPoints);
+    const marchingStaminaBonus = weDoctrine.marchingStaminaEnabled ? 1 : 0;
+    const decayedWE = applyDecay(tickedWE, {
+      noLossTurns: tickedWE.turnsWithoutLoss,
+      territoryClear: false,
+      marchingStaminaBonus,
+    });
+    const weMap = new Map(current.warExhaustion);
+    weMap.set(factionId, decayedWE);
+    current = { ...current, warExhaustion: weMap };
+
+    const moralePenalty = calculateMoralePenalty(decayedWE.exhaustionPoints);
     if (moralePenalty > 0) {
       const unitsWithWE = new Map(current.units);
       for (const unitIdStr of faction.unitIds) {
