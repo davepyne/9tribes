@@ -384,13 +384,18 @@ function buildPlayHudViewModel(
     exhaustion: state.activeFactionId
       ? (() => {
           const ex = state.warExhaustion.get(state.activeFactionId);
+          const faction = state.factions.get(state.activeFactionId);
+          const research = state.research.get(state.activeFactionId);
+          const doctrine = faction && research ? resolveCapabilityDoctrine(research, faction) : null;
           return ex
             ? {
                 points: ex.exhaustionPoints,
                 productionPenalty: calculateProductionPenalty(ex.exhaustionPoints),
                 moralePenalty: calculateMoralePenalty(ex.exhaustionPoints),
+                turnsWithoutLoss: ex.turnsWithoutLoss,
+                marchingStaminaEnabled: doctrine?.marchingStaminaEnabled ?? false,
               }
-            : { points: 0, productionPenalty: 0, moralePenalty: 0 };
+            : { points: 0, productionPenalty: 0, moralePenalty: 0, turnsWithoutLoss: 0, marchingStaminaEnabled: false };
         })()
       : null,
     summonTimer: (() => {

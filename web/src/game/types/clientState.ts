@@ -51,6 +51,8 @@ export type HudViewModel = {
     points: number;
     productionPenalty: number;
     moralePenalty: number;
+    turnsWithoutLoss: number;
+    marchingStaminaEnabled: boolean;
   } | null;
   summonTimer: {
     cooldownRemaining: number | null;

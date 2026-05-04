@@ -663,6 +663,16 @@
   border-color: var(--danger, #e55333);
 }
 
+.status-chip--exhaustion {
+  cursor: pointer;
+}
+.status-chip--exhaustion:hover {
+  background: rgba(210, 105, 30, 0.15);
+}
+.status-chip--exhaustion .chip-label {
+  color: var(--text-secondary, #c4b08a);
+}
+
 .signature-unit-click {
   cursor: pointer;
   color: var(--highlight, #e3c46e);
