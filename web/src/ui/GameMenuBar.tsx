@@ -286,7 +286,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
           </button>
         ) : null}
 
-        {state.hud.summonTimer ? (
+        {state.hud.summonTimer && state.world.units.some((u) => u.factionId === state.activeFactionId && u.canSummon) ? (
           state.hud.summonTimer.isActive ? (
             <button type="button" className="gmb-chip gmb-chip--summon-active" onClick={() => setSummonPopupOpen(true)}>
               <span className="gmb-chip-label">Summon</span>
