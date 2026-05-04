@@ -170,7 +170,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
       {unitPopupOpen && unitStats && (
         <div className="unit-stats-panel" onClick={(e) => e.stopPropagation()}>
           <button className="unit-stats-panel__close" onClick={() => setUnitPopupOpen(false)}>×</button>
-          <h3 className="unit-stats-panel__name" style={{ color: factionColor }}>{unitStats.attack} / {unitStats.defense} / {unitStats.health}</h3>
+          <h3 className="unit-stats-panel__name" style={{ color: factionColor }}>{factionInfo?.signatureUnit ?? 'Signature Unit'}</h3>
           <div className="unit-stats-panel__stats">
             <div><span>Attack</span><strong>{unitStats.attack}</strong></div>
             <div><span>Defense</span><strong>{unitStats.defense}</strong></div>

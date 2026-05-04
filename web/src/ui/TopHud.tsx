@@ -81,6 +81,7 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
         <div className="faction-popup-overlay" onClick={() => setUnitPopupOpen(false)}>
           <div className="faction-popup unit-stats-popup" onClick={(e) => e.stopPropagation()}>
             <button className="faction-popup__close" onClick={() => setUnitPopupOpen(false)}>×</button>
+            <h3 className="unit-stats-panel__name" style={{ color: factionInfo.color }}>{factionInfo.signatureUnit}</h3>
             <div className="unit-stats-panel__stats">
               <div><span>Attack</span><strong>{factionInfo.unitStats.attack}</strong></div>
               <div><span>Defense</span><strong>{factionInfo.unitStats.defense}</strong></div>
