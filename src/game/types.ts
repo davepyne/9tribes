@@ -3,7 +3,7 @@ import type { RNGState } from '../core/rng.js';
 import type { GameStatus } from '../core/enums.js';
 
 // Re-export domain entities
-export type { Faction, FactionResearch, CombatRecord, WarExhaustion } from '../features/factions/types.js';
+export type { Faction, CombatRecord, WarExhaustion } from '../features/factions/types.js';
 export type { Unit, HistoryEntry } from '../features/units/types.js';
 export type { City, ProductionItem } from '../features/cities/types.js';
 export type { Village } from '../features/villages/types.js';
@@ -19,7 +19,6 @@ export type { HexCoord } from '../types.js';
 // Import for GameState composition
 import type { FactionId, UnitId, CityId, VillageId, PrototypeId, ImprovementId } from '../types.js';
 import type { Faction } from '../features/factions/types.js';
-import type { FactionResearch } from '../features/factions/types.js';
 import type { Unit } from '../features/units/types.js';
 import type { City } from '../features/cities/types.js';
 import type { Village } from '../features/villages/types.js';
@@ -43,7 +42,6 @@ export interface GameState {
   status: GameStatus;
   map?: GameMap;
   factions: Map<FactionId, Faction>;
-  factionResearch: Map<FactionId, FactionResearch>;
   units: Map<UnitId, Unit>;
   cities: Map<CityId, City>;
   villages: Map<VillageId, Village>;

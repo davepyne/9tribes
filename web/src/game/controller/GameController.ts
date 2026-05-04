@@ -6,6 +6,7 @@ import { buildDebugViewModel, buildHudViewModel, buildResearchInspectorViewModel
 import { buildTerrainInspectorViewModel } from '../view-model/inspectors/terrainInspectorViewModel';
 import { getVictoryStatus, getAliveFactions, isFactionEliminated } from '../../../../src/systems/warEcologySimulation.js';
 import { findPath } from '../../../../src/systems/pathfinder.js';
+import { getUnit, getFaction, hasUnit, asUnitId, asFactionId } from '../stateAccess.js';
 
 type Listener = () => void;
 
@@ -123,7 +124,7 @@ export class GameController {
       case 'move_unit':
         if (this.session) {
           // Clear any existing queue before issuing direct move
-          const existingUnit = this.session.getState().units.get(action.unitId as never);
+          const existingUnit = getUnit(this.session.getState(), action.unitId);
           if (existingUnit?.moveQueueDestination) {
             this.session.dispatch({ type: 'cancel_queue', unitId: action.unitId });
           }
@@ -160,7 +161,7 @@ export class GameController {
       case 'build_city':
         if (this.session) {
           this.clearQueueIfNeeded(action.unitId);
-          const unit = this.session.getState().units.get(action.unitId as never);
+          const unit = getUnit(this.session.getState(), action.unitId);
           const position = unit ? { ...unit.position } : null;
           this.session.dispatch(action);
           this.targetingMode = 'move';
@@ -272,18 +273,18 @@ export class GameController {
     const feedback = session.getFeedback();
     const victory = getVictoryStatus(sessionState);
     const playerFactionId = session.getPrimaryHumanFactionId();
-    const playerEliminated = playerFactionId ? isFactionEliminated(sessionState, playerFactionId as never) : false;
+    const playerEliminated = playerFactionId ? isFactionEliminated(sessionState, asFactionId(playerFactionId)) : false;
 
     // Compute queued path for display
     let queuedUnitIdDisplay: string | null = null;
     let queuedPathDisplay: PathPreviewNodeView[] = [];
     let estimatedTurnsToArrival: number | null = null;
     if (activeUnitId && sessionState.map) {
-      const queueUnit = sessionState.units.get(activeUnitId as never);
+      const queueUnit = getUnit(sessionState, activeUnitId);
       if (queueUnit?.moveQueueDestination) {
         queuedUnitIdDisplay = activeUnitId;
         const queueResult = findPath(
-          sessionState, activeUnitId as never, queueUnit.moveQueueDestination,
+          sessionState, asUnitId(activeUnitId), queueUnit.moveQueueDestination,
           sessionState.map, session.getRegistry(),
         );
         if (queueResult) {
@@ -349,7 +350,7 @@ export class GameController {
         lastTurnChange: feedback.lastTurnChange?.factionId
           ? {
               factionId: feedback.lastTurnChange.factionId,
-              factionName: sessionState.factions.get(feedback.lastTurnChange.factionId as never)?.name ?? feedback.lastTurnChange.factionId,
+              factionName: getFaction(sessionState, feedback.lastTurnChange.factionId)?.name ?? feedback.lastTurnChange.factionId,
             }
           : null,
         lastSacrifice: feedback.lastSacrifice ? { ...feedback.lastSacrifice } : null,
@@ -394,7 +395,7 @@ export class GameController {
       return;
     }
 
-      const unit = this.session.getState().units.get(this.selected.unitId as never);
+      const unit = getUnit(this.session.getState(), this.selected.unitId);
       if (!unit || unit.factionId !== this.session.getState().activeFactionId) {
         this.targetingMode = 'move';
         this.selected = null;
@@ -404,7 +405,7 @@ export class GameController {
   /** Clear move queue on a unit if one exists (before issuing a conflicting command). */
   private clearQueueIfNeeded(unitId: string) {
     if (!this.session) return;
-    const unit = this.session.getState().units.get(unitId as never);
+    const unit = getUnit(this.session.getState(), unitId);
     if (unit?.moveQueueDestination) {
       this.session.dispatch({ type: 'cancel_queue', unitId });
     }
@@ -426,7 +427,7 @@ export class GameController {
 
     // Update selection state
     this.targetingMode = 'move';
-    this.selected = this.session!.getState().units.has(pending.attackerId as never)
+    this.selected = hasUnit(this.session!.getState(), pending.attackerId)
       ? { type: 'unit', unitId: pending.attackerId }
       : null;
 

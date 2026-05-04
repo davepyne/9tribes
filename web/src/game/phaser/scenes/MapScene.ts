@@ -36,6 +36,8 @@ export class MapScene extends Phaser.Scene {
   private dragOrigin: { x: number; y: number } | null = null;
   private rightButtonDownThisFrame = false;
   private cameraInitialized = false;
+  private cachedBounds: { minX: number; minY: number; width: number; height: number } | null = null;
+  private cachedBoundsHexCount = 0;
   private latestState: ClientState | null = null;
   private lastLeftClickTime = 0;
   private lastLeftClickKey = '';
@@ -271,13 +273,19 @@ export class MapScene extends Phaser.Scene {
   }
 
   private layoutCamera(state: ClientState) {
-    const points = state.world.map.hexes.map((hex) => this.worldToScreen(hex.q, hex.r));
-    const minX = Math.min(...points.map((point) => point.x - 96));
-    const maxX = Math.max(...points.map((point) => point.x + 96));
-    const minY = Math.min(...points.map((point) => point.y - 96));
-    const maxY = Math.max(...points.map((point) => point.y + 96));
+    const hexCount = state.world.map.hexes.length;
+    if (!this.cachedBounds || this.cachedBoundsHexCount !== hexCount) {
+      const points = state.world.map.hexes.map((hex) => this.worldToScreen(hex.q, hex.r));
+      const minX = Math.min(...points.map((point) => point.x - 96));
+      const maxX = Math.max(...points.map((point) => point.x + 96));
+      const minY = Math.min(...points.map((point) => point.y - 96));
+      const maxY = Math.max(...points.map((point) => point.y + 96));
+      this.cachedBounds = { minX, minY, width: maxX - minX, height: maxY - minY };
+      this.cachedBoundsHexCount = hexCount;
+    }
 
-    this.cameras.main.setBounds(minX, minY, maxX - minX, maxY - minY);
+    const { minX, minY, width, height } = this.cachedBounds;
+    this.cameras.main.setBounds(minX, minY, width, height);
     if (!this.cameraInitialized) {
       const startPos = this.findPlayerStart(state);
       const screenPos = this.worldToScreen(startPos.q, startPos.r);

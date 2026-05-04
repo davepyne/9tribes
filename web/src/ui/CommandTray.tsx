@@ -1,3 +1,4 @@
+import React from 'react';
 import type { ClientState } from '../game/types/clientState';
 import { hexDistance } from '../../../src/core/grid.js';
 
@@ -19,7 +20,7 @@ function formatDomainName(domainId: string): string {
     .join(' ');
 }
 
-export function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort, onDestroyFort, onBuildCity, onSummon, onSacrifice }: CommandTrayProps) {
+export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort, onDestroyFort, onBuildCity, onSummon, onSacrifice }: CommandTrayProps) {
   const selectedUnitId = state.selected?.type === 'unit' ? state.selected.unitId : state.actions.selectedUnitId;
   const selectedUnit = selectedUnitId
     ? state.world.units.find((u) => u.id === selectedUnitId)
@@ -206,4 +207,4 @@ export function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort,
       </div>
     </section>
   );
-}
+});

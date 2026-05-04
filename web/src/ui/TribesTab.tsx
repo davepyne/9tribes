@@ -1,7 +1,8 @@
+import React from 'react';
 import { helpContent } from '../data/help-content';
 import { domainGlyph, domainColor, domainDisplayName } from './SynergyChip';
 
-export function TribesTab() {
+export const TribesTab = React.memo(function TribesTab() {
   return (
     <div className="tribe-list">
       {helpContent.tribes.map((tribe) => (
@@ -61,4 +62,4 @@ export function TribesTab() {
       ))}
     </div>
   );
-}
+});

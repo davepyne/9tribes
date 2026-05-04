@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { helpContent } from '../data/help-content';
 import pairSynergiesData from '../data/pair-synergies.json';
 import emergentRulesData from '../data/emergent-rules.json';
@@ -89,7 +89,7 @@ function emergentConditionLabel(rule: EmergentRule): string {
   }
 }
 
-export function SynergyEncyclopediaTab() {
+export const SynergyEncyclopediaTab = React.memo(function SynergyEncyclopediaTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
 
@@ -243,4 +243,4 @@ export function SynergyEncyclopediaTab() {
       </div>
     </div>
   );
-}
+});

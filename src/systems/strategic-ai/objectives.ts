@@ -5,8 +5,7 @@ import type { FocusTargetDecision, FocusTargetCandidate, FocusTargetBudget, Pres
 import type { FrontLine, ThreatAssessment, FactionPosture } from '../factionStrategy.js';
 import type { AiPersonalitySnapshot } from '../aiPersonality.js';
 import type { AiDifficultyProfile } from '../aiDifficulty.js';
-import { hexDistance, hexToKey } from '../../core/grid.js';
-import { keyToHex } from '../../core/hex.js';
+import { hexDistance, hexToKey, keyToHex } from '../../core/grid.js';
 import { scoreFocusTarget } from '../aiPersonality.js';
 import { isUnitVisibleTo, getLastSeenEnemyCities, getExploredHexKeys } from '../fogSystem.js';
 import { isSettlerPrototype } from '../productionSystem.js';

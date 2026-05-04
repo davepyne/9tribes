@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import type { ClientState } from '../game/types/clientState';
 import type { CapabilityPipViewModel } from '../game/types/clientState';
 import pairSynergiesData from '../data/pair-synergies.json';
@@ -294,7 +294,7 @@ type SynergyChipProps = {
   state: ClientState;
 };
 
-export function SynergyChip({ state }: SynergyChipProps) {
+export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChipProps) {
   const [expanded, setExpanded] = useState(false);
 
   const capabilities = state.research?.capabilities ?? [];
@@ -589,4 +589,4 @@ export function SynergyChip({ state }: SynergyChipProps) {
       )}
     </div>
   );
-}
+});

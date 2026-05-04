@@ -1,3 +1,4 @@
+import React from 'react';
 import type { DifficultyLevel } from '../../../src/systems/aiDifficulty.js';
 import type { VictoryType } from '../../../src/systems/warEcologySimulation.js';
 
@@ -58,7 +59,7 @@ function describeVictory(victoryType: VictoryType, controlledCities: number | nu
   return 'Victory!';
 }
 
-export function VictoryOverlay({
+export const VictoryOverlay = React.memo(function VictoryOverlay({
   victoryType,
   controlledCities,
   totalCities,
@@ -112,4 +113,4 @@ export function VictoryOverlay({
       </div>
     </div>
   );
-}
+});

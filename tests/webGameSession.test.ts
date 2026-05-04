@@ -9,35 +9,7 @@ import { assemblePrototype } from '../src/design/assemblePrototype';
 import type { GameState } from '../src/game/types';
 import { computeFactionStrategy } from '../src/systems/strategicAi';
 import { activateAiUnit, type UnitActivationCombatMode } from '../src/systems/unitActivationSystem';
-
-function trimStateToFactions(state: GameState, factionIds: string[]) {
-  const factionSet = new Set(factionIds);
-  const unitEntries = Array.from(state.units.entries()).filter(([, unit]) => factionSet.has(unit.factionId));
-  const cityEntries = Array.from(state.cities.entries()).filter(([, city]) => factionSet.has(city.factionId));
-  const villageEntries = Array.from(state.villages.entries()).filter(([, village]) => factionSet.has(village.factionId));
-
-  state.factions = new Map(
-    Array.from(state.factions.entries())
-      .filter(([id]) => factionSet.has(id))
-      .map(([id, faction]) => [
-        id,
-        {
-          ...faction,
-          unitIds: faction.unitIds.filter((unitId) => unitEntries.some(([id]) => id === unitId)),
-          cityIds: faction.cityIds.filter((cityId) => cityEntries.some(([id]) => id === cityId)),
-          villageIds: faction.villageIds.filter((villageId) => villageEntries.some(([id]) => id === villageId)),
-        },
-      ]),
-  );
-  state.units = new Map(unitEntries);
-  state.cities = new Map(cityEntries);
-  state.villages = new Map(villageEntries);
-  state.economy = new Map(Array.from(state.economy.entries()).filter(([id]) => factionSet.has(id)));
-  state.research = new Map(Array.from(state.research.entries()).filter(([id]) => factionSet.has(id)));
-  state.warExhaustion = new Map(Array.from(state.warExhaustion.entries()).filter(([id]) => factionSet.has(id)));
-  state.factionStrategies = new Map(Array.from((state.factionStrategies ?? new Map()).entries()).filter(([id]) => factionSet.has(id)));
-  state.fogStates = new Map(Array.from((state.fogStates ?? new Map()).entries()).filter(([id]) => factionSet.has(id)));
-}
+import { trimState } from './helpers/trimState';
 
 function cloneState(state: GameState): GameState {
   return deserializeGameState(serializeGameState(state));
@@ -79,7 +51,7 @@ function setupHillFortState(options?: {
 }) {
   const registry = loadRulesRegistry();
   const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-  trimStateToFactions(state, ['hill_clan', 'steppe_clan']);
+  trimState(state, ['hill_clan', 'steppe_clan']);
 
   const hillFaction = state.factions.get('hill_clan' as never)!;
   const enemyFaction = state.factions.get('steppe_clan' as never)!;
@@ -177,7 +149,7 @@ describe('GameSession', () => {
   it('allows a player unit to attack after spending its movement', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['steppe_clan', 'druid_circle']);
+    trimState(state, ['steppe_clan', 'druid_circle']);
 
     const attackerFaction = state.factions.get('steppe_clan' as never)!;
     const defenderFaction = state.factions.get('druid_circle' as never)!;
@@ -218,7 +190,7 @@ describe('GameSession', () => {
   it('allows an AI unit to attack an adjacent target after spending its movement', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['steppe_clan', 'druid_circle']);
+    trimState(state, ['steppe_clan', 'druid_circle']);
 
     const aiFaction = state.factions.get('steppe_clan' as never)!;
     const playerFaction = state.factions.get('druid_circle' as never)!;
@@ -253,7 +225,7 @@ describe('GameSession', () => {
   it('shows land targets for Slave Galley in attack targeting mode', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['coral_people', 'druid_circle']);
+    trimState(state, ['coral_people', 'druid_circle']);
 
     const attackerFaction = state.factions.get('coral_people' as never)!;
     const defenderFaction = state.factions.get('druid_circle' as never)!;
@@ -350,7 +322,7 @@ describe('GameSession', () => {
   it('starts a siege in live play when a player surrounds an enemy city and ends the turn', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['steppe_clan', 'hill_clan']);
+    trimState(state, ['steppe_clan', 'hill_clan']);
 
     const attackerFactionId = 'steppe_clan' as never;
     const defenderFactionId = 'hill_clan' as never;
@@ -432,7 +404,7 @@ describe('GameSession', () => {
   it('updates live siege state immediately after a player move creates encirclement', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['steppe_clan', 'hill_clan']);
+    trimState(state, ['steppe_clan', 'hill_clan']);
 
     const attackerFactionId = 'steppe_clan' as never;
     const defenderFactionId = 'hill_clan' as never;
@@ -784,7 +756,7 @@ describe('GameSession', () => {
   it('captures killed enemies during live combat when the attacker has capture gear', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['coral_people', 'druid_circle']);
+    trimState(state, ['coral_people', 'druid_circle']);
 
     const attackerFaction = state.factions.get('coral_people' as never)!;
     const defenderFaction = state.factions.get('druid_circle' as never)!;
@@ -894,7 +866,7 @@ describe('GameSession', () => {
   it('lets a player brace, then applies the brace combat bonus and clears the stance', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['steppe_clan', 'druid_circle']);
+    trimState(state, ['steppe_clan', 'druid_circle']);
 
     const attackerFaction = state.factions.get('steppe_clan' as never)!;
     const defenderFaction = state.factions.get('druid_circle' as never)!;
@@ -956,7 +928,7 @@ describe('GameSession', () => {
   it('lets a player prepare an ambush, attack from it, and clears the prep afterwards', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['steppe_clan', 'druid_circle']);
+    trimState(state, ['steppe_clan', 'druid_circle']);
 
     const attackerFaction = state.factions.get('steppe_clan' as never)!;
     const defenderFaction = state.factions.get('druid_circle' as never)!;
@@ -1038,7 +1010,7 @@ describe('GameSession', () => {
   it('lets a player board a transport and disembark with the expected move spend', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['coral_people']);
+    trimState(state, ['coral_people']);
 
     const faction = state.factions.get('coral_people' as never)!;
     const transportProto = assemblePrototype(
@@ -1123,7 +1095,7 @@ describe('GameSession', () => {
   it('matches the shared AI ranged target choice at the live combat boundary', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['steppe_clan', 'druid_circle']);
+    trimState(state, ['steppe_clan', 'druid_circle']);
 
     const attackerFaction = state.factions.get('steppe_clan' as never)!;
     const defenderFaction = state.factions.get('druid_circle' as never)!;
@@ -1223,7 +1195,7 @@ describe('GameSession', () => {
   it('matches shared AI city-pressure movement toward an enemy city', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['hill_clan', 'steppe_clan']);
+    trimState(state, ['hill_clan', 'steppe_clan']);
 
     const attackerFaction = state.factions.get('hill_clan' as never)!;
     const defenderFaction = state.factions.get('steppe_clan' as never)!;
@@ -1284,7 +1256,7 @@ describe('GameSession', () => {
   it('matches shared AI fort-build behavior for hill defenders', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['hill_clan', 'steppe_clan']);
+    trimState(state, ['hill_clan', 'steppe_clan']);
 
     const hillFaction = state.factions.get('hill_clan' as never)!;
     const enemyFaction = state.factions.get('steppe_clan' as never)!;
@@ -1404,7 +1376,7 @@ describe('GameSession', () => {
   it('matches shared AI transport-aware movement when a loaded transport is available', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['coral_people', 'steppe_clan']);
+    trimState(state, ['coral_people', 'steppe_clan']);
 
     const attackerFaction = state.factions.get('coral_people' as never)!;
     const defenderFaction = state.factions.get('steppe_clan' as never)!;

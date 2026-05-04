@@ -1,3 +1,4 @@
+import React from 'react';
 import type { ClientState } from '../game/types/clientState';
 import { getCombatSummary } from '../game/view-model/worldViewModel';
 
@@ -6,7 +7,7 @@ type RightInspectorProps = {
   onSetCityProduction?: (cityId: string, prototypeId: string) => void;
 };
 
-export function RightInspector({ state, onSetCityProduction }: RightInspectorProps) {
+export const RightInspector = React.memo(function RightInspector({ state, onSetCityProduction }: RightInspectorProps) {
   const hoveredKey = state.hoveredHex ? `${state.hoveredHex.q},${state.hoveredHex.r}` : null;
   const hoveredTile = hoveredKey ? state.world.map.hexes.find((hex) => hex.key === hoveredKey) : null;
   const selectedUnitId = state.selected?.type === 'unit' ? state.selected.unitId : null;
@@ -350,4 +351,4 @@ export function RightInspector({ state, onSetCityProduction }: RightInspectorPro
       ) : null}
     </aside>
   );
-}
+});

@@ -4,6 +4,7 @@ import type { RulesRegistry } from '../../../../../src/data/registry/types.js';
 import { evaluateCitySiteBonuses } from '../../../../../src/systems/citySiteSystem.js';
 import { getHexOwner } from '../../../../../src/systems/territorySystem.js';
 import type { TerrainInspectorViewModel, TerrainDomainPressureEntry } from '../../types/clientState';
+import { getFaction } from '../../stateAccess.js';
 
 type CivEntry = {
   terrainBias: string;
@@ -157,7 +158,7 @@ export function buildTerrainInspectorViewModel(
   if (!terrainDef) return null;
 
   const civEntry = playerFactionId ? CIVS[playerFactionId] : null;
-  const playerFaction = playerFactionId ? state.factions.get(playerFactionId as never) : null;
+  const playerFaction = getFaction(state, playerFactionId);
   const playerSeeds: Record<string, number> = civEntry?.capabilitySeeds ?? {};
   const isHomeTerrain = civEntry ? civEntry.terrainBias === tile.terrain : false;
 
@@ -208,7 +209,7 @@ export function buildTerrainInspectorViewModel(
   const ownerFactionId = getHexOwner(position, state);
   let ownerFactionName: string | null = null;
   if (ownerFactionId) {
-    const ownerFaction = state.factions.get(ownerFactionId as never);
+    const ownerFaction = getFaction(state, ownerFactionId);
     ownerFactionName = ownerFaction?.name ?? ownerFactionId;
   }
 

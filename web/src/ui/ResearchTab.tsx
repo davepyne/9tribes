@@ -1,3 +1,4 @@
+import React from 'react';
 import { helpContent } from '../data/help-content';
 
 const PIPELINE_STEPS = [
@@ -23,7 +24,7 @@ const PIPELINE_STEPS = [
   },
 ] as const;
 
-export function ResearchTab() {
+export const ResearchTab = React.memo(function ResearchTab() {
   return (
     <div className="research-tab">
       <div className="help-content">
@@ -49,4 +50,4 @@ export function ResearchTab() {
       </div>
     </div>
   );
-}
+});

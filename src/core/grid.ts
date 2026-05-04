@@ -71,9 +71,8 @@ export const getHexesInRange = (center: TileCoord, range: number): TileCoord[] =
 };
 
 // ---------------------------------------------------------------------------
-// Backwards-compatible aliases — callers that still use the old names from
-// hex.ts continue to work without touching their import lines.
-// Remove these once the migration is confirmed clean.
+// Backwards-compatible aliases from hex.ts migration — kept because these
+// names are used pervasively across the codebase.
 // ---------------------------------------------------------------------------
 export const hexDistance = tileDistance;
 export const hexToKey    = tileToKey;

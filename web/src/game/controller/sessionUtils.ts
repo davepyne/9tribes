@@ -8,6 +8,7 @@ import type { HexCoord } from '../../../../src/types.js';
 import { createImprovementId } from '../../../../src/core/ids.js';
 import { resolveCapabilityDoctrine } from '../../../../src/systems/capabilityDoctrine.js';
 import { updateFogState } from '../../../../src/systems/fogSystem.js';
+import { getFaction, getPrototype, getResearch, asImprovementId, asFactionId } from '../stateAccess.js';
 import { isCityEncircled } from '../../../../src/systems/territorySystem.js';
 import { calculatePrototypeCost, getDomainIdsByTags, isUnlockPrototype } from '../../../../src/systems/knowledgeSystem.js';
 import { getUnitCost } from '../../../../src/systems/productionSystem.js';
@@ -80,9 +81,9 @@ export function getFortBuildEligibility(
   unit: Unit,
 ): { canBuild: boolean; defenseBonus: number } {
   const faction = state.factions.get(unit.factionId);
-  const research = state.research.get(unit.factionId as never);
+  const research = getResearch(state, unit.factionId);
   const doctrine = faction ? resolveCapabilityDoctrine(research, faction) : undefined;
-  const prototype = state.prototypes.get(unit.prototypeId as never);
+  const prototype = getPrototype(state, unit.prototypeId);
   const isEngineer = prototype?.tags?.includes('engineer') ?? false;
 
   if (!faction || faction.id !== 'hill_clan') {
@@ -157,7 +158,7 @@ export function getFortDestroyEligibility(
     return { canDestroy: false, fortId: null };
   }
 
-  const prototype = state.prototypes.get(unit.prototypeId as never);
+  const prototype = getPrototype(state, unit.prototypeId);
   if (!prototype?.tags?.includes('engineer')) {
     return { canDestroy: false, fortId: null };
   }
@@ -180,7 +181,7 @@ export function destroyFortAtUnit(
   fortId: string,
 ): GameState {
   const improvements = new Map(state.improvements);
-  improvements.delete(fortId as never);
+  improvements.delete(asImprovementId(fortId));
 
   const units = new Map(state.units);
   units.set(unit.id, {
@@ -202,7 +203,7 @@ export function destroyFortAtUnit(
 // ---------------------------------------------------------------------------
 
 export function getPrototypeCost(state: GameState, registry: RulesRegistry, prototypeId: string): number {
-  const prototype = state.prototypes.get(prototypeId as never);
+  const prototype = getPrototype(state, prototypeId);
   if (!prototype) {
     return 10;
   }
@@ -214,7 +215,7 @@ export function getPrototypeCost(state: GameState, registry: RulesRegistry, prot
 
   // Unlock prototypes (hybrid recipes) use the mastery cost modifier
   if (isUnlockPrototype(prototype)) {
-    const faction = state.factions.get(prototype.factionId as never);
+    const faction = getFaction(state, prototype.factionId);
     if (faction) {
       return calculatePrototypeCost(
         getUnitCost(prototype.chassisId),
@@ -267,7 +268,7 @@ export function getAiUnitIds(state: GameState, factionId: string): string[] {
 // ---------------------------------------------------------------------------
 
 export function getPrototypeName(state: GameState, prototypeId: string): string {
-  return state.prototypes.get(prototypeId as never)?.name ?? prototypeId;
+  return getPrototype(state, prototypeId)?.name ?? prototypeId;
 }
 
 export function getActiveFactionName(state: GameState): string {

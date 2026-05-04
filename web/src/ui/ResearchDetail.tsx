@@ -1,3 +1,4 @@
+import React from 'react';
 import type { ResearchNodeViewModel } from '../game/types/clientState';
 
 type ResearchDetailProps = {
@@ -16,7 +17,7 @@ const unlockGlyphs: Record<ResearchNodeViewModel['unlocks'][0]['type'], string> 
   improvement: '▣',
 };
 
-export function ResearchDetail({
+export const ResearchDetail = React.memo(function ResearchDetail({
   node,
   researchRate,
   onStartResearch,
@@ -165,4 +166,4 @@ export function ResearchDetail({
       </div>
     </div>
   );
-}
+});

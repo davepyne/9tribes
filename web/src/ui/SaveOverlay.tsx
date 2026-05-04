@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { findSaveGameByLabel, writeSaveGame, type SaveGameSummary } from '../app/savegames';
 import type { SessionSaveSnapshot } from '../game/controller/GameSession';
 
@@ -7,7 +7,7 @@ type SaveOverlayProps = {
   getSaveSnapshot: () => SessionSaveSnapshot | null;
 };
 
-export function SaveOverlay({ onClose, getSaveSnapshot }: SaveOverlayProps) {
+export const SaveOverlay = React.memo(function SaveOverlay({ onClose, getSaveSnapshot }: SaveOverlayProps) {
   const [label, setLabel] = useState('');
 
   const snapshot = getSaveSnapshot();
@@ -74,4 +74,4 @@ export function SaveOverlay({ onClose, getSaveSnapshot }: SaveOverlayProps) {
       </div>
     </div>
   );
-}
+});

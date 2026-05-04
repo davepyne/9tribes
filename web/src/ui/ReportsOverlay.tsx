@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import type { ClientState } from '../game/types/clientState';
 
 type ReportsOverlayProps = {
@@ -13,7 +13,7 @@ const reportTitles: Record<string, string> = {
   supply_report: 'Supply & Logistics',
 };
 
-export function ReportsOverlay({ reportType, state, onClose }: ReportsOverlayProps) {
+export const ReportsOverlay = React.memo(function ReportsOverlay({ reportType, state, onClose }: ReportsOverlayProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -76,4 +76,4 @@ export function ReportsOverlay({ reportType, state, onClose }: ReportsOverlayPro
       </div>
     </div>
   );
-}
+});

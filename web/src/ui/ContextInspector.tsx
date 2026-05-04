@@ -1,8 +1,9 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import type { ClientState } from '../game/types/clientState';
 import abilityDomains from '../data/ability-domains.json';
 import { getFactionInfo } from '../data/faction-info';
 import type { FactionInfo } from '../data/faction-info';
+import { FactionInfoPopup } from './FactionInfoPopup';
 
 type ContextInspectorProps = {
   state: ClientState;
@@ -51,7 +52,7 @@ function getDomainDescription(domainId: string): string | undefined {
   return domain?.baseEffect?.description;
 }
 
-export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProduction, onCancelCityProduction, onRemoveFromQueue, onReorderQueue, onSetTargetingMode, onPrepareAbility, onBoardTransport, onDisembarkUnit, onDeselect, onCloseCityProduction }: ContextInspectorProps) {
+export const ContextInspector = React.memo(function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProduction, onCancelCityProduction, onRemoveFromQueue, onReorderQueue, onSetTargetingMode, onPrepareAbility, onBoardTransport, onDisembarkUnit, onDeselect, onCloseCityProduction }: ContextInspectorProps) {
   const [cityTab, setCityTab] = useState<CityTab>('overview');
   const [factionPopup, setFactionPopup] = useState<FactionInfo | null>(null);
   const [domainPopup, setDomainPopup] = useState<{domainId: string; name: string; description: string} | null>(null);
@@ -144,82 +145,17 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
   return (
     <aside className="ci-root ci-root--open">
       {/* Faction Popup */}
-      {factionPopup && (
-        <div className="faction-popup-overlay" onClick={() => setFactionPopup(null)}>
-          <div className="faction-popup" onClick={(e) => e.stopPropagation()}>
-            <button className="faction-popup__close" onClick={() => setFactionPopup(null)}>├ù</button>
-            <h3 className="faction-popup__name" style={{ color: factionPopup.color }}>{factionPopup.name}</h3>
-            <div className="faction-popup__section">
-              <span className="faction-popup__label">Native Ability</span>
-              <span>{factionPopup.nativeDomain}</span>
-            </div>
-            <div className="faction-popup__section">
-              <span className="faction-popup__label">Home Biome</span>
-              <span>{factionPopup.homeBiome}</span>
-            </div>
-            <div className="faction-popup__section">
-              <span className="faction-popup__label">Special Trait</span>
-              <span className="faction-popup__trait clickable" onClick={() => setTraitPopupOpen(true)}>{factionPopup.specialTrait}</span>
-            </div>
-            <div className="faction-popup__section">
-              <span className="faction-popup__label">Signature Unit</span>
-              <span className="signature-unit-click" onClick={() => setUnitPopupOpen(true)}>{factionPopup.signatureUnit}</span>
-            </div>
-            <div className="faction-popup__section">
-              <span className="faction-popup__label">Special Ability</span>
-              <span>{factionPopup.specialAbility}</span>
-            </div>
-            <p className="faction-popup__intro">{factionPopup.intro}</p>
-            <div className="faction-popup__section">
-              <span className="faction-popup__label">Strengths</span>
-              <ul className="faction-popup__list">
-                {factionPopup.strengths.map((s, i) => <li key={i}>{s}</li>)}
-              </ul>
-            </div>
-            <div className="faction-popup__section">
-              <span className="faction-popup__label">Weaknesses</span>
-              <ul className="faction-popup__list">
-                {factionPopup.weaknesses.map((w, i) => <li key={i}>{w}</li>)}
-              </ul>
-            </div>
-            <div className="faction-popup__section">
-              <span className="faction-popup__label">Tip</span>
-              <p className="faction-popup__tip">{factionPopup.tip}</p>
-            </div>
-          </div>
-        </div>
-      )}
-      {unitPopupOpen && factionPopup?.unitStats && (
-        <div className="faction-popup-overlay" onClick={() => setUnitPopupOpen(false)}>
-          <div className="faction-popup unit-stats-popup" onClick={(e) => e.stopPropagation()}>
-            <button className="faction-popup__close" onClick={() => setUnitPopupOpen(false)}>├ù</button>
-            <h3 className="unit-stats-panel__name" style={{ color: factionPopup.color }}>{factionPopup.signatureUnit}</h3>
-            <div className="unit-stats-panel__stats">
-              <div><span>Attack</span><strong>{factionPopup.unitStats.attack}</strong></div>
-              <div><span>Defense</span><strong>{factionPopup.unitStats.defense}</strong></div>
-              <div><span>Health</span><strong>{factionPopup.unitStats.health}</strong></div>
-              <div><span>Moves</span><strong>{factionPopup.unitStats.moves}</strong></div>
-              <div><span>Range</span><strong>{factionPopup.unitStats.range}</strong></div>
-            </div>
-            <div className="unit-stats-panel__tags">
-              {factionPopup.unitStats.tags.map((tag, i) => <span key={i} className="unit-tag">{tag}</span>)}
-            </div>
-            <div className="unit-stats-panel__ability">
-              <strong>Ability:</strong> {factionPopup.unitStats.ability}
-            </div>
-            <p className="unit-stats-panel__desc">{factionPopup.unitStats.description}</p>
-          </div>
-        </div>
-      )}
-      {traitPopupOpen && factionPopup && (
-        <div className="faction-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
-          <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
-            <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>├ù</button>
-            <h3 className="faction-popup__name" style={{ color: factionPopup.color }}>{factionPopup.specialTrait}</h3>
-            <p className="faction-popup__intro" style={{ fontSize: 14, lineHeight: 1.6 }}>{factionPopup.specialAbility}</p>
-          </div>
-        </div>
-      )}
+      <FactionInfoPopup
+        factionInfo={factionPopup}
+        open={factionPopup !== null}
+        onClose={() => setFactionPopup(null)}
+        unitPopupOpen={unitPopupOpen}
+        onUnitPopupClose={() => setUnitPopupOpen(false)}
+        onUnitClick={() => setUnitPopupOpen(true)}
+        traitPopupOpen={traitPopupOpen}
+        onTraitPopupClose={() => setTraitPopupOpen(false)}
+        onTraitClick={() => setTraitPopupOpen(true)}
+      />
       {/* Domain Popup */}
       {domainPopup && (
         <div className="faction-popup-overlay" onClick={() => setDomainPopup(null)}>
@@ -774,4 +710,4 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
       </div>
     </aside>
   );
-}
+});

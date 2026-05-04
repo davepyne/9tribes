@@ -16,6 +16,7 @@ import type {
 import HYBRID_RECIPES from '../../../../../src/content/base/hybrid-recipes.json';
 import SIGNATURE_ABILITIES from '../../../../../src/content/base/signatureAbilities.json';
 import CIVILIZATIONS from '../../../../../src/content/base/civilizations.json';
+import { getFaction, getResearch, getResearchProgress, isResearchNodeCompleted } from '../../stateAccess.js';
 
 type UnlockEntry = { type: 'component' | 'chassis' | 'improvement' | 'recipe'; id: string; name: string };
 
@@ -83,10 +84,10 @@ export function buildResearchInspectorViewModel(
 ): ResearchInspectorViewModel | null {
   const factionId = state.activeFactionId;
   if (!factionId) return null;
-  const faction = state.factions.get(factionId as never);
+  const faction = getFaction(state, factionId);
   if (!faction) return null;
 
-  const research = state.research.get(factionId as never);
+  const research = getResearch(state, factionId);
   if (!research) return null;
 
   const nativeDomain = faction.nativeDomain ?? '';
@@ -103,12 +104,12 @@ export function buildResearchInspectorViewModel(
     const domainNativeFaction = getNativeFactionForDomain(domainId);
 
     for (const nodeDef of Object.values(domainDef.nodes) as ResearchNodeDef[]) {
-      const isCompleted = research.completedNodes.includes(nodeDef.id as never);
+      const isCompleted = isResearchNodeCompleted(research, nodeDef.id);
       const isActive = research.activeNodeId === nodeDef.id;
-      const progress = research.progressByNodeId[nodeDef.id as never] ?? 0;
+      const progress = getResearchProgress(research, nodeDef.id);
 
       const prereqsMet = (nodeDef.prerequisites ?? []).every((prereqId) =>
-        research.completedNodes.includes(prereqId as never),
+        isResearchNodeCompleted(research, prereqId),
       );
 
       let nodeState: ResearchNodeViewState;
@@ -172,7 +173,7 @@ export function buildResearchInspectorViewModel(
     if (domain?.nodes[research.activeNodeId]) {
       activeNodeName = domain.nodes[research.activeNodeId].name;
       activeNodeCost = domain.nodes[research.activeNodeId].xpCost;
-      activeNodeProgress = research.progressByNodeId[research.activeNodeId as never] ?? 0;
+      activeNodeProgress = getResearchProgress(research, research.activeNodeId);
     }
   }
 

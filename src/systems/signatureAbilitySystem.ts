@@ -492,6 +492,14 @@ export function attemptPriestSummon(
 
   const prototypeId = `${priestUnit.factionId}_${summonConfig.chassisId}` as PrototypeId;
   if (!current.prototypes.has(prototypeId)) {
+    const chassisDef = registry.getChassis(summonConfig.chassisId);
+    const summonHp = chassisDef?.baseHp ?? 10;
+    const summonAttack = chassisDef?.baseAttack ?? 2;
+    const summonDefense = chassisDef?.baseDefense ?? 2;
+    const summonMoves = chassisDef?.baseMoves ?? 2;
+    const summonRange = chassisDef?.baseRange ?? 1;
+    const summonRole = chassisDef?.role ?? 'melee';
+
     const summonPrototype: Prototype = {
       id: prototypeId,
       factionId: priestUnit.factionId,
@@ -500,12 +508,12 @@ export function attemptPriestSummon(
       version: 1,
       name: summonConfig.name,
       derivedStats: {
-        attack: summonConfig.attack,
-        defense: summonConfig.defense,
-        hp: summonConfig.hp,
-        moves: summonConfig.moves,
-        range: 1,
-        role: 'melee',
+        attack: summonAttack,
+        defense: summonDefense,
+        hp: summonHp,
+        moves: summonMoves,
+        range: summonRange,
+        role: summonRole,
       },
       tags: summonConfig.tags,
     };
@@ -514,16 +522,20 @@ export function attemptPriestSummon(
     current = { ...current, prototypes };
   }
 
+  const chassisDef = registry.getChassis(summonConfig.chassisId);
+  const summonHp = chassisDef?.baseHp ?? 10;
+  const summonMoves = chassisDef?.baseMoves ?? 2;
+
   const summonUnitId = createUnitId() as UnitId;
   const summonUnit: Unit = {
     id: summonUnitId,
     factionId: priestUnit.factionId,
     position: spawnHex,
     facing: 0,
-    hp: summonConfig.hp,
-    maxHp: summonConfig.hp,
-    movesRemaining: summonConfig.moves,
-    maxMoves: summonConfig.moves,
+    hp: summonHp,
+    maxHp: summonHp,
+    movesRemaining: summonMoves,
+    maxMoves: summonMoves,
     attacksRemaining: 1,
     xp: 0,
     veteranLevel: 'green' as VeteranLevel,

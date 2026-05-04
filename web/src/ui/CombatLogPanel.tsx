@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReplayCombatEvent } from '../game/types/replay';
 import { CombatDetailModal } from './CombatDetailModal';
 
@@ -80,7 +80,7 @@ function formatOutcome(event: ReplayCombatEvent): string {
   return parts.length > 0 ? parts.join(' \u00b7 ') : '';
 }
 
-export function CombatLogPanel({ events, isOpen, onToggle }: CombatLogPanelProps) {
+export const CombatLogPanel = React.memo(function CombatLogPanel({ events, isOpen, onToggle }: CombatLogPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [localEvents, setLocalEvents] = useState<ReplayCombatEvent[]>(events);
   const [detailEvent, setDetailEvent] = useState<ReplayCombatEvent | null>(null);
@@ -154,7 +154,7 @@ export function CombatLogPanel({ events, isOpen, onToggle }: CombatLogPanelProps
       )}
     </div>
   );
-}
+});
 
 function CombatEntry({ event, onInspect }: { event: ReplayCombatEvent; onInspect: (e: ReplayCombatEvent) => void }) {
   const modifiers = buildModifierEntries(event);

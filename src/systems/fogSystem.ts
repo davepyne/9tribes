@@ -2,8 +2,7 @@
 import type { GameState } from '../game/types.js';
 import type { FactionId, HexCoord } from '../types.js';
 import type { TerrainType } from '../world/map/types.js';
-import { getHexesInRange, hexToKey, keyToHex } from '../core/hex.js';
-import { hexDistance } from '../core/grid.js';
+import { hexDistance, getHexesInRange, hexToKey, keyToHex } from '../core/grid.js';
 import type { Unit } from '../features/units/types.js';
 import type { Prototype } from '../features/prototypes/types.js';
 import { resolveResearchDoctrine } from './capabilityDoctrine.js';

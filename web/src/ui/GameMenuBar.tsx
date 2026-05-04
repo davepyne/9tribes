@@ -1,9 +1,9 @@
-import type { CSSProperties } from 'react';
-import { useState, useEffect } from 'react';
+import React, { type CSSProperties, useState, useEffect } from 'react';
 import type { ClientState } from '../game/types/clientState';
 import { getFactionInfo } from '../data/faction-info';
 import { DropdownMenu } from './DropdownMenu';
 import { SynergyChip } from './SynergyChip';
+import { FactionInfoPopup } from './FactionInfoPopup';
 import type { MenuEntry } from './DropdownMenu';
 
 type GameMenuBarProps = {
@@ -52,7 +52,7 @@ const helpMenu: MenuEntry[] = [
   { label: 'About', action: 'open_about', disabled: true },
 ];
 
-export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls, onRestartSession, onMenuAction }: GameMenuBarProps) {
+export const GameMenuBar = React.memo(function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls, onRestartSession, onMenuAction }: GameMenuBarProps) {
   const [factionPopupOpen, setFactionPopupOpen] = useState(false);
   const [unitPopupOpen, setUnitPopupOpen] = useState(false);
   const [summonPopupOpen, setSummonPopupOpen] = useState(false);
@@ -115,78 +115,18 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
 
   return (
     <nav className="gmb-root" style={{ '--gmb-faction-color': factionColor } as CSSProperties}>
-      {factionPopupOpen && factionInfo && (
-        <div className="faction-info-panel" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '50px', left: '200px', zIndex: 999 }}>
-          <button className="faction-popup__close" onClick={() => setFactionPopupOpen(false)}>├ù</button>
-          <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.name}</h3>
-          <div className="faction-popup__section">
-            <span className="faction-popup__label">Native Ability</span>
-            <span>{factionInfo.nativeDomain}</span>
-          </div>
-          <div className="faction-popup__section">
-            <span className="faction-popup__label">Home Biome</span>
-            <span>{factionInfo.homeBiome}</span>
-          </div>
-          <div className="faction-popup__section">
-            <span className="faction-popup__label">Special Trait</span>
-            <span className="faction-popup__trait clickable" onClick={() => setTraitPopupOpen(true)}>{factionInfo.specialTrait}</span>
-          </div>
-<div className="faction-popup__section">
-              <span className="faction-popup__label">Signature Unit</span>
-              <span className="signature-unit-click" onClick={() => setUnitPopupOpen(true)}>{factionInfo.signatureUnit}</span>
-            </div>
-          <div className="faction-popup__section">
-            <span className="faction-popup__label">Special Ability</span>
-            <span>{factionInfo.specialAbility}</span>
-          </div>
-          <p className="faction-popup__intro">{factionInfo.intro}</p>
-          <div className="faction-popup__section">
-            <span className="faction-popup__label">Strengths</span>
-            <ul className="faction-popup__list">
-              {factionInfo.strengths.map((s, i) => <li key={i}>{s}</li>)}
-            </ul>
-          </div>
-          <div className="faction-popup__section">
-            <span className="faction-popup__label">Weaknesses</span>
-            <ul className="faction-popup__list">
-              {factionInfo.weaknesses.map((w, i) => <li key={i}>{w}</li>)}
-            </ul>
-          </div>
-          <div className="faction-popup__section">
-            <span className="faction-popup__label">Tip</span>
-            <p className="faction-popup__tip">{factionInfo.tip}</p>
-          </div>
-        </div>
-      )}
-      {traitPopupOpen && factionInfo && (
-        <div className="faction-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
-          <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
-            <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>├ù</button>
-            <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.specialTrait}</h3>
-            <p className="faction-popup__intro" style={{ fontSize: 14, lineHeight: 1.6 }}>{factionInfo.specialAbility}</p>
-          </div>
-        </div>
-      )}
-      {unitPopupOpen && unitStats && (
-        <div className="unit-stats-panel" onClick={(e) => e.stopPropagation()}>
-          <button className="unit-stats-panel__close" onClick={() => setUnitPopupOpen(false)}>├ù</button>
-          <h3 className="unit-stats-panel__name" style={{ color: factionColor }}>{factionInfo?.signatureUnit ?? 'Signature Unit'}</h3>
-          <div className="unit-stats-panel__stats">
-            <div><span>Attack</span><strong>{unitStats.attack}</strong></div>
-            <div><span>Defense</span><strong>{unitStats.defense}</strong></div>
-            <div><span>Health</span><strong>{unitStats.health}</strong></div>
-            <div><span>Moves</span><strong>{unitStats.moves}</strong></div>
-            <div><span>Range</span><strong>{unitStats.range}</strong></div>
-          </div>
-          <div className="unit-stats-panel__tags">
-            {unitStats.tags.map((tag, i) => <span key={i} className="unit-tag">{tag}</span>)}
-          </div>
-          <div className="unit-stats-panel__ability">
-            <strong>Ability:</strong> {unitStats.ability}
-          </div>
-          <p className="unit-stats-panel__desc">{unitStats.description}</p>
-        </div>
-      )}
+      <FactionInfoPopup
+        factionInfo={factionInfo}
+        open={factionPopupOpen}
+        onClose={() => setFactionPopupOpen(false)}
+        unitPopupOpen={unitPopupOpen}
+        onUnitPopupClose={() => setUnitPopupOpen(false)}
+        onUnitClick={() => setUnitPopupOpen(true)}
+        traitPopupOpen={traitPopupOpen}
+        onTraitPopupClose={() => setTraitPopupOpen(false)}
+        onTraitClick={() => setTraitPopupOpen(true)}
+        containerStyle={{ position: 'fixed', top: '50px', left: '200px', zIndex: 999 }}
+      />
       {summonPopupOpen && unitStats && (
         <div className="unit-stats-panel" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '60px', right: '20px', width: '320px', zIndex: 9999 }}>
           <button className="unit-stats-panel__close" onClick={() => setSummonPopupOpen(false)}>├ù</button>
@@ -293,4 +233,4 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
       </div>
     </nav>
   );
-}
+});

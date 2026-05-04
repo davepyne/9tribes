@@ -129,9 +129,200 @@ function stampTerrainPatch(
   }
 }
 
+function initializeFaction(
+  state: GameState,
+  factionConfig: ReturnType<typeof getMvpFactionConfigs>[number],
+  startHex: { q: number; r: number },
+  registry: RulesRegistry,
+  existingPrototypeIds: string[],
+  settlerStartFactionIds: Set<string>,
+  options: BuildMvpScenarioOptions,
+): void {
+  const factionId = createFactionId(factionConfig.id);
+  const usesSettlerStart = settlerStartFactionIds.has(factionConfig.id);
+
+  let cityId: CityId | undefined;
+  if (!usesSettlerStart) {
+    cityId = createCityId();
+    state.cities.set(cityId, {
+      id: cityId,
+      factionId,
+      position: startHex,
+      name: `${factionConfig.name} Capital`,
+      isCapital: true,
+      productionQueue: [],
+      productionProgress: 0,
+      territoryRadius: 2,
+      wallHP: 100,
+      maxWallHP: 100,
+      besieged: false,
+      turnsUnderSiege: 0,
+      siteBonuses: createCitySiteBonuses(state.map, startHex, 2),
+      foundedRound: 0,
+    });
+  }
+
+  const faction: Faction = {
+    id: factionId,
+    name: factionConfig.name,
+    unitIds: [],
+    cityIds: cityId ? [cityId] : [],
+    villageIds: [],
+    prototypeIds: [],
+    identityProfile: {
+      homeBiome: factionConfig.homeBiome,
+      signatureUnit: factionConfig.signatureUnit,
+      passiveTrait: factionConfig.passiveTrait,
+      earlyResearchBias: factionConfig.earlyResearchBias,
+      naturalPrey: factionConfig.naturalPrey,
+      naturalCounter: factionConfig.naturalCounter,
+      economyAngle: factionConfig.economyAngle,
+      terrainDependence: factionConfig.terrainDependence,
+      lateGameHybridPotential: factionConfig.lateGameHybridPotential,
+    },
+    capabilities: createCapabilityState(factionConfig.capabilitySeeds),
+    combatRecord: createCombatRecord(),
+    nativeDomain: factionConfig.nativeDomain,
+    learnedDomains: Array.from(new Set([
+      factionConfig.nativeDomain,
+      ...(factionConfig.startingLearnedDomains ?? []),
+    ])),
+    exposureProgress: {},
+    prototypeMastery: {},
+    homeCityId: cityId,
+  };
+  state.factions.set(factionId, faction);
+
+  // Settler prototype (non-combatant)
+  const settlerPrototype = assemblePrototype(
+    factionId,
+    'infantry_frame' as ChassisId,
+    ['basic_spear', 'simple_armor'] as unknown as ComponentId[],
+    registry,
+    existingPrototypeIds as PrototypeId[],
+    {
+      faction,
+      validation: { ignoreResearchRequirements: true, ignoreProgressionRequirements: true },
+      name: 'Settler',
+      tags: ['settler'],
+      sourceRecipeId: 'settler',
+    }
+  );
+  existingPrototypeIds.push(settlerPrototype.id);
+  settlerPrototype.derivedStats = { ...settlerPrototype.derivedStats, attack: 1, defense: 1 };
+  state.prototypes.set(settlerPrototype.id, settlerPrototype);
+  faction.prototypeIds.push(settlerPrototype.id);
+
+  if (usesSettlerStart) {
+    const settlerId = createUnitId();
+    let settler: Unit = {
+      id: settlerId,
+      factionId,
+      position: startHex,
+      facing: 0,
+      hp: settlerPrototype.derivedStats.hp,
+      maxHp: settlerPrototype.derivedStats.hp,
+      movesRemaining: settlerPrototype.derivedStats.moves,
+      maxMoves: settlerPrototype.derivedStats.moves,
+      attacksRemaining: 1,
+      xp: 0,
+      veteranLevel: 'green' as VeteranLevel,
+      status: 'ready',
+      prototypeId: settlerPrototype.id,
+      history: [],
+      morale: 100,
+      routed: false,
+      poisoned: false,
+      enteredZoCThisActivation: false,
+      poisonStacks: 0,
+      poisonTurnsRemaining: 0,
+      isStealthed: false,
+      turnsSinceStealthBreak: 0,
+      learnedAbilities: [],
+    };
+    settler = recordUnitCreated(settler, factionId, settlerPrototype.id);
+    state.units.set(settlerId, settler);
+    faction.unitIds.push(settlerId);
+  }
+
+  // Combat units
+  const unitConfigs = factionConfig.startingUnits.length > 0
+    ? factionConfig.startingUnits
+    : getStartingUnits(state.factions.size - 1, options.balanceOverrides);
+  for (const unitConfig of unitConfigs) {
+    const rawPosition = {
+      q: startHex.q + unitConfig.positionOffset.q,
+      r: startHex.r + unitConfig.positionOffset.r,
+    };
+
+    const prototype = assemblePrototype(
+      factionId,
+      unitConfig.chassisId as ChassisId,
+      unitConfig.componentIds as unknown as ComponentId[],
+      registry,
+      existingPrototypeIds as PrototypeId[],
+      {
+        faction,
+        name: (unitConfig as { name?: string }).name,
+        productionCost: (unitConfig as { costOverride?: number }).costOverride,
+        tags: (unitConfig as { tags?: string[] }).tags,
+        rangeBonus: (unitConfig as { rangeBonus?: number }).rangeBonus,
+        movesBonus: (unitConfig as { movesBonus?: number }).movesBonus,
+        validation: { ignoreResearchRequirements: true, ignoreProgressionRequirements: true },
+      }
+    );
+    existingPrototypeIds.push(prototype.id);
+    state.prototypes.set(prototype.id, prototype);
+    faction.prototypeIds.push(prototype.id);
+
+    const position = findValidSpawnPosition(state, rawPosition, registry, prototype.chassisId, prototype.tags);
+    const unitId = createUnitId();
+    let unit: Unit = {
+      id: unitId,
+      factionId,
+      position,
+      facing: 0,
+      hp: prototype.derivedStats.hp,
+      maxHp: prototype.derivedStats.hp,
+      movesRemaining: prototype.derivedStats.moves + (prototype.movesBonus ?? 0),
+      maxMoves: prototype.derivedStats.moves + (prototype.movesBonus ?? 0),
+      attacksRemaining: 1,
+      xp: 0,
+      veteranLevel: 'green' as VeteranLevel,
+      status: 'ready',
+      prototypeId: prototype.id,
+      history: [],
+      morale: 100,
+      routed: false,
+      poisoned: false,
+      enteredZoCThisActivation: false,
+      poisonStacks: 0,
+      poisonTurnsRemaining: 0,
+      isStealthed: false,
+      turnsSinceStealthBreak: 0,
+      learnedAbilities: [],
+    };
+    unit = recordUnitCreated(unit, factionId, prototype.id);
+    state.units.set(unitId, unit);
+    faction.unitIds.push(unitId);
+  }
+
+  // Research, economy, war exhaustion
+  const researchState = createResearchState(factionId, factionConfig.nativeDomain, factionConfig.researchRate);
+  if (factionConfig.startingCompletedResearchNodes?.length) {
+    researchState.completedNodes = Array.from(new Set([
+      ...researchState.completedNodes,
+      ...factionConfig.startingCompletedResearchNodes,
+    ])) as typeof researchState.completedNodes;
+  }
+  state.research.set(factionId, researchState);
+  state.economy.set(factionId, createFactionEconomy(factionId));
+  state.warExhaustion.set(factionId, createWarExhaustion(factionId));
+}
+
 /**
  * Build the complete MVP scenario game state.
- * Creates: 2 factions, 4 units (2 per faction), 2 cities, map with improvements.
+ * Creates factions, units, cities, and map with improvements.
  */
 export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions = {}): GameState {
   // Create empty game state
@@ -200,219 +391,9 @@ export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions 
   const existingPrototypeIds: string[] = [];
 
   // Build factions, cities, and units
-  for (let i = 0; i < factionConfigs.length; i++) {
-    const factionConfig = factionConfigs[i];
+  for (const factionConfig of factionConfigs) {
     const startHex = startingPositions.get(factionConfig.id) ?? factionConfig.startHex;
-    const factionId = createFactionId(factionConfig.id);
-    const usesSettlerStart = settlerStartFactionIds.has(factionConfig.id);
-
-    let cityId: CityId | undefined;
-    if (!usesSettlerStart) {
-      cityId = createCityId();
-      const city = {
-        id: cityId,
-        factionId,
-        position: startHex,
-        name: `${factionConfig.name} Capital`,
-        isCapital: true,
-        productionQueue: [],
-        productionProgress: 0,
-        territoryRadius: 2,
-        wallHP: 100,
-        maxWallHP: 100,
-        besieged: false,
-        turnsUnderSiege: 0,
-        siteBonuses: createCitySiteBonuses(state.map, startHex, 2),
-        foundedRound: 0,
-      };
-      state.cities.set(cityId, city);
-    }
-
-    const faction: Faction = {
-      id: factionId,
-      name: factionConfig.name,
-      unitIds: [],
-      cityIds: cityId ? [cityId] : [],
-      villageIds: [],
-      prototypeIds: [],
-      identityProfile: {
-        homeBiome: factionConfig.homeBiome,
-        signatureUnit: factionConfig.signatureUnit,
-        passiveTrait: factionConfig.passiveTrait,
-        earlyResearchBias: factionConfig.earlyResearchBias,
-        naturalPrey: factionConfig.naturalPrey,
-        naturalCounter: factionConfig.naturalCounter,
-        economyAngle: factionConfig.economyAngle,
-        terrainDependence: factionConfig.terrainDependence,
-        lateGameHybridPotential: factionConfig.lateGameHybridPotential,
-      },
-      capabilities: createCapabilityState(factionConfig.capabilitySeeds),
-      combatRecord: createCombatRecord(),
-      nativeDomain: factionConfig.nativeDomain,
-      learnedDomains: Array.from(new Set([
-        factionConfig.nativeDomain,
-        ...(factionConfig.startingLearnedDomains ?? []),
-      ])),
-      exposureProgress: {},
-      prototypeMastery: {},
-      homeCityId: cityId,
-    };
-    state.factions.set(factionId, faction);
-
-    const settlerPrototype = assemblePrototype(
-      factionId,
-      'infantry_frame' as ChassisId,
-      ['basic_spear', 'simple_armor'] as unknown as ComponentId[],
-      registry,
-      existingPrototypeIds as PrototypeId[],
-      {
-        faction,
-        validation: {
-          ignoreResearchRequirements: true,
-          ignoreProgressionRequirements: true,
-        },
-        name: 'Settler',
-        tags: ['settler'],
-        sourceRecipeId: 'settler',
-      }
-    );
-    existingPrototypeIds.push(settlerPrototype.id);
-    // Settlers are non-combatants — cap attack/defense at 1
-    settlerPrototype.derivedStats = {
-      ...settlerPrototype.derivedStats,
-      attack: 1,
-      defense: 1,
-    };
-    state.prototypes.set(settlerPrototype.id, settlerPrototype);
-    faction.prototypeIds.push(settlerPrototype.id);
-
-    if (usesSettlerStart) {
-      const settlerId = createUnitId();
-      let settler: Unit = {
-        id: settlerId,
-        factionId,
-        position: startHex,
-        facing: 0,
-        hp: settlerPrototype.derivedStats.hp,
-        maxHp: settlerPrototype.derivedStats.hp,
-        movesRemaining: settlerPrototype.derivedStats.moves,
-        maxMoves: settlerPrototype.derivedStats.moves,
-        attacksRemaining: 1,
-        xp: 0,
-        veteranLevel: 'green' as VeteranLevel,
-        status: 'ready',
-        prototypeId: settlerPrototype.id,
-        history: [],
-        morale: 100,
-        routed: false,
-        poisoned: false,
-        enteredZoCThisActivation: false,
-        poisonStacks: 0,
-        poisonTurnsRemaining: 0,
-        isStealthed: false,
-        turnsSinceStealthBreak: 0,
-        learnedAbilities: [],
-      };
-
-      settler = recordUnitCreated(settler, factionId, settlerPrototype.id);
-      state.units.set(settlerId, settler);
-      faction.unitIds.push(settlerId);
-    }
-
-    // Create units for this faction
-    const unitConfigs = factionConfig.startingUnits.length > 0
-      ? factionConfig.startingUnits
-      : getStartingUnits(i, options.balanceOverrides);
-    for (const unitConfig of unitConfigs) {
-      // Calculate unit position (startHex + offset), then validate terrain
-      const rawPosition = {
-        q: startHex.q + unitConfig.positionOffset.q,
-        r: startHex.r + unitConfig.positionOffset.r,
-      };
-
-      // Assemble prototype
-      const prototype = assemblePrototype(
-        factionId,
-        unitConfig.chassisId as ChassisId,
-        unitConfig.componentIds as unknown as ComponentId[],
-        registry,
-        existingPrototypeIds as PrototypeId[],
-        {
-          faction,
-          name: (unitConfig as { name?: string }).name,
-          productionCost: (unitConfig as { costOverride?: number }).costOverride,
-          tags: (unitConfig as { tags?: string[] }).tags,
-          rangeBonus: (unitConfig as { rangeBonus?: number }).rangeBonus,
-          movesBonus: (unitConfig as { movesBonus?: number }).movesBonus,
-          validation: {
-            // Starting rosters are identity seeds, not proof that the domain was unlocked via sacrifice.
-            ignoreResearchRequirements: true,
-            ignoreProgressionRequirements: true,
-          },
-        }
-      );
-      existingPrototypeIds.push(prototype.id);
-      state.prototypes.set(prototype.id, prototype);
-      faction.prototypeIds.push(prototype.id);
-
-      // Ensure the spawn position is valid terrain for this unit type
-      const position = findValidSpawnPosition(
-        state, rawPosition, registry, prototype.chassisId, prototype.tags,
-      );
-
-      // Create unit with full stats
-      const unitId = createUnitId();
-      let unit: Unit = {
-        id: unitId,
-        factionId,
-        position,
-        facing: 0,
-        hp: prototype.derivedStats.hp,
-        maxHp: prototype.derivedStats.hp,
-        movesRemaining: prototype.derivedStats.moves + (prototype.movesBonus ?? 0),
-        maxMoves: prototype.derivedStats.moves + (prototype.movesBonus ?? 0),
-        attacksRemaining: 1,
-        xp: 0,
-        veteranLevel: 'green' as VeteranLevel,
-        status: 'ready',
-        prototypeId: prototype.id,
-        history: [],
-        morale: 100,
-        routed: false,
-        poisoned: false,
-        enteredZoCThisActivation: false,
-        poisonStacks: 0,
-        poisonTurnsRemaining: 0,
-        isStealthed: false,
-        turnsSinceStealthBreak: 0,
-        learnedAbilities: [],
-      };
-
-      // Record unit creation in history
-      unit = recordUnitCreated(unit, factionId, prototype.id);
-
-      state.units.set(unitId, unit);
-      faction.unitIds.push(unitId);
-    }
-
-    // Initialize research state (native domain T1 auto-completed)
-    const researchRate = factionConfig.researchRate;
-    const researchState = createResearchState(factionId, factionConfig.nativeDomain, researchRate);
-    if (factionConfig.startingCompletedResearchNodes?.length) {
-      researchState.completedNodes = Array.from(new Set([
-        ...researchState.completedNodes,
-        ...factionConfig.startingCompletedResearchNodes,
-      ])) as typeof researchState.completedNodes;
-    }
-    state.research.set(factionId, researchState);
-
-    // Initialize economy state
-    const economy = createFactionEconomy(factionId);
-    state.economy.set(factionId, economy);
-
-    // Initialize war exhaustion state
-    const warExhaustion = createWarExhaustion(factionId);
-    state.warExhaustion.set(factionId, warExhaustion);
+    initializeFaction(state, factionConfig, startHex, registry, existingPrototypeIds, settlerStartFactionIds, options);
   }
 
   // Add map improvements (field fort)

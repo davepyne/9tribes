@@ -45,6 +45,7 @@ import { createCitySiteBonuses, getSettlementOccupancyBlocker } from '../../../.
 import { boardTransport, canBoardTransport, disembarkUnit, getUnitTransport } from '../../../../src/systems/transportSystem.js';
 import type { DifficultyLevel } from '../../../../src/systems/aiDifficulty.js';
 import type { MapGenerationMode } from '../../../../src/world/map/types.js';
+import { getFaction, getCity, getPrototype, getResearch, getUnit, hasUnit, asFactionId, asResearchNodeId } from '../stateAccess.js';
 
 type SessionEvent = {
   sequence: number;
@@ -292,10 +293,8 @@ export class GameSession {
 
   getSaveSnapshot(): SessionSaveSnapshot {
     const playerFactionId = Array.from(this.humanControlledFactionIds)[0] ?? null;
-    const playerFaction = playerFactionId ? this.state.factions.get(playerFactionId as never) : null;
-    const activeFaction = this.state.activeFactionId
-      ? this.state.factions.get(this.state.activeFactionId as never)
-      : null;
+    const playerFaction = getFaction(this.state, playerFactionId);
+    const activeFaction = getFaction(this.state, this.state.activeFactionId);
 
     return {
       payload: serializeGameState(this.state),
@@ -344,14 +343,14 @@ export class GameSession {
         this.state = this.executeMoveQueues(this.state);
         if (this.state.activeFactionId) {
           const activeFactionId = this.state.activeFactionId;
-          const preResearch = this.state.research.get(activeFactionId as never);
+          const preResearch = getResearch(this.state, activeFactionId);
           const activeNodeId = preResearch?.activeNodeId ?? null;
           const preCompletedCount = preResearch?.completedNodes.length ?? 0;
-          this.state = runFactionPhase(this.state, activeFactionId as never, this.registry, {
+          this.state = runFactionPhase(this.state, asFactionId(activeFactionId), this.registry, {
             difficulty: this.difficulty,
           });
           if (activeNodeId && this.isHumanControlledFaction(activeFactionId)) {
-            const postResearch = this.state.research.get(activeFactionId as never);
+            const postResearch = getResearch(this.state, activeFactionId);
             if ((postResearch?.completedNodes.length ?? 0) > preCompletedCount) {
               const domainId = activeNodeId.split('_t')[0];
               const nodeDef = this.registry.getResearchNode(domainId, activeNodeId);
@@ -461,7 +460,7 @@ export class GameSession {
       return [];
     }
 
-    const prototype = this.state.prototypes.get(unit.prototypeId as never);
+    const prototype = getPrototype(this.state, unit.prototypeId);
     const attackRange = prototype?.derivedStats.range ?? 1;
     const chassis = prototype ? this.registry.getChassis(prototype.chassisId) : null;
     const isNavalUnit = chassis?.movementClass === 'naval';
@@ -646,17 +645,17 @@ export class GameSession {
 
     const finalCombatEvent: ReplayCombatEvent = {
       ...combatEvent,
-      attackerHpAfter: applied.state.units.get(preview.attackerId as never)?.hp ?? 0,
-      defenderHpAfter: applied.state.units.get(preview.defenderId as never)?.hp ?? 0,
+      attackerHpAfter: getUnit(applied.state, preview.attackerId)?.hp ?? 0,
+      defenderHpAfter: getUnit(applied.state, preview.defenderId)?.hp ?? 0,
       breakdown: {
         ...combatEvent.breakdown,
         attacker: {
           ...combatEvent.breakdown.attacker,
-          hpAfter: applied.state.units.get(preview.attackerId as never)?.hp ?? 0,
+          hpAfter: getUnit(applied.state, preview.attackerId)?.hp ?? 0,
         },
         defender: {
           ...combatEvent.breakdown.defender,
-          hpAfter: applied.state.units.get(preview.defenderId as never)?.hp ?? 0,
+          hpAfter: getUnit(applied.state, preview.defenderId)?.hp ?? 0,
         },
         triggeredEffects: applied.feedback.resolution.triggeredEffects,
       },
@@ -750,10 +749,10 @@ export class GameSession {
     }
 
     if (!this._aiTurnContext || this._aiTurnContext.factionId !== factionId) {
-      const strategy = computeFactionStrategy(this.state, factionId as never, this.registry, this.difficulty);
+      const strategy = computeFactionStrategy(this.state, asFactionId(factionId), this.registry, this.difficulty);
       this.state = {
         ...this.state,
-        factionStrategies: new Map(this.state.factionStrategies).set(factionId as never, strategy),
+        factionStrategies: new Map(this.state.factionStrategies).set(asFactionId(factionId), strategy),
       };
       this._aiTurnContext = {
         factionId,
@@ -767,7 +766,7 @@ export class GameSession {
       const unitId = this._aiTurnContext.unitIds[this._aiTurnContext.index] as UnitId;
       this._aiTurnContext.index += 1;
 
-      const unit = this.state.units.get(unitId as never);
+      const unit = getUnit(this.state, unitId);
       if (!unit || unit.hp <= 0 || unit.factionId !== factionId || unit.status !== 'ready') {
         continue;
       }
@@ -786,7 +785,7 @@ export class GameSession {
 
     this._aiTurnContext = null;
     this.feedback.lastMove = null;
-    this.state = runFactionPhase(this.state, factionId as never, this.registry, {
+    this.state = runFactionPhase(this.state, asFactionId(factionId), this.registry, {
       difficulty: this.difficulty,
     });
     this.state = this.refreshFog(advanceTurn(this.state));
@@ -800,14 +799,14 @@ export class GameSession {
   }
 
   private setCityProduction(cityId: string, prototypeId: string) {
-    const city = this.state.cities.get(cityId as never);
+    const city = getCity(this.state, cityId);
     if (!city || city.factionId !== this.state.activeFactionId || !this.isHumanControlledFaction(city.factionId) || city.besieged) {
       return;
     }
 
     this.state = unlockHybridRecipes(this.state, city.factionId, this.registry);
 
-    const prototype = this.state.prototypes.get(prototypeId as never);
+    const prototype = getPrototype(this.state, prototypeId);
     if (!prototype || !canProducePrototype(this.state, city.factionId, prototype.id, this.registry)) {
       return;
     }
@@ -830,7 +829,7 @@ export class GameSession {
   }
 
   private cancelCityProduction(cityId: string) {
-    const city = this.state.cities.get(cityId as never);
+    const city = getCity(this.state, cityId);
     if (!city || city.factionId !== this.state.activeFactionId || !this.isHumanControlledFaction(city.factionId) || city.besieged) return;
     if (!city.currentProduction) return;
 
@@ -842,7 +841,7 @@ export class GameSession {
   }
 
   private removeFromQueue(cityId: string, queueIndex: number) {
-    const city = this.state.cities.get(cityId as never);
+    const city = getCity(this.state, cityId);
     if (!city || city.factionId !== this.state.activeFactionId || !this.isHumanControlledFaction(city.factionId)) return;
 
     const updatedCity = removeFromQueue(city, queueIndex);
@@ -852,7 +851,7 @@ export class GameSession {
   }
 
   private reorderQueue(cityId: string, fromIndex: number, toIndex: number) {
-    const city = this.state.cities.get(cityId as never);
+    const city = getCity(this.state, cityId);
     if (!city || city.factionId !== this.state.activeFactionId || !this.isHumanControlledFaction(city.factionId)) return;
 
     const updatedCity = reorderQueue(city, fromIndex, toIndex);
@@ -866,8 +865,8 @@ export class GameSession {
     const factionId = this.state.activeFactionId;
     if (!factionId || !this.isHumanControlledFaction(factionId)) return;
 
-    const research = this.state.research.get(factionId as never);
-    const faction = this.state.factions.get(factionId as never);
+    const research = getResearch(this.state, factionId);
+    const faction = getFaction(this.state, factionId);
     if (!research || !faction) return;
 
     // Extract domain from nodeId (e.g. "charge_t2" -> "charge")
@@ -879,12 +878,12 @@ export class GameSession {
 
     const updated = startResearch(
       research,
-      nodeId as never,
+      asResearchNodeId(nodeId),
       nodeDef.prerequisites,
       faction.learnedDomains,
     );
     const nextResearch = new Map(this.state.research);
-    nextResearch.set(factionId as never, updated);
+    nextResearch.set(asFactionId(factionId), updated);
     this.state = { ...this.state, research: nextResearch };
     this.record('turn', `Research started: ${nodeDef.name}.`);
   }
@@ -893,7 +892,7 @@ export class GameSession {
     const factionId = this.state.activeFactionId;
     if (!factionId || !this.isHumanControlledFaction(factionId)) return;
 
-    const research = this.state.research.get(factionId as never);
+    const research = getResearch(this.state, factionId);
     if (!research || !research.activeNodeId) return;
 
     const domainId = research.activeNodeId.split('_t')[0];
@@ -902,7 +901,7 @@ export class GameSession {
 
     const updated = { ...research, activeNodeId: null };
     const nextResearch = new Map(this.state.research);
-    nextResearch.set(factionId as never, updated);
+    nextResearch.set(asFactionId(factionId), updated);
     this.state = { ...this.state, research: nextResearch };
     this.record('turn', `Research cancelled: ${nodeName}.`);
   }
@@ -998,7 +997,7 @@ export class GameSession {
     }
 
     const faction = this.state.factions.get(unit.factionId);
-    const prototype = this.state.prototypes.get(unit.prototypeId as never);
+    const prototype = getPrototype(this.state, unit.prototypeId);
     if (!faction || !prototype || !this.isHumanControlledFaction(unit.factionId)) {
       return;
     }
@@ -1066,7 +1065,7 @@ export class GameSession {
     }
 
     const faction = this.state.factions.get(unit.factionId);
-    const prototype = this.state.prototypes.get(unit.prototypeId as never);
+    const prototype = getPrototype(this.state, unit.prototypeId);
     if (!faction || !prototype || !this.isHumanControlledFaction(unit.factionId) || unit.status !== 'ready' || unit.hp <= 0) {
       return;
     }

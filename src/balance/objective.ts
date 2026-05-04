@@ -1,5 +1,49 @@
 import type { BatchBalanceSummary } from '../systems/balanceHarness.js';
 
+// Survival penalties — factions that can't compete
+const NON_VIABLE_UNIT_THRESHOLD = 2;
+const NON_VIABLE_CITY_THRESHOLD = 0.3;
+const NON_VIABLE_PENALTY_WEIGHT = 2.5;
+
+const NEAR_DEATH_UNIT_MIN = 2;
+const NEAR_DEATH_UNIT_MAX = 4;
+const NEAR_DEATH_CITY_THRESHOLD = 0.5;
+const NEAR_DEATH_PENALTY_WEIGHT = 0.75;
+
+// Runaway leader penalty
+const RUNAWAY_WIN_RATE_THRESHOLD = 0.25;
+const RUNAWAY_QUADRATIC_MULTIPLIER = 40;
+
+// Activity floor thresholds (below these → penalty)
+const MIN_BATTLES_PER_SEED = 8;
+const MIN_KILLS_PER_SEED = 4;
+const MIN_CODIFICATIONS_PER_SEED = 0.75;
+const MIN_SIEGES_PER_SEED = 0.5;
+
+// Activity penalty weights
+const BATTLE_DEFICIT_WEIGHT = 0.6;
+const KILL_DEFICIT_WEIGHT = 0.8;
+const CODIFICATION_DEFICIT_WEIGHT = 2;
+const SIEGE_DEFICIT_WEIGHT = 2.5;
+
+// Unresolved game penalties
+const UNRESOLVED_HIGH_THRESHOLD = 0.8;
+const UNRESOLVED_HIGH_WEIGHT = 25;
+const UNRESOLVED_LOW_THRESHOLD = 0.05;
+const UNRESOLVED_LOW_WEIGHT = 10;
+
+// Siege composition floor
+const MIN_AVG_SIEGE_UNITS = 0.25;
+const SIEGE_PRESENCE_WEIGHT = 4;
+
+// Parity metric weights (higher = more important for balance)
+const WIN_RATE_PARITY_WEIGHT = 6;
+const LIVING_UNIT_PARITY_WEIGHT = 1.5;
+const CITY_CONTROL_PARITY_WEIGHT = 2.0;
+const RECIPE_PARITY_WEIGHT = 0.8;
+const SIGNATURE_PARITY_WEIGHT = 0.5;
+const RANGED_SHARE_PARITY_WEIGHT = 1.5;
+
 export interface BalanceObjectiveBreakdown {
   winRateStdDev: number;
   livingUnitStdDev: number;
@@ -41,24 +85,20 @@ export function scoreBalanceSummary(summary: BatchBalanceSummary): BalanceObject
   const maxWinRate = Math.max(...winRates, 0);
 
   // 1. Survival penalty: factions that are effectively eliminated
-  //    A faction is "non-viable" when it has very low units AND very low cities.
-  //    This replaces the old zeroWinPenalty — survival matters more than wins.
   const nonViableFactions = factionMetrics.filter(
-    (f) => f.avgLivingUnits < 2 && f.avgCities < 0.3,
+    (f) => f.avgLivingUnits < NON_VIABLE_UNIT_THRESHOLD && f.avgCities < NON_VIABLE_CITY_THRESHOLD,
   ).length;
-  const survivalPenalty = nonViableFactions * 2.5;
+  const survivalPenalty = nonViableFactions * NON_VIABLE_PENALTY_WEIGHT;
 
   // 2. Near-death penalty: factions barely hanging on but not totally dead
   const nearDeathFactions = factionMetrics.filter(
-    (f) => f.avgLivingUnits >= 2 && f.avgLivingUnits < 4 && f.avgCities < 0.5,
+    (f) => f.avgLivingUnits >= NEAR_DEATH_UNIT_MIN && f.avgLivingUnits < NEAR_DEATH_UNIT_MAX && f.avgCities < NEAR_DEATH_CITY_THRESHOLD,
   ).length;
-  const nearDeathPenalty = nearDeathFactions * 0.75;
+  const nearDeathPenalty = nearDeathFactions * NEAR_DEATH_PENALTY_WEIGHT;
 
   // 3. Runaway penalty: any single faction winning too much
-  //    In a 9-faction FFA, fair share is ~11%. Above 25% is a dominance problem.
-  //    Quadratic scaling so extreme cases (40%+) are penalized much harder.
-  const runawayPenalty = maxWinRate > 0.25
-    ? Math.pow(maxWinRate - 0.25, 2) * 40
+  const runawayPenalty = maxWinRate > RUNAWAY_WIN_RATE_THRESHOLD
+    ? Math.pow(maxWinRate - RUNAWAY_WIN_RATE_THRESHOLD, 2) * RUNAWAY_QUADRATIC_MULTIPLIER
     : 0;
 
   // 4. Activity penalty: the game needs enough combat and progression to be meaningful
@@ -67,15 +107,15 @@ export function scoreBalanceSummary(summary: BatchBalanceSummary): BalanceObject
   const avgCodificationsPerSeed = summary.totalCodificationsCompleted / totalSeeds;
   const avgSiegesPerSeed = summary.totalSiegesStarted / totalSeeds;
   const inactivityPenalty =
-    (avgBattlesPerSeed < 8 ? (8 - avgBattlesPerSeed) * 0.6 : 0) +
-    (avgKillsPerSeed < 4 ? (4 - avgKillsPerSeed) * 0.8 : 0) +
-    (avgCodificationsPerSeed < 0.75 ? (0.75 - avgCodificationsPerSeed) * 2 : 0) +
-    (avgSiegesPerSeed < 0.5 ? (0.5 - avgSiegesPerSeed) * 2.5 : 0);
+    (avgBattlesPerSeed < MIN_BATTLES_PER_SEED ? (MIN_BATTLES_PER_SEED - avgBattlesPerSeed) * BATTLE_DEFICIT_WEIGHT : 0) +
+    (avgKillsPerSeed < MIN_KILLS_PER_SEED ? (MIN_KILLS_PER_SEED - avgKillsPerSeed) * KILL_DEFICIT_WEIGHT : 0) +
+    (avgCodificationsPerSeed < MIN_CODIFICATIONS_PER_SEED ? (MIN_CODIFICATIONS_PER_SEED - avgCodificationsPerSeed) * CODIFICATION_DEFICIT_WEIGHT : 0) +
+    (avgSiegesPerSeed < MIN_SIEGES_PER_SEED ? (MIN_SIEGES_PER_SEED - avgSiegesPerSeed) * SIEGE_DEFICIT_WEIGHT : 0);
 
   // 5. Unresolved penalty: too many or too few decisive games
   const unresolvedPenalty =
-    (unresolvedRate > 0.8 ? (unresolvedRate - 0.8) * 25 : 0) +
-    (unresolvedRate < 0.05 ? (0.05 - unresolvedRate) * 10 : 0);
+    (unresolvedRate > UNRESOLVED_HIGH_THRESHOLD ? (unresolvedRate - UNRESOLVED_HIGH_THRESHOLD) * UNRESOLVED_HIGH_WEIGHT : 0) +
+    (unresolvedRate < UNRESOLVED_LOW_THRESHOLD ? (UNRESOLVED_LOW_THRESHOLD - unresolvedRate) * UNRESOLVED_LOW_WEIGHT : 0);
 
   // 6. Composition diversity — ranged/siege balance across factions
   //    Ranged share: fraction of a faction's living units that are ranged.
@@ -97,8 +137,8 @@ export function scoreBalanceSummary(summary: BatchBalanceSummary): BalanceObject
   const avgSiegeUnits = factionMetrics.reduce(
     (sum, f) => sum + (f.avgUnitComposition.byChassis['catapult_frame'] ?? 0), 0,
   ) / factionMetrics.length;
-  const siegePresencePenalty = totalLivingUnits > 0 && avgSiegeUnits < 0.25
-    ? (0.25 - avgSiegeUnits) * 4
+  const siegePresencePenalty = totalLivingUnits > 0 && avgSiegeUnits < MIN_AVG_SIEGE_UNITS
+    ? (MIN_AVG_SIEGE_UNITS - avgSiegeUnits) * SIEGE_PRESENCE_WEIGHT
     : 0;
 
   // 7. Continuous parity metrics — the real balance signals
@@ -111,12 +151,12 @@ export function scoreBalanceSummary(summary: BatchBalanceSummary): BalanceObject
   const signatureStdDev = stdDev(signatureUnits);
 
   const score =
-    winRateStdDev * 6 +
-    livingUnitStdDev * 1.5 +
-    cityControlStdDev * 2.0 +
-    recipeStdDev * 0.8 +
-    signatureStdDev * 0.5 +
-    rangedShareStdDev * 1.5 +
+    winRateStdDev * WIN_RATE_PARITY_WEIGHT +
+    livingUnitStdDev * LIVING_UNIT_PARITY_WEIGHT +
+    cityControlStdDev * CITY_CONTROL_PARITY_WEIGHT +
+    recipeStdDev * RECIPE_PARITY_WEIGHT +
+    signatureStdDev * SIGNATURE_PARITY_WEIGHT +
+    rangedShareStdDev * RANGED_SHARE_PARITY_WEIGHT +
     siegePresencePenalty +
     survivalPenalty +
     nearDeathPenalty +

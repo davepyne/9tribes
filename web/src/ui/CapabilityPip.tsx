@@ -1,10 +1,11 @@
+import React from 'react';
 import type { CapabilityPipViewModel } from '../game/types/clientState';
 
 type CapabilityPipProps = {
   pip: CapabilityPipViewModel;
 };
 
-export function CapabilityPip({ pip }: CapabilityPipProps) {
+export const CapabilityPip = React.memo(function CapabilityPip({ pip }: CapabilityPipProps) {
   const classes = [
     'capability-pip',
     pip.hasResearchTrack ? 'capability-pip--research-track' : '',
@@ -29,4 +30,4 @@ export function CapabilityPip({ pip }: CapabilityPipProps) {
       </div>
     </div>
   );
-}
+});

@@ -6,6 +6,7 @@ import { applyCombatAction, previewCombatAction } from '../src/systems/combatAct
 import { startResearch } from '../src/systems/researchSystem';
 import { runFactionPhase } from '../src/systems/factionPhaseSystem';
 import type { ActiveTripleStack, SynergyEffect } from '../src/systems/synergyEngine';
+import { trimState } from './helpers/trimState';
 import { GameSession } from '../web/src/game/controller/GameSession';
 import { deserializeGameState, serializeGameState } from '../web/src/game/types/playState';
 
@@ -13,36 +14,6 @@ const registry = loadRulesRegistry();
 
 function cloneState(state: GameState): GameState {
   return deserializeGameState(serializeGameState(state));
-}
-
-function trimStateToFactions(state: GameState, factionIds: string[]) {
-  const factionSet = new Set(factionIds);
-  const unitEntries = Array.from(state.units.entries()).filter(([, unit]) => factionSet.has(unit.factionId));
-  const cityEntries = Array.from(state.cities.entries()).filter(([, city]) => factionSet.has(city.factionId));
-  const villageEntries = Array.from(state.villages.entries()).filter(([, village]) => factionSet.has(village.factionId));
-
-  state.factions = new Map(
-    Array.from(state.factions.entries())
-      .filter(([id]) => factionSet.has(id))
-      .map(([id, faction]) => [
-        id,
-        {
-          ...faction,
-          unitIds: faction.unitIds.filter((unitId) => unitEntries.some(([entryId]) => entryId === unitId)),
-          cityIds: faction.cityIds.filter((cityId) => cityEntries.some(([entryId]) => entryId === cityId)),
-          villageIds: faction.villageIds.filter((villageId) => villageEntries.some(([entryId]) => entryId === villageId)),
-        },
-      ]),
-  );
-  state.factionResearch = new Map(Array.from(state.factionResearch.entries()).filter(([id]) => factionSet.has(id)));
-  state.units = new Map(unitEntries);
-  state.cities = new Map(cityEntries);
-  state.villages = new Map(villageEntries);
-  state.economy = new Map(Array.from(state.economy.entries()).filter(([id]) => factionSet.has(id)));
-  state.research = new Map(Array.from(state.research.entries()).filter(([id]) => factionSet.has(id)));
-  state.warExhaustion = new Map(Array.from(state.warExhaustion.entries()).filter(([id]) => factionSet.has(id)));
-  state.factionStrategies = new Map(Array.from(state.factionStrategies.entries()).filter(([id]) => factionSet.has(id)));
-  state.fogState = new Map(Array.from(state.fogState.entries()).filter(([id]) => factionSet.has(id)));
 }
 
 function runLiveEndTurn(state: GameState, humanControlledFactionIds: string[]): GameState {
@@ -313,7 +284,7 @@ describe('live session parity harness', () => {
   it('matches the shared faction phase for poison and environmental upkeep', () => {
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
     const steppeId = 'steppe_clan';
-    trimStateToFactions(state, [steppeId]);
+    trimState(state, [steppeId]);
 
     const unitId = state.factions.get(steppeId as never)!.unitIds[0];
     state.activeFactionId = steppeId as never;
@@ -343,7 +314,7 @@ describe('live session parity harness', () => {
   it('matches the shared faction phase for research progress and unlock refresh', () => {
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
     const steppeId = 'steppe_clan';
-    trimStateToFactions(state, [steppeId]);
+    trimState(state, [steppeId]);
 
     const faction = state.factions.get(steppeId as never)!;
     const research = state.research.get(steppeId as never)!;
@@ -370,7 +341,7 @@ describe('live session parity harness', () => {
   it('matches the shared faction phase for war-exhaustion ticking and morale penalties', () => {
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
     const steppeId = 'steppe_clan';
-    trimStateToFactions(state, [steppeId]);
+    trimState(state, [steppeId]);
 
     const unitId = state.factions.get(steppeId as never)!.unitIds[0];
     state.activeFactionId = steppeId as never;
@@ -401,7 +372,7 @@ describe('live session parity harness', () => {
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
     const attackerId = 'steppe_clan';
     const defenderId = 'hill_clan';
-    trimStateToFactions(state, [attackerId, defenderId]);
+    trimState(state, [attackerId, defenderId]);
 
     const attackerFaction = state.factions.get(attackerId as never)!;
     const defenderFaction = state.factions.get(defenderId as never)!;
@@ -469,7 +440,7 @@ describe('live session parity harness', () => {
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
     const attackerId = 'coral_people';
     const defenderId = 'druid_circle';
-    trimStateToFactions(state, [attackerId, defenderId]);
+    trimState(state, [attackerId, defenderId]);
 
     const attackerFaction = state.factions.get(attackerId as never)!;
     const defenderFaction = state.factions.get(defenderId as never)!;
@@ -566,7 +537,7 @@ describe('live session parity harness', () => {
 
   it('matches the shared combat preview for fortified cover, stampede, and triple-stack knockback pressure', () => {
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['savannah_lions', 'druid_circle']);
+    trimState(state, ['savannah_lions', 'druid_circle']);
 
     const attackerFaction = state.factions.get('savannah_lions' as never)!;
     const defenderFaction = state.factions.get('druid_circle' as never)!;
@@ -724,7 +695,7 @@ describe('live session parity harness', () => {
 
   it('matches the shared combat preview for naval coastal assault modifiers', () => {
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['coral_people', 'hill_clan']);
+    trimState(state, ['coral_people', 'hill_clan']);
 
     const attackerFaction = state.factions.get('coral_people' as never)!;
     const defenderFaction = state.factions.get('hill_clan' as never)!;
@@ -806,7 +777,7 @@ describe('live session parity harness', () => {
 
   it('matches the shared combat application for poison on hit and contamination on kill', () => {
     const poisonState = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(poisonState, ['jungle_clan', 'hill_clan']);
+    trimState(poisonState, ['jungle_clan', 'hill_clan']);
 
     const attackerFaction = poisonState.factions.get('jungle_clan' as never)!;
     const defenderFaction = poisonState.factions.get('hill_clan' as never)!;
@@ -897,7 +868,7 @@ describe('live session parity harness', () => {
 
   it('matches the shared combat application for reflection, re-stealth, retreat healing, and synthetic aftermath effects', () => {
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    trimStateToFactions(state, ['steppe_clan', 'frost_wardens']);
+    trimState(state, ['steppe_clan', 'frost_wardens']);
 
     const attackerFaction = state.factions.get('steppe_clan' as never)!;
     const defenderFaction = state.factions.get('frost_wardens' as never)!;

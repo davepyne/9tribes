@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { deleteSaveGame, getSaveGame, listSaveGames, type SaveGameSummary } from '../app/savegames';
 
 type LoadOverlayProps = {
   onClose: () => void;
 };
 
-export function LoadOverlay({ onClose }: LoadOverlayProps) {
+export const LoadOverlay = React.memo(function LoadOverlay({ onClose }: LoadOverlayProps) {
   const [saves, setSaves] = useState<SaveGameSummary[]>([]);
 
   useEffect(() => {
@@ -57,7 +57,7 @@ export function LoadOverlay({ onClose }: LoadOverlayProps) {
       </div>
     </div>
   );
-}
+});
 
 function formatDate(value: string) {
   try {

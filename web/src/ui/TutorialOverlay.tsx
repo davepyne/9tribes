@@ -1,3 +1,4 @@
+import React from 'react';
 import type { TutorialStep } from '../app/hooks/useTutorial';
 
 type StepContent = {
@@ -45,7 +46,7 @@ type Props = {
   onDismiss: () => void;
 };
 
-export function TutorialOverlay({ step, onDismiss }: Props) {
+export const TutorialOverlay = React.memo(function TutorialOverlay({ step, onDismiss }: Props) {
   const content = CONTENT[step];
   if (!content) return null;
 
@@ -68,4 +69,4 @@ export function TutorialOverlay({ step, onDismiss }: Props) {
       </div>
     </div>
   );
-}
+});

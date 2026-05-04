@@ -1,3 +1,4 @@
+import React from 'react';
 import type { ResearchNodeViewModel } from '../game/types/clientState';
 import { ResearchNode } from './ResearchNode';
 
@@ -23,7 +24,7 @@ const DOMAINS = [
 
 const TIERS = [1, 2, 3] as const;
 
-export function ResearchTree({ nodes, selectedNodeId, onSelectNode }: ResearchTreeProps) {
+export const ResearchTree = React.memo(function ResearchTree({ nodes, selectedNodeId, onSelectNode }: ResearchTreeProps) {
   const nodeMap = new Map(nodes.map((node) => [node.nodeId, node]));
 
   // Only render domains that are unlocked (isLocked === false on T1)
@@ -90,4 +91,4 @@ export function ResearchTree({ nodes, selectedNodeId, onSelectNode }: ResearchTr
       </div>
     </div>
   );
-}
+});

@@ -2,16 +2,6 @@ import type { GameState } from './types.js';
 import { createRNG, type RNGState } from '../core/rng.js';
 
 /**
- * Placeholder interface for scenario configuration.
- * Will be expanded in Phase 10 (Scenario System).
- */
-export interface ScenarioConfig {
-  // Placeholder - to be expanded in Phase 10
-  name?: string;
-  description?: string;
-}
-
-/**
  * Creates a minimal empty game state with:
  * - The provided seed
  * - Round 1, turn 1
@@ -28,7 +18,6 @@ export function createEmptyGameState(seed: number): GameState {
     activeFactionId: null,
     status: 'in_progress',
     factions: new Map(),
-    factionResearch: new Map(),
     units: new Map(),
     cities: new Map(),
     villages: new Map(),
@@ -45,15 +34,4 @@ export function createEmptyGameState(seed: number): GameState {
     fogState: new Map(),
     rngState: createRNG(seed)
   };
-}
-
-/**
- * Creates a game state for a scenario.
- * For MVP, this delegates to createEmptyGameState.
- * Will be expanded in Phase 10 (Scenario System).
- */
-export function createScenarioState(seed: number, scenarioConfig?: ScenarioConfig): GameState {
-  // MVP: Just create an empty state
-  // Phase 10: Expand to use scenarioConfig for initial setup
-  return createEmptyGameState(seed);
 }

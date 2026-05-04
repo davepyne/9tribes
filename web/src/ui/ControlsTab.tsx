@@ -1,4 +1,6 @@
-export function ControlsTab() {
+import React from 'react';
+
+export const ControlsTab = React.memo(function ControlsTab() {
   return (
     <div className="controls-tab">
       <section className="controls-tab__section">
@@ -35,4 +37,4 @@ export function ControlsTab() {
       </section>
     </div>
   );
-}
+});

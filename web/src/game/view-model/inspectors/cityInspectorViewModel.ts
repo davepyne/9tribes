@@ -32,6 +32,7 @@ import type {
   SettlementBonusSummaryViewModel,
   SettlementPreviewViewModel,
 } from '../../types/clientState';
+import { getCity, getPrototype, getUnit, asCityId } from '../../stateAccess.js';
 import type { WorldViewModel } from '../../types/worldView';
 
 // Derive CAPTURE_RAMP_TURNS from getCaptureRampMultiplier behavior
@@ -46,7 +47,7 @@ function deriveCaptureRampTurns(): number {
 const CAPTURE_RAMP_TURNS = deriveCaptureRampTurns() - 1;
 
 export function buildCityInspectorViewModel(state: GameState, cityId: string, registry: RulesRegistry): CityInspectorViewModel | null {
-  const city = state.cities.get(cityId as never);
+  const city = getCity(state, cityId);
   if (!city) {
     return null;
   }
@@ -58,9 +59,9 @@ export function buildCityInspectorViewModel(state: GameState, cityId: string, re
   const canManageProduction = isFriendly && !city.besieged;
   const cityCount = Math.max(1, getFactionCityIds(state, city.factionId).length);
   const perTurnIncome = Number((economy.productionPool / cityCount).toFixed(2));
-  const readiness = getVillageSpawnReadinessWithRegistry(state, city.id as never, registry);
+  const readiness = getVillageSpawnReadinessWithRegistry(state, asCityId(city.id), registry);
   const currentItem = city.currentProduction
-    ? state.prototypes.get(city.currentProduction.item.id as never)
+    ? getPrototype(state, city.currentProduction.item.id)
     : null;
   const currentCostType = city.currentProduction?.costType ?? city.currentProduction?.item.costType ?? 'production';
   const currentVillageCount = faction?.villageIds.length ?? 0;
@@ -119,7 +120,7 @@ export function buildCityInspectorViewModel(state: GameState, cityId: string, re
         };
       })() : null,
       queue: city.productionQueue.map((item) => {
-        const prototype = state.prototypes.get(item.id as never);
+        const prototype = getPrototype(state, item.id);
         const costType = item.costType ?? 'production';
         let baseCost: number | undefined;
         let costModifier: number | undefined;
@@ -280,8 +281,8 @@ export function buildSettlementPreview(
     return null;
   }
 
-  const unit = state.units.get(selected.unitId as never);
-  const prototype = unit ? state.prototypes.get(unit.prototypeId as never) : null;
+  const unit = getUnit(state, selected.unitId);
+  const prototype = unit ? getPrototype(state, unit.prototypeId) : null;
   if (!unit || !prototype?.tags?.includes('settler')) {
     return null;
   }

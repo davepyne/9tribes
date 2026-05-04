@@ -1,4 +1,4 @@
-import { createEmptyGameState, createScenarioState } from '../src/game/createGameState';
+import { createEmptyGameState } from '../src/game/createGameState';
 import type { GameState } from '../src/game/types';
 
 describe('createEmptyGameState', () => {
@@ -86,39 +86,6 @@ describe('createEmptyGameState', () => {
     expect(state1).not.toBe(state2);
     expect(state1.factions).not.toBe(state2.factions);
     expect(state1.units).not.toBe(state2.units);
-  });
-});
-
-describe('createScenarioState', () => {
-  it('creates a game state with the provided seed', () => {
-    const state = createScenarioState(999);
-    expect(state.seed).toBe(999);
-  });
-
-  it('returns empty state for MVP (no scenario config)', () => {
-    const state = createScenarioState(0);
-    expect(state.factions.size).toBe(0);
-    expect(state.units.size).toBe(0);
-    expect(state.cities.size).toBe(0);
-  });
-
-  it('accepts optional scenario config', () => {
-    // MVP: config is ignored but should not throw
-    const state = createScenarioState(0, { name: 'test', description: 'test scenario' });
-    expect(state).toBeDefined();
-    expect(state.seed).toBe(0);
-  });
-
-  it('produces same result as createEmptyGameState in MVP', () => {
-    const empty = createEmptyGameState(42);
-    const scenario = createScenarioState(42);
-    
-    // Same initial structure (MVP behavior)
-    expect(scenario.seed).toBe(empty.seed);
-    expect(scenario.round).toBe(empty.round);
-    expect(scenario.turnNumber).toBe(empty.turnNumber);
-    expect(scenario.activeFactionId).toBe(empty.activeFactionId);
-    expect(scenario.status).toBe(empty.status);
   });
 });
 

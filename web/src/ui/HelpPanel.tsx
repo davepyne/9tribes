@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { ClientState } from '../game/types/clientState';
 import { helpContent } from '../data/help-content';
 import { SynergyEncyclopediaTab } from './SynergyEncyclopediaTab';
@@ -30,7 +30,7 @@ type HelpPanelProps = {
   initialTab?: string;
 };
 
-export function HelpPanel({ state: _state, onClose, initialTab }: HelpPanelProps) {
+export const HelpPanel = React.memo(function HelpPanel({ state: _state, onClose, initialTab }: HelpPanelProps) {
   const [activeTab, setActiveTab] = useState<HelpTabId>(() => {
     if (initialTab) {
       const found = TABS.find((t) => t.id === initialTab);
@@ -112,4 +112,4 @@ export function HelpPanel({ state: _state, onClose, initialTab }: HelpPanelProps
       </div>
     </div>
   );
-}
+});

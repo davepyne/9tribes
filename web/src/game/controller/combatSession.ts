@@ -7,6 +7,7 @@ import type { RulesRegistry } from '../../../../src/data/registry/types.js';
 import type { CombatResult } from '../../../../src/systems/combatSystem.js';
 import type { CombatActionPreview } from '../../../../src/systems/combatActionSystem.js';
 import type { ReplayCombatEvent } from '../types/replay';
+import { getUnit, getPrototype } from '../stateAccess.js';
 
 /** Pre-resolved combat data returned by resolveAttack() before state is mutated */
 export interface PendingCombat {
@@ -22,10 +23,10 @@ export function buildPendingCombat(
   registry: RulesRegistry,
   preview: CombatActionPreview,
 ): PendingCombat {
-  const attacker = state.units.get(preview.attackerId as never);
-  const defender = state.units.get(preview.defenderId as never);
-  const attackerPrototype = attacker ? state.prototypes.get(attacker.prototypeId as never) : null;
-  const defenderPrototype = defender ? state.prototypes.get(defender.prototypeId as never) : null;
+  const attacker = getUnit(state, preview.attackerId);
+  const defender = getUnit(state, preview.defenderId);
+  const attackerPrototype = attacker ? getPrototype(state, attacker.prototypeId) : null;
+  const defenderPrototype = defender ? getPrototype(state, defender.prototypeId) : null;
   if (!attacker || !defender || !attackerPrototype || !defenderPrototype) {
     throw new Error('Cannot build pending combat without attacker, defender, and prototype records.');
   }

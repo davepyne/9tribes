@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import type { ReplayCombatEvent } from '../game/types/replay';
 
 type CombatDetailModalProps = {
@@ -6,7 +6,7 @@ type CombatDetailModalProps = {
   onClose: () => void;
 };
 
-export function CombatDetailModal({ event, onClose }: CombatDetailModalProps) {
+export const CombatDetailModal = React.memo(function CombatDetailModal({ event, onClose }: CombatDetailModalProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -170,7 +170,7 @@ export function CombatDetailModal({ event, onClose }: CombatDetailModalProps) {
       </div>
     </div>
   );
-}
+});
 
 function UnitSnapshot({
   unit,

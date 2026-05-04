@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 export type MenuItem = {
   label: string;
@@ -20,7 +20,7 @@ type DropdownMenuProps = {
   onAction: (action: string) => void;
 };
 
-export function DropdownMenu({ label, items, onAction }: DropdownMenuProps) {
+export const DropdownMenu = React.memo(function DropdownMenu({ label, items, onAction }: DropdownMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -84,4 +84,4 @@ export function DropdownMenu({ label, items, onAction }: DropdownMenuProps) {
       ) : null}
     </div>
   );
-}
+});

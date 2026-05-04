@@ -1,5 +1,5 @@
 import type { RNGState } from '../../../../src/core/rng.js';
-import type { Faction, FactionResearch, FactionEconomy, Improvement, Prototype, ResearchState, Unit, Village, WarExhaustion } from '../../../../src/game/types.js';
+import type { Faction, FactionEconomy, Improvement, Prototype, ResearchState, Unit, Village, WarExhaustion } from '../../../../src/game/types.js';
 import type { City, GameState } from '../../../../src/game/types.js';
 import type { FactionStrategy } from '../../../../src/systems/factionStrategy.js';
 import type { TransportMap } from '../../../../src/systems/transportSystem.js';
@@ -22,7 +22,6 @@ export type SerializedGameMap = Omit<GameMap, 'tiles'> & {
 export type SerializedGameState = Omit<
   GameState,
   | 'factions'
-  | 'factionResearch'
   | 'units'
   | 'cities'
   | 'villages'
@@ -41,7 +40,6 @@ export type SerializedGameState = Omit<
 > & {
   map?: SerializedGameMap;
   factions: SerializedEntries<Faction>;
-  factionResearch: SerializedEntries<FactionResearch>;
   units: SerializedEntries<Unit>;
   cities: SerializedEntries<City>;
   villages: SerializedEntries<Village>;
@@ -79,7 +77,6 @@ export function serializeGameState(state: GameState): SerializedGameState {
         }
       : undefined,
     factions: Array.from(state.factions.entries()),
-    factionResearch: Array.from(state.factionResearch.entries()),
     units: Array.from(state.units.entries()),
     cities: Array.from(state.cities.entries()),
     villages: Array.from(state.villages.entries()),
@@ -115,7 +112,6 @@ export function deserializeGameState(payload: SerializedGameState): GameState {
         }
       : undefined,
     factions: toTypedMap(payload.factions),
-    factionResearch: toTypedMap(payload.factionResearch),
     units: toTypedMap(payload.units),
     cities: toTypedMap(payload.cities),
     villages: toTypedMap(payload.villages),

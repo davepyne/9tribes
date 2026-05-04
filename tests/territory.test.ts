@@ -6,31 +6,8 @@ import {
   isCityEncircled,
   isEncirclementBroken,
 } from '../src/systems/territorySystem';
-import { createUnitId, createFactionId } from '../src/core/ids';
+import { makeUnit } from './helpers/makeUnit';
 import { initializeFogForFaction } from '../src/systems/fogSystem';
-
-function makeUnit(overrides: Partial<any> = {}) {
-  return {
-    id: createUnitId(),
-    factionId: createFactionId('red'),
-    position: { q: 5, r: 5 },
-    facing: 0,
-    hp: 10,
-    maxHp: 10,
-    movesRemaining: 2,
-    maxMoves: 2,
-    attacksRemaining: 1,
-    xp: 0,
-    veteranLevel: 'green',
-    status: 'ready',
-    prototypeId: 'test_proto',
-    history: [],
-    morale: 100,
-    routed: false,
-    enteredZoCThisActivation: false,
-    ...overrides,
-  };
-}
 
 describe('Territory Control', () => {
   it('city claims hexes within radius', () => {

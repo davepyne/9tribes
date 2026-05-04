@@ -7,10 +7,6 @@
     "summon": {
       "chassisId": "desert_immortals_frame",
       "terrainTypes": ["desert", "city"],
-      "hp": 12,
-      "attack": 2,
-      "defense": 3,
-      "moves": 3,
       "tags": ["camel", "mounted", "self_heal"],
       "name": "Desert Immortals"
     },
@@ -22,10 +18,6 @@
     "summon": {
       "chassisId": "war_elephant_frame",
       "terrainTypes": ["savannah", "plains", "city"],
-      "hp": 14,
-      "attack": 4,
-      "defense": 2,
-      "moves": 3,
       "tags": ["beast", "charge", "trample"],
       "name": "War Elephant"
     },
@@ -36,10 +28,6 @@
     "summon": {
       "chassisId": "polar_bear_frame",
       "terrainTypes": ["tundra", "city"],
-      "hp": 25,
-      "attack": 7,
-      "defense": 3,
-      "moves": 3,
       "tags": ["beast", "summon", "frost"],
       "name": "Polar Bear"
     },
@@ -50,10 +38,6 @@
     "summon": {
       "chassisId": "siege_golem_frame",
       "terrainTypes": ["hill", "city"],
-      "hp": 22,
-      "attack": 6,
-      "defense": 5,
-      "moves": 2,
       "tags": ["beast", "summon", "siege", "fortress"],
       "name": "Siege Golem"
     },
@@ -65,10 +49,6 @@
     "summon": {
       "chassisId": "serpent_frame",
       "terrainTypes": ["jungle", "swamp"],
-      "hp": 18,
-      "attack": 5,
-      "defense": 2,
-      "moves": 3,
       "tags": ["beast", "summon", "jungle", "poison"],
       "name": "Serpent God"
     },
@@ -79,10 +59,6 @@
     "summon": {
       "chassisId": "druid_wizard_frame",
       "terrainTypes": ["forest", "jungle", "city"],
-      "hp": 8,
-      "attack": 3,
-      "defense": 3,
-      "moves": 3,
       "tags": ["magic", "ranged", "healing"],
       "name": "Druid Wizard"
     },
@@ -94,10 +70,6 @@
     "summon": {
       "chassisId": "warlord_frame",
       "terrainTypes": ["plains", "savannah"],
-      "hp": 20,
-      "attack": 5,
-      "defense": 3,
-      "moves": 3,
       "tags": ["cavalry", "mounted", "warlord", "summon", "aura"],
       "name": "Warlord"
     },
@@ -117,10 +89,6 @@
     "summon": {
       "chassisId": "galley_frame",
       "terrainTypes": ["coast", "ocean", "city"],
-      "hp": 14,
-      "attack": 3,
-      "defense": 2,
-      "moves": 5,
       "tags": ["naval", "ranged", "transport"],
       "name": "Galley"
     },
@@ -132,10 +100,6 @@
     "summon": {
       "chassisId": "alligator_frame",
       "terrainTypes": ["river", "jungle", "swamp"],
-      "hp": 15,
-      "attack": 5,
-      "defense": 2,
-      "moves": 3,
       "tags": ["beast", "summon", "river"],
       "name": "Ancient Alligator"
     },

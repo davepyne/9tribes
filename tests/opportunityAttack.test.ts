@@ -2,7 +2,7 @@ import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
 import { moveUnit } from '../src/systems/movementSystem';
 import { applyOpportunityAttacks } from '../src/systems/opportunityAttackSystem';
-import { createUnitId, createFactionId } from '../src/core/ids';
+import { makeUnit } from './helpers/makeUnit';
 
 const registry = loadRulesRegistry();
 
@@ -37,33 +37,6 @@ function makeSpearComponent(id: string) {
     tags: ['spear'],
     attackBonus: 0,
     defenseBonus: 0,
-  };
-}
-
-function makeUnit(overrides: Partial<any> = {}) {
-  return {
-    id: createUnitId(),
-    factionId: createFactionId('red'),
-    position: ORIGIN,
-    facing: 0,
-    hp: 10,
-    maxHp: 10,
-    movesRemaining: 3,
-    maxMoves: 3,
-    attacksRemaining: 1,
-    xp: 0,
-    veteranLevel: 'green',
-    status: 'ready',
-    prototypeId: 'infantry_proto' as any,
-    history: [],
-    morale: 100,
-    routed: false,
-    poisonStacks: 0,
-    poisonTurnsRemaining: 0,
-    isStealthed: false,
-    turnsSinceStealthBreak: 0,
-    enteredZoCThisActivation: false,
-    ...overrides,
   };
 }
 
@@ -215,6 +188,7 @@ describe('Opportunity Attacks', () => {
       return originalGetComponent ? originalGetComponent(id) : undefined;
     };
 
+    try {
     state.prototypes.set(cavalryProto.id, cavalryProto);
     state.prototypes.set(spearProto.id, spearProto);
     state.prototypes.set(plainProto.id, plainProto);
@@ -284,9 +258,10 @@ describe('Opportunity Attacks', () => {
     // Infantry mover should take damage from melee enemy
     expect(infHpAfterPlain).toBeLessThan(infMover2.hp);
     expect(infHpAfterSpear).toBeLessThan(infMover.hp);
-
-    // Restore getComponent
-    registryAny.getComponent = originalGetComponent;
+    } finally {
+      // Restore getComponent even if assertions fail
+      registryAny.getComponent = originalGetComponent;
+    }
   });
 
   it('multiple melee enemies each deal OA damage (cumulative)', () => {

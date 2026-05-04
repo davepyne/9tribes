@@ -103,11 +103,3 @@ export interface Faction {
   homeCityId?: CityId;
 }
 
-export interface FactionResearch {
-  factionId: FactionId;
-  activeNodeId: string | null;
-  progress: number;
-  completedNodes: string[];
-  unlockedComponents: string[];
-  unlockedChassis?: string[];
-}

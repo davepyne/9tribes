@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import React, { type CSSProperties } from 'react';
 
 type TurnBannerProps = {
   factionName: string;
@@ -6,7 +6,7 @@ type TurnBannerProps = {
   round: number;
 };
 
-export function TurnBanner({ factionName, factionColor, round }: TurnBannerProps) {
+export const TurnBanner = React.memo(function TurnBanner({ factionName, factionColor, round }: TurnBannerProps) {
   return (
     <div className="tb-root" style={{ '--tb-color': factionColor } as CSSProperties}>
       <p className="tb-kicker">Now Acting</p>
@@ -14,4 +14,4 @@ export function TurnBanner({ factionName, factionColor, round }: TurnBannerProps
       <p className="tb-round">Round {round}</p>
     </div>
   );
-}
+});

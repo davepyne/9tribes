@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import type { TerrainInspectorViewModel } from '../game/types/clientState';
 
 type TerrainPanelProps = {
@@ -120,7 +120,7 @@ function SynergyBadge({ score, isHome }: { score: number; isHome: boolean }) {
   return <span className="ti-badge ti-badge--none">Foreign Ground</span>;
 }
 
-export function TerrainPanel({ terrain, onClose }: TerrainPanelProps) {
+export const TerrainPanel = React.memo(function TerrainPanel({ terrain, onClose }: TerrainPanelProps) {
   const isOpen = terrain !== null;
   const [selectedInfo, setSelectedInfo] = useState<{ title: string; description: string } | null>(null);
 
@@ -253,4 +253,4 @@ export function TerrainPanel({ terrain, onClose }: TerrainPanelProps) {
       )}
     </aside>
   );
-}
+});

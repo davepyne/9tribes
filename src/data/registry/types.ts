@@ -189,10 +189,6 @@ export interface AiProfilesDef {
 export interface SummonConfig {
   chassisId: string;
   terrainTypes: string[];
-  hp: number;
-  attack: number;
-  defense: number;
-  moves: number;
   tags: string[];
   name: string;
 }

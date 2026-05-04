@@ -1,5 +1,4 @@
-import { hexDistance, getHexesInRange, hexToKey } from '../core/grid.js';
-import { keyToHex } from '../core/hex.js';
+import { hexDistance, getHexesInRange, hexToKey, keyToHex } from '../core/grid.js';
 import type { CitySiteBonuses, CitySiteTrait } from '../features/cities/types.js';
 import type { City, GameState } from '../game/types.js';
 import type { FactionId, HexCoord } from '../types.js';

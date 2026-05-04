@@ -1,8 +1,10 @@
+import React from 'react';
+
 type DebugOverlayProps = {
   events: Array<{ sequence?: number; round: number; kind?: 'move' | 'turn'; message: string }>;
 };
 
-export function DebugOverlay({ events }: DebugOverlayProps) {
+export const DebugOverlay = React.memo(function DebugOverlay({ events }: DebugOverlayProps) {
   if (events.length === 0) {
     return (
       <div className="dbg-root">
@@ -26,4 +28,4 @@ export function DebugOverlay({ events }: DebugOverlayProps) {
       </div>
     </div>
   );
-}
+});

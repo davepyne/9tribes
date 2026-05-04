@@ -30,15 +30,15 @@ export function generateMvpMap(
   carveRivers(map, rng);
   carveJungles(map, rng);
   carveSwamps(map, rng);
-  ensureJungleNearStart(map, { q: 6, r: 27 }, 1);
+  ensureTerrainNearStart(map, { q: 6, r: 27 }, 1, 'jungle');
 
   carveHills(map, rng);
-  ensureHillsNearStart(map, { q: 6, r: 15 }, 2);
+  ensureTerrainNearStart(map, { q: 6, r: 15 }, 2, 'hill');
 
   carveMountains(map, rng);
 
   carveSavannahs(map, rng);
-  ensureSavannahNearStart(map, { q: 20, r: 27 }, 1);
+  ensureTerrainNearStart(map, { q: 20, r: 27 }, 1, 'savannah');
 
   ensureRiverNearStart(map, { q: 34, r: 3 }, 2);
   ensureCoastNearStart(map, { q: 34, r: 15 }, 2);
@@ -142,42 +142,35 @@ function carveSwamps(map: GameMap, rng: RNGState): void {
 }
 
 /**
- * Guarantee at least one jungle cluster near a faction's start position.
- * If no jungle tile exists within `radius` of `startHex`, stamp a small cluster there.
+ * Guarantee at least one terrain cluster near a faction's start position.
+ * Stamps a 3x3 area of `terrain` if none exists within `radius` of `startHex`.
  */
-function ensureJungleNearStart(
+function ensureTerrainNearStart(
   map: GameMap,
   startHex: { q: number; r: number },
-  radius: number
+  radius: number,
+  terrain: TerrainType
 ): void {
-  // Check if any jungle tile already exists within radius of start
-  let hasJungleNearby = false;
+  let hasNearby = false;
   for (const [, tile] of map.tiles) {
-    if (tile.terrain === 'jungle') {
+    if (tile.terrain === terrain) {
       const dist = hexDistance(startHex, tile.position);
       if (dist <= radius) {
-        hasJungleNearby = true;
+        hasNearby = true;
         break;
       }
     }
   }
 
-  if (hasJungleNearby) return;
+  if (hasNearby) return;
 
-  // No jungle nearby — find the best center for a cluster (start hex or an adjacent one)
-  const candidates = [
-    startHex,
-    ...getNeighbors(startHex),
-  ];
+  const candidates = [startHex, ...getNeighbors(startHex)];
 
   for (const center of candidates) {
     const key = hexToKey(center);
     const tile = map.tiles.get(key);
     if (!tile) continue;
-
-    // Prefer non-river, non-coast tiles for the cluster center
     if (tile.terrain !== 'river' && tile.terrain !== 'coast') {
-      // Stamp a small jungle cluster (radius 1) around this center
       for (let dq = -1; dq <= 1; dq++) {
         for (let dr = -1; dr <= 1; dr++) {
           const nq = center.q + dq;
@@ -186,18 +179,17 @@ function ensureJungleNearStart(
           const ntile = map.tiles.get(nkey);
           if (!ntile) continue;
           if (ntile.terrain === 'river' || ntile.terrain === 'coast' || ntile.terrain === 'ocean') continue;
-          ntile.terrain = 'jungle';
+          ntile.terrain = terrain;
         }
       }
       return;
     }
   }
 
-  // Fallback: force the start tile itself to jungle even if river/coast
   const startKey = hexToKey(startHex);
   const startTile = map.tiles.get(startKey);
   if (startTile) {
-    startTile.terrain = 'jungle';
+    startTile.terrain = terrain;
   }
 }
 
@@ -280,111 +272,6 @@ function carveMountains(map: GameMap, rng: RNGState): void {
         }
       }
     }
-  }
-}
-
-/**
- * Guarantee at least one hill cluster near a faction's start position.
- */
-function ensureHillsNearStart(
-  map: GameMap,
-  startHex: { q: number; r: number },
-  radius: number
-): void {
-  let hasHillNearby = false;
-  for (const [, tile] of map.tiles) {
-    if (tile.terrain === 'hill') {
-      const dist = hexDistance(startHex, tile.position);
-      if (dist <= radius) {
-        hasHillNearby = true;
-        break;
-      }
-    }
-  }
-
-  if (hasHillNearby) return;
-
-  const candidates = [startHex, ...getNeighbors(startHex)];
-
-  for (const center of candidates) {
-    const key = hexToKey(center);
-    const tile = map.tiles.get(key);
-    if (!tile) continue;
-    if (tile.terrain !== 'river' && tile.terrain !== 'coast') {
-      for (let dq = -1; dq <= 1; dq++) {
-        for (let dr = -1; dr <= 1; dr++) {
-          const nq = center.q + dq;
-          const nr = center.r + dr;
-          const nkey = hexToKey({ q: nq, r: nr });
-          const ntile = map.tiles.get(nkey);
-          if (!ntile) continue;
-          if (ntile.terrain === 'river' || ntile.terrain === 'coast' || ntile.terrain === 'ocean') continue;
-          ntile.terrain = 'hill';
-        }
-      }
-      return;
-    }
-  }
-
-  const startKey = hexToKey(startHex);
-  const startTile = map.tiles.get(startKey);
-  if (startTile) {
-    startTile.terrain = 'hill';
-  }
-}
-
-/**
- * Guarantee at least one savannah cluster near a faction's start position.
- * If no savannah tile exists within `radius` of `startHex`, stamp a small cluster there.
- */
-function ensureSavannahNearStart(
-  map: GameMap,
-  startHex: { q: number; r: number },
-  radius: number
-): void {
-  let hasSavannahNearby = false;
-  for (const [, tile] of map.tiles) {
-    if (tile.terrain === 'savannah') {
-      const dist = hexDistance(startHex, tile.position);
-      if (dist <= radius) {
-        hasSavannahNearby = true;
-        break;
-      }
-    }
-  }
-
-  if (hasSavannahNearby) return;
-
-  const candidates = [
-    startHex,
-    ...getNeighbors(startHex),
-  ];
-
-  for (const center of candidates) {
-    const key = hexToKey(center);
-    const tile = map.tiles.get(key);
-    if (!tile) continue;
-
-    if (tile.terrain !== 'river' && tile.terrain !== 'coast') {
-      for (let dq = -1; dq <= 1; dq++) {
-        for (let dr = -1; dr <= 1; dr++) {
-          const nq = center.q + dq;
-          const nr = center.r + dr;
-          const nkey = hexToKey({ q: nq, r: nr });
-          const ntile = map.tiles.get(nkey);
-          if (!ntile) continue;
-          if (ntile.terrain === 'river' || ntile.terrain === 'coast' || ntile.terrain === 'ocean') continue;
-          ntile.terrain = 'savannah';
-        }
-      }
-      return;
-    }
-  }
-
-  const startKey = hexToKey(startHex);
-  const startTile = map.tiles.get(startKey);
-  if (startTile) {
-    startTile.terrain = 'savannah';
   }
 }
 

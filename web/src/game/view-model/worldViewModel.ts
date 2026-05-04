@@ -1,7 +1,8 @@
 import civilizationsData from '../../../../src/content/base/civilizations.json';
-import { hexDistance, hexToKey } from '../../../../src/core/grid.js';
+import { getNeighbors, hexDistance, hexToKey } from '../../../../src/core/grid.js';
 import type { RulesRegistry } from '../../../../src/data/registry/types.js';
 import type { FactionId, GameState, Unit } from '../../../../src/game/types.js';
+import { getFaction, getPrototype, getResearch } from '../stateAccess.js';
 import { canUseAmbush, canUseBrace, getTerrainAt, hasAdjacentEnemy } from '../../../../src/systems/abilitySystem.js';
 import { resolveCapabilityDoctrine } from '../../../../src/systems/capabilityDoctrine.js';
 import { deriveResourceIncome, getSupplyDeficit } from '../../../../src/systems/economySystem.js';
@@ -144,6 +145,16 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
     );
   }
 
+  // Index units by position key for O(1) adjacency lookups (transport boarding)
+  const unitsByPosition = new Map<string, Unit[]>();
+  for (const unit of state.units.values()) {
+    if (unit.hp <= 0) continue;
+    const key = hexToKey(unit.position);
+    const bucket = unitsByPosition.get(key);
+    if (bucket) bucket.push(unit);
+    else unitsByPosition.set(key, [unit]);
+  }
+
   return {
     activeFactionId: state.activeFactionId,
     map: {
@@ -153,7 +164,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
     },
     factions,
     units: Array.from(state.units.values()).filter((unit) => unit.hp > 0).map((unit) => {
-      const prototype = state.prototypes.get(unit.prototypeId as never);
+      const prototype = getPrototype(state, unit.prototypeId);
       const chassisId = prototype?.chassisId ?? inferChassisId(prototype?.name ?? unit.prototypeId);
       const canAct = unit.factionId === state.activeFactionId
         && unit.status === 'ready'
@@ -161,12 +172,13 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
         && ((moveCounts.get(unit.id) ?? 0) > 0 || (attackCounts.get(unit.id) ?? 0) > 0);
       const faction = state.factions.get(unit.factionId);
       const factionDoctrine = faction
-        ? resolveCapabilityDoctrine(state.research.get(unit.factionId as never), faction)
+        ? resolveCapabilityDoctrine(getResearch(state, unit.factionId), faction)
         : undefined;
       const unitTransport = getUnitTransport(unit.id, state.transportMap);
       const boardableTransportIds = unit.factionId === state.activeFactionId && unit.hp > 0
-        ? Array.from(state.units.values())
-          .filter((candidate) => candidate.factionId === unit.factionId && candidate.id !== unit.id)
+        ? getNeighbors(unit.position)
+          .flatMap((adj) => unitsByPosition.get(hexToKey(adj)) ?? [])
+          .filter((candidate) => candidate.id !== unit.id)
           .filter((candidate) => canBoardTransport(state, unit.id, candidate.id, source.registry, state.transportMap))
           .map((candidate) => candidate.id)
         : [];
@@ -418,14 +430,14 @@ function buildResearchChip(
 ): { activeNodeName: string | null; progress: number | null; totalCompleted: number; nextTierName: string | null; nextTierProgress: number | null } | null {
   const factionId = state.activeFactionId;
   if (!factionId) return null;
-  const research = state.research.get(factionId as never);
-  const faction = state.factions.get(factionId as never);
+  const research = getResearch(state, factionId);
+  const faction = getFaction(state, factionId);
   if (!research || !faction) return null;
 
   let activeNodeName: string | null = null;
   let activeNodeCost = 0;
   const activeProgress = research.activeNodeId
-    ? (research.progressByNodeId[research.activeNodeId as never] ?? 0)
+    ? (research.progressByNodeId[research.activeNodeId] ?? 0)
     : null;
 
   let nextTierName: string | null = null;
@@ -661,7 +673,7 @@ function getAttackableEnemies(state: GameState, unit: Unit) {
     return [];
   }
 
-  const prototype = state.prototypes.get(unit.prototypeId as never);
+  const prototype = getPrototype(state, unit.prototypeId);
   const attackRange = prototype?.derivedStats.range ?? 1;
   return Array.from(state.units.values()).filter((candidate) =>
     candidate.hp > 0

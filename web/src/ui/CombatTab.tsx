@@ -1,6 +1,7 @@
+import React from 'react';
 import { helpContent } from '../data/help-content';
 
-export function CombatTab() {
+export const CombatTab = React.memo(function CombatTab() {
   return (
     <div className="combat-tab">
       <div className="help-content">
@@ -14,4 +15,4 @@ export function CombatTab() {
       </div>
     </div>
   );
-}
+});

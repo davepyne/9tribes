@@ -154,7 +154,11 @@ describe('combat resolution', () => {
       (u) => (state.prototypes.get(u.prototypeId)?.derivedStats.range ?? 1) === 1
     );
 
-    if (!rangedUnit || !meleeUnit) return;
+    if (!rangedUnit || !meleeUnit) {
+      expect(rangedUnit).toBeDefined();
+      expect(meleeUnit).toBeDefined();
+      return;
+    }
 
     const rangedProto = state.prototypes.get(rangedUnit.prototypeId)!;
     const meleeProto = state.prototypes.get(meleeUnit.prototypeId)!;
@@ -555,12 +559,8 @@ describe('simulation with new combat engine', () => {
     const state = buildMvpScenario(42);
     const result = runWarEcologySimulation(state, registry, 25);
 
-    // Check that some units have reduced morale from combat
-    const unitsWithReducedMorale = Array.from(result.units.values()).filter(
-      (u) => u.morale < 100
-    );
-    // At least some combat should have happened in 25 turns
-    expect(unitsWithReducedMorale.length).toBeGreaterThanOrEqual(0);
+    // Combat morale changes are not guaranteed in 25 turns; the test
+    // primarily verifies the simulation runs to completion without error.
   });
 
   it('simulation remains deterministic', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { ClientState } from '../game/types/clientState';
 import { ResearchDetail } from './ResearchDetail';
 import { ResearchTree } from './ResearchTree';
@@ -10,7 +10,7 @@ type ResearchWindowProps = {
   onClose: () => void;
 };
 
-export function ResearchWindow({ state, onStartResearch, onCancelResearch, onClose }: ResearchWindowProps) {
+export const ResearchWindow = React.memo(function ResearchWindow({ state, onStartResearch, onCancelResearch, onClose }: ResearchWindowProps) {
   const research = state.research;
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
@@ -103,4 +103,4 @@ export function ResearchWindow({ state, onStartResearch, onCancelResearch, onClo
       </div>
     </div>
   );
-}
+});

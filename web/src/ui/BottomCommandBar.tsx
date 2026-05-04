@@ -1,3 +1,4 @@
+import React from 'react';
 import type { ClientState } from '../game/types/clientState';
 
 type BottomCommandBarProps = {
@@ -6,7 +7,7 @@ type BottomCommandBarProps = {
   onRestartSession?: () => void;
 };
 
-export function BottomCommandBar({ state, onEndTurn, onRestartSession }: BottomCommandBarProps) {
+export const BottomCommandBar = React.memo(function BottomCommandBar({ state, onEndTurn, onRestartSession }: BottomCommandBarProps) {
   const selectedUnitId = state.selected?.type === 'unit' ? state.selected.unitId : null;
   const selectedUnit = selectedUnitId
     ? state.world.units.find((unit) => unit.id === selectedUnitId)
@@ -97,4 +98,4 @@ export function BottomCommandBar({ state, onEndTurn, onRestartSession }: BottomC
       </div>
     </section>
   );
-}
+});

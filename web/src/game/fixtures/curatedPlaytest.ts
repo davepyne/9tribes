@@ -5,6 +5,7 @@ import type { FactionId } from '../../../../src/types.js';
 import { loadRulesRegistry } from '../../../../src/data/loader/loadRulesRegistry.js';
 import type { TerrainType } from '../../../../src/world/map/types.js';
 import { serializeGameState, type SerializedGameState } from '../types/playState';
+import { getFaction, getCity, getUnit } from '../stateAccess.js';
 
 const PLAYTEST_SEED = 42;
 const PLAYTEST_FACTIONS = ['druid_circle', 'steppe_clan'] as const;
@@ -23,7 +24,7 @@ export function createCuratedPlaytestPayload(): SerializedGameState {
 function curatePlaytestState(state: GameState) {
   const factionIds = new Set<string>(PLAYTEST_FACTIONS);
   const curatedFactions = PLAYTEST_FACTIONS.map((factionId) => {
-    const faction = state.factions.get(factionId as never);
+    const faction = getFaction(state, factionId);
     if (!faction) {
       throw new Error(`Missing curated playtest faction: ${factionId}`);
     }
@@ -37,7 +38,6 @@ function curatePlaytestState(state: GameState) {
   state.research = new Map(Array.from(state.research.entries()).filter(([factionId]) => factionIds.has(factionId)));
   state.economy = new Map(Array.from(state.economy.entries()).filter(([factionId]) => factionIds.has(factionId)));
   state.warExhaustion = new Map(Array.from(state.warExhaustion.entries()).filter(([factionId]) => factionIds.has(factionId)));
-  state.factionResearch = new Map(Array.from(state.factionResearch.entries()).filter(([factionId]) => factionIds.has(factionId)));
   state.factionStrategies = new Map();
   state.improvements = new Map();
   state.poisonTraps = new Map();
@@ -49,8 +49,8 @@ function curatePlaytestState(state: GameState) {
   const usedPrototypeIds = new Set(Array.from(state.units.values()).map((unit) => unit.prototypeId));
   state.prototypes = new Map(Array.from(state.prototypes.entries()).filter(([prototypeId]) => usedPrototypeIds.has(prototypeId)));
 
-  const druidFaction = state.factions.get('druid_circle' as never)!;
-  const steppeFaction = state.factions.get('steppe_clan' as never)!;
+  const druidFaction = getFaction(state, 'druid_circle')!;
+  const steppeFaction = getFaction(state, 'steppe_clan')!;
   druidFaction.villageIds = [];
   steppeFaction.villageIds = [];
 
@@ -59,8 +59,8 @@ function curatePlaytestState(state: GameState) {
     steppeFaction.learnedDomains = [...(steppeFaction.learnedDomains ?? []), 'hitrun'];
   }
 
-  const druidCity = state.cities.get(druidFaction.cityIds[0] as never);
-  const steppeCity = state.cities.get(steppeFaction.cityIds[0] as never);
+  const druidCity = getCity(state, druidFaction.cityIds[0]);
+  const steppeCity = getCity(state, steppeFaction.cityIds[0]);
   if (!druidCity || !steppeCity) {
     throw new Error('Curated playtest is missing one or more cities.');
   }
@@ -71,10 +71,10 @@ function curatePlaytestState(state: GameState) {
   steppeCity.name = 'Windscar Camp';
 
   const druidUnits = druidFaction.unitIds
-    .map((unitId) => state.units.get(unitId as never))
+    .map((unitId) => getUnit(state, unitId))
     .filter((unit): unit is Unit => Boolean(unit));
   const steppeUnits = steppeFaction.unitIds
-    .map((unitId) => state.units.get(unitId as never))
+    .map((unitId) => getUnit(state, unitId))
     .filter((unit): unit is Unit => Boolean(unit));
 
   if (druidUnits.length < 2 || steppeUnits.length < 2) {

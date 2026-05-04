@@ -3,43 +3,10 @@ import { buildMvpScenario } from '../src/game/buildMvpScenario';
 import { choosePrimaryEnemyFaction } from '../src/systems/strategic-ai/objectives';
 import { getAiDifficultyProfile } from '../src/systems/aiDifficulty';
 import { computeFactionStrategy } from '../src/systems/strategicAi';
-import type { FactionId, UnitId } from '../src/types';
+import type { FactionId } from '../src/types';
+import { trimState } from './helpers/trimState';
 
 const registry = loadRulesRegistry();
-
-function trimState(state: ReturnType<typeof buildMvpScenario>, factionIds: string[]) {
-  const keep = new Set(factionIds);
-  for (const [id, u] of state.units) {
-    if (!keep.has(u.factionId)) state.units.delete(id);
-  }
-  for (const [id, c] of state.cities) {
-    if (!keep.has(c.factionId)) state.cities.delete(id);
-  }
-  for (const [id, v] of state.villages) {
-    if (!keep.has(v.factionId)) state.villages.delete(id);
-  }
-  for (const [fid, f] of state.factions) {
-    if (!keep.has(fid)) {
-      state.factions.delete(fid);
-    } else {
-      f.unitIds = f.unitIds.filter((uid: UnitId) => state.units.has(uid));
-      f.cityIds = f.cityIds.filter((cid: any) => state.cities.has(cid));
-      f.villageIds = f.villageIds.filter((vid: any) => state.villages.has(vid));
-    }
-  }
-  for (const [fid] of state.economy) {
-    if (!keep.has(fid)) state.economy.delete(fid);
-  }
-  for (const [fid] of state.research) {
-    if (!keep.has(fid)) state.research.delete(fid);
-  }
-  for (const [fid] of state.warExhaustion) {
-    if (!keep.has(fid)) state.warExhaustion.delete(fid);
-  }
-  for (const [fid] of state.factionStrategies) {
-    if (!keep.has(fid)) state.factionStrategies.delete(fid);
-  }
-}
 
 // ---------------------------------------------------------------------------
 // 1. Runaway detection

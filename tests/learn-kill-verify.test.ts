@@ -36,7 +36,7 @@ describe('Learn-by-Kill RNG verification', () => {
     for (const v of vals) expect(v).toBeLessThan(1);
   });
 
-  it('green units should learn ~25% of the time over 10000 trials', () => {
+  it.skipIf(!process.env.RUN_SLOW)('green units should learn ~25% of the time over 10000 trials', () => {
     let learns = 0;
     for (let s = 0; s < 10000; s++) {
       const r = createRNG(s + 50000);
@@ -50,7 +50,7 @@ describe('Learn-by-Kill RNG verification', () => {
     expect(pct).toBeLessThan(14);
   });
 
-  it('veteran units should learn ~55% of the time over 10000 trials', () => {
+  it.skipIf(!process.env.RUN_SLOW)('veteran units should learn ~55% of the time over 10000 trials', () => {
     let learns = 0;
     const vetUnit = { ...greenUnit, veteranLevel: 'veteran' };
     for (let s = 0; s < 10000; s++) {

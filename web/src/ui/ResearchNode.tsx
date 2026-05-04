@@ -1,3 +1,4 @@
+import React from 'react';
 import type { ResearchNodeViewModel } from '../game/types/clientState';
 
 type ResearchNodeProps = {
@@ -14,7 +15,7 @@ const stateIcons: Record<ResearchNodeViewModel['state'], string> = {
   insufficient: '\u25B3',
 };
 
-export function ResearchNode({ node, selected, onSelect }: ResearchNodeProps) {
+export const ResearchNode = React.memo(function ResearchNode({ node, selected, onSelect }: ResearchNodeProps) {
   const progressPct = node.xpCost > 0 ? Math.round((node.currentProgress / node.xpCost) * 100) : 0;
   const summary = node.qualitativeEffect ?? '';
 
@@ -57,4 +58,4 @@ export function ResearchNode({ node, selected, onSelect }: ResearchNodeProps) {
       {summary && <div className="research-node__effect">{summary}</div>}
     </div>
   );
-}
+});
