@@ -93,7 +93,7 @@ export function getProjectedSupplyMarginAfterBuild(
   return Number((economy.supplyIncome - projectedDemand).toFixed(2));
 }
 
-export function scoreSupplyEfficiency(prototype: Pick<Prototype, 'chassisId'> & {
+function scoreSupplyEfficiency(prototype: Pick<Prototype, 'chassisId'> & {
   derivedStats: { attack: number; defense: number; hp: number; moves: number; range: number };
 }, registry: RulesRegistry): number {
   const economic = getPrototypeEconomicProfile(prototype, registry);
@@ -106,7 +106,7 @@ export function scoreSupplyEfficiency(prototype: Pick<Prototype, 'chassisId'> & 
   return combatValue / Math.max(0.25, economic.supplyCost);
 }
 
-export function scoreForceProjectionValue(
+function scoreForceProjectionValue(
   prototype: {
     tags?: string[];
     derivedStats: { role: string; attack: number; moves: number; range: number };
@@ -527,7 +527,7 @@ function rankRushProductionPriorities(
   prototypes: ReturnType<typeof getAvailableProductionPrototypes>,
   enemyUnits: GameState['units'] extends Map<any, infer U> ? U[] : never,
 ): ProductionPriority[] {
-  const militaryPrototypes = prototypes.filter((prototype) => isRushMilitaryPrototype(prototype));
+  const militaryPrototypes = prototypes.filter((prototype) => isMilitaryPrototype(prototype));
   const candidates = militaryPrototypes.length > 0 ? militaryPrototypes : prototypes;
   const faction = state.factions.get(factionId);
   if (!faction) {
@@ -551,12 +551,6 @@ function rankRushProductionPriorities(
       };
     })
     .sort((left, right) => right.score - left.score || left.prototypeId.localeCompare(right.prototypeId));
-}
-
-function isRushMilitaryPrototype(
-  prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>,
-): boolean {
-  return isMilitaryPrototype(prototype);
 }
 
 function scoreSettlerExpansionValue(

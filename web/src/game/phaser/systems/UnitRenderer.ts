@@ -5,7 +5,7 @@ import { getUnitTextureSpec, getUnitRearTextureSpec } from '../assets/keys';
 
 type UnitCallbacks = {
   onUnitSelected: (unitId: string, pointer?: Phaser.Input.Pointer) => void;
-  onUnitPointerDown: (unitId: string, pointer: Phaser.Input.Pointer) => void;
+  onUnitPointerDown?: (unitId: string, pointer: Phaser.Input.Pointer) => void;
   /** IDs of units being animated elsewhere (e.g. CombatAnimator overlay) — skip rendering these */
   skipUnitIds?: Set<string>;
 };
@@ -85,7 +85,7 @@ export class UnitRenderer {
 
       sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
         callbacks.onUnitSelected(unit.id, pointer);
-        callbacks.onUnitPointerDown(unit.id, pointer);
+        callbacks.onUnitPointerDown?.(unit.id, pointer);
       });
       const attackIndicators: Phaser.GameObjects.GameObject[] = [];
       sprite.on('pointerover', () => {

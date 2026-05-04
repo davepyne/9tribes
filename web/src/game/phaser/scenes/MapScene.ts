@@ -213,7 +213,6 @@ export class MapScene extends Phaser.Scene {
 
     this.unitRenderer.render(state.world, state, {
       onUnitSelected: (unitId, pointer) => this.handleUnitSelection(state, unitId, pointer),
-      onUnitPointerDown: (unitId, pointer) => this.handleUnitPointerDown(state, unitId, pointer),
       skipUnitIds: this.combatAnimator.getAnimatedUnitIds(),
     });
 
@@ -397,11 +396,6 @@ export class MapScene extends Phaser.Scene {
     this.controller.dispatch({ type: 'select_village', villageId });
   }
 
-
-  private handleUnitPointerDown(_state: ClientState, _unitId: string, _pointer: Phaser.Input.Pointer) {
-    // Left-click selection is handled by handleUnitSelection.
-    // Drag-to-move has been removed; use right-click to issue move commands.
-  }
 
   private handleRightClick(pointer: Phaser.Input.Pointer) {
     if (this.combatAnimator.isAnimating()) return;

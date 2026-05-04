@@ -76,10 +76,6 @@ function extractTier(nodeId: string): number {
   return match ? parseInt(match[1], 10) : 1;
 }
 
-function getEffectiveXpCost(_faction: { learnedDomains?: string[]; nativeDomain?: string }, xpCost: number): number {
-  return xpCost;
-}
-
 // ---------------------------------------------------------------------------
 // Candidate enumeration
 // ---------------------------------------------------------------------------
@@ -255,37 +251,7 @@ function scoreCostEfficiency(
   faction: { learnedDomains?: string[]; nativeDomain?: string },
   xpCost: number,
 ): number {
-  const effective = getEffectiveXpCost(faction, xpCost);
-  // Linear penalty: 0.1 per effective XP point
-  return -effective * 0.1;
-}
-
-/**
- * Research no longer grants hidden production unlocks directly.
- */
-function scoreImmediateUnlocks(
-  state: GameState,
-  factionId: FactionId,
-  nodeId: string,
-  registry: RulesRegistry,
-): number {
-  void state;
-  void factionId;
-  void nodeId;
-  void registry;
-  return 0;
-}
-
-/**
- * Research rate is flat, so there is no hidden knowledge discount bonus.
- */
-function scoreKnowledgeBonus(
-  faction: { learnedDomains?: string[]; nativeDomain?: string },
-  xpCost: number,
-): number {
-  void faction;
-  void xpCost;
-  return 0;
+  return -xpCost * 0.1;
 }
 
 /**
@@ -579,8 +545,6 @@ function buildResearchReason(
     signature: number;
     synergy: number;
     tier: number;
-    immediate: number;
-    knowledge: number;
     gameState: number;
     doctrinePackage: number;
     logistics: number;
@@ -598,8 +562,6 @@ function buildResearchReason(
   if (scores.signature > 0) parts.push('signature unit synergy');
   if (scores.synergy > 0) parts.push('hybrid/absorption goal');
   if (scores.tier > 0) parts.push('tier 2 urgency');
-  if (scores.immediate > 0) parts.push('unlocks production');
-  if (scores.knowledge > 0) parts.push('cosmopolitan knowledge bonus');
   if (scores.gameState > 0) parts.push('game-state urgency');
   if (scores.doctrinePackage > 0) parts.push('doctrine package');
   if (scores.logistics > 0) parts.push('logistics fit');
@@ -651,13 +613,6 @@ export function rankResearchPriorities(
       const synergyScore = scoreSynergy(strategy, candidate.def.codifies ?? []);
       const tierScore = scoreTierUrgency(candidate.tier);
       const costScore = scoreCostEfficiency(faction, candidate.def.xpCost);
-      const immediateScore = scoreImmediateUnlocks(
-        state,
-        factionId,
-        candidate.def.id,
-        registry,
-      );
-      const knowledgeScore = scoreKnowledgeBonus(faction, candidate.def.xpCost);
       const gameStateScore = scoreGameStateUrgency(faction, strategy.posture, candidate.domainId);
       const doctrinePackageScore = scoreDoctrinePackageCompletion(
         candidate,
@@ -684,8 +639,6 @@ export function rankResearchPriorities(
         synergyScore +
         tierScore +
         costScore +
-        immediateScore +
-        knowledgeScore +
         gameStateScore +
         doctrinePackageScore +
         logisticsScore +
@@ -704,8 +657,6 @@ export function rankResearchPriorities(
           signature: signatureScore,
           synergy: synergyScore,
           tier: tierScore,
-          immediate: immediateScore,
-          knowledge: knowledgeScore,
           gameState: gameStateScore,
           doctrinePackage: doctrinePackageScore,
           logistics: logisticsScore,
