@@ -109,6 +109,29 @@ function KnowledgeGainedShellContent({
     showTechDiscovery,
   );
 
+  // ── Global hotkeys ──
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!e.ctrlKey) return;
+      switch (e.key.toLowerCase()) {
+        case 's':
+          e.preventDefault();
+          handleMenuAction('save');
+          break;
+        case 'l':
+          e.preventDefault();
+          handleMenuAction('load');
+          break;
+        case 'z':
+          e.preventDefault();
+          handleMenuAction('undo');
+          break;
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []); // handleMenuAction is stable via useCallback
+
   const { combatLocked } = useCombatBridge(controller, gameRef);
   useSessionAudio(state, combatLocked);
   useUndoHandler(controller);
