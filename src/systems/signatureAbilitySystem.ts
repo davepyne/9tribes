@@ -146,9 +146,27 @@ export function findRetreatHex(
   let bestHex: HexCoord | null = null;
   let maxEnemyDistance = -1;
 
+  const faction = state.factions.get(unit.factionId);
+  const passiveTrait = faction?.identityProfile.passiveTrait ?? '';
+  const prototype = state.prototypes.get(unit.prototypeId);
+  const unitTags = prototype?.tags ?? [];
+  const isAmphibious = unitTags.includes('amphibious');
+
   for (const hex of neighbors) {
     // Check if hex is occupied
     if (getUnitAtHex(state, hex)) continue;
+
+    const retreatTerrain = getTerrainAt(state, hex);
+    const isJungle = retreatTerrain === 'jungle';
+    const isDesert = retreatTerrain === 'desert';
+    const isSwamp = retreatTerrain === 'swamp';
+    const wouldTakeDamage =
+      (isJungle && passiveTrait !== 'jungle_stalkers')
+      || (isDesert && passiveTrait !== 'desert_logistics' && passiveTrait !== 'charge_momentum')
+      || (isSwamp && passiveTrait !== 'healing_druids' && passiveTrait !== 'jungle_stalkers' && passiveTrait !== 'river_assault' && !isAmphibious);
+
+    // Skip hexes with damaging terrain unless no safer hex is available
+    if (wouldTakeDamage) continue;
 
     // Calculate distance to nearest visible enemy
     let minEnemyDist = Infinity;
@@ -163,6 +181,14 @@ export function findRetreatHex(
     if (minEnemyDist > maxEnemyDistance) {
       maxEnemyDistance = minEnemyDist;
       bestHex = hex;
+    }
+  }
+
+  // Fallback: if all adjacent hexes are occupied or damaging, allow damaging hexes
+  if (bestHex === null) {
+    for (const hex of neighbors) {
+      if (getUnitAtHex(state, hex)) continue;
+      return hex;
     }
   }
 
