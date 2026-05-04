@@ -270,6 +270,19 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
           >
             <span className="gmb-chip-label">Research</span>
             <span>{researchChip.activeNodeName ?? 'Idle'}</span>
+            {researchChip.nextTierName && (
+              <div className="gmb-chip__next-tier">
+                <span className="gmb-chip__next-tier-label">{researchChip.nextTierName}</span>
+                {researchChip.nextTierProgress !== null ? (
+                  <div className="gmb-chip__progress-bar">
+                    <div
+                      className="gmb-chip__progress-fill"
+                      style={{ width: `${Math.round(researchChip.nextTierProgress * 100)}%` }}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            )}
           </button>
         ) : null}
 

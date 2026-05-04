@@ -94,6 +94,44 @@
 .gmb-chip--research {
   cursor: pointer;
   transition: background 150ms ease;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 5px 10px;
+  height: auto;
+}
+
+.gmb-chip__next-tier {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.gmb-chip__next-tier-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted, #9ca3af);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 100px;
+}
+
+.gmb-chip__progress-bar {
+  flex: 1;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 40px;
+}
+
+.gmb-chip__progress-fill {
+  height: 100%;
+  background: var(--accent, #d6a34b);
+  border-radius: 2px;
+  transition: width 300ms ease;
 }
 
 .gmb-chip--research:hover {

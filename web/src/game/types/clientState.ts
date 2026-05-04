@@ -40,6 +40,8 @@ export type HudViewModel = {
     activeNodeName: string | null;
     progress: number | null;
     totalCompleted: number;
+    nextTierName: string | null;
+    nextTierProgress: number | null;
   } | null;
   settlementPreview: SettlementPreviewViewModel | null;
   supply: {

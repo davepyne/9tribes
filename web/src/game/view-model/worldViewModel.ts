@@ -415,7 +415,7 @@ function buildPlayHudViewModel(
 function buildResearchChip(
   state: GameState,
   registry: RulesRegistry,
-): { activeNodeName: string | null; progress: number | null; totalCompleted: number } | null {
+): { activeNodeName: string | null; progress: number | null; totalCompleted: number; nextTierName: string | null; nextTierProgress: number | null } | null {
   const factionId = state.activeFactionId;
   if (!factionId) return null;
   const research = state.research.get(factionId as never);
@@ -428,12 +428,33 @@ function buildResearchChip(
     ? (research.progressByNodeId[research.activeNodeId as never] ?? 0)
     : null;
 
+  let nextTierName: string | null = null;
+  let nextTierProgress: number | null = null;
+
   if (research.activeNodeId) {
     const domainId = research.activeNodeId.split('_t')[0];
     const domain = registry.getResearchDomain(domainId);
     if (domain) {
       activeNodeName = domain.nodes[research.activeNodeId]?.name ?? research.activeNodeId;
       activeNodeCost = domain.nodes[research.activeNodeId]?.xpCost ?? 0;
+
+      const nodes = Object.values(domain.nodes).sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0));
+      const completed = new Set(research.completedNodes);
+      let nextNode = null;
+      for (const node of nodes) {
+        if (!completed.has(node.id) && node.id !== research.activeNodeId) {
+          nextNode = node;
+          break;
+        }
+      }
+      if (nextNode) {
+        nextTierName = nextNode.name;
+        const cumulativeXp = Object.entries(research.progressByNodeId)
+          .filter(([id]) => nodes.some((n) => n.id === id))
+          .reduce((sum, [, xp]) => sum + (xp ?? 0), 0);
+        const nextNodeCost = nextNode.xpCost;
+        nextTierProgress = nextNodeCost > 0 ? Math.min(1, cumulativeXp / nextNodeCost) : null;
+      }
     }
   }
 
@@ -441,6 +462,8 @@ function buildResearchChip(
     activeNodeName,
     progress: activeProgress !== null && activeNodeCost > 0 ? activeProgress / activeNodeCost : null,
     totalCompleted: research.completedNodes.length,
+    nextTierName,
+    nextTierProgress,
   };
 }
 
