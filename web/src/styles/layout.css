@@ -845,6 +845,11 @@
   z-index: 200;
 }
 
+.trait-popup-overlay {
+  align-items: flex-start;
+  z-index: 9999;
+}
+
 .faction-popup {
   background: var(--bg-primary, #1a1915);
   border: 1px solid rgba(255, 255, 255, 0.15);

@@ -169,7 +169,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
         </div>
       )}
       {traitPopupOpen && factionInfo && (
-        <div className="faction-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
+        <div className="trait-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
           <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360, marginTop: 60 }}>
             <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>×</button>
             <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.specialTrait}</h3>
