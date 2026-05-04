@@ -7,7 +7,7 @@ import type { HexCoord } from '../types.js';
 import { hexDistance, getNeighbors } from '../core/grid.js';
 import { getTile } from '../world/map/getTile.js';
 import { isUnitVisibleTo } from './fogSystem.js';
-import { isWaterTerrain } from './factionIdentitySystem.js';
+import { isWaterTerrain } from './terrainUtils.js';
 
 // Morale configuration constants
 export const MORALE_CONFIG = {

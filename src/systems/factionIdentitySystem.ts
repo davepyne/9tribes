@@ -4,15 +4,13 @@ import type { Unit } from '../features/units/types.js';
 import type { TerrainDef } from '../data/registry/types.js';
 import { getHexesInRange } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
+import { isWaterTerrain } from './terrainUtils.js';
 
-const WATER_TERRAINS = new Set(['coast', 'river', 'ocean']);
 const POOR_TERRAINS = new Set(['tundra', 'desert', 'hill', 'river', 'coast']);
 const OPEN_GROUND_TERRAINS = new Set(['plains', 'savannah']);
 const CHARGE_MOMENTUM_TERRAINS = new Set(['savannah', 'plains']);
 
-export function isWaterTerrain(terrainId: string | undefined): boolean {
-  return terrainId ? WATER_TERRAINS.has(terrainId) : false;
-}
+export { isWaterTerrain };
 
 export function isPoorTerrain(terrainId: string | undefined): boolean {
   return terrainId ? POOR_TERRAINS.has(terrainId) : false;

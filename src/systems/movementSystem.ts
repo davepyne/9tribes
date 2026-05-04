@@ -8,31 +8,15 @@ import { isHexOccupied } from './occupancySystem.js';
 import { entersEnemyZoC, getZoCMovementCost } from './zocSystem.js';
 import { applyOpportunityAttacks } from './opportunityAttackSystem.js';
 import { getMovementCostModifier } from './factionIdentitySystem.js';
+import { isWaterTerrain } from './terrainUtils.js';
 import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import { canUseCharge } from './abilitySystem.js';
 import { pruneDeadUnits } from './combatActionSystem.js';
 import { destroyVillage } from './villageSystem.js';
-import { SynergyEngine } from './synergyEngine.js';
-import pairSynergiesData from '../content/base/pair-synergies.json' assert { type: 'json' };
-import emergentRulesData from '../content/base/emergent-rules.json' assert { type: 'json' };
-import abilityDomainsData from '../content/base/ability-domains.json' assert { type: 'json' };
-import type { PairSynergyConfig, EmergentRuleConfig, DomainConfig } from './synergyEngine.js';
-
-// Lazy singleton for synergy resolution (swarm_speed)
-let movementSynergyEngine: SynergyEngine | null = null;
-function getMovementSynergyEngine(): SynergyEngine {
-  if (!movementSynergyEngine) {
-    movementSynergyEngine = new SynergyEngine(
-      pairSynergiesData.pairSynergies as PairSynergyConfig[],
-      emergentRulesData.rules as EmergentRuleConfig[],
-      Object.values(abilityDomainsData.domains) as DomainConfig[],
-    );
-  }
-  return movementSynergyEngine;
-}
+import { getSynergyEngine } from './synergyRuntime.js';
 
 function getSwarmSpeedBonus(tags: string[]): number {
-  const engine = getMovementSynergyEngine();
+  const engine = getSynergyEngine();
   const synergies = engine.resolveUnitPairs(tags);
   for (const syn of synergies) {
     if (syn.effect.type === 'swarm_speed') {
@@ -43,7 +27,7 @@ function getSwarmSpeedBonus(tags: string[]): number {
 }
 
 function getCoastalNomadSpeedBonus(tags: string[]): number {
-  const engine = getMovementSynergyEngine();
+  const engine = getSynergyEngine();
   const synergies = engine.resolveUnitPairs(tags);
   for (const syn of synergies) {
     if (syn.effect.type === 'coastal_nomad') {
@@ -54,7 +38,7 @@ function getCoastalNomadSpeedBonus(tags: string[]): number {
 }
 
 function getTerrainSlaveSpeedBonus(tags: string[]): number {
-  const engine = getMovementSynergyEngine();
+  const engine = getSynergyEngine();
   const synergies = engine.resolveUnitPairs(tags);
   for (const syn of synergies) {
     if (syn.effect.type === 'terrain_slave') {
@@ -105,7 +89,7 @@ export function previewMove(
   const isAmphibious = prototype?.tags?.includes('amphibious') ?? false;
   const prototypeTags = prototype?.tags ?? [];
   const targetTerrainId = tile.terrain;
-  const isWaterTerrain = targetTerrainId === 'coast' || targetTerrainId === 'river' || targetTerrainId === 'ocean';
+  const isTargetWater = isWaterTerrain(targetTerrainId);
   const isDeepWater = targetTerrainId === 'coast' || targetTerrainId === 'ocean';
 
   // Deep water (ocean/coast): only naval units can traverse; river is crossable by land units
@@ -113,7 +97,7 @@ export function previewMove(
     return null;
   }
 
-  if (isNavalUnit && !isWaterTerrain && !isAmphibious) {
+  if (isNavalUnit && !isTargetWater && !isAmphibious) {
     return null; // Naval units cannot traverse non-water terrain (unless amphibious)
   }
 
@@ -141,7 +125,7 @@ export function previewMove(
   const originTerrainId = map.tiles.get(hexToKey(unit.position))?.terrain ?? 'plains';
   const movementModifier = getMovementCostModifier(faction, originTerrainId, tile.terrain);
   // Amphibious units pay +1 cost when going ashore (non-water terrain)
-  const amphibiousLandingPenalty = (isNavalUnit && isAmphibious && !isWaterTerrain) ? 1 : 0;
+  const amphibiousLandingPenalty = (isNavalUnit && isAmphibious && !isTargetWater) ? 1 : 0;
 
   // Movement must always spend at least one point per entered hex.
   // ZoC does NOT add to cost — it triggers a forced-stop (all moves consumed) instead.

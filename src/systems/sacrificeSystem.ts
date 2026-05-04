@@ -8,25 +8,8 @@ import type { RulesRegistry } from '../data/registry/types.js';
 import type { SimulationTrace } from './warEcologySimulation.js';
 import type { UnitId, ResearchNodeId } from '../types.js';
 import { hexDistance } from '../core/grid.js';
-import { SynergyEngine } from './synergyEngine.js';
 import { getDomainProgression } from './domainProgression.js';
-import pairSynergiesData from '../content/base/pair-synergies.json' assert { type: 'json' };
-import emergentRulesData from '../content/base/emergent-rules.json' assert { type: 'json' };
-import abilityDomainsData from '../content/base/ability-domains.json' assert { type: 'json' };
-import type { PairSynergyConfig, EmergentRuleConfig, DomainConfig } from './synergyEngine.js';
-
-let sacrificeSynergyEngine: SynergyEngine | null = null;
-
-function getSacrificeSynergyEngine(): SynergyEngine {
-  if (!sacrificeSynergyEngine) {
-    sacrificeSynergyEngine = new SynergyEngine(
-      pairSynergiesData.pairSynergies as PairSynergyConfig[],
-      emergentRulesData.rules as EmergentRuleConfig[],
-      Object.values(abilityDomainsData.domains) as DomainConfig[],
-    );
-  }
-  return sacrificeSynergyEngine;
-}
+import { getSynergyEngine } from './synergyRuntime.js';
 
 /**
  * Check if a unit can be sacrificed at the home city.
@@ -165,7 +148,7 @@ export function codifyDomainsForFaction(
     { nativeDomain: updatedFaction.nativeDomain, learnedDomains: newLearnedDomains },
     refreshedResearch,
   );
-  const tripleStack = getSacrificeSynergyEngine().resolveFactionTriple(
+  const tripleStack = getSynergyEngine().resolveFactionTriple(
     progression.pairEligibleDomains,
     progression.emergentEligibleDomains,
   );

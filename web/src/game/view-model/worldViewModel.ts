@@ -2,25 +2,20 @@ import civilizationsData from '../../../../src/content/base/civilizations.json';
 import { getNeighbors, hexDistance, hexToKey } from '../../../../src/core/grid.js';
 import type { RulesRegistry } from '../../../../src/data/registry/types.js';
 import type { FactionId, GameState, Unit } from '../../../../src/game/types.js';
-import { getFaction, getPrototype, getResearch } from '../stateAccess.js';
-import { canUseAmbush, canUseBrace, getTerrainAt, hasAdjacentEnemy } from '../../../../src/systems/abilitySystem.js';
-import { resolveCapabilityDoctrine } from '../../../../src/systems/capabilityDoctrine.js';
+import { getPrototype } from '../stateAccess.js';
 import { deriveResourceIncome, getSupplyDeficit } from '../../../../src/systems/economySystem.js';
-import { isUnitEffectivelyStealthed } from '../../../../src/systems/fogSystem.js';
-import { isUnlockPrototype } from '../../../../src/systems/knowledgeSystem.js';
 import { getUnitSupplyCost } from '../../../../src/systems/productionSystem.js';
 import { getValidMoves } from '../../../../src/systems/movementSystem.js';
 import { SIEGE_CONFIG } from '../../../../src/systems/siegeSystem.js';
 import { getVictoryStatus } from '../../../../src/systems/warEcologySimulation.js';
 import { getHexOwner } from '../../../../src/systems/territorySystem.js';
-import { canBoardTransport, getUnitTransport, getValidDisembarkHexes } from '../../../../src/systems/transportSystem.js';
-import { canPriestSummon } from '../../../../src/systems/signatureAbilitySystem.js';
 import { calculateProductionPenalty, calculateMoralePenalty } from '../../../../src/systems/warExhaustionSystem.js';
-import { getSpriteKeyForUnit, getSpriteKeyForImprovement, inferChassisId } from './spriteKeys.js';
-import { buildCityInspectorViewModel, buildSettlementPreview } from './inspectors/cityInspectorViewModel.js';
+import { getSpriteKeyForImprovement } from './spriteKeys.js';
+import { buildSettlementPreview } from './inspectors/cityInspectorViewModel.js';
 import { buildResearchInspectorViewModel } from './inspectors/researchInspectorViewModel.js';
+import { buildUnitView } from './worldViewModelUnitView.js';
+import { buildResearchChip, describePlaySelection } from './worldViewModelSelection.js';
 import type {
-  CityInspectorViewModel,
   ClientSelection,
   DebugViewModel,
   HudViewModel,
@@ -29,7 +24,6 @@ import type {
 import type { ReplayCombatEvent } from '../types/replay';
 import type {
   AttackTargetView,
-  BorderEdgeView,
   BorderSide,
   FactionView,
   HexCoord,
@@ -37,6 +31,8 @@ import type {
   ReachableHexView,
   WorldViewModel,
 } from '../types/worldView';
+import { resolveCapabilityDoctrine } from '../../../../src/systems/capabilityDoctrine.js';
+import { getResearch, getFaction } from '../stateAccess.js';
 
 type PlayWorldSource = {
   kind: 'play';
@@ -61,13 +57,6 @@ const BORDER_DIRECTIONS: Array<{ side: BorderSide; dq: number; dr: number }> = [
   { side: 'south', dq: 0, dr: 1 },
   { side: 'west', dq: -1, dr: 0 },
 ];
-
-type SelectionInfo = {
-  title: string;
-  description: string;
-  meta: Array<{ label: string; value: string }>;
-  city: CityInspectorViewModel | null;
-};
 
 export function buildWorldViewModel(source: PlayWorldSource): WorldViewModel {
   return buildPlayWorldViewModel(source);
@@ -112,8 +101,6 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
     const ownerFactionId = getHexOwner(tile.position, state) ?? null;
     const ownerFaction = ownerFactionId ? state.factions.get(ownerFactionId) : null;
     const visibility = hexVisibility.get(key) ?? 'hidden';
-    // Oasis only shows as oasis when currently spotted by camel unit
-    // Once spotted, stays visible forever (visible or explored)
     const effectiveTerrain = tile.terrain === 'oasis' && visibility !== 'visible' && visibility !== 'explored'
       ? 'desert'
       : tile.terrain;
@@ -145,7 +132,6 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
     );
   }
 
-  // Index units by position key for O(1) adjacency lookups (transport boarding)
   const unitsByPosition = new Map<string, Unit[]>();
   for (const unit of state.units.values()) {
     if (unit.hp <= 0) continue;
@@ -163,130 +149,9 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       hexes,
     },
     factions,
-    units: Array.from(state.units.values()).filter((unit) => unit.hp > 0).map((unit) => {
-      const prototype = getPrototype(state, unit.prototypeId);
-      const chassisId = prototype?.chassisId ?? inferChassisId(prototype?.name ?? unit.prototypeId);
-      const canAct = unit.factionId === state.activeFactionId
-        && unit.status === 'ready'
-        && unit.hp > 0
-        && ((moveCounts.get(unit.id) ?? 0) > 0 || (attackCounts.get(unit.id) ?? 0) > 0);
-      const faction = state.factions.get(unit.factionId);
-      const factionDoctrine = faction
-        ? resolveCapabilityDoctrine(getResearch(state, unit.factionId), faction)
-        : undefined;
-      const unitTransport = getUnitTransport(unit.id, state.transportMap);
-      const boardableTransportIds = unit.factionId === state.activeFactionId && unit.hp > 0
-        ? getNeighbors(unit.position)
-          .flatMap((adj) => unitsByPosition.get(hexToKey(adj)) ?? [])
-          .filter((candidate) => candidate.id !== unit.id)
-          .filter((candidate) => canBoardTransport(state, unit.id, candidate.id, source.registry, state.transportMap))
-          .map((candidate) => candidate.id)
-        : [];
-      const validDisembarkHexes = unitTransport
-        ? getValidDisembarkHexes(state, unitTransport.transportId, source.registry, state.transportMap)
-        : [];
-      const canBrace = !!prototype
-        && canAct
-        && (canUseBrace(prototype) || factionDoctrine?.fortressTranscendenceEnabled === true)
-        && hasAdjacentEnemy(state, unit);
-      const canAmbush = !!prototype
-        && canAct
-        && canUseAmbush(prototype, getTerrainAt(state, unit.position))
-        && !hasAdjacentEnemy(state, unit);
-      const baseDefense = prototype?.derivedStats.defense ?? 0;
-      const tile = state.map?.tiles.get(`${unit.position.q},${unit.position.r}`);
-      const terrainDef = tile ? source.registry.getTerrain(tile.terrain) : undefined;
-      const terrainMod = terrainDef?.defenseModifier ?? 0;
-      let improvementBonus = 0;
-      for (const [, improvement] of state.improvements) {
-        if (improvement.position.q === unit.position.q && improvement.position.r === unit.position.r) {
-          improvementBonus = improvement.defenseBonus ?? 0;
-          break;
-        }
-      }
-      if (improvementBonus === 0) {
-        for (const [, city] of state.cities) {
-          if (city.position.q === unit.position.q && city.position.r === unit.position.r) {
-            improvementBonus = 1;
-            break;
-          }
-        }
-      }
-      if (improvementBonus === 0) {
-        for (const [, village] of state.villages) {
-          if (village.position.q === unit.position.q && village.position.r === unit.position.r) {
-            improvementBonus = 0.5;
-            break;
-          }
-        }
-      }
-      const effectiveDefense = Math.max(1, Math.round(baseDefense * (1 + terrainMod + improvementBonus)));
-      return {
-        id: unit.id,
-        factionId: unit.factionId,
-        factionName: faction?.name ?? unit.factionId,
-        q: unit.position.q,
-        r: unit.position.r,
-        hp: unit.hp,
-        maxHp: unit.maxHp,
-        attack: prototype?.derivedStats.attack ?? 0,
-        defense: baseDefense,
-        effectiveDefense,
-        range: prototype?.derivedStats.range ?? 1,
-        movesRemaining: unit.movesRemaining,
-        movesMax: unit.maxMoves,
-        acted: unit.factionId === state.activeFactionId ? !canAct : false,
-        canAct,
-        isActiveFaction: unit.factionId === state.activeFactionId,
-        status: unit.factionId === state.activeFactionId
-          ? (unit.status === 'fortified' ? 'fortified' as const : canAct ? 'ready' as const : 'spent' as const)
-          : 'inactive' as const,
-        prototypeId: unit.prototypeId,
-        prototypeName: prototype?.name ?? unit.prototypeId,
-        chassisId,
-        movementClass: thisChassisMovementClass(prototype?.chassisId, source.registry),
-        role: prototype?.derivedStats.role,
-        spriteKey: getSpriteKeyForUnit(unit.factionId, prototype?.name ?? unit.prototypeId, chassisId, prototype?.sourceRecipeId),
-        facing: unit.facing ?? 0,
-        visible: unit.factionId === source.playerFactionId
-          ? (hexVisibility.get(hexToKey(unit.position)) ?? 'hidden') !== 'hidden' ||
-            tile?.terrain === 'oasis' // Friendly units on hidden oasis are still visible
-          : (hexVisibility.get(hexToKey(unit.position)) ?? 'hidden') === 'visible',
-        veteranLevel: unit.veteranLevel,
-        xp: unit.xp,
-        nativeDomain: faction?.nativeDomain,
-        learnedAbilities: unit.learnedAbilities?.map((a) => a.domainId),
-        isStealthed: isUnitEffectivelyStealthed(state, unit),
-        poisoned: (unit.poisoned || (unit.poisonStacks ?? 0) > 0) || undefined,
-        morale: unit.morale,
-        routed: unit.routed || undefined,
-        preparedAbility: unit.preparedAbility,
-        isSettler: prototype?.tags?.includes('settler') || undefined,
-        isEngineer: prototype?.tags?.includes('engineer') || undefined,
-        canBrace: canBrace || undefined,
-        canAmbush: canAmbush || undefined,
-        ...(() => {
-          const isPriestOrEngineer = prototype?.tags?.includes('priest') || prototype?.tags?.includes('engineer');
-          if (!isPriestOrEngineer) return {};
-          const check = canPriestSummon(state, unit, source.registry);
-          return {
-            canSummon: check.canSummon || undefined,
-            summonName: check.summonName ?? undefined,
-            summonBlockedReason: check.blockedReason ?? undefined,
-          };
-        })(),
-        isEmbarked: unitTransport !== undefined || undefined,
-        transportId: unitTransport?.transportId ?? null,
-        boardableTransportIds: boardableTransportIds.length > 0 ? boardableTransportIds : undefined,
-        validDisembarkHexes: validDisembarkHexes.length > 0 ? validDisembarkHexes : undefined,
-        supplyCost: prototype ? getUnitSupplyCost(prototype, source.registry) : 1,
-        isPrototype: prototype ? isUnlockPrototype(prototype) : false,
-        summonTurnsRemaining: (() => {
-          const fs = unit.factionId ? state.factions.get(unit.factionId)?.summonState : undefined;
-          return fs?.summoned && fs.unitId === unit.id ? fs.turnsRemaining : undefined;
-        })(),
-      };
-    }),
+    units: Array.from(state.units.values()).filter((unit) => unit.hp > 0).map((unit) =>
+      buildUnitView(unit, state, source.registry, hexVisibility, moveCounts.get(unit.id) ?? 0, attackCounts.get(unit.id) ?? 0, unitsByPosition, source.playerFactionId),
+    ),
     cities: Array.from(state.cities.values()).map((city) => ({
       id: city.id,
       name: city.name,
@@ -340,10 +205,6 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       activeFactionId: state.activeFactionId,
     },
   };
-}
-
-function thisChassisMovementClass(chassisId: string | undefined, registry: RulesRegistry): string | undefined {
-  return chassisId ? registry.getChassis(chassisId)?.movementClass : undefined;
 }
 
 function buildPlayHudViewModel(
@@ -424,170 +285,6 @@ function buildPlayHudViewModel(
   };
 }
 
-function buildResearchChip(
-  state: GameState,
-  registry: RulesRegistry,
-): { activeNodeName: string | null; progress: number | null; totalCompleted: number; nextTierName: string | null; nextTierProgress: number | null } | null {
-  const factionId = state.activeFactionId;
-  if (!factionId) return null;
-  const research = getResearch(state, factionId);
-  const faction = getFaction(state, factionId);
-  if (!research || !faction) return null;
-
-  let activeNodeName: string | null = null;
-  let activeNodeCost = 0;
-  const activeProgress = research.activeNodeId
-    ? (research.progressByNodeId[research.activeNodeId] ?? 0)
-    : null;
-
-  let nextTierName: string | null = null;
-  let nextTierProgress: number | null = null;
-
-  if (research.activeNodeId) {
-    const domainId = research.activeNodeId.split('_t')[0];
-    const domain = registry.getResearchDomain(domainId);
-    if (domain) {
-      activeNodeName = domain.nodes[research.activeNodeId]?.name ?? research.activeNodeId;
-      activeNodeCost = domain.nodes[research.activeNodeId]?.xpCost ?? 0;
-
-      const nodes = Object.values(domain.nodes).sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0));
-      const completed = new Set<string>(research.completedNodes);
-      let nextNode = null;
-      for (const node of nodes) {
-        if (!completed.has(node.id) && node.id !== research.activeNodeId) {
-          nextNode = node;
-          break;
-        }
-      }
-      if (nextNode) {
-        nextTierName = nextNode.name;
-        const cumulativeXp = Object.entries(research.progressByNodeId)
-          .filter(([id]) => nodes.some((n) => n.id === id))
-          .reduce((sum, [, xp]) => sum + (xp ?? 0), 0);
-        const nextNodeCost = nextNode.xpCost;
-        nextTierProgress = nextNodeCost > 0 ? Math.min(1, cumulativeXp / nextNodeCost) : null;
-      }
-    }
-  }
-
-  return {
-    activeNodeName,
-    progress: activeProgress !== null && activeNodeCost > 0 ? activeProgress / activeNodeCost : null,
-    totalCompleted: research.completedNodes.length,
-    nextTierName,
-    nextTierProgress,
-  };
-}
-
-function describePlaySelection(
-  state: GameState,
-  selected: ClientSelection,
-  hoveredKey: string | null,
-  world: WorldViewModel,
-  registry?: RulesRegistry,
-) {
-  if (!selected && hoveredKey) {
-    const hoveredHex = world.map.hexes.find((hex) => hex.key === hoveredKey);
-    return {
-      title: hoveredHex ? `Tile ${hoveredHex.key}` : 'No selection',
-      description: hoveredHex ? `Terrain: ${hoveredHex.terrain}.` : 'Select a unit or tile to issue movement orders.',
-      meta: hoveredHex ? [
-        { label: 'Owner', value: hoveredHex.ownerFactionId ?? 'Neutral' },
-        { label: 'Visibility', value: hoveredHex.visibility },
-      ] : [],
-      city: null,
-    };
-  }
-
-  const activeFactionName = state.activeFactionId
-    ? state.factions.get(state.activeFactionId)?.name ?? 'Unknown'
-    : 'Unknown';
-
-  return describeSelectionFromWorld(selected, world, {
-    emptyTitle: 'No selection',
-    emptyDescription: `Active faction: ${activeFactionName}. Select a friendly unit to show legal moves.`,
-    state,
-    registry,
-  });
-}
-
-function describeSelectionFromWorld(
-  selected: ClientSelection,
-  world: WorldViewModel,
-  empty: { emptyTitle: string; emptyDescription: string; state?: GameState; registry?: RulesRegistry },
-): SelectionInfo {
-  if (!selected) {
-    return {
-      title: empty.emptyTitle,
-      description: empty.emptyDescription,
-      meta: [],
-      city: null,
-    };
-  }
-
-  if (selected.type === 'hex') {
-    const hex = world.map.hexes.find((entry) => entry.key === selected.key);
-    return {
-      title: `Tile ${selected.key}`,
-      description: `Terrain: ${hex?.terrain ?? 'unknown'}.`,
-      meta: [
-        { label: 'Coordinate', value: `${selected.q}, ${selected.r}` },
-        { label: 'Owner', value: hex?.ownerFactionId ?? 'Neutral' },
-        { label: 'Visibility', value: hex?.visibility ?? 'unknown' },
-      ],
-      city: null,
-    };
-  }
-
-  if (selected.type === 'unit') {
-    const unit = world.units.find((entry) => entry.id === selected.unitId);
-    const faction = unit ? world.factions.find((entry) => entry.id === unit.factionId) : null;
-    return {
-      title: unit?.prototypeName ?? 'Unit',
-      description: unit?.prototypeName ?? `${faction?.name ?? 'Unknown'} unit.`,
-      meta: [
-        { label: 'Position', value: unit ? `${unit.q}, ${unit.r}` : 'n/a' },
-        { label: 'Health', value: unit ? `${unit.hp}/${unit.maxHp}` : 'n/a' },
-        { label: 'Moves', value: unit ? `${unit.movesRemaining}/${unit.movesMax}` : 'n/a' },
-        { label: 'Acted', value: unit?.acted ? 'Yes' : 'No' },
-        ...(unit?.veteranLevel
-          ? [{ label: 'Veterancy', value: `${unit.veteranLevel}${unit.xp != null ? ` (${unit.xp} XP)` : ''}` }]
-          : []),
-      ],
-      city: null,
-    };
-  }
-
-  if (selected.type === 'city') {
-    const city = world.cities.find((entry) => entry.id === selected.cityId);
-    const faction = city ? world.factions.find((entry) => entry.id === city.factionId) : null;
-    const cityInspector = empty.state && empty.registry
-      ? buildCityInspectorViewModel(empty.state, selected.cityId, empty.registry)
-      : null;
-    return {
-      title: city?.name ?? 'City',
-      description: `${faction?.name ?? 'Unknown faction'} settlement.`,
-      meta: [
-        { label: 'Position', value: city ? `${city.q}, ${city.r}` : 'n/a' },
-        { label: 'Walls', value: city ? `${city.wallHp ?? 0}/${city.maxWallHp ?? 0}` : 'n/a' },
-        { label: 'Besieged', value: city?.besieged ? 'Yes' : 'No' },
-      ],
-      city: cityInspector,
-    };
-  }
-
-  const village = world.villages.find((entry) => entry.id === selected.villageId);
-  const faction = village ? world.factions.find((entry) => entry.id === village.factionId) : null;
-  return {
-    title: village?.name ?? 'Village',
-    description: `${faction?.name ?? 'Unknown faction'} village outpost.`,
-    meta: [
-      { label: 'Position', value: village ? `${village.q}, ${village.r}` : 'n/a' },
-    ],
-    city: null,
-  };
-}
-
 function buildPlayFactions(state: GameState): FactionView[] {
   return Array.from(state.factions.values()).map((faction) => ({
     id: faction.id,
@@ -630,10 +327,17 @@ function buildHexVisibilityMap(state: GameState, playerFactionId: string | null)
 function buildBorderEdges(
   hexes: Array<{ key: string; q: number; r: number; ownerFactionId: string | null; visibility: 'visible' | 'explored' | 'hidden' }>,
   factions: FactionView[],
-): BorderEdgeView[] {
+) {
   const factionColors = new Map(factions.map((faction) => [faction.id, faction.color]));
   const hexMap = new Map(hexes.map((hex) => [hex.key, hex]));
-  const edges: BorderEdgeView[] = [];
+  const edges: Array<{
+    id: string;
+    q: number;
+    r: number;
+    side: BorderSide;
+    factionId: string;
+    color: string;
+  }> = [];
 
   for (const hex of hexes) {
     if (!hex.ownerFactionId || hex.visibility === 'hidden') {

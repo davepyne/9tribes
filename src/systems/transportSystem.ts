@@ -3,6 +3,7 @@ import type { GameState } from '../game/types.js';
 import type { UnitId, HexCoord } from '../types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
 import { getNeighbors, hexToKey, hexDistance } from '../core/grid.js';
+import { isLandTerrain } from './terrainUtils.js';
 
 /**
  * Transport state for a transport ship carrying land units.
@@ -14,11 +15,6 @@ export interface TransportState {
 }
 
 export type TransportMap = Map<UnitId, TransportState>; // keyed by transport unitId
-
-/**
- * Water terrain types that are naval-only
- */
-const WATER_TERRAINS = new Set(['coast', 'river', 'ocean']);
 
 /**
  * Check if a unit is a transport unit (has transport tag and transportCapacity > 0)
@@ -82,13 +78,6 @@ export function getUnitTransport(
     }
   }
   return undefined;
-}
-
-/**
- * Check if a terrain is land (not water/naval-only)
- */
-function isLandTerrain(terrainId: string): boolean {
-  return !WATER_TERRAINS.has(terrainId);
 }
 
 /**

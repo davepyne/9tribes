@@ -14,10 +14,7 @@ import {
   type HealingContext,
 } from './synergyEffects.js';
 import { getNatureHealingAura } from './signatureAbilitySystem.js';
-import { SynergyEngine } from './synergyEngine.js';
-import pairSynergiesData from '../content/base/pair-synergies.json' assert { type: 'json' };
-import abilityDomainsData from '../content/base/ability-domains.json' assert { type: 'json' };
-import emergentRulesData from '../content/base/emergent-rules.json' assert { type: 'json' };
+import { getSynergyEngine } from './synergyRuntime.js';
 
 const HEALING_CONFIG = {
   OWNED_TERRITORY: 0.10,
@@ -25,19 +22,6 @@ const HEALING_CONFIG = {
   VILLAGE: 0.50,
   FIELD: 0.05,
 } as const;
-
-// Lazily initialized synergy engine (same pattern as warEcologySimulation)
-let synergyEngine: SynergyEngine | null = null;
-function getSynergyEngine(): SynergyEngine {
-  if (!synergyEngine) {
-    synergyEngine = new SynergyEngine(
-      pairSynergiesData.pairSynergies as import('./synergyEngine.js').PairSynergyConfig[],
-      emergentRulesData.rules as import('./synergyEngine.js').EmergentRuleConfig[],
-      Object.values(abilityDomainsData.domains) as import('./synergyEngine.js').DomainConfig[],
-    );
-  }
-  return synergyEngine;
-}
 
 function getTerrainAt(state: GameState, pos: { q: number; r: number }): string {
   return state.map?.tiles.get(hexToKey(pos))?.terrain ?? 'plains';

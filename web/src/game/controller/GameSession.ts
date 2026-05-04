@@ -337,42 +337,7 @@ export class GameSession {
         this.applyDisembarkUnit(action.unitId, action.transportId, action.destination);
         return;
       case 'end_turn':
-        this._undoSnapshot = null;
-        // Execute pending move queues at end of turn (before MP refresh) so units
-        // arrive at their destination but start the next turn with full MP.
-        this.state = this.executeMoveQueues(this.state);
-        if (this.state.activeFactionId) {
-          const activeFactionId = this.state.activeFactionId;
-          const preResearch = getResearch(this.state, activeFactionId);
-          const activeNodeId = preResearch?.activeNodeId ?? null;
-          const preCompletedCount = preResearch?.completedNodes.length ?? 0;
-          this.state = runFactionPhase(this.state, asFactionId(activeFactionId), this.registry, {
-            difficulty: this.difficulty,
-          });
-          if (activeNodeId && this.isHumanControlledFaction(activeFactionId)) {
-            const postResearch = getResearch(this.state, activeFactionId);
-            if ((postResearch?.completedNodes.length ?? 0) > preCompletedCount) {
-              const domainId = activeNodeId.split('_t')[0];
-              const nodeDef = this.registry.getResearchNode(domainId, activeNodeId);
-              if (nodeDef) {
-                this.feedback.lastResearchCompletion = {
-                  nodeId: activeNodeId,
-                  nodeName: nodeDef.name,
-                  tier: nodeDef.tier ?? 1,
-                };
-              }
-            }
-          }
-        }
-        this.feedback.lastMove = null;
-        this.state = this.refreshFog(advanceTurn(this.state));
-        this.feedback.endTurnCount += 1;
-        this.feedback.lastActiveFactionId = this.state.activeFactionId;
-        this.feedback.lastTurnChange = this.state.activeFactionId
-          ? { factionId: this.state.activeFactionId }
-          : null;
-        this.record('turn', `Turn passed to ${getActiveFactionName(this.state)}.`);
-        this.continueAiUntilHumanTurn();
+        this.applyEndTurn();
         return;
       case 'set_city_production':
         this.takeUndoSnapshot();
@@ -904,6 +869,45 @@ export class GameSession {
     nextResearch.set(asFactionId(factionId), updated);
     this.state = { ...this.state, research: nextResearch };
     this.record('turn', `Research cancelled: ${nodeName}.`);
+  }
+
+  private applyEndTurn() {
+    this._undoSnapshot = null;
+    // Execute pending move queues at end of turn (before MP refresh) so units
+    // arrive at their destination but start the next turn with full MP.
+    this.state = this.executeMoveQueues(this.state);
+    if (this.state.activeFactionId) {
+      const activeFactionId = this.state.activeFactionId;
+      const preResearch = getResearch(this.state, activeFactionId);
+      const activeNodeId = preResearch?.activeNodeId ?? null;
+      const preCompletedCount = preResearch?.completedNodes.length ?? 0;
+      this.state = runFactionPhase(this.state, asFactionId(activeFactionId), this.registry, {
+        difficulty: this.difficulty,
+      });
+      if (activeNodeId && this.isHumanControlledFaction(activeFactionId)) {
+        const postResearch = getResearch(this.state, activeFactionId);
+        if ((postResearch?.completedNodes.length ?? 0) > preCompletedCount) {
+          const domainId = activeNodeId.split('_t')[0];
+          const nodeDef = this.registry.getResearchNode(domainId, activeNodeId);
+          if (nodeDef) {
+            this.feedback.lastResearchCompletion = {
+              nodeId: activeNodeId,
+              nodeName: nodeDef.name,
+              tier: nodeDef.tier ?? 1,
+            };
+          }
+        }
+      }
+    }
+    this.feedback.lastMove = null;
+    this.state = this.refreshFog(advanceTurn(this.state));
+    this.feedback.endTurnCount += 1;
+    this.feedback.lastActiveFactionId = this.state.activeFactionId;
+    this.feedback.lastTurnChange = this.state.activeFactionId
+      ? { factionId: this.state.activeFactionId }
+      : null;
+    this.record('turn', `Turn passed to ${getActiveFactionName(this.state)}.`);
+    this.continueAiUntilHumanTurn();
   }
 
   private applySacrifice(unitId: string) {

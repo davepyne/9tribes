@@ -13,7 +13,7 @@ import { isCityEncircled } from '../../../../src/systems/territorySystem.js';
 import { calculatePrototypeCost, getDomainIdsByTags, isUnlockPrototype } from '../../../../src/systems/knowledgeSystem.js';
 import { getUnitCost } from '../../../../src/systems/productionSystem.js';
 import { hasCaptureAbility } from '../../../../src/systems/captureSystem.js';
-import { canPriestSummon, attemptPriestSummon } from '../../../../src/systems/signatureAbilitySystem.js';
+import { canPriestSummon, attemptPriestSummon } from '../../../../src/systems/summonSystem.js';
 import type { RulesRegistry } from '../../../../src/data/registry/types.js';
 
 // ---------------------------------------------------------------------------

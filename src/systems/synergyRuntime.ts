@@ -1,4 +1,4 @@
-import type { CombatResult as SynergyCombatResult } from './synergyEffects.js';
+import type { SynergyCombatResult } from './synergyEffects.js';
 import {
   SynergyEngine,
   type DomainConfig,
@@ -23,24 +23,12 @@ export function getSynergyEngine(): SynergyEngine {
 }
 
 export function calculateSynergyAttackBonus(result: SynergyCombatResult): number {
-  let bonus = 0;
-  const multiplierEffect = result.additionalEffects.find((effect) => effect.includes('poison_multiplier'));
-  if (multiplierEffect) {
-    const match = multiplierEffect.match(/(\d+\.?\d*)x/);
-    if (match) {
-      bonus += parseFloat(match[1]) - 1;
-    }
+  if (result.multiplierStackValue > 0) {
+    return result.multiplierStackValue - 1;
   }
-  return bonus;
+  return 0;
 }
 
 export function calculateSynergyDefenseBonus(result: SynergyCombatResult): number {
-  let bonus = 0;
-  if (result.additionalEffects.includes('dug_in')) {
-    bonus += 0.75;
-  }
-  if (result.additionalEffects.includes('aura_overlap')) {
-    bonus += 0.5;
-  }
-  return bonus;
+  return result.dugInDefense + result.auraOverlapDefense;
 }

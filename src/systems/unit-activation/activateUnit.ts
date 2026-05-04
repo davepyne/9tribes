@@ -21,7 +21,7 @@ import { isTransportUnit, updateEmbarkedPositions } from '../transportSystem.js'
 import { getUnitIntent } from '../strategicAi.js';
 import { computeRetreatRisk, shouldEngageTarget } from '../aiTactics.js';
 import { attemptNonCombatCapture, getCaptureParams, hasCaptureAbility } from '../captureSystem.js';
-import { canPriestSummon, attemptPriestSummon } from '../signatureAbilitySystem.js';
+import { canPriestSummon, attemptPriestSummon } from '../summonSystem.js';
 import {
   log,
   recordCombatEvent,

@@ -65,12 +65,14 @@ function makeResult(overrides: Partial<CombatResult> = {}): CombatResult {
     slaveArmyDefensePenalty: 0,
     slaveCoercionDamageBonus: 0,
     heavyMassStacks: 0,
-    // Phase 4: emergent rule fields
     emergentSustainHealPercent: 0,
     emergentSustainMinHp: 0,
     emergentPermanentStealthTerrains: [],
     emergentCaptureBonus: 0,
     emergentDesertCaptureBonus: 0,
+    multiplierStackValue: 0,
+    dugInDefense: 0,
+    auraOverlapDefense: 0,
     ...overrides,
   };
 }
@@ -80,52 +82,33 @@ function makeResult(overrides: Partial<CombatResult> = {}): CombatResult {
 // ---------------------------------------------------------------------------
 
 describe('calculateSynergyAttackBonus', () => {
-  it('returns 0 when additionalEffects is empty', () => {
+  it('returns 0 when multiplierStackValue is 0', () => {
     const result = makeResult();
     expect(calculateSynergyAttackBonus(result)).toBe(0);
   });
 
-  it('returns 0 when no poison_multiplier effect present', () => {
-    const result = makeResult({
-      additionalEffects: ['dug_in', 'aura_overlap', 'charge_shield'],
-    });
+  it('returns 0 when multiplierStackValue is absent (default)', () => {
+    const result = makeResult();
     expect(calculateSynergyAttackBonus(result)).toBe(0);
   });
 
-  it('returns 0 when multiplier effect present but no valid pattern', () => {
-    // Effect contains "poison_multiplier" but no "N.xx" pattern
-    const result = makeResult({
-      additionalEffects: ['poison_multiplier_invalid'],
-    });
-    expect(calculateSynergyAttackBonus(result)).toBe(0);
-  });
-
-  it('extracts bonus from poison_multiplier_2.0x', () => {
-    // bonus = 2.0 - 1 = 1.0
-    const result = makeResult({
-      additionalEffects: ['dug_in', 'poison_multiplier_2.0x'],
-    });
+  it('extracts bonus from multiplierStackValue 2.0', () => {
+    const result = makeResult({ multiplierStackValue: 2.0 });
     expect(calculateSynergyAttackBonus(result)).toBe(1.0);
   });
 
-  it('extracts bonus from poison_multiplier_1.5x', () => {
-    const result = makeResult({
-      additionalEffects: ['poison_multiplier_1.5x'],
-    });
+  it('extracts bonus from multiplierStackValue 1.5', () => {
+    const result = makeResult({ multiplierStackValue: 1.5 });
     expect(calculateSynergyAttackBonus(result)).toBe(0.5);
   });
 
-  it('extracts bonus from poison_multiplier_3x', () => {
-    const result = makeResult({
-      additionalEffects: ['poison_multiplier_3x'],
-    });
+  it('extracts bonus from multiplierStackValue 3', () => {
+    const result = makeResult({ multiplierStackValue: 3 });
     expect(calculateSynergyAttackBonus(result)).toBe(2);
   });
 
-  it('only uses the first multiplier match', () => {
-    const result = makeResult({
-      additionalEffects: ['poison_multiplier_2.5x', 'poison_multiplier_1.2x'],
-    });
+  it('extracts bonus from multiplierStackValue 2.5', () => {
+    const result = makeResult({ multiplierStackValue: 2.5 });
     expect(calculateSynergyAttackBonus(result)).toBe(1.5);
   });
 });
@@ -135,51 +118,44 @@ describe('calculateSynergyAttackBonus', () => {
 // ---------------------------------------------------------------------------
 
 describe('calculateSynergyDefenseBonus', () => {
-  it('returns 0 when additionalEffects is empty', () => {
+  it('returns 0 when no structured defense bonuses present', () => {
     const result = makeResult();
     expect(calculateSynergyDefenseBonus(result)).toBe(0);
   });
 
-  it('returns 0 when no relevant effects present', () => {
+  it('returns 0 when only unrelated fields are set', () => {
     const result = makeResult({
       additionalEffects: ['charge_shield', 'lethal_ambush', 'heavy_poison'],
     });
     expect(calculateSynergyDefenseBonus(result)).toBe(0);
   });
 
-  it('returns 0.75 when dug_in is present', () => {
-    const result = makeResult({
-      additionalEffects: ['dug_in'],
-    });
+  it('returns dugInDefense value', () => {
+    const result = makeResult({ dugInDefense: 0.75 });
     expect(calculateSynergyDefenseBonus(result)).toBe(0.75);
   });
 
-  it('returns 0.5 when aura_overlap is present', () => {
-    const result = makeResult({
-      additionalEffects: ['aura_overlap'],
-    });
+  it('returns auraOverlapDefense value', () => {
+    const result = makeResult({ auraOverlapDefense: 0.5 });
     expect(calculateSynergyDefenseBonus(result)).toBe(0.5);
   });
 
-  it('returns 1.25 when both dug_in and aura_overlap are present', () => {
-    const result = makeResult({
-      additionalEffects: ['dug_in', 'aura_overlap'],
-    });
+  it('returns sum when both dugInDefense and auraOverlapDefense are set', () => {
+    const result = makeResult({ dugInDefense: 0.75, auraOverlapDefense: 0.5 });
     expect(calculateSynergyDefenseBonus(result)).toBe(1.25);
   });
 
-  it('additional unrelated effects do not affect the bonus', () => {
+  it('returns sum when both defense bonuses present with unrelated effects', () => {
     const result = makeResult({
+      dugInDefense: 0.75,
+      auraOverlapDefense: 0.5,
       additionalEffects: ['dug_in', 'lethal_ambush', 'heavy_poison', 'aura_overlap'],
     });
     expect(calculateSynergyDefenseBonus(result)).toBe(1.25);
   });
 
-  it('is case-sensitive: "Dug_In" or "DUG_IN" does not match', () => {
-    const result = makeResult({
-      additionalEffects: ['DUG_IN', 'dug_in'],
-    });
-    // Only the lowercase 'dug_in' matches
+  it('reads defense values directly from structured fields', () => {
+    const result = makeResult({ dugInDefense: 0.75 });
     expect(calculateSynergyDefenseBonus(result)).toBe(0.75);
   });
 });

@@ -24,6 +24,22 @@ type HpBar = {
 type Point = { x: number; y: number };
 type PositionTarget = Phaser.GameObjects.GameObject & { x: number; y: number };
 
+type CombatOutcome = 'defender_killed' | 'defender_fled' | 'attacker_killed' | 'attacker_fled' | 'both_killed' | 'standoff';
+
+function resolveOutcome(data: CombatAnimData): CombatOutcome {
+  const defenderDead = data.defenderDestroyed;
+  const defenderRan = !defenderDead && (data.defenderRouted || data.defenderFled);
+  const attackerDead = data.attackerDestroyed;
+  const attackerRan = !attackerDead && (data.attackerRouted || data.attackerFled);
+
+  if (defenderDead && !attackerDead) return 'defender_killed';
+  if (defenderRan && !attackerDead) return 'defender_fled';
+  if (attackerDead && !defenderDead) return 'attacker_killed';
+  if (attackerRan && !defenderDead) return 'attacker_fled';
+  if (defenderDead || attackerDead) return 'both_killed';
+  return 'standoff';
+}
+
 export class CombatAnimator {
   private overlayLayer: Phaser.GameObjects.Container;
   private active: ActiveAnimation | null = null;
@@ -35,10 +51,6 @@ export class CombatAnimator {
     this.overlayLayer = scene.add.container();
     this.overlayLayer.setDepth(100);
     this.overlayLayer.setVisible(false);
-  }
-
-  getOverlayLayer(): Phaser.GameObjects.Container {
-    return this.overlayLayer;
   }
 
   isAnimating(): boolean {
@@ -310,12 +322,9 @@ export class CombatAnimator {
       }
     });
 
-    const defenderDead = data.defenderDestroyed;
-    const defenderRan = !defenderDead && (data.defenderRouted || data.defenderFled);
-    const attackerDead = data.attackerDestroyed;
-    const attackerRan = !attackerDead && (data.attackerRouted || data.attackerFled);
+    const outcome = resolveOutcome(data);
 
-    if (defenderDead && !attackerDead) {
+    if (outcome === 'defender_killed') {
       addTween({
         targets: [defSprite, defMarker, defHpBar.container],
         alpha: 0,
@@ -336,7 +345,7 @@ export class CombatAnimator {
           delay: 1540,
         },
       );
-    } else if (defenderRan && !attackerDead) {
+    } else if (outcome === 'defender_fled') {
       const pursuitRatio = 0.35;
       const pursuit = {
         x: attSpriteStart.x + engageDx * pursuitRatio,
@@ -370,7 +379,7 @@ export class CombatAnimator {
           delay: 1540,
         },
       );
-    } else if (attackerDead && !defenderDead) {
+    } else if (outcome === 'attacker_killed') {
       addTween({
         targets: [attSprite, attMarker, attHpBar.container],
         alpha: 0,
@@ -379,7 +388,7 @@ export class CombatAnimator {
         ease: 'Sine.easeIn',
         delay: 1500,
       });
-    } else if (attackerRan && !defenderDead) {
+    } else if (outcome === 'attacker_fled') {
       addTween({
         targets: [attSprite, attMarker, attHpBar.container],
         alpha: 0.2,
@@ -388,7 +397,7 @@ export class CombatAnimator {
         ease: 'Sine.easeIn',
         delay: 1500,
       });
-    } else if (defenderDead || attackerDead) {
+    } else if (outcome === 'both_killed') {
       addTween({
         targets: [attSprite, defSprite, attMarker, defMarker, attHpBar.container, defHpBar.container],
         alpha: 0,
@@ -443,10 +452,7 @@ export class CombatAnimator {
     const allSprites: Phaser.GameObjects.GameObject[] = [];
     const script = buildCombatAnimationScript(data, attackerView, defenderView);
 
-    const defenderDead = data.defenderDestroyed;
-    const defenderRan = !defenderDead && (data.defenderRouted || data.defenderFled);
-    const attackerDead = data.attackerDestroyed;
-    const attackerRan = !attackerDead && (data.attackerRouted || data.attackerFled);
+    const outcome = resolveOutcome(data);
 
     let attFinal = this.cloneSprite(attackerView, attPos.x, attPos.y);
     let defFinal = this.cloneSprite(defenderView, defPos.x, defPos.y);
@@ -459,13 +465,13 @@ export class CombatAnimator {
     let attMarkerAlpha = 1;
     let defMarkerAlpha = 1;
 
-    if (defenderDead && !attackerDead) {
+    if (outcome === 'defender_killed') {
       attFinal = this.cloneSprite(attackerView, defPos.x, defPos.y);
       attMarkerPos = { x: defPos.x, y: defPos.y - 8 };
       attHpBarPos = defPos;
       defAlpha = 0;
       defMarkerAlpha = 0;
-    } else if (defenderRan && !attackerDead) {
+    } else if (outcome === 'defender_fled') {
       const pursuitRatio = 0.35;
       const pursuePos = {
         x: attPos.x + (defPos.x - attPos.x) * pursuitRatio,
@@ -479,19 +485,19 @@ export class CombatAnimator {
       defHpBarPos = { x: defPos.x, y: defPos.y + 18 };
       defAlpha = 0.2;
       defMarkerAlpha = 0.2;
-    } else if (attackerDead && !defenderDead) {
+    } else if (outcome === 'attacker_killed') {
       attFinal = this.cloneSprite(attackerView, attPos.x, attPos.y + 12);
       attMarkerPos = { x: attPos.x, y: attPos.y + 4 };
       attHpBarPos = { x: attPos.x, y: attPos.y + 12 };
       attAlpha = 0;
       attMarkerAlpha = 0;
-    } else if (attackerRan && !defenderDead) {
+    } else if (outcome === 'attacker_fled') {
       attFinal = this.cloneSprite(attackerView, attPos.x, attPos.y + 18);
       attMarkerPos = { x: attPos.x, y: attPos.y + 10 };
       attHpBarPos = { x: attPos.x, y: attPos.y + 18 };
       attAlpha = 0.2;
       attMarkerAlpha = 0.2;
-    } else if (defenderDead || attackerDead) {
+    } else if (outcome === 'both_killed') {
       attAlpha = 0;
       defAlpha = 0;
       attMarkerAlpha = 0;
