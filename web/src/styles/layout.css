@@ -900,6 +900,16 @@
   text-transform: capitalize;
 }
 
+.faction-popup__trait.clickable {
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.faction-popup__trait.clickable:hover {
+  opacity: 0.75;
+}
+
 .faction-popup__intro {
   margin: 12px 0;
   font-size: 13px;

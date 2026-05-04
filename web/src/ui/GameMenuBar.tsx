@@ -56,6 +56,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
   const [factionPopupOpen, setFactionPopupOpen] = useState(false);
   const [unitPopupOpen, setUnitPopupOpen] = useState(false);
   const [summonPopupOpen, setSummonPopupOpen] = useState(false);
+  const [traitPopupOpen, setTraitPopupOpen] = useState(false);
   const [hoverSelectOpen, setHoverSelectOpen] = useState(false);
   const [hoverSelectPos, setHoverSelectPos] = useState({ x: 0, y: 0 });
   const [hoverSelectUnit, setHoverSelectUnit] = useState<{ id: string; name: string } | null>(null);
@@ -138,7 +139,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
           </div>
           <div className="faction-popup__section">
             <span className="faction-popup__label">Special Trait</span>
-            <span className="faction-popup__trait">{factionInfo.passiveTrait.replace(/_/g, ' ')}</span>
+            <span className="faction-popup__trait clickable" onClick={() => setTraitPopupOpen(true)}>{factionInfo.specialTrait}</span>
           </div>
 <div className="faction-popup__section">
               <span className="faction-popup__label">Signature Unit</span>
@@ -164,6 +165,15 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
           <div className="faction-popup__section">
             <span className="faction-popup__label">Tip</span>
             <p className="faction-popup__tip">{factionInfo.tip}</p>
+          </div>
+        </div>
+      )}
+      {traitPopupOpen && factionInfo && (
+        <div className="faction-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
+          <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
+            <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>×</button>
+            <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.specialTrait}</h3>
+            <p className="faction-popup__intro" style={{ fontSize: 14, lineHeight: 1.6 }}>{factionInfo.specialAbility}</p>
           </div>
         </div>
       )}

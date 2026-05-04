@@ -56,6 +56,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
   const [factionPopup, setFactionPopup] = useState<FactionInfo | null>(null);
   const [domainPopup, setDomainPopup] = useState<{domainId: string; name: string; description: string} | null>(null);
   const [unitPopupOpen, setUnitPopupOpen] = useState(false);
+  const [traitPopupOpen, setTraitPopupOpen] = useState(false);
   const [draggedQueueIndex, setDraggedQueueIndex] = useState<number | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [tabsCanScrollLeft, setTabsCanScrollLeft] = useState(false);
@@ -158,7 +159,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
             </div>
             <div className="faction-popup__section">
               <span className="faction-popup__label">Special Trait</span>
-              <span className="faction-popup__trait">{factionPopup.specialTrait}</span>
+              <span className="faction-popup__trait clickable" onClick={() => setTraitPopupOpen(true)}>{factionPopup.specialTrait}</span>
             </div>
             <div className="faction-popup__section">
               <span className="faction-popup__label">Signature Unit</span>
@@ -207,6 +208,15 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
               <strong>Ability:</strong> {factionPopup.unitStats.ability}
             </div>
             <p className="unit-stats-panel__desc">{factionPopup.unitStats.description}</p>
+          </div>
+        </div>
+      )}
+      {traitPopupOpen && factionPopup && (
+        <div className="faction-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
+          <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
+            <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>×</button>
+            <h3 className="faction-popup__name" style={{ color: factionPopup.color }}>{factionPopup.specialTrait}</h3>
+            <p className="faction-popup__intro" style={{ fontSize: 14, lineHeight: 1.6 }}>{factionPopup.specialAbility}</p>
           </div>
         </div>
       )}

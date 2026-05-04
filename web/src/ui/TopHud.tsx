@@ -14,6 +14,7 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
   const [factionPopup, setFactionPopup] = useState<boolean>(false);
   const [supplyPopup, setSupplyPopup] = useState<boolean>(false);
   const [unitPopupOpen, setUnitPopupOpen] = useState<boolean>(false);
+  const [traitPopupOpen, setTraitPopupOpen] = useState<boolean>(false);
   const activeFactionColor = state.world.factions.find((faction) => faction.id === state.activeFactionId)?.color ?? '#d6a34b';
   const recoveringCityCount = state.world.cities.filter(
     (city) => city.factionId === state.activeFactionId && city.turnsSinceCapture !== undefined,
@@ -47,7 +48,7 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
             </div>
             <div className="faction-popup__section">
               <span className="faction-popup__label">Special Trait</span>
-              <span className="faction-popup__trait">{factionInfo.passiveTrait.replace(/_/g, ' ')}</span>
+              <span className="faction-popup__trait clickable" onClick={() => setTraitPopupOpen(true)}>{factionInfo.specialTrait}</span>
             </div>
             <div className="faction-popup__section">
               <span className="faction-popup__label">Signature Unit</span>
@@ -96,6 +97,15 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
               <strong>Ability:</strong> {factionInfo.unitStats.ability}
             </div>
             <p className="unit-stats-panel__desc">{factionInfo.unitStats.description}</p>
+          </div>
+        </div>
+      )}
+      {traitPopupOpen && factionInfo && (
+        <div className="faction-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
+          <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
+            <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>×</button>
+            <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.specialTrait}</h3>
+            <p className="faction-popup__intro" style={{ fontSize: 14, lineHeight: 1.6 }}>{factionInfo.specialAbility}</p>
           </div>
         </div>
       )}
