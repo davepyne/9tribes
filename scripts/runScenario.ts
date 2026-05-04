@@ -22,7 +22,7 @@ Options:
   --seed <N>           RNG seed (default: 37)
   --turns <N>          Max turns to simulate (default: 50)
   --difficulty <level> AI difficulty: easy|normal|hard (default: normal)
-  --focus <type>       Report focus: siege|combat|ai|strategy|full (default: full)
+  --focus <type>       Report focus: siege|combat|ai|strategy|research|synergy|full (default: full)
   --factions <ids>     Comma-separated faction IDs to filter
   --turn-range <a-b>   Only show turns a through b (e.g. 20-30)
   --json               Dump raw trace as JSON instead of text report
@@ -60,6 +60,10 @@ if (jsonMode) {
     factionStrategyEvents: trace.factionStrategyEvents,
     abilityLearnedEvents: trace.abilityLearnedEvents,
     unitSacrificedEvents: trace.unitSacrificedEvents,
+    researchEvents: trace.researchEvents,
+    domainLearnedEvents: trace.domainLearnedEvents,
+    tripleStackEvents: trace.tripleStackEvents,
+    synergyPairEvents: trace.synergyPairEvents,
   };
   if (trace.snapshots) output.snapshots = trace.snapshots;
   console.log(JSON.stringify(output, null, 2));

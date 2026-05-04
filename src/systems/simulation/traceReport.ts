@@ -1,9 +1,9 @@
 import type { GameState } from '../../game/types.js';
-import type { SimulationTrace, TraceCombatEvent, TraceSiegeEvent, TraceAiIntentEvent, TraceFactionStrategyEvent } from './traceTypes.js';
+import type { SimulationTrace, TraceCombatEvent, TraceSiegeEvent, TraceAiIntentEvent, TraceFactionStrategyEvent, TraceResearchEvent, TraceDomainLearnedEvent, TraceTripleStackEvent, TraceSynergyPairEvent } from './traceTypes.js';
 import { getBattleCount, getKillCount } from '../historySystem.js';
 import { getVictoryStatus } from './victory.js';
 
-export type ReportFocus = 'siege' | 'combat' | 'ai' | 'strategy' | 'full';
+export type ReportFocus = 'siege' | 'combat' | 'ai' | 'strategy' | 'research' | 'synergy' | 'full';
 
 export interface ReportOptions {
   focus?: ReportFocus;
@@ -45,7 +45,9 @@ function fmtFactions(state: GameState, factions?: string[]): string {
     const villages = faction.villageIds.length;
     const we = state.warExhaustion.get(id);
     const weStr = we && we.exhaustionPoints > 0 ? `we${we.exhaustionPoints}` : '';
-    lines.push(`  ${id}: u${living.length} c${cities} v${villages} bat${battles} kill${kills} ${weStr}`.trim());
+    const learned = faction.learnedDomains.length > 1 ? ` dom${faction.learnedDomains.length}` : '';
+    const triple = faction.activeTripleStack ? ` triple=${faction.activeTripleStack.name}` : '';
+    lines.push(`  ${id}: u${living.length} c${cities} v${villages} bat${battles} kill${kills}${learned}${triple} ${weStr}`.trim());
   }
   return lines.join('\n');
 }
@@ -128,6 +130,54 @@ function fmtStrategy(events: TraceFactionStrategyEvent[] | undefined, factions: 
   return lines.join('\n');
 }
 
+function fmtResearch(events: TraceResearchEvent[] | undefined, factions: string[] | undefined, turnRange: [number, number] | undefined): string {
+  if (!events?.length) return '';
+  const filtered = events.filter(e =>
+    factionMatch(factions, e.factionId) && turnMatch(turnRange, e.round)
+  );
+  if (!filtered.length) return '';
+  const lines = ['RESEARCH:'];
+  for (const e of filtered) {
+    if (e.phase === 'started') {
+      lines.push(`  T${e.round} ${e.factionId} start ${e.domainId}:${e.nodeName} "${e.reason ?? ''}"`);
+    } else {
+      lines.push(`  T${e.round} ${e.factionId} done ${e.domainId}:${e.nodeName}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+function fmtDomainLearned(events: TraceDomainLearnedEvent[] | undefined, factions: string[] | undefined, turnRange: [number, number] | undefined): string {
+  if (!events?.length) return '';
+  const filtered = events.filter(e =>
+    factionMatch(factions, e.factionId) && turnMatch(turnRange, e.round)
+  );
+  if (!filtered.length) return '';
+  const lines = ['DOMAINS_LEARNED:'];
+  for (const e of filtered) {
+    const syn = e.synergizesWith ? ` +syn=${e.synergizesWith}` : '';
+    lines.push(`  T${e.round} ${e.factionId} learned ${e.domainName}(${e.domainId}) via_${e.source}${syn}`);
+  }
+  return lines.join('\n');
+}
+
+function fmtTripleStack(events: TraceTripleStackEvent[] | undefined, factions: string[] | undefined, turnRange: [number, number] | undefined): string {
+  if (!events?.length) return '';
+  const filtered = events.filter(e =>
+    factionMatch(factions, e.factionId) && turnMatch(turnRange, e.round)
+  );
+  if (!filtered.length) return '';
+  const lines = ['TRIPLE_STACK:'];
+  for (const e of filtered) {
+    if (e.phase === 'activated') {
+      lines.push(`  T${e.round} ${e.factionId} activated ${e.name} domains=[${e.domains?.join(',')}] rule="${e.emergentRule}"`);
+    } else {
+      lines.push(`  T${e.round} ${e.factionId} lost ${e.name}`);
+    }
+  }
+  return lines.join('\n');
+}
+
 export function generateTraceReport(trace: SimulationTrace, state: GameState, opts: ReportOptions = {}): string {
   const focus = opts.focus ?? 'full';
   const { factions, turnRange } = opts;
@@ -154,6 +204,22 @@ export function generateTraceReport(trace: SimulationTrace, state: GameState, op
   if (shouldInclude(focus, 'strategy')) {
     const s = fmtStrategy(trace.factionStrategyEvents, factions, turnRange);
     if (s) sections.push(s);
+  }
+
+  if (shouldInclude(focus, 'research')) {
+    const r = fmtResearch(trace.researchEvents, factions, turnRange);
+    if (r) sections.push(r);
+    const d = fmtDomainLearned(trace.domainLearnedEvents, factions, turnRange);
+    if (d) sections.push(d);
+  }
+
+  if (shouldInclude(focus, 'synergy')) {
+    const t = fmtTripleStack(trace.tripleStackEvents, factions, turnRange);
+    if (t) sections.push(t);
+    const r = fmtResearch(trace.researchEvents, factions, turnRange);
+    if (r) sections.push(r);
+    const d = fmtDomainLearned(trace.domainLearnedEvents, factions, turnRange);
+    if (d) sections.push(d);
   }
 
   return sections.join('\n');

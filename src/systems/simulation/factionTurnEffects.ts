@@ -72,7 +72,7 @@ import type { DifficultyLevel } from '../aiDifficulty.js';
 import { getAiDifficultyProfile } from '../aiDifficulty.js';
 import type { FactionStrategy } from '../factionStrategy.js';
 import type { SimulationTrace } from './traceTypes.js';
-import { log, recordFactionStrategy, recordSiegeEvent } from './traceRecorder.js';
+import { log, recordFactionStrategy, recordSiegeEvent, recordResearch, recordTripleStack } from './traceRecorder.js';
 import { getTerrainAt, occupiesFriendlySettlement, applyEnvironmentalDamage, getHealRate } from './environmentalEffects.js';
 
 function removeUnitFromFaction(
@@ -115,6 +115,8 @@ function startOrAdvanceCodification(
       const decisionNode = registry.getAllResearchDomains()
         .flatMap((domain) => Object.values(domain.nodes))
         .find((node) => node.id === decision.nodeId);
+      const decisionDomain = registry.getAllResearchDomains()
+        .find((domain) => domain.nodes[decision.nodeId]);
       const prerequisitesMet = (decisionNode?.prerequisites ?? []).every(
         (prereqId) => currentResearch.completedNodes.includes(prereqId as never),
       );
@@ -127,6 +129,15 @@ function startOrAdvanceCodification(
         );
         const nodeName = decisionNode?.name ?? decision.nodeId;
         log(trace, `${faction.name} starts research on ${nodeName} (${decision.reason})`);
+        recordResearch(trace, {
+          round: state.round,
+          factionId,
+          phase: 'started',
+          nodeId: decision.nodeId,
+          nodeName,
+          domainId: decisionDomain?.id ?? '',
+          reason: decision.reason,
+        });
       }
     }
   }
@@ -167,6 +178,14 @@ function startOrAdvanceCodification(
 
   if (!updatedResearch.activeNodeId) {
     log(trace, `${faction.name} completed research: ${activeNode.name}`);
+    recordResearch(trace, {
+      round: state.round,
+      factionId,
+      phase: 'completed',
+      nodeId: activeNode.id,
+      nodeName: activeNode.name,
+      domainId: activeDomain?.id ?? '',
+    });
   }
 
   return current;
@@ -482,6 +501,14 @@ export function processFactionPhases(
   );
   if (tripleStack) {
     log(trace, `${faction.name} activates ${tripleStack.name} — ${tripleStack.emergentRule.name} emergent!`);
+    recordTripleStack(trace, {
+      round: current.round,
+      factionId,
+      phase: 'activated',
+      name: tripleStack.name,
+      domains: tripleStack.domains,
+      emergentRule: tripleStack.emergentRule.name,
+    });
   }
 
   if (tripleStack) {
@@ -498,7 +525,18 @@ export function processFactionPhases(
     }
     current = setFactionTripleStack(current, factionId, tripleStack);
   } else {
+    const prevTriple = faction.activeTripleStack;
     current = setFactionTripleStack(current, factionId, null);
+    if (prevTriple) {
+      recordTripleStack(trace, {
+        round: current.round,
+        factionId,
+        phase: 'lost',
+        name: prevTriple.name,
+        domains: prevTriple.domains,
+        emergentRule: prevTriple.emergentRule.name,
+      });
+    }
   }
 
   current = applyEcologyPressure(current, factionId, registry);

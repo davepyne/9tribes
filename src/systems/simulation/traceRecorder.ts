@@ -8,6 +8,10 @@ import type {
   TraceSiegeEvent,
   TraceAiIntentEvent,
   TraceFactionStrategyEvent,
+  TraceResearchEvent,
+  TraceDomainLearnedEvent,
+  TraceTripleStackEvent,
+  TraceSynergyPairEvent,
 } from './traceTypes.js';
 
 export function createSimulationTrace(recordSnapshots: boolean = false): SimulationTrace {
@@ -21,6 +25,10 @@ export function createSimulationTrace(recordSnapshots: boolean = false): Simulat
     factionStrategyEvents: [],
     abilityLearnedEvents: [],
     unitSacrificedEvents: [],
+    researchEvents: [],
+    domainLearnedEvents: [],
+    tripleStackEvents: [],
+    synergyPairEvents: [],
     currentRound: 0,
   };
 }
@@ -122,6 +130,22 @@ export function recordAiIntent(trace: SimulationTrace | undefined, event: TraceA
 
 export function recordFactionStrategy(trace: SimulationTrace | undefined, event: TraceFactionStrategyEvent): void {
   trace?.factionStrategyEvents?.push(event);
+}
+
+export function recordResearch(trace: SimulationTrace | undefined, event: TraceResearchEvent): void {
+  trace?.researchEvents?.push(event);
+}
+
+export function recordDomainLearned(trace: SimulationTrace | undefined, event: TraceDomainLearnedEvent): void {
+  trace?.domainLearnedEvents?.push(event);
+}
+
+export function recordTripleStack(trace: SimulationTrace | undefined, event: TraceTripleStackEvent): void {
+  trace?.tripleStackEvents?.push(event);
+}
+
+export function recordSynergyPair(trace: SimulationTrace | undefined, event: TraceSynergyPairEvent): void {
+  trace?.synergyPairEvents?.push(event);
 }
 
 export function maybeRecordEndSnapshot(state: GameState, trace: SimulationTrace | undefined): void {

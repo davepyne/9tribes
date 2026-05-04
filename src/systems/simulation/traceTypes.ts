@@ -196,6 +196,44 @@ export interface TraceUnitSacrificedEvent {
   learnedDomains: string[];
 }
 
+export interface TraceResearchEvent {
+  round: number;
+  factionId: FactionId;
+  phase: 'started' | 'completed';
+  nodeId: string;
+  nodeName: string;
+  domainId: string;
+  reason?: string;
+}
+
+export interface TraceDomainLearnedEvent {
+  round: number;
+  factionId: FactionId;
+  domainId: string;
+  domainName: string;
+  source: 'exposure' | 'sacrifice' | 'capture';
+  synergizesWith?: string;
+}
+
+export interface TraceTripleStackEvent {
+  round: number;
+  factionId: FactionId;
+  phase: 'activated' | 'lost';
+  name?: string;
+  domains?: string[];
+  emergentRule?: string;
+}
+
+export interface TraceSynergyPairEvent {
+  round: number;
+  factionId: FactionId;
+  unitId?: UnitId;
+  pairId: string;
+  pairName: string;
+  domains: [string, string];
+  effectType: string;
+}
+
 export interface SimulationTrace {
   lines: string[];
   snapshots?: TurnSnapshot[];
@@ -206,6 +244,10 @@ export interface SimulationTrace {
   factionStrategyEvents?: TraceFactionStrategyEvent[];
   abilityLearnedEvents?: TraceAbilityLearnedEvent[];
   unitSacrificedEvents?: TraceUnitSacrificedEvent[];
+  researchEvents?: TraceResearchEvent[];
+  domainLearnedEvents?: TraceDomainLearnedEvent[];
+  tripleStackEvents?: TraceTripleStackEvent[];
+  synergyPairEvents?: TraceSynergyPairEvent[];
   currentRound?: number;
 }
 

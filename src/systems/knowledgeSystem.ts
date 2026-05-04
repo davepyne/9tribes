@@ -8,6 +8,8 @@ import type { RulesRegistry } from '../data/registry/types.js';
 import abilityDomainsData from '../content/base/ability-domains.json' with { type: 'json' };
 import pairSynergiesData from '../content/base/pair-synergies.json' with { type: 'json' };
 import { autoCompleteResearchForDomains } from './sacrificeSystem.js';
+import { recordDomainLearned, recordSynergyPair } from './simulation/traceRecorder.js';
+import type { SimulationTrace } from './simulation/traceTypes.js';
 
 // Domain tags to domain ID mapping (built from ability-domains.json)
 type DomainConfig = {
@@ -98,7 +100,7 @@ export function gainExposure(
   factionId: FactionId,
   domainId: string,
   amount: number,
-  trace?: { lines: string[] },
+  trace?: SimulationTrace,
   registry?: RulesRegistry
 ): GameState {
   const faction = state.factions.get(factionId);
@@ -141,6 +143,7 @@ export function gainExposure(
     trace?.lines.push(`${faction.name} has learned ${domainName} from ${sourceFactionNative} through exposure!`);
 
     // Check for synergy with existing learned domains
+    let synergyPartner: string | undefined;
     for (const existingDomain of faction.learnedDomains) {
       const synergyPairId = `${existingDomain}+${domainId}`;
       const reversePairId = `${domainId}+${existingDomain}`;
@@ -148,12 +151,22 @@ export function gainExposure(
         (pair) => pair.id === synergyPairId || pair.id === reversePairId
       );
       if (synergyExists) {
+        synergyPartner = existingDomain;
         if (trace) {
           trace.lines.push(`New domain ${DOMAINS[domainId]?.name ?? domainId} synergizes with ${DOMAINS[existingDomain]?.name ?? existingDomain} — potential emergent combination!`);
         }
         break; // Only log once per new domain learned
       }
     }
+
+    recordDomainLearned(trace, {
+      round: trace?.currentRound ?? 0,
+      factionId,
+      domainId,
+      domainName,
+      source: 'exposure',
+      synergizesWith: synergyPartner ? (DOMAINS[synergyPartner]?.name ?? synergyPartner) : undefined,
+    });
 
     // H-3-4-1: Auto-complete T1 research when exposure learns a domain
     if (registry) {

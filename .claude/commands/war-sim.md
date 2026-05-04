@@ -16,7 +16,7 @@ Run a simulation scenario and analyze AI behavior without playing the game.
 
 2. **For full-game runs**, execute:
    ```bash
-   npx tsx scripts/runScenario.ts --seed <N> --turns <N> --difficulty <level> --focus <siege|combat|ai|strategy|full> --factions <id,id> --turn-range <a-b>
+   npx tsx scripts/runScenario.ts --seed <N> --turns <N> --difficulty <level> --focus <siege|combat|ai|strategy|research|synergy|full> --factions <id,id> --turn-range <a-b>
    ```
 
    **Focus modes:**
@@ -24,6 +24,8 @@ Run a simulation scenario and analyze AI behavior without playing the game.
    - `combat` — combat events with damage breakdowns
    - `ai` — AI intent events (retreat, advance, siege, support)
    - `strategy` — faction strategy decisions (posture, objectives, threatened cities)
+   - `research` — research start/complete, domain learning via exposure
+   - `synergy` — triple stack activation/loss, research, domain learning (full synergy pipeline)
    - `full` — all events
 
 3. **For targeted scenarios** (specific situations like "city under siege"), write a small
@@ -45,6 +47,8 @@ Run a simulation scenario and analyze AI behavior without playing the game.
 - `/war-sim siege response` → run full game, focus on siege events + AI intent/strategy
 - `/war-sim why does frost clans always lose` → compare faction metrics, check strategy events
 - `/war-sim does the AI flank properly` → focus on combat events, check flanking bonuses
+- `/war-sim synergy acquisition` → focus=synergy, track domain learning + triple stack formation
+- `/war-sim research choices` → focus=research, see what AI picks and why
 
 ## Key Files
 
