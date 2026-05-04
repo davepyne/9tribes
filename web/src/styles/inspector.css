@@ -104,6 +104,37 @@
   color: var(--text);
 }
 
+.ci-unit-faction-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid color-mix(in srgb, var(--faction-color, #d6a34b) 40%, transparent);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--faction-color, #d6a34b);
+  cursor: pointer;
+}
+
+.ci-unit-faction-badge:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ci-unit-faction-swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ci-unit-faction-name {
+  white-space: nowrap;
+}
+
 .ci-section {
   margin-bottom: 16px;
   padding: 12px;

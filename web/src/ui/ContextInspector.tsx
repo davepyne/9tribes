@@ -241,6 +241,17 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
               {selection.type === 'unit' ? 'Unit' : selection.type === 'city' ? 'Settlement' : selection.type === 'village' ? 'Village' : 'Tile'}
             </p>
             <h2>{state.hud.selectedTitle}</h2>
+            {selection.type === 'unit' && selectedUnit?.factionId ? (
+              (() => {
+                const fi = getFactionInfo(selectedUnit.factionId);
+                return fi ? (
+                  <div className="ci-unit-faction-badge" style={{ '--faction-color': fi.color } as React.CSSProperties}>
+                    <span className="ci-unit-faction-swatch" style={{ background: fi.color }} />
+                    <span className="ci-unit-faction-name">{fi.name}</span>
+                  </div>
+                ) : null;
+              })()
+            ) : null}
           </div>
         </div>
 
