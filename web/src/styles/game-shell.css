@@ -99,6 +99,7 @@
   gap: 4px;
   padding: 5px 10px;
   height: auto;
+  min-width: 220px;
 }
 
 .gmb-chip__next-tier {
@@ -115,7 +116,7 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
-  max-width: 100px;
+  max-width: 160px;
 }
 
 .gmb-chip__progress-bar {
