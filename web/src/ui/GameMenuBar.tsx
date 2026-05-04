@@ -18,11 +18,11 @@ type GameMenuBarProps = {
 function buildGameMenu(canUndo: boolean): MenuEntry[] {
   return [
     { label: 'New Game', action: 'new_game' },
-    { label: 'Save', action: 'save' },
-    { label: 'Load', action: 'load' },
+    { label: 'Save (Ctrl+S)', action: 'save' },
+    { label: 'Load (Ctrl+L)', action: 'load' },
     { label: 'Preferences', action: 'preferences', disabled: true },
     { divider: true, id: 'game-divider-1' },
-    { label: 'Undo', action: 'undo', disabled: !canUndo },
+    { label: 'Undo (Ctrl+Z)', action: 'undo', disabled: !canUndo },
     { divider: true, id: 'game-divider-2' },
     { label: 'Restart Session', action: 'restart_session' },
   ];
