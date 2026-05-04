@@ -33,7 +33,7 @@ import { buildPendingCombat, type PendingCombat } from './combatSession.js';
 export type { PendingCombat } from './combatSession.js';
 import { clearMoveQueueOnUnit, executeQueuedMovesForUnit } from './moveQueueSession.js';
 import { buildReachableMoves } from './movementExplorer.js';
-import { refreshFogForAllFactions, updateSiegeState, getFortBuildEligibility, buildFortAtUnit, getFortDestroyEligibility, destroyFortAtUnit, getPrototypeCost, getAiUnitIds, getPrototypeName, getActiveFactionName } from './sessionUtils.js';
+import { refreshFogForAllFactions, updateSiegeState, getFortBuildEligibility, buildFortAtUnit, getFortDestroyEligibility, destroyFortAtUnit, getPrototypeCost, getAiUnitIds, getPrototypeName, getActiveFactionName, hasCaptureAbility, canPriestSummon, attemptPriestSummon } from './sessionUtils.js';
 import type { GameAction } from '../types/clientState';
 import type { ReplayCombatEvent } from '../types/replay';
 import type { PlayStateSource, SerializedGameState } from '../types/playState';
@@ -43,8 +43,6 @@ import { runFactionPhase } from '../../../../src/systems/factionPhaseSystem.js';
 import { performSacrifice } from '../../../../src/systems/sacrificeSystem.js';
 import { createCitySiteBonuses, getSettlementOccupancyBlocker } from '../../../../src/systems/citySiteSystem.js';
 import { boardTransport, canBoardTransport, disembarkUnit, getUnitTransport } from '../../../../src/systems/transportSystem.js';
-import { canPriestSummon, attemptPriestSummon } from '../../../../src/systems/signatureAbilitySystem.js';
-import { hasCaptureAbility } from '../../../../src/systems/captureSystem.js';
 import type { DifficultyLevel } from '../../../../src/systems/aiDifficulty.js';
 import type { MapGenerationMode } from '../../../../src/world/map/types.js';
 
