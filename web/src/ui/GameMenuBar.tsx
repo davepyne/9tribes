@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+﻿import type { CSSProperties } from 'react';
 import { useState, useEffect } from 'react';
 import type { ClientState } from '../game/types/clientState';
 import { getFactionInfo } from '../data/faction-info';
@@ -18,11 +18,11 @@ type GameMenuBarProps = {
 function buildGameMenu(canUndo: boolean): MenuEntry[] {
   return [
     { label: 'New Game', action: 'new_game' },
-    { label: 'Save  CTRL+S', action: 'save' },
-    { label: 'Load  CTRL+L', action: 'load' },
+    { label: 'Save', action: 'save' },
+    { label: 'Load', action: 'load' },
     { label: 'Preferences', action: 'preferences', disabled: true },
     { divider: true, id: 'game-divider-1' },
-    { label: 'Undo  CTRL+Z', action: 'undo', disabled: !canUndo },
+    { label: 'Undo', action: 'undo', disabled: !canUndo },
     { divider: true, id: 'game-divider-2' },
     { label: 'Restart Session', action: 'restart_session' },
   ];
@@ -57,7 +57,6 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
   const [unitPopupOpen, setUnitPopupOpen] = useState(false);
   const [summonPopupOpen, setSummonPopupOpen] = useState(false);
   const [traitPopupOpen, setTraitPopupOpen] = useState(false);
-  const [warExhaustionPopupOpen, setWarExhaustionPopupOpen] = useState(false);
   const [hoverSelectOpen, setHoverSelectOpen] = useState(false);
   const [hoverSelectPos, setHoverSelectPos] = useState({ x: 0, y: 0 });
   const [hoverSelectUnit, setHoverSelectUnit] = useState<{ id: string; name: string } | null>(null);
@@ -128,7 +127,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
     <nav className="gmb-root" style={{ '--gmb-faction-color': factionColor } as CSSProperties}>
       {factionPopupOpen && factionInfo && (
         <div className="faction-info-panel" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '50px', left: '200px', zIndex: 999 }}>
-          <button className="faction-popup__close" onClick={() => setFactionPopupOpen(false)}>×</button>
+          <button className="faction-popup__close" onClick={() => setFactionPopupOpen(false)}>├ù</button>
           <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.name}</h3>
           <div className="faction-popup__section">
             <span className="faction-popup__label">Native Ability</span>
@@ -170,9 +169,9 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
         </div>
       )}
       {traitPopupOpen && factionInfo && (
-        <div className="trait-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
-          <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360, marginTop: 100 }}>
-            <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>×</button>
+        <div className="faction-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
+          <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
+            <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>├ù</button>
             <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.specialTrait}</h3>
             <p className="faction-popup__intro" style={{ fontSize: 14, lineHeight: 1.6 }}>{factionInfo.specialAbility}</p>
           </div>
@@ -180,7 +179,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
       )}
       {unitPopupOpen && unitStats && (
         <div className="unit-stats-panel" onClick={(e) => e.stopPropagation()}>
-          <button className="unit-stats-panel__close" onClick={() => setUnitPopupOpen(false)}>×</button>
+          <button className="unit-stats-panel__close" onClick={() => setUnitPopupOpen(false)}>├ù</button>
           <h3 className="unit-stats-panel__name" style={{ color: factionColor }}>{factionInfo?.signatureUnit ?? 'Signature Unit'}</h3>
           <div className="unit-stats-panel__stats">
             <div><span>Attack</span><strong>{unitStats.attack}</strong></div>
@@ -200,7 +199,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
       )}
       {summonPopupOpen && unitStats && (
         <div className="unit-stats-panel" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '60px', right: '20px', width: '320px', zIndex: 9999 }}>
-          <button className="unit-stats-panel__close" onClick={() => setSummonPopupOpen(false)}>×</button>
+          <button className="unit-stats-panel__close" onClick={() => setSummonPopupOpen(false)}>├ù</button>
           <h3 className="unit-stats-panel__name" style={{ color: '#fff', display: 'block', textAlign: 'center' }}>{factionInfo?.signatureUnit ?? 'Signature Unit'}</h3>
           <div className="unit-stats-panel__stats">
             <div><span>Attack</span><strong>{unitStats.attack}</strong></div>
@@ -270,23 +269,10 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
           >
             <span className="gmb-chip-label">Research</span>
             <span>{researchChip.activeNodeName ?? 'Idle'}</span>
-            {researchChip.nextTierName && (
-              <div className="gmb-chip__next-tier">
-                <span className="gmb-chip__next-tier-label">{researchChip.nextTierName}</span>
-                {researchChip.nextTierProgress !== null ? (
-                  <div className="gmb-chip__progress-bar">
-                    <div
-                      className="gmb-chip__progress-fill"
-                      style={{ width: `${Math.round(researchChip.nextTierProgress * 100)}%` }}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            )}
           </button>
         ) : null}
 
-        {state.hud.summonTimer && state.world.units.some((u) => u.factionId === state.activeFactionId && u.canSummon) ? (
+        {state.hud.summonTimer ? (
           state.hud.summonTimer.isActive ? (
             <button type="button" className="gmb-chip gmb-chip--summon-active" onClick={() => setSummonPopupOpen(true)}>
               <span className="gmb-chip-label">Summon</span>
@@ -309,89 +295,6 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
           >
             <span className="gmb-chip-label">Supply</span>
             <span>{state.hud.supply.used}/{Math.floor(state.hud.supply.income)}</span>
-          </div>
-        ) : null}
-
-        {state.hud.exhaustion ? (
-          <div className="we-chip-wrap">
-            <button
-              type="button"
-              className={`gmb-chip gmb-chip--exhaustion${state.hud.exhaustion.points > 0 ? ' gmb-chip--exhaustion-active' : ''}`}
-              onClick={() => setWarExhaustionPopupOpen((v) => !v)}
-            >
-              <span className="gmb-chip-label">War Exhaustion</span>
-              <span>{Math.round(state.hud.exhaustion.points)}</span>
-            </button>
-            {warExhaustionPopupOpen && state.hud.exhaustion && (
-              <>
-                <div className="syn-backdrop" onClick={() => setWarExhaustionPopupOpen(false)} />
-                <div className="we-panel" onClick={(e) => e.stopPropagation()}>
-                  <div className="syn-panel__header">
-                    <h3 className="syn-panel__title">War Exhaustion</h3>
-                    <button type="button" className="syn-panel__close" onClick={() => setWarExhaustionPopupOpen(false)}>&#x2715;</button>
-                  </div>
-                  <div className="supply-popup__stat">
-                    <span>Current Points</span>
-                    <strong>{Math.round(state.hud.exhaustion.points)}</strong>
-                  </div>
-                  <div className="supply-popup__stat">
-                    <span>Production Penalty</span>
-                    <strong className={state.hud.exhaustion.productionPenalty > 0 ? 'supply-popup--deficit' : 'supply-popup--surplus'}>
-                      {state.hud.exhaustion.productionPenalty > 0 ? `-${Math.round(state.hud.exhaustion.productionPenalty * 100)}%` : 'None'}
-                    </strong>
-                  </div>
-                  <div className="supply-popup__stat">
-                    <span>Morale Penalty</span>
-                    <strong className={state.hud.exhaustion.moralePenalty > 0 ? 'supply-popup--deficit' : 'supply-popup--surplus'}>
-                      {state.hud.exhaustion.moralePenalty > 0 ? `-${state.hud.exhaustion.moralePenalty} per unit` : 'None'}
-                    </strong>
-                  </div>
-                  <div className="supply-popup__divider">Causes</div>
-                  <div className="supply-popup__stat supply-popup__stat--penalty">
-                    <span>Unit Lost</span>
-                    <span>+8 per unit</span>
-                  </div>
-                  <div className="supply-popup__stat supply-popup__stat--penalty">
-                    <span>Enemy Unit Killed</span>
-                    <span>+5</span>
-                  </div>
-                  <div className="supply-popup__stat supply-popup__stat--penalty">
-                    <span>City Captured (attacker)</span>
-                    <span>+5</span>
-                  </div>
-                  <div className="supply-popup__stat supply-popup__stat--penalty">
-                    <span>City Captured (defender)</span>
-                    <span>+15</span>
-                  </div>
-                  <div className="supply-popup__stat supply-popup__stat--penalty">
-                    <span>Village Lost</span>
-                    <span>+3</span>
-                  </div>
-                  <div className="supply-popup__stat supply-popup__stat--penalty">
-                    <span>Supply Deficit</span>
-                    <span>+2 per deficit</span>
-                  </div>
-                  <div className="supply-popup__stat supply-popup__stat--penalty">
-                    <span>Besieged City</span>
-                    <span>+2 per turn</span>
-                  </div>
-                  <div className="supply-popup__divider">Recovery</div>
-                  <div className="supply-popup__stat">
-                    <span>No losses (3+ turns)</span>
-                    <span>-4 per turn</span>
-                  </div>
-                  {state.hud.exhaustion.marchingStaminaEnabled && (
-                    <div className="supply-popup__stat">
-                      <span>Hit & Run Foundation</span>
-                      <span>-1 per turn</span>
-                    </div>
-                  )}
-                  <div className="supply-popup__note">
-                    Turns without loss: {state.hud.exhaustion.turnsWithoutLoss}{state.hud.exhaustion.turnsWithoutLoss < 3 ? ` (${3 - state.hud.exhaustion.turnsWithoutLoss} more to decay)` : ' (decay active)'}
-                  </div>
-                </div>
-              </>
-            )}
           </div>
         ) : null}
 

@@ -1,4 +1,4 @@
-export interface FactionInfo {
+﻿export interface FactionInfo {
   id: string;
   name: string;
   color: string;
@@ -29,7 +29,7 @@ export interface FactionInfo {
 const FACTION_INFO_MAP: Record<string, FactionInfo> = {
   jungle_clan: {
     id: 'jungle_clan', name: 'Jungle Clans', color: '#2f7d4a', nativeDomain: 'Venomcraft', homeBiome: 'Jungle',
-    intro: 'The Jungle Clans thrive where others fear to tread — deep in the canopy, where poison drips from every leaf and visibility ends at arm\'s reach.',
+    intro: 'The Jungle Clans thrive where others fear to tread ΓÇö deep in the canopy, where poison drips from every leaf and visibility ends at arm\'s reach.',
     strengths: ['Jungle interiors are your kingdom', 'Poison warfare means attrition advantage', 'Enemies fight blind while you strike from concealment'],
     weaknesses: ['Long-range armies outside the jungle are your nightmare', 'Struggle badly on open ground'],
     tip: 'Lure enemies into the jungle by retreating, then spring your real force on them.',
@@ -47,7 +47,7 @@ const FACTION_INFO_MAP: Record<string, FactionInfo> = {
   },
   druid_circle: {
     id: 'druid_circle', name: 'Druid Circle', color: '#5d8f57', nativeDomain: 'Nature Healing', homeBiome: 'Forest',
-    intro: 'The Druid Circle believes the forest itself fights on their side — and honestly, it kind of does.',
+    intro: 'The Druid Circle believes the forest itself fights on their side ΓÇö and honestly, it kind of does.',
     strengths: ['Healing Druids passive means faster recovery', 'Forest terrain amplifies everything good', 'Patient defensive play is incredibly strong'],
     weaknesses: ['Fast shock cavalry can run circles around you', 'Offensive punch is modest'],
     tip: 'Plant your forces just inside a forest edge and let enemies commit.',
@@ -86,7 +86,7 @@ const FACTION_INFO_MAP: Record<string, FactionInfo> = {
     intro: 'The Savannah Lions are all about momentum. Their Charge Momentum passive means their units hit harder after moving.',
     strengths: ['First-contact power is unmatched', 'War Elephants are devastating', 'Charge bonuses are massive'],
     weaknesses: ['Terrain that slows approach nullifies charge', 'Light infantry gets crushed'],
-    tip: 'Angle your approach so War Elephants hit the flank — the bonus is just as devastating.',
+    tip: 'Angle your approach so War Elephants hit the flank ΓÇö the bonus is just as devastating.',
     signatureUnit: 'War Elephant',
     specialTrait: 'Charge Momentum',
     specialAbility: 'Charge: strike first, no retaliation on kill; War Elephant tramples; +30% stampede bonus',
@@ -114,7 +114,7 @@ const FACTION_INFO_MAP: Record<string, FactionInfo> = {
       attack: 2, defense: 3, health: 12, moves: 3, range: 1,
       tags: ['camel', 'mounted', 'self_heal'],
       ability: 'Desert Adaptation: Ignores all terrain movement penalties. Desert Swarm (3+ units nearby): +1 attack, +10% defense. Immune to desert attrition.',
-      description: 'The legendary Desert Immortals are unstoppable — they heal from any wound and march forever. Limited to 1 on map.'
+      description: 'The legendary Desert Immortals are unstoppable ΓÇö they heal from any wound and march forever. Limited to 1 on map.'
     },
   },
   steppe_clan: {
@@ -158,7 +158,7 @@ const FACTION_INFO_MAP: Record<string, FactionInfo> = {
     intro: 'The River People treat waterways like roads. They appear anywhere along the bank without warning.',
     strengths: ['River corridors give unmatched mobility', 'River Stealth is powerful', 'Amphibious assault is devastating'],
     weaknesses: ['Getting dragged into dry fights strips advantages', 'Opponents can bait you'],
-    tip: 'Map out river networks early — they\'re your highway system.',
+    tip: 'Map out river networks early ΓÇö they\'re your highway system.',
     signatureUnit: 'Ancient Alligator',
     specialTrait: 'River Assault',
     specialAbility: 'Auto-stealth on river/swamp; +50% ambush damage from stealth; amphibious (emerge from any river hex); immune to swamp attrition',

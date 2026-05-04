@@ -1,4 +1,4 @@
-{
+﻿{
   "jungle_clan": {
     "id": "jungle_clan",
     "name": "Jungle Clans",
@@ -75,7 +75,7 @@
     "uniqueMechanic": "horse_archers",
     "homeBiome": "plains",
     "signatureUnit": "Warlord",
-    "passiveTrait": "master_horsemen",
+    "passiveTrait": "foraging_riders",
     "earlyResearchBias": "horsemanship",
     "naturalPrey": "slow ranged lines",
     "naturalCounter": "camels and fortified spear walls",
