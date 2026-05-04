@@ -70,13 +70,14 @@ export function calculateMoralePenalty(exhaustion: number): number {
 }
 
 /**
- * Apply decay to war exhaustion based on peaceful conditions.
+ * Apply decay to war exhaustion based on peaceful conditions and research bonuses.
  */
 export function applyDecay(
   state: WarExhaustion,
   conditions: {
     noLossTurns: number;
     territoryClear: boolean;
+    marchingStaminaBonus?: number;
   }
 ): WarExhaustion {
   let decay = 0;
@@ -85,6 +86,9 @@ export function applyDecay(
   }
   if (conditions.territoryClear) {
     decay += EXHAUSTION_CONFIG.DECAY_TERRITORY_CLEARED;
+  }
+  if (conditions.marchingStaminaBonus) {
+    decay += conditions.marchingStaminaBonus;
   }
   return {
     ...state,

@@ -300,5 +300,48 @@
       "navigation": 1.5
     },
     "nativeFaction": "coral_people"
+  },
+  "druid_wizard_frame": {
+    "id": "druid_wizard_frame",
+    "name": "Druid Wizard",
+    "role": "ranged",
+    "slotTypes": [],
+    "baseHp": 8,
+    "baseMoves": 3,
+    "baseAttack": 3,
+    "baseDefense": 3,
+    "baseRange": 3,
+    "movementClass": "infantry",
+    "supplyCost": 2,
+    "tags": ["magic", "ranged", "healing"],
+    "capabilityPressure": {}
+  },
+  "desert_immortals_frame": {
+    "id": "desert_immortals_frame",
+    "name": "Desert Immortals",
+    "role": "melee",
+    "slotTypes": [],
+    "baseHp": 12,
+    "baseMoves": 3,
+    "baseAttack": 2,
+    "baseDefense": 3,
+    "movementClass": "camel",
+    "supplyCost": 2,
+    "tags": ["camel", "mounted", "self_heal"],
+    "capabilityPressure": {}
+  },
+  "war_elephant_frame": {
+    "id": "war_elephant_frame",
+    "name": "War Elephant",
+    "role": "melee",
+    "slotTypes": [],
+    "baseHp": 14,
+    "baseMoves": 3,
+    "baseAttack": 4,
+    "baseDefense": 2,
+    "movementClass": "beast",
+    "supplyCost": 2.5,
+    "tags": ["beast", "charge", "trample"],
+    "capabilityPressure": {}
   }
 }

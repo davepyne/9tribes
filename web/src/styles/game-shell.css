@@ -94,6 +94,45 @@
 .gmb-chip--research {
   cursor: pointer;
   transition: background 150ms ease;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 5px 10px;
+  height: auto;
+  min-width: 220px;
+}
+
+.gmb-chip__next-tier {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.gmb-chip__next-tier-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted, #9ca3af);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 160px;
+}
+
+.gmb-chip__progress-bar {
+  flex: 1;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 40px;
+}
+
+.gmb-chip__progress-fill {
+  height: 100%;
+  background: var(--accent, #d6a34b);
+  border-radius: 2px;
+  transition: width 300ms ease;
 }
 
 .gmb-chip--research:hover {
@@ -126,6 +165,22 @@
 }
 .gmb-chip--summon-cooldown > span:last-child {
   font-weight: 700;
+}
+
+.gmb-chip--exhaustion {
+  cursor: pointer;
+}
+.gmb-chip--exhaustion:hover {
+  background: rgba(210, 105, 30, 0.15);
+}
+.gmb-chip--exhaustion > span:last-child {
+  font-weight: 700;
+}
+.gmb-chip--exhaustion-active {
+  border-color: rgba(210, 105, 30, 0.6);
+}
+.gmb-chip--exhaustion-active > span:last-child {
+  color: #d2691e;
 }
 
 .gmb-chip-label {

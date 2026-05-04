@@ -100,7 +100,7 @@
   },
   "steppe_raiders": {
     "id": "steppe_raiders",
-    "name": "Steppe Raiders",
+    "name": "Lancers",
     "chassisId": "cavalry_frame",
     "componentIds": [
       "basic_spear",

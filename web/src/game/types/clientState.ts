@@ -40,6 +40,8 @@ export type HudViewModel = {
     activeNodeName: string | null;
     progress: number | null;
     totalCompleted: number;
+    nextTierName: string | null;
+    nextTierProgress: number | null;
   } | null;
   settlementPreview: SettlementPreviewViewModel | null;
   supply: {
@@ -51,6 +53,8 @@ export type HudViewModel = {
     points: number;
     productionPenalty: number;
     moralePenalty: number;
+    turnsWithoutLoss: number;
+    marchingStaminaEnabled: boolean;
   } | null;
   summonTimer: {
     cooldownRemaining: number | null;
@@ -267,6 +271,7 @@ export type PlayFeedbackState = {
         factionId: string;
       }
     | null;
+  playerEliminated: boolean;
   aiProcessing: boolean;
 };
 

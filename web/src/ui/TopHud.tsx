@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+﻿import type { CSSProperties } from 'react';
 import { useState, useMemo } from 'react';
 import type { ClientState } from '../game/types/clientState';
 import { getFactionInfo } from '../data/faction-info';
@@ -14,6 +14,7 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
   const [factionPopup, setFactionPopup] = useState<boolean>(false);
   const [supplyPopup, setSupplyPopup] = useState<boolean>(false);
   const [unitPopupOpen, setUnitPopupOpen] = useState<boolean>(false);
+  const [traitPopupOpen, setTraitPopupOpen] = useState<boolean>(false);
   const activeFactionColor = state.world.factions.find((faction) => faction.id === state.activeFactionId)?.color ?? '#d6a34b';
   const recoveringCityCount = state.world.cities.filter(
     (city) => city.factionId === state.activeFactionId && city.turnsSinceCapture !== undefined,
@@ -35,7 +36,7 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
       {factionPopup && factionInfo && (
         <div className="faction-popup-overlay" onClick={() => setFactionPopup(false)}>
           <div className="faction-popup" onClick={(e) => e.stopPropagation()}>
-            <button className="faction-popup__close" onClick={() => setFactionPopup(false)}>×</button>
+            <button className="faction-popup__close" onClick={() => setFactionPopup(false)}>├ù</button>
             <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.name}</h3>
             <div className="faction-popup__section">
               <span className="faction-popup__label">Native Ability</span>
@@ -47,7 +48,7 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
             </div>
             <div className="faction-popup__section">
               <span className="faction-popup__label">Special Trait</span>
-              <span className="faction-popup__trait">{factionInfo.passiveTrait.replace(/_/g, ' ')}</span>
+              <span className="faction-popup__trait clickable" onClick={() => setTraitPopupOpen(true)}>{factionInfo.specialTrait}</span>
             </div>
             <div className="faction-popup__section">
               <span className="faction-popup__label">Signature Unit</span>
@@ -80,8 +81,8 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
       {unitPopupOpen && factionInfo?.unitStats && (
         <div className="faction-popup-overlay" onClick={() => setUnitPopupOpen(false)}>
           <div className="faction-popup unit-stats-popup" onClick={(e) => e.stopPropagation()}>
-            <button className="faction-popup__close" onClick={() => setUnitPopupOpen(false)}>×</button>
-            <h3 className="unit-stats-panel__name" style={{ color: factionInfo.color }}>{factionInfo.unitStats.attack} / {factionInfo.unitStats.defense} / {factionInfo.unitStats.health}</h3>
+            <button className="faction-popup__close" onClick={() => setUnitPopupOpen(false)}>├ù</button>
+            <h3 className="unit-stats-panel__name" style={{ color: factionInfo.color }}>{factionInfo.signatureUnit}</h3>
             <div className="unit-stats-panel__stats">
               <div><span>Attack</span><strong>{factionInfo.unitStats.attack}</strong></div>
               <div><span>Defense</span><strong>{factionInfo.unitStats.defense}</strong></div>
@@ -96,6 +97,15 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
               <strong>Ability:</strong> {factionInfo.unitStats.ability}
             </div>
             <p className="unit-stats-panel__desc">{factionInfo.unitStats.description}</p>
+          </div>
+        </div>
+      )}
+      {traitPopupOpen && factionInfo && (
+        <div className="faction-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
+          <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
+            <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>├ù</button>
+            <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.specialTrait}</h3>
+            <p className="faction-popup__intro" style={{ fontSize: 14, lineHeight: 1.6 }}>{factionInfo.specialAbility}</p>
           </div>
         </div>
       )}
@@ -149,7 +159,7 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
       {supplyPopup && state.hud.supply && (
         <div className="supply-popup-overlay" onClick={() => setSupplyPopup(false)}>
           <div className="supply-popup" onClick={(e) => e.stopPropagation()}>
-            <button className="supply-popup__close" onClick={() => setSupplyPopup(false)}>×</button>
+            <button className="supply-popup__close" onClick={() => setSupplyPopup(false)}>├ù</button>
             <h3 className="supply-popup__title">Supply Breakdown</h3>
             <div className="supply-popup__stat">
               <span>Income</span>
@@ -184,7 +194,7 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
             )}
             {recoveringCityCount > 0 && (
               <div className="supply-popup__note">
-                ⚠ {recoveringCityCount} city{recoveringCityCount !== 1 ? 'ies' : 'y'} recovering from capture
+                ΓÜá {recoveringCityCount} city{recoveringCityCount !== 1 ? 'ies' : 'y'} recovering from capture
               </div>
             )}
           </div>

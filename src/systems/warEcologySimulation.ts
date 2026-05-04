@@ -8,6 +8,7 @@ import { resetCombatRecordStreaks } from './historySystem.js';
 import {
   applyDecay,
 } from './warExhaustionSystem.js';
+import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import type { GameState } from '../game/types.js';
 import type { FactionId } from '../types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
@@ -116,9 +117,14 @@ export function runWarEcologySimulation(
         continue;
       }
 
+      const faction = current.factions.get(factionId);
+      const research = current.research.get(factionId);
+      const doctrine = faction && research ? resolveResearchDoctrine(research, faction) : null;
+      const marchingStaminaBonus = doctrine?.marchingStaminaEnabled ? 1 : 0;
       const decayedWE = applyDecay(we, {
         noLossTurns: we.turnsWithoutLoss,
         territoryClear: false,
+        marchingStaminaBonus,
       });
       const weMap = new Map(current.warExhaustion);
       weMap.set(factionId, decayedWE);

@@ -22,7 +22,7 @@
   --panel-shadow-heavy: 0 24px 64px rgba(0, 0, 0, 0.5);
 
   /* ── Layout dimensions ── */
-  --menubar-height: 48px;
+  --menubar-height: 64px;
   --command-tray-height: 56px;
   --inspector-width: 320px;
   --inspector-width-narrow: 280px;

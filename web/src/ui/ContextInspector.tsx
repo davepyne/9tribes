@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+﻿import { useRef, useState, useCallback, useEffect } from 'react';
 import type { ClientState } from '../game/types/clientState';
 import abilityDomains from '../data/ability-domains.json';
 import { getFactionInfo } from '../data/faction-info';
@@ -56,6 +56,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
   const [factionPopup, setFactionPopup] = useState<FactionInfo | null>(null);
   const [domainPopup, setDomainPopup] = useState<{domainId: string; name: string; description: string} | null>(null);
   const [unitPopupOpen, setUnitPopupOpen] = useState(false);
+  const [traitPopupOpen, setTraitPopupOpen] = useState(false);
   const [draggedQueueIndex, setDraggedQueueIndex] = useState<number | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [tabsCanScrollLeft, setTabsCanScrollLeft] = useState(false);
@@ -146,7 +147,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
       {factionPopup && (
         <div className="faction-popup-overlay" onClick={() => setFactionPopup(null)}>
           <div className="faction-popup" onClick={(e) => e.stopPropagation()}>
-            <button className="faction-popup__close" onClick={() => setFactionPopup(null)}>×</button>
+            <button className="faction-popup__close" onClick={() => setFactionPopup(null)}>├ù</button>
             <h3 className="faction-popup__name" style={{ color: factionPopup.color }}>{factionPopup.name}</h3>
             <div className="faction-popup__section">
               <span className="faction-popup__label">Native Ability</span>
@@ -158,7 +159,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
             </div>
             <div className="faction-popup__section">
               <span className="faction-popup__label">Special Trait</span>
-              <span className="faction-popup__trait">{factionPopup.specialTrait}</span>
+              <span className="faction-popup__trait clickable" onClick={() => setTraitPopupOpen(true)}>{factionPopup.specialTrait}</span>
             </div>
             <div className="faction-popup__section">
               <span className="faction-popup__label">Signature Unit</span>
@@ -191,8 +192,8 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
       {unitPopupOpen && factionPopup?.unitStats && (
         <div className="faction-popup-overlay" onClick={() => setUnitPopupOpen(false)}>
           <div className="faction-popup unit-stats-popup" onClick={(e) => e.stopPropagation()}>
-            <button className="faction-popup__close" onClick={() => setUnitPopupOpen(false)}>×</button>
-            <h3 className="unit-stats-panel__name" style={{ color: factionPopup.color }}>{factionPopup.unitStats.attack} / {factionPopup.unitStats.defense} / {factionPopup.unitStats.health}</h3>
+            <button className="faction-popup__close" onClick={() => setUnitPopupOpen(false)}>├ù</button>
+            <h3 className="unit-stats-panel__name" style={{ color: factionPopup.color }}>{factionPopup.signatureUnit}</h3>
             <div className="unit-stats-panel__stats">
               <div><span>Attack</span><strong>{factionPopup.unitStats.attack}</strong></div>
               <div><span>Defense</span><strong>{factionPopup.unitStats.defense}</strong></div>
@@ -210,18 +211,27 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
           </div>
         </div>
       )}
+      {traitPopupOpen && factionPopup && (
+        <div className="faction-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
+          <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
+            <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>├ù</button>
+            <h3 className="faction-popup__name" style={{ color: factionPopup.color }}>{factionPopup.specialTrait}</h3>
+            <p className="faction-popup__intro" style={{ fontSize: 14, lineHeight: 1.6 }}>{factionPopup.specialAbility}</p>
+          </div>
+        </div>
+      )}
       {/* Domain Popup */}
       {domainPopup && (
         <div className="faction-popup-overlay" onClick={() => setDomainPopup(null)}>
           <div className="faction-popup" onClick={(e) => e.stopPropagation()}>
-            <button className="faction-popup__close" onClick={() => setDomainPopup(null)}>×</button>
+            <button className="faction-popup__close" onClick={() => setDomainPopup(null)}>├ù</button>
             <h3 className="faction-popup__name">{domainPopup.name}</h3>
             <p className="faction-popup__intro">{domainPopup.description}</p>
           </div>
         </div>
       )}
       <div className="ci-scroll">
-        {/* ── Header ── */}
+        {/* ΓöÇΓöÇ Header ΓöÇΓöÇ */}
         <div className="ci-header">
           <button type="button" className="ci-close" onClick={() => { onClose(); onCloseCityProduction?.(); }} aria-label="Close inspector">
             &times;
@@ -234,7 +244,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
           </div>
         </div>
 
-        {/* ── Unit Inspector ── */}
+        {/* ΓöÇΓöÇ Unit Inspector ΓöÇΓöÇ */}
         {selectedUnit ? (
           <div className="ci-section">
             <p className="ci-desc">{state.hud.selectedDescription}</p>
@@ -255,7 +265,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                 <div className="ci-stat-cell">
                   <span className="ci-stat-value ci-stat-value--def">{selectedUnit.defense}</span>
                   {selectedUnit.effectiveDefense !== selectedUnit.defense && (
-                    <span className="ci-stat-sub">→ {selectedUnit.effectiveDefense}</span>
+                    <span className="ci-stat-sub">ΓåÆ {selectedUnit.effectiveDefense}</span>
                   )}
                   <span className="ci-stat-label">Defense</span>
                 </div>
@@ -385,7 +395,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                 {selectedUnit.routed && (
                   <div className="meta-row ci-condition ci-condition--routed">
                     <span>Routed</span>
-                    <strong>Broken morale — unable to act</strong>
+                    <strong>Broken morale ΓÇö unable to act</strong>
                   </div>
                 )}
                 {selectedUnit.preparedAbility && (
@@ -475,14 +485,14 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
           </div>
         ) : null}
 
-        {/* ── City Inspector ── */}
+        {/* ΓöÇΓöÇ City Inspector ΓöÇΓöÇ */}
         {selectedCity ? (
           <div className="ci-section">
             {!showRestrictedEnemyCityInfo ? (
               <div className="ci-tabs-wrapper">
               {tabsCanScrollLeft && (
                 <button type="button" className="ci-tabs-arrow ci-tabs-arrow--left" aria-label="Scroll tabs left" onClick={scrollTabsLeft}>
-                  ‹
+                  ΓÇ╣
                 </button>
               )}
               <div className="ci-tabs" ref={tabsRef} role="tablist">
@@ -500,7 +510,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
               </div>
               {tabsCanScrollRight && (
                 <button type="button" className="ci-tabs-arrow ci-tabs-arrow--right" aria-label="Scroll tabs right" onClick={scrollTabsRight}>
-                  ›
+                  ΓÇ║
                 </button>
               )}
               </div>
@@ -558,7 +568,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
 
             {!showRestrictedEnemyCityInfo && cityTab === 'production' ? (
               <div className="ci-tab-content ci-prod-tab">
-                {/* ── Available Units ── */}
+                {/* ΓöÇΓöÇ Available Units ΓöÇΓöÇ */}
                 <div className="pq-divider">
                   <span>{selectedCity.canManageProduction ? 'TRAIN' : 'AVAILABLE UNITS'}</span>
                 </div>
@@ -566,10 +576,10 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                 {!selectedCity.canManageProduction ? (
                   <p className="pq-readonly-hint">
                     {selectedCity.walls.besieged
-                      ? 'Besieged — production locked'
+                      ? 'Besieged ΓÇö production locked'
                       : selectedCity.isFriendly
                         ? 'Only the active city can manage production'
-                        : 'Enemy city — read only'}
+                        : 'Enemy city ΓÇö read only'}
                   </p>
                 ) : null}
 
@@ -609,7 +619,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                   ))}
                 </div>
 
-                {/* ── Current Production ── */}
+                {/* ΓöÇΓöÇ Current Production ΓöÇΓöÇ */}
                 {selectedCity.production.current ? (
                   <div className="pq-current">
                     <div className="pq-current__header">
@@ -659,11 +669,11 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                 ) : (
                   <div className="pq-idle">
                     <span className="pq-idle__dot" />
-                    Idle — select a unit to begin training
+                    Idle ΓÇö select a unit to begin training
                   </div>
                 )}
 
-                {/* ── Queue ── */}
+                {/* ΓöÇΓöÇ Queue ΓöÇΓöÇ */}
                 {selectedCity.production.queue.length > 0 && (
                   <div className="pq-queue">
                     <div className="pq-queue__header">
@@ -705,7 +715,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
                             onClick={() => onRemoveFromQueue(selectedCity.cityId, index)}
                             aria-label={`Remove ${item.name} from queue`}
                           >
-                            ×
+                            ├ù
                           </button>
                         )}
                       </div>
@@ -717,7 +727,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
           </div>
         ) : null}
 
-        {/* ── Hex Inspector (no entity selected) ── */}
+        {/* ΓöÇΓöÇ Hex Inspector (no entity selected) ΓöÇΓöÇ */}
         {selection.type === 'hex' ? (
           <div className="ci-section">
             <p className="ci-desc">{state.hud.selectedDescription}</p>
@@ -746,7 +756,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
           </div>
         ) : null}
 
-        {/* ── Village Inspector ── */}
+        {/* ΓöÇΓöÇ Village Inspector ΓöÇΓöÇ */}
         {selection.type === 'village' ? (
           <div className="ci-section">
             <p className="ci-desc">{state.hud.selectedDescription}</p>
@@ -760,7 +770,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
         ) : null}
 
 
-        {/* ── Replay-mode combat/intent details ── */}
+        {/* ΓöÇΓöÇ Replay-mode combat/intent details ΓöÇΓöÇ */}
       </div>
     </aside>
   );

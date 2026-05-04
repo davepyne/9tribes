@@ -30,6 +30,8 @@ import { useUndoHandler } from './hooks/useUndoHandler';
 import { TutorialOverlay } from '../ui/TutorialOverlay';
 import { VictoryOverlay } from '../ui/VictoryOverlay';
 import { TerrainPanel } from '../ui/TerrainPanel';
+import { LoadOverlay } from '../ui/LoadOverlay';
+import { SaveOverlay } from '../ui/SaveOverlay';
 
 const params = new URLSearchParams(window.location.search);
 const USE_V2_LAYOUT = params.get('layout') !== 'legacy';
@@ -48,6 +50,8 @@ type ShellContentProps = {
   debugVisible: boolean;
   activeOverlay: string | null;
   showPlayInstructions: boolean;
+  loadOpen: boolean;
+  saveOpen: boolean;
   onSetInstructionsDismissed: (v: boolean) => void;
   onSetTurnBanner: (v: string | null) => void;
   onSetResearchOpen: (v: boolean) => void;
@@ -58,8 +62,11 @@ type ShellContentProps = {
   onSetCombatLogOpen: (v: boolean) => void;
   onSetDebugVisible: (v: boolean) => void;
   onSetActiveOverlay: (v: string | null) => void;
+  onSetLoadOpen: (v: boolean) => void;
+  onSetSaveOpen: (v: boolean) => void;
   onRestartSession?: () => void;
   onSaveGame?: () => SaveGameSummary | null;
+  getSaveSnapshot?: () => { preview: { playerFactionName: string | null; activeFactionName: string; round: number }; payload: unknown } | null;
 };
 
 function KnowledgeGainedShellContent({
@@ -76,6 +83,8 @@ function KnowledgeGainedShellContent({
   debugVisible,
   activeOverlay,
   showPlayInstructions,
+  loadOpen,
+  saveOpen,
   onSetInstructionsDismissed,
   onSetTurnBanner,
   onSetResearchOpen,
@@ -86,8 +95,11 @@ function KnowledgeGainedShellContent({
   onSetCombatLogOpen,
   onSetDebugVisible,
   onSetActiveOverlay,
+  onSetLoadOpen,
+  onSetSaveOpen,
   onRestartSession,
   onSaveGame,
+  getSaveSnapshot,
 }: ShellContentProps) {
   const { showKnowledgeGained } = useKnowledgeModal();
   const { showTechDiscovery } = useTechDiscoveryModal();
@@ -109,6 +121,29 @@ function KnowledgeGainedShellContent({
     showTechDiscovery,
   );
 
+  // ── Global hotkeys ──
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!e.ctrlKey) return;
+      switch (e.key.toLowerCase()) {
+        case 's':
+          e.preventDefault();
+          handleMenuAction('save');
+          break;
+        case 'l':
+          e.preventDefault();
+          handleMenuAction('load');
+          break;
+        case 'z':
+          e.preventDefault();
+          handleMenuAction('undo');
+          break;
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []); // handleMenuAction is stable via useCallback
+
   const { combatLocked } = useCombatBridge(controller, gameRef);
   useSessionAudio(state, combatLocked);
   useUndoHandler(controller);
@@ -117,8 +152,7 @@ function KnowledgeGainedShellContent({
 
   const playerWon = state.playFeedback?.victory?.winnerFactionId === state.playFeedback?.playerFactionId
     && state.playFeedback?.victory?.victoryType !== 'unresolved';
-  const playerLost = state.playFeedback?.victory?.eliminatedFactionId === state.playFeedback?.playerFactionId
-    && state.playFeedback?.victory?.victoryType !== 'unresolved';
+  const playerLost = state.playFeedback?.playerEliminated ?? false;
 
   const handleCloseTerrainInspector = useCallback(
     () => controller.dispatch({ type: 'close_terrain_inspector' }),
@@ -162,15 +196,11 @@ function KnowledgeGainedShellContent({
       case 'new_game':
         window.location.search = '';
         break;
-      case 'save': {
-        const summary = onSaveGame?.();
-        if (summary) {
-          onSetTurnBanner(`Saved: ${summary.label}`);
-        }
+      case 'save':
+        onSetSaveOpen(true);
         break;
-      }
       case 'load':
-        window.location.search = 'screen=load';
+        onSetLoadOpen(true);
         break;
       case 'undo':
         controller.dispatch({ type: 'undo' });
@@ -325,6 +355,8 @@ function KnowledgeGainedShellContent({
           onDismiss={() => setVictoryDismissed(true)}
         />
       ) : null}
+      {loadOpen && <LoadOverlay onClose={() => onSetLoadOpen(false)} />}
+      {saveOpen && <SaveOverlay onClose={() => onSetSaveOpen(false)} getSaveSnapshot={getSaveSnapshot ?? (() => null)} />}
     </div>
   );
 }
@@ -344,6 +376,8 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
   const [initialHelpTab, setInitialHelpTab] = useState<string | undefined>(undefined);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [combatLogOpen, setCombatLogOpen] = useState(false);
+  const [loadOpen, setLoadOpen] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
 
@@ -403,6 +437,12 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
       case 'toggle_debug_overlay':
         setDebugVisible((v) => !v);
         break;
+      case 'load':
+        setLoadOpen(true);
+        break;
+      case 'save':
+        setSaveOpen(true);
+        break;
       default:
         break;
     }
@@ -441,8 +481,13 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
           onSetCombatLogOpen={setCombatLogOpen}
           onSetDebugVisible={setDebugVisible}
           onSetActiveOverlay={setActiveOverlay}
+          loadOpen={loadOpen}
+          saveOpen={saveOpen}
+          onSetLoadOpen={setLoadOpen}
+          onSetSaveOpen={setSaveOpen}
           onRestartSession={onRestartSession}
           onSaveGame={onSaveGame}
+          getSaveSnapshot={() => controller.getSaveSnapshot()}
         />
         </TechDiscoveryModalProvider>
       </KnowledgeGainedModalProvider>
@@ -488,6 +533,8 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
           onClose={() => setResearchOpen(false)}
         />
       ) : null}
+      {loadOpen && <LoadOverlay onClose={() => setLoadOpen(false)} />}
+      {saveOpen && <SaveOverlay onClose={() => setSaveOpen(false)} getSaveSnapshot={() => controller.getSaveSnapshot()} />}
     </div>
   );
 }
