@@ -214,7 +214,7 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
         </div>
       )}
       {warExhaustionPopup && state.hud.exhaustion && (
-        <div className="supply-popup-overlay" onClick={() => setWarExhaustionPopup(false)}>
+        <div className="supply-popup-overlay" onClick={() => setWarExhaustionPopup(false)} style={{ alignItems: 'flex-start' }}>
           <div className="supply-popup" onClick={(e) => e.stopPropagation()} style={{ marginTop: 200 }}>
             <button className="supply-popup__close" onClick={() => setWarExhaustionPopup(false)}>×</button>
             <h3 className="supply-popup__title">War Exhaustion</h3>
