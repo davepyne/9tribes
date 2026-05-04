@@ -373,6 +373,7 @@ export class GameController {
         maxRounds: session.getMaxRounds(),
         absorbedDomains: [...feedback.absorbedDomains],
         lastSummon: feedback.lastSummon ? { ...feedback.lastSummon } : null,
+        playerEliminated,
         aiProcessing: feedback.aiProcessing,
       },
       research: buildResearchInspectorViewModel(sessionState, session.getRegistry()),

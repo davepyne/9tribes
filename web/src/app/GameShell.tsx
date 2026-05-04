@@ -117,8 +117,7 @@ function KnowledgeGainedShellContent({
 
   const playerWon = state.playFeedback?.victory?.winnerFactionId === state.playFeedback?.playerFactionId
     && state.playFeedback?.victory?.victoryType !== 'unresolved';
-  const playerLost = state.playFeedback?.victory?.eliminatedFactionId === state.playFeedback?.playerFactionId
-    && state.playFeedback?.victory?.victoryType !== 'unresolved';
+  const playerLost = state.playFeedback?.playerEliminated ?? false;
 
   const handleCloseTerrainInspector = useCallback(
     () => controller.dispatch({ type: 'close_terrain_inspector' }),

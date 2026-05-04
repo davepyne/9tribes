@@ -267,6 +267,7 @@ export type PlayFeedbackState = {
         factionId: string;
       }
     | null;
+  playerEliminated: boolean;
   aiProcessing: boolean;
 };
 
