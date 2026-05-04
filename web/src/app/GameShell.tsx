@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import type Phaser from 'phaser';
 import type { GameController } from '../game/controller/GameController';
 import type { ClientState } from '../game/types/clientState';
@@ -121,7 +121,7 @@ function KnowledgeGainedShellContent({
     showTechDiscovery,
   );
 
-  // ── Global hotkeys ──
+  // ΓöÇΓöÇ Global hotkeys ΓöÇΓöÇ
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!e.ctrlKey) return;
@@ -228,7 +228,7 @@ function KnowledgeGainedShellContent({
       {state.playFeedback?.aiProcessing && (
         <div className="ai-processing-overlay">
           <span className="ai-processing-spinner" />
-          <span>AI thinking…</span>
+          <span>AI thinkingΓÇª</span>
         </div>
       )}
 
@@ -452,7 +452,7 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
     controller.dispatch({ type: 'select_hex', q: -1, r: -1 });
   };
 
-  // ── V2 Layout ──
+  // ΓöÇΓöÇ V2 Layout ΓöÇΓöÇ
   if (USE_V2_LAYOUT) {
     return (
       <KnowledgeGainedModalProvider>
@@ -494,7 +494,7 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
     );
   }
 
-  // ── Legacy Layout ──
+  // ΓöÇΓöÇ Legacy Layout ΓöÇΓöÇ
   return (
     <div className="game-shell">
       <TopHud state={state} turnBanner={turnBanner} onOpenResearch={() => setResearchOpen(true)} />

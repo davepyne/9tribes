@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { deleteSaveGame, getSaveGame, listSaveGames, type SaveGameSummary } from '../app/savegames';
 
 type LoadOverlayProps = {
@@ -36,7 +36,7 @@ export function LoadOverlay({ onClose }: LoadOverlayProps) {
               <div key={save.id} className="savegame-card">
                 <div className="savegame-card__copy">
                   <h4>{save.label}</h4>
-                  <p>{save.preview.playerFactionName ?? save.preview.activeFactionName} · Round {save.preview.round}</p>
+                  <p>{save.preview.playerFactionName ?? save.preview.activeFactionName} ┬╖ Round {save.preview.round}</p>
                   <span>{formatDate(save.savedAt)}</span>
                 </div>
                 <div className="savegame-card__actions">
@@ -50,7 +50,7 @@ export function LoadOverlay({ onClose }: LoadOverlayProps) {
           <div className="menu-empty-state" style={{ padding: '24px 0', textAlign: 'center' }}>
             <p className="menu-kicker">No Saves Yet</p>
             <p style={{ fontSize: 13, color: 'var(--text-secondary, #c4b08a)', margin: '8px 0 0' }}>
-              Use Game → Save (CTRL+S) during a campaign to save here.
+              Use Game ΓåÆ Save (CTRL+S) during a campaign to save here.
             </p>
           </div>
         )}

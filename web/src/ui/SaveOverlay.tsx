@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { findSaveGameByLabel, writeSaveGame, type SaveGameSummary } from '../app/savegames';
 
 type SaveOverlayProps = {
@@ -49,7 +49,7 @@ export function SaveOverlay({ onClose, getSaveSnapshot }: SaveOverlayProps) {
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
-            placeholder={suggested || 'e.g. Round 15 — Plains campaign'}
+            placeholder={suggested || 'e.g. Round 15 ΓÇö Plains campaign'}
             style={{
               width: '100%',
               boxSizing: 'border-box',
