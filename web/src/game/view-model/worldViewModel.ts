@@ -1,4 +1,4 @@
-import civilizationsData from '../../../../src/content/base/civilizations.json';
+﻿import civilizationsData from '../../../../src/content/base/civilizations.json';
 import { hexDistance, hexToKey } from '../../../../src/core/grid.js';
 import type { RulesRegistry } from '../../../../src/data/registry/types.js';
 import type { FactionId, GameState, Unit } from '../../../../src/game/types.js';
@@ -93,7 +93,7 @@ export function buildDebugViewModel(
 
 export function getCombatSummary(event: ReplayCombatEvent) {
   const effects = event.breakdown.triggeredEffects.map((effect) => effect.label).join(', ');
-  return `${event.attackerPrototypeName} vs ${event.defenderPrototypeName} · ${effects || 'no triggers'}`;
+  return `${event.attackerPrototypeName} vs ${event.defenderPrototypeName} ┬╖ ${effects || 'no triggers'}`;
 }
 
 export { buildResearchInspectorViewModel };
@@ -347,7 +347,7 @@ function buildPlayHudViewModel(
 
   return {
     title: 'Live Session',
-    subtitle: `Seed ${state.seed} · round ${state.round} · turn ${state.turnNumber}`,
+    subtitle: `Seed ${state.seed} ┬╖ round ${state.round} ┬╖ turn ${state.turnNumber}`,
     victoryLabel: describeVictoryLabel(state),
     activeFactionName: activeFaction?.name ?? 'No active faction',
     phaseLabel: 'Command',
@@ -592,8 +592,8 @@ function buildPlayFactions(state: GameState): FactionView[] {
 function describeVictoryLabel(state: GameState): string {
   const victory = getVictoryStatus(state);
   if (victory.victoryType === 'unresolved') return 'In progress';
-  if (victory.victoryType === 'elimination') return `${state.factions.get(victory.winnerFactionId!)?.name ?? 'Unknown'} — Elimination`;
-  if (victory.victoryType === 'domination') return `${state.factions.get(victory.winnerFactionId!)?.name ?? 'Unknown'} — Domination`;
+  if (victory.victoryType === 'elimination') return `${state.factions.get(victory.winnerFactionId!)?.name ?? 'Unknown'} ΓÇö Elimination`;
+  if (victory.victoryType === 'domination') return `${state.factions.get(victory.winnerFactionId!)?.name ?? 'Unknown'} ΓÇö Domination`;
   return 'In progress';
 }
 
