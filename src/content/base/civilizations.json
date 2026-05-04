@@ -75,7 +75,7 @@
     "uniqueMechanic": "horse_archers",
     "homeBiome": "plains",
     "signatureUnit": "Warlord",
-    "passiveTrait": "foraging_riders",
+    "passiveTrait": "master_horsemen",
     "earlyResearchBias": "horsemanship",
     "naturalPrey": "slow ranged lines",
     "naturalCounter": "camels and fortified spear walls",

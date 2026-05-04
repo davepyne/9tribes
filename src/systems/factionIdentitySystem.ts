@@ -49,7 +49,7 @@ export function getMovementCostModifier(
     return -1;
   }
 
-  if (passive === 'foraging_riders' && OPEN_GROUND_TERRAINS.has(targetTerrainId)) {
+  if (passive === 'master_horsemen' && OPEN_GROUND_TERRAINS.has(targetTerrainId)) {
     return -1;
   }
 
@@ -105,7 +105,7 @@ export function getCombatAttackModifier(
     return 0.15;
   }
 
-  if (passive === 'foraging_riders' && OPEN_GROUND_TERRAINS.has(attackerTerrainId)) {
+  if (passive === 'master_horsemen' && OPEN_GROUND_TERRAINS.has(attackerTerrainId)) {
     return 0.15;
   }
 
@@ -131,7 +131,7 @@ export function getCombatDefenseModifier(
   const passive = faction?.identityProfile.passiveTrait;
   const terrainId = defenderTerrain?.id ?? '';
 
-  if (passive === 'foraging_riders' && OPEN_GROUND_TERRAINS.has(terrainId)) {
+  if (passive === 'master_horsemen' && OPEN_GROUND_TERRAINS.has(terrainId)) {
     return 0.2;
   }
 
@@ -206,7 +206,7 @@ export function getEconomyProductionBonus(
     return 0.08;
   }
 
-  if (passive === 'foraging_riders' && OPEN_GROUND_TERRAINS.has(terrainId)) {
+  if (passive === 'master_horsemen' && OPEN_GROUND_TERRAINS.has(terrainId)) {
     return 0.04;
   }
 
@@ -239,7 +239,7 @@ export function getEconomySupplyBonus(
     return 0.20;
   }
 
-  if (passive === 'foraging_riders' && OPEN_GROUND_TERRAINS.has(terrainId)) {
+  if (passive === 'master_horsemen' && OPEN_GROUND_TERRAINS.has(terrainId)) {
     return 0.03;
   }
 
@@ -286,7 +286,7 @@ export function getTerrainPreferenceScore(
   if (passive === 'river_assault' && (terrainId === 'river' || terrainId === 'swamp')) {
     return 1.5;
   }
-  if (passive === 'foraging_riders' && OPEN_GROUND_TERRAINS.has(terrainId)) {
+  if (passive === 'master_horsemen' && OPEN_GROUND_TERRAINS.has(terrainId)) {
     return 1;
   }
   if (passive === 'desert_logistics' && terrainId === 'desert') {

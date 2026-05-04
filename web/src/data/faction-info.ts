@@ -124,9 +124,9 @@ const FACTION_INFO_MAP: Record<string, FactionInfo> = {
     weaknesses: ['Forest disadvantage', 'Siege weakness'],
     tip: 'Use your speed to flank enemies and retreat before they can respond.',
     signatureUnit: 'Warlord',
-    specialTrait: 'Foraging Riders',
-    specialAbility: 'Warlord aura (+10 morale/turn to cavalry/mounted within 3 hex); Hit & Run bonus damage; forage from any terrain',
-    uniqueMechanic: 'horse_archers', passiveTrait: 'foraging_riders',
+    specialTrait: 'Master Horsemen',
+    specialAbility: 'Warlord aura (+10 morale/turn to cavalry/mounted within 3 hex); Hit & Run bonus damage',
+    uniqueMechanic: 'horse_archers', passiveTrait: 'master_horsemen',
     summonCondition: 'Your unit must be standing in Plains or Savannah terrain.',
     unitStats: {
       attack: 5, defense: 3, health: 20, moves: 3, range: 1,
