@@ -315,7 +315,7 @@ export function GameMenuBar({ state, onOpenResearch, onOpenHelp, onOpenControls,
       </div>
       {warExhaustionPopupOpen && state.hud.exhaustion && (
         <div className="faction-popup-overlay" onClick={() => setWarExhaustionPopupOpen(false)}>
-          <div className="supply-popup" onClick={(e) => e.stopPropagation()}>
+          <div className="supply-popup" onClick={(e) => e.stopPropagation()} style={{ marginTop: 100 }}>
             <button className="supply-popup__close" onClick={() => setWarExhaustionPopupOpen(false)}>×</button>
             <h3 className="supply-popup__title">War Exhaustion</h3>
             <div className="supply-popup__stat">
