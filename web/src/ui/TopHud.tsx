@@ -102,7 +102,7 @@ export function TopHud({ state, turnBanner, onOpenResearch }: TopHudProps) {
       )}
       {traitPopupOpen && factionInfo && (
         <div className="faction-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
-          <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
+          <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360, marginTop: 60 }}>
             <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>×</button>
             <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.specialTrait}</h3>
             <p className="faction-popup__intro" style={{ fontSize: 14, lineHeight: 1.6 }}>{factionInfo.specialAbility}</p>
