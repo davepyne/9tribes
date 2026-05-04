@@ -213,7 +213,7 @@ export function ContextInspector({ state, isOpen, onOpen, onClose, onSetCityProd
       )}
       {traitPopupOpen && factionPopup && (
         <div className="trait-popup-overlay" onClick={() => setTraitPopupOpen(false)}>
-          <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360, marginTop: 60 }}>
+          <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360, marginTop: 100 }}>
             <button className="faction-popup__close" onClick={() => setTraitPopupOpen(false)}>×</button>
             <h3 className="faction-popup__name" style={{ color: factionPopup.color }}>{factionPopup.specialTrait}</h3>
             <p className="faction-popup__intro" style={{ fontSize: 14, lineHeight: 1.6 }}>{factionPopup.specialAbility}</p>
