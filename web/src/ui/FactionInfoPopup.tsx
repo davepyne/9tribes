@@ -27,6 +27,8 @@ type FactionInfoPopupProps = {
    * When provided, the component renders a plain div instead of the overlay pattern.
    */
   containerStyle?: CSSProperties;
+  /** Optional style overrides for the trait detail popup (e.g. fixed positioning) */
+  traitPopupStyle?: CSSProperties;
   /** Fallback color used for unit stats header when factionInfo is somehow null */
   fallbackColor?: string;
 };
@@ -42,14 +44,15 @@ export const FactionInfoPopup = memo(function FactionInfoPopup({
   onTraitPopupClose,
   onTraitClick,
   containerStyle,
+  traitPopupStyle,
   fallbackColor,
 }: FactionInfoPopupProps) {
   if (!factionInfo) return null;
 
-  // Shared sub-popups (trait detail + unit stats) — always rendered when open,
+// Shared sub-popups (trait detail + unit stats) — always rendered when open,
   // regardless of whether the main popup uses overlay or fixed positioning.
   const traitPopup = traitPopupOpen && (
-    <div className="faction-popup-overlay" onClick={onTraitPopupClose}>
+    <div className="faction-popup-overlay" onClick={onTraitPopupClose} style={traitPopupStyle}>
       <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
         <button className="faction-popup__close" onClick={onTraitPopupClose}>×</button>
         <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.specialTrait}</h3>
@@ -87,7 +90,7 @@ export const FactionInfoPopup = memo(function FactionInfoPopup({
   const mainPopupContent = (
     <>
       <button className="faction-popup__close" onClick={onClose}>×</button>
-      <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.name}</h3>
+      <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.name} — {factionInfo.specialTrait}</h3>
       <div className="faction-popup__section">
         <span className="faction-popup__label">Native Ability</span>
         <span>{factionInfo.nativeDomain}</span>
@@ -95,10 +98,6 @@ export const FactionInfoPopup = memo(function FactionInfoPopup({
       <div className="faction-popup__section">
         <span className="faction-popup__label">Home Biome</span>
         <span>{factionInfo.homeBiome}</span>
-      </div>
-      <div className="faction-popup__section">
-        <span className="faction-popup__label">Special Trait</span>
-        <span className="faction-popup__trait clickable" onClick={onTraitClick}>{factionInfo.specialTrait}</span>
       </div>
       <div className="faction-popup__section">
         <span className="faction-popup__label">Signature Unit</span>
@@ -132,7 +131,15 @@ export const FactionInfoPopup = memo(function FactionInfoPopup({
     // Main popup closed — only render sub-popups if they're open
     return (
       <>
-        {traitPopup}
+        {traitPopupOpen && (
+          <div className="faction-popup-overlay" onClick={onTraitPopupClose} style={traitPopupStyle}>
+            <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
+              <button className="faction-popup__close" onClick={onTraitPopupClose}>×</button>
+              <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.specialTrait}</h3>
+              <p className="faction-popup__intro" style={{ fontSize: 14, lineHeight: 1.6 }}>{factionInfo.specialAbility}</p>
+            </div>
+          </div>
+        )}
         {unitPopup}
       </>
     );
@@ -145,7 +152,15 @@ export const FactionInfoPopup = memo(function FactionInfoPopup({
         <div className="faction-info-panel" onClick={(e) => e.stopPropagation()} style={containerStyle}>
           {mainPopupContent}
         </div>
-        {traitPopup}
+        {traitPopupOpen && (
+          <div className="faction-popup-overlay" onClick={onTraitPopupClose} style={traitPopupStyle}>
+            <div className="faction-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
+              <button className="faction-popup__close" onClick={onTraitPopupClose}>×</button>
+              <h3 className="faction-popup__name" style={{ color: factionInfo.color }}>{factionInfo.specialTrait}</h3>
+              <p className="faction-popup__intro" style={{ fontSize: 14, lineHeight: 1.6 }}>{factionInfo.specialAbility}</p>
+            </div>
+          </div>
+        )}
         {unitPopup}
       </>
     );
