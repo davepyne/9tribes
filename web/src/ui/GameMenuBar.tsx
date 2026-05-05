@@ -129,7 +129,7 @@ export const GameMenuBar = React.memo(function GameMenuBar({ state, onOpenResear
         traitPopupStyle={{ position: 'fixed', top: 'var(--menubar-height)', alignItems: 'flex-start', paddingTop: 'var(--menubar-height)' }}
       />
       {summonPopupOpen && unitStats && (
-        <div className="unit-stats-panel" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '74px', right: '20px', width: '320px', zIndex: 9999 }}>
+        <div className="unit-stats-panel" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '60px', right: '20px', width: '320px', zIndex: 9999 }}>
           <button className="unit-stats-panel__close" onClick={() => setSummonPopupOpen(false)}>├ù</button>
           <h3 className="unit-stats-panel__name" style={{ color: '#fff', display: 'block', textAlign: 'center' }}>{factionInfo?.signatureUnit ?? 'Signature Unit'}</h3>
           <div className="unit-stats-panel__stats">
