@@ -127,7 +127,7 @@ export const GameMenuBar = React.memo(function GameMenuBar({ state, onOpenResear
         onTraitClick={() => setTraitPopupOpen(true)}
         containerStyle={{ position: 'fixed', top: '50px', left: '200px', zIndex: 999 }}
         traitPopupStyle={{ position: 'fixed', top: 'var(--menubar-height)', alignItems: 'flex-start', paddingTop: 'var(--menubar-height)' }}
-        unitPopupStyle={{ position: 'fixed', top: '50px', alignItems: 'flex-start', paddingTop: '50px' }}
+        unitPopupStyle={{ position: 'fixed', top: '50px', alignItems: 'flex-start', paddingTop: '50px', zIndex: 9999 }}
       />
       {summonPopupOpen && unitStats && (
         <div className="unit-stats-panel" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '60px', right: '20px', width: '320px', zIndex: 9999 }}>
