@@ -29,6 +29,8 @@ type FactionInfoPopupProps = {
   containerStyle?: CSSProperties;
   /** Optional style overrides for the trait detail popup (e.g. fixed positioning) */
   traitPopupStyle?: CSSProperties;
+  /** Optional style overrides for the unit stats popup (e.g. fixed positioning) */
+  unitPopupStyle?: CSSProperties;
   /** Fallback color used for unit stats header when factionInfo is somehow null */
   fallbackColor?: string;
 };
@@ -45,6 +47,7 @@ export const FactionInfoPopup = memo(function FactionInfoPopup({
   onTraitClick,
   containerStyle,
   traitPopupStyle,
+  unitPopupStyle,
   fallbackColor,
 }: FactionInfoPopupProps) {
   if (!factionInfo) return null;
@@ -62,7 +65,7 @@ export const FactionInfoPopup = memo(function FactionInfoPopup({
   );
 
   const unitPopup = unitPopupOpen && factionInfo.unitStats && (
-    <div className="faction-popup-overlay" onClick={onUnitPopupClose}>
+    <div className="faction-popup-overlay" onClick={onUnitPopupClose} style={unitPopupStyle}>
       <div className="faction-popup unit-stats-popup" onClick={(e) => e.stopPropagation()}>
         <button className="faction-popup__close" onClick={onUnitPopupClose}>×</button>
         <h3 className="unit-stats-panel__name" style={{ color: factionInfo.color }}>{factionInfo.signatureUnit}</h3>
