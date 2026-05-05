@@ -114,59 +114,20 @@ export const GameMenuBar = React.memo(function GameMenuBar({ state, onOpenResear
   const researchChip = state.hud.researchChip;
 
   return (
+    <>
     <nav className="gmb-root" style={{ '--gmb-faction-color': factionColor } as CSSProperties}>
       <FactionInfoPopup
         factionInfo={factionInfo}
         open={factionPopupOpen}
         onClose={() => setFactionPopupOpen(false)}
-        unitPopupOpen={unitPopupOpen}
+        unitPopupOpen={false}
         onUnitPopupClose={() => setUnitPopupOpen(false)}
         onUnitClick={() => setUnitPopupOpen(true)}
-        traitPopupOpen={traitPopupOpen}
+        traitPopupOpen={false}
         onTraitPopupClose={() => setTraitPopupOpen(false)}
         onTraitClick={() => setTraitPopupOpen(true)}
         containerStyle={{ position: 'fixed', top: '50px', left: '200px', zIndex: 999 }}
-        traitPopupStyle={{ position: 'fixed', top: 'var(--menubar-height)', alignItems: 'flex-start', paddingTop: 'var(--menubar-height)' }}
-        unitPopupStyle={{ position: 'fixed', top: '50px', alignItems: 'flex-start', paddingTop: '50px', zIndex: 9999 }}
       />
-      {summonPopupOpen && unitStats && (
-        <div className="unit-stats-panel" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '60px', right: '20px', width: '320px', zIndex: 9999 }}>
-          <button className="unit-stats-panel__close" onClick={() => setSummonPopupOpen(false)}>├ù</button>
-          <h3 className="unit-stats-panel__name" style={{ color: '#fff', display: 'block', textAlign: 'center' }}>{factionInfo?.signatureUnit ?? 'Signature Unit'}</h3>
-          <div className="unit-stats-panel__stats">
-            <div><span>Attack</span><strong>{unitStats.attack}</strong></div>
-            <div><span>Defense</span><strong>{unitStats.defense}</strong></div>
-            <div><span>Health</span><strong>{unitStats.health}</strong></div>
-            <div><span>Moves</span><strong>{unitStats.moves}</strong></div>
-            <div><span>Range</span><strong>{unitStats.range}</strong></div>
-          </div>
-          <div className="unit-stats-panel__tags">
-            {unitStats.tags.map((tag, i) => <span key={i} className="unit-tag">{tag}</span>)}
-          </div>
-          <div className="unit-stats-panel__ability">
-            <strong>Ability:</strong> {unitStats.ability}
-          </div>
-          <p className="unit-stats-panel__desc">{unitStats.description}</p>
-          <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: '#fff', fontWeight: 600, textAlign: 'center', fontSize: '13px' }}>
-            SUMMON: {factionInfo?.summonCondition ?? 'Your unit must be standing in Plains or Savannah terrain.'}
-          </div>
-        </div>
-      )}
-      {hoverSelectOpen && (
-        <div className="hover-select-popup" style={{ position: 'fixed', top: hoverSelectPos.y, left: hoverSelectPos.x, zIndex: 99999 }} onClick={(e) => e.stopPropagation()}>
-          <div className="hover-select-title">Select:</div>
-          {hoverSelectUnit && (
-            <button className="hover-select-btn" onClick={() => { window.selectUnitFromHover?.(hoverSelectUnit.id); setHoverSelectOpen(false); }}>
-              Unit: {hoverSelectUnit.name}
-            </button>
-          )}
-          {hoverSelectCity && (
-            <button className="hover-select-btn" onClick={() => { window.selectCityFromHover?.(hoverSelectCity.id); setHoverSelectOpen(false); }}>
-              Settlement: {hoverSelectCity.name}
-            </button>
-          )}
-        </div>
-      )}
       <div className="gmb-menus">
         <DropdownMenu label="Game" items={buildGameMenu(state.actions.canUndo)} onAction={handleMenuAction} />
         <DropdownMenu label="Reports" items={reportsMenu} onAction={handleMenuAction} />
@@ -234,5 +195,57 @@ export const GameMenuBar = React.memo(function GameMenuBar({ state, onOpenResear
 
       </div>
     </nav>
+    {summonPopupOpen && unitStats && (
+      <div className="unit-stats-panel" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '60px', right: '20px', width: '320px', zIndex: 9999 }}>
+        <button className="unit-stats-panel__close" onClick={() => setSummonPopupOpen(false)}>×</button>
+        <h3 className="unit-stats-panel__name" style={{ color: '#fff', display: 'block', textAlign: 'center' }}>{factionInfo?.signatureUnit ?? 'Signature Unit'}</h3>
+        <div className="unit-stats-panel__stats">
+          <div><span>Attack</span><strong>{unitStats.attack}</strong></div>
+          <div><span>Defense</span><strong>{unitStats.defense}</strong></div>
+          <div><span>Health</span><strong>{unitStats.health}</strong></div>
+          <div><span>Moves</span><strong>{unitStats.moves}</strong></div>
+          <div><span>Range</span><strong>{unitStats.range}</strong></div>
+        </div>
+        <div className="unit-stats-panel__tags">
+          {unitStats.tags.map((tag, i) => <span key={i} className="unit-tag">{tag}</span>)}
+        </div>
+        <div className="unit-stats-panel__ability">
+          <strong>Ability:</strong> {unitStats.ability}
+        </div>
+        <p className="unit-stats-panel__desc">{unitStats.description}</p>
+        <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: '#fff', fontWeight: 600, textAlign: 'center', fontSize: '13px' }}>
+          SUMMON: {factionInfo?.summonCondition ?? 'Your unit must be standing in Plains or Savannah terrain.'}
+        </div>
+      </div>
+    )}
+    {hoverSelectOpen && (
+      <div className="hover-select-popup" style={{ position: 'fixed', top: hoverSelectPos.y, left: hoverSelectPos.x, zIndex: 99999 }} onClick={(e) => e.stopPropagation()}>
+        <div className="hover-select-title">Select:</div>
+        {hoverSelectUnit && (
+          <button className="hover-select-btn" onClick={() => { window.selectUnitFromHover?.(hoverSelectUnit.id); setHoverSelectOpen(false); }}>
+            Unit: {hoverSelectUnit.name}
+          </button>
+        )}
+        {hoverSelectCity && (
+          <button className="hover-select-btn" onClick={() => { window.selectCityFromHover?.(hoverSelectCity.id); setHoverSelectOpen(false); }}>
+            Settlement: {hoverSelectCity.name}
+          </button>
+        )}
+      </div>
+    )}
+    <FactionInfoPopup
+      factionInfo={factionInfo}
+      open={false}
+      onClose={() => {}}
+      unitPopupOpen={unitPopupOpen}
+      onUnitPopupClose={() => setUnitPopupOpen(false)}
+      onUnitClick={() => setUnitPopupOpen(true)}
+      traitPopupOpen={traitPopupOpen}
+      onTraitPopupClose={() => setTraitPopupOpen(false)}
+      onTraitClick={() => setTraitPopupOpen(true)}
+      unitPopupStyle={{ position: 'fixed', top: '50px', alignItems: 'flex-start', paddingTop: '50px', zIndex: 9999 }}
+      traitPopupStyle={{ position: 'fixed', top: 'var(--menubar-height)', alignItems: 'flex-start', paddingTop: 'var(--menubar-height)', zIndex: 9999 }}
+    />
+    </>
   );
 });
