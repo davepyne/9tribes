@@ -120,13 +120,15 @@ export const GameMenuBar = React.memo(function GameMenuBar({ state, onOpenResear
         factionInfo={factionInfo}
         open={factionPopupOpen}
         onClose={() => setFactionPopupOpen(false)}
-        unitPopupOpen={false}
+        unitPopupOpen={unitPopupOpen}
         onUnitPopupClose={() => setUnitPopupOpen(false)}
         onUnitClick={() => setUnitPopupOpen(true)}
-        traitPopupOpen={false}
+        traitPopupOpen={traitPopupOpen}
         onTraitPopupClose={() => setTraitPopupOpen(false)}
         onTraitClick={() => setTraitPopupOpen(true)}
         containerStyle={{ position: 'fixed', top: '50px', left: '200px', zIndex: 999 }}
+        unitPopupStyle={{ position: 'fixed', top: '50px', alignItems: 'flex-start', paddingTop: '50px', zIndex: 9999 }}
+        traitPopupStyle={{ position: 'fixed', top: 'var(--menubar-height)', alignItems: 'flex-start', paddingTop: 'var(--menubar-height)', zIndex: 9999 }}
       />
       <div className="gmb-menus">
         <DropdownMenu label="Game" items={buildGameMenu(state.actions.canUndo)} onAction={handleMenuAction} />
@@ -233,19 +235,6 @@ export const GameMenuBar = React.memo(function GameMenuBar({ state, onOpenResear
         )}
       </div>
     )}
-    <FactionInfoPopup
-      factionInfo={factionInfo}
-      open={false}
-      onClose={() => {}}
-      unitPopupOpen={unitPopupOpen}
-      onUnitPopupClose={() => setUnitPopupOpen(false)}
-      onUnitClick={() => setUnitPopupOpen(true)}
-      traitPopupOpen={traitPopupOpen}
-      onTraitPopupClose={() => setTraitPopupOpen(false)}
-      onTraitClick={() => setTraitPopupOpen(true)}
-      unitPopupStyle={{ position: 'fixed', top: '50px', alignItems: 'flex-start', paddingTop: '50px', zIndex: 9999 }}
-      traitPopupStyle={{ position: 'fixed', top: 'var(--menubar-height)', alignItems: 'flex-start', paddingTop: 'var(--menubar-height)', zIndex: 9999 }}
-    />
     </>
   );
 });
