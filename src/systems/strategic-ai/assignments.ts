@@ -693,6 +693,7 @@ export function assignUnitIntents(
       objectiveCityId,
       objectiveUnitId,
       anchor,
+      threatenedCityId: threatenedCity?.id,
       isolationScore,
       isolated: isolationScore > REGROUP_DISTANCE,
       reason,

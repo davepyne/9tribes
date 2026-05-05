@@ -47,6 +47,7 @@ export function assessThreatenedCities(
       for (const unit of state.units.values()) {
         if (unit.hp <= 0) continue;
         if (unit.factionId === factionId) {
+          if (hexDistance(city.position, unit.position) > THREAT_RADIUS) continue;
           nearbyFriendlyUnits += 1;
         } else {
           if (!difficultyProfile.strategy.strategicFogCheat && !isUnitVisibleTo(state, factionId, unit)) continue;
