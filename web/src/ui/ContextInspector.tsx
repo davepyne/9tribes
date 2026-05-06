@@ -113,7 +113,7 @@ export const ContextInspector = React.memo(function ContextInspector({ state, is
         </div>
 
         {/* Unit Inspector */}
-        {selectedUnit ? (
+        {selectedUnit && selectedUnit.isActiveFaction ? (
           <>
             <p className="ci-desc">{state.hud.selectedDescription}</p>
             <UnitInspectorSection

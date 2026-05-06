@@ -243,6 +243,11 @@ export class MapSceneInput {
       return;
     }
 
+    if (state.mode === 'play' && !unit.isActiveFaction) {
+      this.controller.dispatch({ type: 'select_hex', q: unit.q, r: unit.r });
+      return;
+    }
+
     this.controller.dispatch({ type: 'select_unit', unitId });
   }
 

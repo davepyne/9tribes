@@ -237,7 +237,7 @@ export const RightInspector = React.memo(function RightInspector({ state, onSetC
           <span>Hint</span>
           <strong>{state.actions.interactionHint ?? 'None'}</strong>
         </div>
-        {selectedUnit ? (
+        {selectedUnit && selectedUnit.isActiveFaction ? (
           <>
             <div className="meta-row">
               <span>Experience Level</span>
