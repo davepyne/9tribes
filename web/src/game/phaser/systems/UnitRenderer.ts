@@ -90,15 +90,16 @@ export class UnitRenderer {
       const attackIndicators: Phaser.GameObjects.GameObject[] = [];
       sprite.on('pointerover', () => {
         if (isAttackTarget) {
-          const ring = this.scene.add.ellipse(point.x, point.y - 8, 56, 32, 0xff3333, 0.08).setStrokeStyle(2, 0xff3333, 0.6);
-          const cross = this.scene.add.graphics();
-          cross.lineStyle(2, 0xff3333, 1);
-          const sx = point.x, sy = point.y - 24;
-          cross.lineBetween(sx - 6, sy - 6, sx + 6, sy + 6);
-          cross.lineBetween(sx - 6, sy + 6, sx + 6, sy - 6);
-          attackIndicators.push(ring, cross);
+          const color = 0x33cc55;
+          const ring = this.scene.add.ellipse(point.x, point.y - 8, 56, 32, color, 0.08).setStrokeStyle(2, color, 0.6);
+          const check = this.scene.add.graphics();
+          check.lineStyle(2.5, color, 1);
+          const cx = point.x, cy = point.y - 24;
+          check.lineBetween(cx - 5, cy, cx - 1, cy + 5);
+          check.lineBetween(cx - 1, cy + 5, cx + 6, cy - 5);
+          attackIndicators.push(ring, check);
           this.layer.add(ring);
-          this.layer.add(cross);
+          this.layer.add(check);
         }
       });
       sprite.on('pointerout', () => {
