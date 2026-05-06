@@ -13,7 +13,8 @@
       "ranged",
       "druid",
       "healing",
-      "forest"
+      "forest",
+      "priest"
     ],
     "nativeFaction": "druid_circle",
     "costOverride": 31

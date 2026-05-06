@@ -51,16 +51,16 @@ const FACTION_INFO_MAP: Record<string, FactionInfo> = {
     strengths: ['Healing Druids passive means faster recovery', 'Forest terrain amplifies everything good', 'Patient defensive play is incredibly strong'],
     weaknesses: ['Fast shock cavalry can run circles around you', 'Offensive punch is modest'],
     tip: 'Plant your forces just inside a forest edge and let enemies commit.',
-    signatureUnit: 'Druid Wizard',
+    signatureUnit: 'Treefolk',
     specialTrait: 'Healing Aura',
     specialAbility: 'Druid units heal nearby allies 1 HP/turn; self-heal 2 HP/turn; +2 bonus healing in rough terrain',
     uniqueMechanic: 'healing_druids', passiveTrait: 'forest_regeneration',
     summonCondition: 'Your unit must be standing in Forest, Jungle, or City terrain.',
     unitStats: {
-      attack: 3, defense: 3, health: 8, moves: 3, range: 3,
-      tags: ['magic', 'ranged', 'healing'],
-      ability: 'Healing Aura: Self-heals 2 HP/turn. Allied units within 1 hex heal 1 HP/turn. +2 bonus healing in rough terrain.',
-      description: 'The Druid Wizard channels the forest\'s power, weaving spells that mend wounds and strengthen resolve.'
+      attack: 3, defense: 6, health: 20, moves: 2, range: 1,
+      tags: ['beast', 'summon', 'forest', 'treefolk'],
+      ability: 'Forest Regeneration: Fully heals when ending a turn on Forest or Jungle terrain.',
+      description: 'Ancient tree-guardians awakened by druidic ritual. Enormously tough, and nearly unkillable in their forest home.'
     },
   },
   hill_clan: {

@@ -217,6 +217,11 @@ export function applyHealingForFaction(
 
     const safeInSettlement = occupiesFriendlySettlement(gameState, unit);
 
+    // Treefolk: fully heal when ending turn in forest or jungle
+    if (tags.includes('treefolk') && (terrainId === 'forest' || terrainId === 'jungle')) {
+      healRate = unit.maxHp;
+    }
+
     const refreshedUnit: Unit = {
       ...unit,
       hp: Math.min(unit.maxHp, unit.hp + healRate),

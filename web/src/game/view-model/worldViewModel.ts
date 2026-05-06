@@ -275,6 +275,12 @@ function buildPlayHudViewModel(
       const faction = state.activeFactionId ? state.factions.get(state.activeFactionId) : null;
       const ss = faction?.summonState;
       if (!ss) return null;
+      const hasSummoner = Array.from(state.units.values()).some((u) => {
+        if (u.factionId !== state.activeFactionId) return false;
+        const proto = state.prototypes.get(u.prototypeId);
+        return proto?.tags?.some((t) => t === 'priest' || t === 'engineer') ?? false;
+      });
+      if (!hasSummoner) return null;
       return {
         cooldownRemaining: ss.summoned ? null : ss.cooldownRemaining,
         turnsRemaining: ss.summoned ? ss.turnsRemaining : null,

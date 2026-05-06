@@ -57,13 +57,13 @@
   },
   "druid_circle": {
     "summon": {
-      "chassisId": "druid_wizard_frame",
+      "chassisId": "treefolk_frame",
       "terrainTypes": ["forest", "jungle", "city"],
-      "tags": ["magic", "ranged", "healing"],
-      "name": "Druid Wizard"
+      "tags": ["beast", "summon", "forest", "treefolk"],
+      "name": "Treefolk"
     },
-    "summonDuration": 5,
-    "cooldownDuration": 5
+    "summonDuration": 7,
+    "cooldownDuration": 4
   },
   "steppe_clan": {
     "hitAndRun": true,

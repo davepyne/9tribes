@@ -316,6 +316,21 @@
     "tags": ["magic", "ranged", "healing"],
     "capabilityPressure": {}
   },
+  "treefolk_frame": {
+    "id": "treefolk_frame",
+    "name": "Treefolk",
+    "role": "melee",
+    "slotTypes": [],
+    "baseHp": 20,
+    "baseMoves": 2,
+    "baseAttack": 3,
+    "baseDefense": 6,
+    "baseRange": 1,
+    "movementClass": "infantry",
+    "supplyCost": 2,
+    "tags": ["beast", "summon", "forest", "treefolk"],
+    "capabilityPressure": {}
+  },
   "desert_immortals_frame": {
     "id": "desert_immortals_frame",
     "name": "Desert Immortals",
