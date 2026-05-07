@@ -244,9 +244,11 @@ describe('alternating activation simulation', () => {
 
     // Fog of war affects AI movement and engagement decisions, altering combat/attrition outcomes.
     // Healing: 5% of maxHp (11) = 0, so no HP change from healing.
-    expect(result.units.get(alphaUnits[0])?.hp).toBe(state.units.get(alphaUnits[0])!.hp);
-    expect(result.units.get(alphaUnits[1])?.hp).toBe(state.units.get(alphaUnits[1])!.hp);
-    expect(result.units.get(betaUnits[0])?.hp).toBe(state.units.get(betaUnits[0])!.hp);
+    // Supply attrition: factions have no cities so 0 supply income → deficit → 0.5 HP loss per turn
+    const supplyAttritionLoss = 0.5;
+    expect(result.units.get(alphaUnits[0])?.hp).toBe(state.units.get(alphaUnits[0])!.hp - supplyAttritionLoss);
+    expect(result.units.get(alphaUnits[1])?.hp).toBe(state.units.get(alphaUnits[1])!.hp - supplyAttritionLoss);
+    expect(result.units.get(betaUnits[0])?.hp).toBe(state.units.get(betaUnits[0])!.hp - supplyAttritionLoss);
   });
 
   it('ticks poison and jungle attrition once per faction phase, while jungle clan ignores jungle attrition', () => {
@@ -331,11 +333,12 @@ describe('alternating activation simulation', () => {
     // jungle_clan ignores jungle attrition (per passiveTrait='jungle_stalkers').
     // steppe_clan on jungle hex takes 1 jungle attrition damage.
     // Poison: no poisonStacks on unit, no poisonedBy → fallback 1 dmg.
-    // jungle ends at 6 (no jungle attrition). steppe ends at 4 (jungle 1, no passive poison).
-    expect(result.units.get(jungleUnitId)?.hp).toBe(6);
-    expect(result.units.get(steppeUnitId)?.hp).toBe(4);
+    // Supply attrition: no cities → 0 supply income → deficit → 0.5 HP loss per turn.
+    // jungle ends at 5.5 (no jungle attrition, supply attrition -0.5). steppe ends at 3.5 (jungle 1, no passive poison, supply attrition -0.5).
+    expect(result.units.get(jungleUnitId)?.hp).toBe(5.5);
+    expect(result.units.get(steppeUnitId)?.hp).toBe(3.5);
     expect(result.units.get(steppeUnitId)?.poisoned).toBe(false);
-    expect(result.units.get(druidUnitId)?.hp).toBeGreaterThanOrEqual(7);
+    expect(result.units.get(druidUnitId)?.hp).toBeGreaterThanOrEqual(6.5);
   });
 
   it('clears poison when a unit occupies a friendly settlement', () => {
