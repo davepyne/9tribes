@@ -162,6 +162,11 @@ export function activateUnit(
 
   // --- Settler expansion: navigate to quality city site, then found ---
   if (isSettlerPrototype(prototype) && actingUnit.status === 'ready') {
+    // Gate 0: max 3 cities per faction
+    if (faction.cityIds.length >= 3) {
+      return { state: setUnitActivated(current, unitId), pendingCombat: null };
+    }
+
     // Gate 1: must be at least 3 hexes from any existing city (minimum spacing)
     let tooCloseToCity = false;
     for (const city of current.cities.values()) {

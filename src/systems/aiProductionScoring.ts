@@ -279,6 +279,10 @@ export function scoreSettlerExpansionValue(
   if (difficulty === 'easy') {
     return Number.NEGATIVE_INFINITY;
   }
+  const currentCities = state.factions.get(factionId)?.cityIds.length ?? 0;
+  if (currentCities >= 3) {
+    return Number.NEGATIVE_INFINITY;
+  }
 
   const villageCount = state.factions.get(factionId)?.villageIds.length ?? 0;
   const cityCount = state.factions.get(factionId)?.cityIds.length ?? 0;

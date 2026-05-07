@@ -110,9 +110,12 @@ export function tickWarExhaustion(state: WarExhaustion, hadLossThisTurn: boolean
  * Apply supply deficit penalties for a faction at end of turn.
  * - Spreads morale loss across living units proportional to deficit
  * - Accumulates war exhaustion from sustained deficit
+ * - Supply attrition: units take HP damage proportional to deficit
  *
  * Called from both live play (GameSession) and batch simulation (warEcologySimulation).
  */
+export const SUPPLY_ATTRITION_HP_PER_DEFICIT = 0.5;
+
 export function applySupplyDeficitPenalties(
   state: GameState,
   factionId: FactionId,
@@ -145,10 +148,34 @@ export function applySupplyDeficitPenalties(
   }
   state = { ...state, units: unitsWithPenalty };
 
-  // 2. Accumulate war exhaustion from supply deficit
+  // 2. Supply attrition: units lose HP proportional to deficit
+  const hpLossPerUnit = Math.min(
+    SUPPLY_ATTRITION_HP_PER_DEFICIT * supplyDeficit / Math.max(1, livingUnitIds.length),
+    2,
+  );
+  if (hpLossPerUnit >= 0.1) {
+    const unitsWithAttrition = new Map(state.units);
+    const unitsToRemove: UnitId[] = [];
+    for (const unitId of livingUnitIds) {
+      const unit = unitsWithAttrition.get(unitId);
+      if (!unit) continue;
+      const newHp = Math.max(0, unit.hp - hpLossPerUnit);
+      if (newHp <= 0) {
+        unitsToRemove.push(unitId);
+      } else {
+        unitsWithAttrition.set(unitId, { ...unit, hp: newHp });
+      }
+    }
+    // Remove units that died from attrition
+    for (const unitId of unitsToRemove) {
+      unitsWithAttrition.delete(unitId);
+    }
+    state = { ...state, units: unitsWithAttrition };
+  }
+
+  // 3. Accumulate war exhaustion from supply deficit
   let weFromSupply = state.warExhaustion.get(factionId);
   if (!weFromSupply) {
-    // Initialize if missing (shouldn't happen in normal flow, but safety net)
     weFromSupply = { factionId, exhaustionPoints: 0, turnsWithoutLoss: 0 };
   }
   const supplyWE = addExhaustion(weFromSupply, supplyDeficit * EXHAUSTION_CONFIG.SUPPLY_DEFICIT_PER_POINT);
