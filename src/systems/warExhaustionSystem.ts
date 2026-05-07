@@ -8,6 +8,7 @@ import type { FactionId } from '../types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
 import { getSupplyDeficit, deriveResourceIncome } from './economySystem.js';
 import { applyMoraleLoss } from './moraleSystem.js';
+import { rngShuffle } from '../core/rng.js';
 
 export const EXHAUSTION_CONFIG = {
   UNIT_KILLED: 0,
@@ -105,8 +106,6 @@ export function tickWarExhaustion(state: WarExhaustion, hadLossThisTurn: boolean
  *
  * Called from both live play (GameSession) and batch simulation (warEcologySimulation).
  */
-export const SUPPLY_ATTRITION_HP_PER_DEFICIT = 0.5;
-
 export function applySupplyDeficitPenalties(
   state: GameState,
   factionId: FactionId,
@@ -139,25 +138,24 @@ export function applySupplyDeficitPenalties(
   }
   state = { ...state, units: unitsWithPenalty };
 
-  // 2. Supply attrition: units lose HP proportional to deficit
-  const hpLossPerUnit = Math.min(
-    SUPPLY_ATTRITION_HP_PER_DEFICIT * supplyDeficit / Math.max(1, livingUnitIds.length),
-    2,
-  );
-  if (hpLossPerUnit >= 0.1) {
+  // 2. Supply attrition: targeted 50% strikes against random units
+  const strikes = Math.floor(supplyDeficit);
+  if (strikes > 0) {
+    const shuffled = rngShuffle(state.rngState, livingUnitIds);
+    const targets = shuffled.slice(0, Math.min(strikes, shuffled.length));
     const unitsWithAttrition = new Map(state.units);
     const unitsToRemove: UnitId[] = [];
-    for (const unitId of livingUnitIds) {
+    for (const unitId of targets) {
       const unit = unitsWithAttrition.get(unitId);
       if (!unit) continue;
-      const newHp = Math.max(0, unit.hp - hpLossPerUnit);
+      const dmg = Math.floor(unit.maxHp * 0.5);
+      const newHp = Math.max(0, unit.hp - dmg);
       if (newHp <= 0) {
         unitsToRemove.push(unitId);
       } else {
         unitsWithAttrition.set(unitId, { ...unit, hp: newHp });
       }
     }
-    // Remove units that died from attrition
     for (const unitId of unitsToRemove) {
       unitsWithAttrition.delete(unitId);
     }

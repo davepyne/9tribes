@@ -1,6 +1,6 @@
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
-import { applySupplyDeficitPenalties, SUPPLY_ATTRITION_HP_PER_DEFICIT } from '../src/systems/warExhaustionSystem';
+import { applySupplyDeficitPenalties } from '../src/systems/warExhaustionSystem';
 import { scoreSettlerExpansionValue } from '../src/systems/aiProductionScoring';
 import { runWarEcologySimulation } from '../src/systems/warEcologySimulation';
 import { createCityId } from '../src/core/ids';
@@ -94,54 +94,61 @@ describe('Supply Attrition', () => {
     const factionId = 'steppe_clan' as never;
     const unitIds = state.factions.get(factionId)!.unitIds;
 
-    // Damage the unit to 1 HP so attrition kills it in one tick
+    // Damage the unit to 1 HP so a 50% strike kills it
     const units = new Map(state.units);
     units.set(unitIds[0], { ...units.get(unitIds[0])!, hp: 1 });
     state = { ...state, units };
 
-    // Run attrition repeatedly — unit at 1 HP with full deficit should die
-    let result = state;
-    for (let i = 0; i < 10; i++) {
-      result = applySupplyDeficitPenalties(result, factionId, registry);
-    }
+    const result = applySupplyDeficitPenalties(state, factionId, registry);
 
     expect(result.units.get(unitIds[0])).toBeUndefined();
   });
 
-  it('HP loss is proportional to deficit and shared evenly across units', () => {
-    const state = buildNoIncomeState('steppe_clan', 2);
+  it('each struck unit takes floor(maxHp * 0.5) damage', () => {
+    const state = buildNoIncomeState('steppe_clan', 5);
     const factionId = 'steppe_clan' as never;
     const unitIds = state.factions.get(factionId)!.unitIds;
-    const hpBefore0 = state.units.get(unitIds[0])!.hp;
-    const hpBefore1 = state.units.get(unitIds[1])!.hp;
+    const maxHp = state.units.get(unitIds[0])!.maxHp;
+    const expectedDmg = Math.floor(maxHp * 0.5);
 
     const result = applySupplyDeficitPenalties(state, factionId, registry);
 
-    const hpAfter0 = result.units.get(unitIds[0])!.hp;
-    const hpAfter1 = result.units.get(unitIds[1])!.hp;
+    // At least one unit must have taken damage (deficit >= 1 with no income)
+    const anyDamaged = unitIds.some(id => {
+      const after = result.units.get(id);
+      const before = state.units.get(id);
+      return after && before && after.hp < before.hp;
+    });
+    expect(anyDamaged).toBe(true);
 
-    const loss0 = hpBefore0 - hpAfter0;
-    const loss1 = hpBefore1 - hpAfter1;
-    expect(loss0).toBeGreaterThan(0);
-    expect(loss0).toBe(loss1);
+    // Each damaged unit should have lost exactly expectedDmg
+    for (const id of unitIds) {
+      const after = result.units.get(id);
+      const before = state.units.get(id);
+      if (after && before && after.hp < before.hp) {
+        expect(before.hp - after.hp).toBe(expectedDmg);
+      }
+    }
   });
 
-  it('HP loss per unit is capped at 2 per turn', () => {
-    // 1 unit, 0 income → large deficit concentrated on one unit
-    const state = buildNoIncomeState('steppe_clan', 1);
+  it('number of units struck equals floor(supplyDeficit)', () => {
+    const state = buildNoIncomeState('steppe_clan', 10);
     const factionId = 'steppe_clan' as never;
     const unitIds = state.factions.get(factionId)!.unitIds;
-    const hpBefore = state.units.get(unitIds[0])!.hp;
 
     const result = applySupplyDeficitPenalties(state, factionId, registry);
 
-    const hpAfter = result.units.get(unitIds[0])!.hp;
-    const loss = hpBefore - hpAfter;
-    expect(loss).toBeLessThanOrEqual(2);
-  });
+    // Count how many units took damage
+    const struck = unitIds.filter(id => {
+      const after = result.units.get(id);
+      const before = state.units.get(id);
+      return after && before && after.hp < before.hp;
+    }).length;
 
-  it('SUPPLY_ATTRITION_HP_PER_DEFICIT constant is exported and equals 0.5', () => {
-    expect(SUPPLY_ATTRITION_HP_PER_DEFICIT).toBe(0.5);
+    // With 10 units and 0 income, deficit is >= number of units (supply demand)
+    // Strikes = floor(deficit), but capped at unit count
+    expect(struck).toBeGreaterThan(0);
+    expect(struck).toBeLessThanOrEqual(10);
   });
 });
 

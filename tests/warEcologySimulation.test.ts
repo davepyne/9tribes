@@ -242,13 +242,15 @@ describe('alternating activation simulation', () => {
 
     const result = runWarEcologySimulation(state, registry, 1);
 
-    // Fog of war affects AI movement and engagement decisions, altering combat/attrition outcomes.
-    // Healing: 5% of maxHp (11) = 0, so no HP change from healing.
-    // Supply attrition: factions have no cities so 0 supply income → deficit → 0.5 HP loss per turn
-    const supplyAttritionLoss = 0.5;
-    expect(result.units.get(alphaUnits[0])?.hp).toBe(state.units.get(alphaUnits[0])!.hp - supplyAttritionLoss);
-    expect(result.units.get(alphaUnits[1])?.hp).toBe(state.units.get(alphaUnits[1])!.hp - supplyAttritionLoss);
-    expect(result.units.get(betaUnits[0])?.hp).toBe(state.units.get(betaUnits[0])!.hp - supplyAttritionLoss);
+    // Supply attrition: no cities → 0 supply income → deficit → targeted 50% strikes.
+    // deficit >= unit count, so all units get struck for floor(maxHp * 0.5).
+    const alphaMaxHp = state.units.get(alphaUnits[0])!.maxHp;
+    const betaMaxHp = state.units.get(betaUnits[0])!.maxHp;
+    const alphaDmg = Math.floor(alphaMaxHp * 0.5);
+    const betaDmg = Math.floor(betaMaxHp * 0.5);
+    expect(result.units.get(alphaUnits[0])?.hp).toBe(state.units.get(alphaUnits[0])!.hp - alphaDmg);
+    expect(result.units.get(alphaUnits[1])?.hp).toBe(state.units.get(alphaUnits[1])!.hp - alphaDmg);
+    expect(result.units.get(betaUnits[0])?.hp).toBe(state.units.get(betaUnits[0])!.hp - betaDmg);
   });
 
   it('ticks poison and jungle attrition once per faction phase, while jungle clan ignores jungle attrition', () => {
@@ -260,13 +262,17 @@ describe('alternating activation simulation', () => {
     const steppeUnitId = state.factions.get(steppeId)!.unitIds[0];
     const druidUnitId = state.factions.get(druidId)!.unitIds[0];
 
+    const jungleMaxHp = state.units.get(jungleUnitId)!.maxHp;
+    const steppeMaxHp = state.units.get(steppeUnitId)!.maxHp;
+    const druidMaxHp = state.units.get(druidUnitId)!.maxHp;
+
     state.units = new Map([
       [
         jungleUnitId,
         {
           ...state.units.get(jungleUnitId)!,
           position: { q: 5, r: 5 },
-          hp: 6,
+          hp: jungleMaxHp,
         },
       ],
       [
@@ -274,7 +280,7 @@ describe('alternating activation simulation', () => {
         {
           ...state.units.get(steppeUnitId)!,
           position: { q: 14, r: 5 },
-          hp: 6,
+          hp: steppeMaxHp,
           poisoned: true,
         },
       ],
@@ -283,7 +289,7 @@ describe('alternating activation simulation', () => {
         {
           ...state.units.get(druidUnitId)!,
           position: { q: 21, r: 5 },
-          hp: 6,
+          hp: druidMaxHp,
         },
       ],
     ]);
@@ -328,17 +334,16 @@ describe('alternating activation simulation', () => {
 
     const result = runWarEcologySimulation(state, registry, 1);
 
-    // Fog of war affects AI movement and engagement, changing jungle attrition outcomes.
-    // Healing: infantry (maxHp=11) on plains gets floor(11 * 0.05) = 0 HP healing.
-    // jungle_clan ignores jungle attrition (per passiveTrait='jungle_stalkers').
-    // steppe_clan on jungle hex takes 1 jungle attrition damage.
-    // Poison: no poisonStacks on unit, no poisonedBy → fallback 1 dmg.
-    // Supply attrition: no cities → 0 supply income → deficit → 0.5 HP loss per turn.
-    // jungle ends at 5.5 (no jungle attrition, supply attrition -0.5). steppe ends at 3.5 (jungle 1, no passive poison, supply attrition -0.5).
-    expect(result.units.get(jungleUnitId)?.hp).toBe(5.5);
-    expect(result.units.get(steppeUnitId)?.hp).toBe(3.5);
+    // Supply attrition: no cities → deficit → targeted 50% strikes.
+    const jungleSupplyDmg = Math.floor(jungleMaxHp * 0.5);
+    const steppeSupplyDmg = Math.floor(steppeMaxHp * 0.5);
+    const druidSupplyDmg = Math.floor(druidMaxHp * 0.5);
+    // jungle_clan ignores jungle attrition (passiveTrait='jungle_stalkers'), only supply strike
+    expect(result.units.get(jungleUnitId)?.hp).toBe(jungleMaxHp - jungleSupplyDmg);
+    // steppe_clan: jungle -1, poison fallback -1, supply strike
+    expect(result.units.get(steppeUnitId)?.hp).toBe(steppeMaxHp - 1 - 1 - steppeSupplyDmg);
     expect(result.units.get(steppeUnitId)?.poisoned).toBe(false);
-    expect(result.units.get(druidUnitId)?.hp).toBeGreaterThanOrEqual(6.5);
+    expect(result.units.get(druidUnitId)?.hp).toBeGreaterThanOrEqual(druidMaxHp - druidSupplyDmg);
   });
 
   it('clears poison when a unit occupies a friendly settlement', () => {

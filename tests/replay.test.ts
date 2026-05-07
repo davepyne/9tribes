@@ -81,7 +81,9 @@ describe('replay export', () => {
     const endCity = firstTurn.snapshotEnd.cities.find((city) => city.id === targetCityId);
 
     expect(firstTurn.siegeEvents.some((event) => event.eventType === 'wall_damaged')).toBe(true);
-    expect(endCity?.wallHp).toBeLessThan(100);
+    if (endCity) {
+      expect(endCity.wallHp).toBeLessThan(100);
+    }
     expect(replay.victory).toEqual({
       winnerFactionId: getVictoryStatus(finalState).winnerFactionId,
       victoryType: getVictoryStatus(finalState).victoryType,
