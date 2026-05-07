@@ -4,13 +4,6 @@
     "desertSwarmThreshold": 3,
     "desertSwarmAttackBonus": 1,
     "desertSwarmDefenseMultiplier": 1.1,
-    "summon": {
-      "chassisId": "desert_immortals_frame",
-      "terrainTypes": ["desert", "city"],
-      "tags": ["camel", "mounted", "self_heal"],
-      "name": "Desert Immortals"
-    },
-    "summonDuration": 5,
     "cooldownDuration": 5
   },
   "savannah_lions": {

@@ -301,21 +301,6 @@
     },
     "nativeFaction": "coral_people"
   },
-  "druid_wizard_frame": {
-    "id": "druid_wizard_frame",
-    "name": "Druid Wizard",
-    "role": "ranged",
-    "slotTypes": [],
-    "baseHp": 8,
-    "baseMoves": 3,
-    "baseAttack": 3,
-    "baseDefense": 3,
-    "baseRange": 3,
-    "movementClass": "infantry",
-    "supplyCost": 2,
-    "tags": ["magic", "ranged", "healing"],
-    "capabilityPressure": {}
-  },
   "treefolk_frame": {
     "id": "treefolk_frame",
     "name": "Treefolk",
@@ -329,20 +314,6 @@
     "movementClass": "infantry",
     "supplyCost": 2,
     "tags": ["beast", "summon", "forest", "treefolk"],
-    "capabilityPressure": {}
-  },
-  "desert_immortals_frame": {
-    "id": "desert_immortals_frame",
-    "name": "Desert Immortals",
-    "role": "melee",
-    "slotTypes": [],
-    "baseHp": 12,
-    "baseMoves": 3,
-    "baseAttack": 4,
-    "baseDefense": 3,
-    "movementClass": "camel",
-    "supplyCost": 2,
-    "tags": ["camel", "mounted", "self_heal"],
     "capabilityPressure": {}
   },
   "war_elephant_frame": {

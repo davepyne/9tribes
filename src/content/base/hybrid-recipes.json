@@ -198,7 +198,6 @@
     "componentIds": [
       "slaver_net",
       "simple_armor",
-      "fortress_training",
       "musket"
     ],
     "tier": "mid",
@@ -316,7 +315,7 @@
       "cold_provisions"
     ],
     "tier": "mid",
-    "minLearnedDomains": 3,
+    "minLearnedDomains": 2,
     "tags": [
       "ranged",
       "healing",
@@ -356,7 +355,7 @@
       "simple_armor"
     ],
     "tier": "mid",
-    "minLearnedDomains": 3,
+    "minLearnedDomains": 2,
     "tags": [
       "infantry",
       "fortress",
