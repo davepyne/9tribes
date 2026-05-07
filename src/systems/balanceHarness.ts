@@ -92,6 +92,7 @@ export interface FactionBaseMetrics {
   t3DomainCount: number;
   activeTripleStack: string | null;
   unitsWithLearnedAbilities: number;
+  kills: number;
 }
 
 export interface FactionSeedMetrics extends FactionBaseMetrics {
@@ -146,6 +147,8 @@ export interface FactionBatchMetrics {
   avgT3DomainCount: number;
   gamesWithActiveTripleStack: number;
   avgUnitsWithLearnedAbilities: number;
+  survivedGames: number;
+  avgKills: number;
 }
 
 export interface BatchBalanceSummary {
@@ -425,6 +428,7 @@ function getFactionMetrics(
       t3DomainCount: 0,
       activeTripleStack: null,
       unitsWithLearnedAbilities: 0,
+      kills: 0,
     };
   }
 
@@ -462,6 +466,11 @@ function getFactionMetrics(
     (unit.learnedAbilities?.length ?? 0) > 0
   ).length;
 
+  const kills = faction.unitIds.reduce((sum, unitId) => {
+    const unit = state.units.get(unitId);
+    return sum + (unit ? getKillCount(unit) : 0);
+  }, 0);
+
   return {
     factionId,
     livingUnits: livingUnits.length,
@@ -498,6 +507,7 @@ function getFactionMetrics(
     t3DomainCount: progression.t3Domains.length,
     activeTripleStack: faction.activeTripleStack?.name ?? null,
     unitsWithLearnedAbilities,
+    kills,
   };
 }
 
@@ -730,6 +740,8 @@ export function runBalanceHarness(
           avgT3DomainCount: roundMetric(factionRuns.reduce((sum, run) => sum + run.t3DomainCount, 0) / runs.length),
           gamesWithActiveTripleStack: runs.filter((run) => run.factions[factionId]?.activeTripleStack != null).length,
           avgUnitsWithLearnedAbilities: roundMetric(factionRuns.reduce((sum, run) => sum + run.unitsWithLearnedAbilities, 0) / runs.length),
+          survivedGames: factionRuns.filter((run) => run.livingUnits > 0).length,
+          avgKills: roundMetric(factionRuns.reduce((sum, run) => sum + run.kills, 0) / runs.length),
         } satisfies FactionBatchMetrics,
       ];
     })

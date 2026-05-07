@@ -136,10 +136,10 @@ describe('balance evaluation', () => {
       totalUnitCaptures: 0,
       mapArchetypes: { open_war: 4 },
       factions: {
-        a: { factionId: 'a', wins: 1, avgLivingUnits: 4, avgCities: 1.5, avgVillages: 1, avgWarExhaustion: 1, avgCapabilityTotal: 6, avgUnlockedRecipes: 1, avgRoutedUnits: 0.5, avgSignatureUnits: 1, avgHomeTerrainUnits: 1.5, avgUnitComposition: { byChassis: {}, byRole: { melee: 2, ranged: 1, mounted: 1 } } },
-        b: { factionId: 'b', wins: 1, avgLivingUnits: 4.2, avgCities: 1.3, avgVillages: 1.1, avgWarExhaustion: 1.1, avgCapabilityTotal: 6.2, avgUnlockedRecipes: 1, avgRoutedUnits: 0.6, avgSignatureUnits: 1, avgHomeTerrainUnits: 1.4, avgUnitComposition: { byChassis: {}, byRole: { melee: 2, mounted: 2 } } },
-        c: { factionId: 'c', wins: 1, avgLivingUnits: 3.8, avgCities: 1.1, avgVillages: 1.2, avgWarExhaustion: 1.4, avgCapabilityTotal: 5.8, avgUnlockedRecipes: 1, avgRoutedUnits: 0.7, avgSignatureUnits: 0.8, avgHomeTerrainUnits: 1.2, avgUnitComposition: { byChassis: {}, byRole: { melee: 2, ranged: 1, mounted: 1 } } },
-        d: { factionId: 'd', wins: 0, avgLivingUnits: 3.9, avgCities: 1.1, avgVillages: 0.9, avgWarExhaustion: 1.3, avgCapabilityTotal: 6.1, avgUnlockedRecipes: 1, avgRoutedUnits: 0.6, avgSignatureUnits: 0.8, avgHomeTerrainUnits: 1.1, avgUnitComposition: { byChassis: {}, byRole: { melee: 2, mounted: 1 } } },
+        a: { factionId: 'a', wins: 1, avgLivingUnits: 4, avgCities: 1.5, avgVillages: 1, avgWarExhaustion: 1, avgCapabilityTotal: 6, avgUnlockedRecipes: 1, avgRoutedUnits: 0.5, avgSignatureUnits: 1, avgSignatureCapableUnits: 1, avgHybridUnits: 0, avgHomeTerrainUnits: 1.5, avgSupplyIncome: 5, avgSupplyDemand: 4, avgSupplyUtilizationRatio: 0.8, avgHighestAvailableProductionCost: 30, avgHighestFieldedProductionCost: 20, avgAverageFieldedProductionCost: 18, avgUnitsByPrototypeId: {}, avgStalledProductionCount: 0, avgUnitComposition: { byChassis: {}, byRole: { melee: 2, ranged: 1, mounted: 1 } }, avgArmySizeAtTurn20: 4, gamesWithEmergentRuleBeforeOpponent: 2, avgLearnedDomainCount: 1, avgT1DomainCount: 1, avgT2DomainCount: 0, avgT3DomainCount: 0, gamesWithActiveTripleStack: 0, avgUnitsWithLearnedAbilities: 1, survivedGames: 4, avgKills: 7 },
+        b: { factionId: 'b', wins: 1, avgLivingUnits: 4.2, avgCities: 1.3, avgVillages: 1.1, avgWarExhaustion: 1.1, avgCapabilityTotal: 6.2, avgUnlockedRecipes: 1, avgRoutedUnits: 0.6, avgSignatureUnits: 1, avgSignatureCapableUnits: 1, avgHybridUnits: 0, avgHomeTerrainUnits: 1.4, avgSupplyIncome: 5, avgSupplyDemand: 4, avgSupplyUtilizationRatio: 0.8, avgHighestAvailableProductionCost: 30, avgHighestFieldedProductionCost: 20, avgAverageFieldedProductionCost: 18, avgUnitsByPrototypeId: {}, avgStalledProductionCount: 0, avgUnitComposition: { byChassis: {}, byRole: { melee: 2, mounted: 2 } }, avgArmySizeAtTurn20: 4, gamesWithEmergentRuleBeforeOpponent: 1, avgLearnedDomainCount: 1, avgT1DomainCount: 1, avgT2DomainCount: 0, avgT3DomainCount: 0, gamesWithActiveTripleStack: 0, avgUnitsWithLearnedAbilities: 1, survivedGames: 4, avgKills: 7 },
+        c: { factionId: 'c', wins: 1, avgLivingUnits: 3.8, avgCities: 1.1, avgVillages: 1.2, avgWarExhaustion: 1.4, avgCapabilityTotal: 5.8, avgUnlockedRecipes: 1, avgRoutedUnits: 0.7, avgSignatureUnits: 0.8, avgSignatureCapableUnits: 0.8, avgHybridUnits: 0, avgHomeTerrainUnits: 1.2, avgSupplyIncome: 5, avgSupplyDemand: 4, avgSupplyUtilizationRatio: 0.8, avgHighestAvailableProductionCost: 30, avgHighestFieldedProductionCost: 20, avgAverageFieldedProductionCost: 18, avgUnitsByPrototypeId: {}, avgStalledProductionCount: 0, avgUnitComposition: { byChassis: {}, byRole: { melee: 2, ranged: 1, mounted: 1 } }, avgArmySizeAtTurn20: 4, gamesWithEmergentRuleBeforeOpponent: 1, avgLearnedDomainCount: 1, avgT1DomainCount: 1, avgT2DomainCount: 0, avgT3DomainCount: 0, gamesWithActiveTripleStack: 0, avgUnitsWithLearnedAbilities: 0.5, survivedGames: 4, avgKills: 6 },
+        d: { factionId: 'd', wins: 0, avgLivingUnits: 3.9, avgCities: 1.1, avgVillages: 0.9, avgWarExhaustion: 1.3, avgCapabilityTotal: 6.1, avgUnlockedRecipes: 1, avgRoutedUnits: 0.6, avgSignatureUnits: 0.8, avgSignatureCapableUnits: 0.8, avgHybridUnits: 0, avgHomeTerrainUnits: 1.1, avgSupplyIncome: 5, avgSupplyDemand: 4, avgSupplyUtilizationRatio: 0.8, avgHighestAvailableProductionCost: 30, avgHighestFieldedProductionCost: 20, avgAverageFieldedProductionCost: 18, avgUnitsByPrototypeId: {}, avgStalledProductionCount: 0, avgUnitComposition: { byChassis: {}, byRole: { melee: 2, mounted: 1 } }, avgArmySizeAtTurn20: 3, gamesWithEmergentRuleBeforeOpponent: 0, avgLearnedDomainCount: 1, avgT1DomainCount: 1, avgT2DomainCount: 0, avgT3DomainCount: 0, gamesWithActiveTripleStack: 0, avgUnitsWithLearnedAbilities: 0.5, survivedGames: 3, avgKills: 7 },
       },
     };
     const unhealthy: BatchBalanceSummary = {
@@ -152,10 +152,10 @@ describe('balance evaluation', () => {
       totalCodificationsCompleted: 0,
       factions: {
         ...healthy.factions,
-        a: { ...healthy.factions.a, wins: 4, avgLivingUnits: 8, avgCities: 3 },
-        b: { ...healthy.factions.b, wins: 0, avgLivingUnits: 1.5, avgCities: 0.2 },
-        c: { ...healthy.factions.c, wins: 0, avgLivingUnits: 1.2, avgCities: 0.1 },
-        d: { ...healthy.factions.d, wins: 0, avgLivingUnits: 1.1, avgCities: 0.1 },
+        a: { ...healthy.factions.a, wins: 4, avgLivingUnits: 8, avgCities: 3, survivedGames: 4, avgKills: 14 },
+        b: { ...healthy.factions.b, wins: 0, avgLivingUnits: 1.5, avgCities: 0.2, survivedGames: 2, avgKills: 1 },
+        c: { ...healthy.factions.c, wins: 0, avgLivingUnits: 1.2, avgCities: 0.1, survivedGames: 1, avgKills: 0 },
+        d: { ...healthy.factions.d, wins: 0, avgLivingUnits: 1.1, avgCities: 0.1, survivedGames: 1, avgKills: 0 },
       },
     };
 

@@ -18,9 +18,9 @@ describe('terrain yields', () => {
     expect(forest?.productionYield).toBe(0.06);
   });
 
-  it('hill yields 0.14 production', () => {
+  it('hill yields 0.18 production', () => {
     const hill = registry.getTerrainYield('hill');
-    expect(hill?.productionYield).toBe(0.14);
+    expect(hill?.productionYield).toBe(0.18);
   });
 
   it('ocean yields are defined', () => {
