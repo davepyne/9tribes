@@ -275,7 +275,10 @@ export function activateUnit(
       const movedState = movePriestTowardSummonTerrain(current, actingUnit, registry, map);
       if (movedState) {
         current = movedState;
-        const priestAfterMove = current.units.get(unitId)!;
+        const priestAfterMove = current.units.get(unitId);
+        if (!priestAfterMove) {
+          return { state: setUnitActivated(current, unitId), pendingCombat: null };
+        }
         const checkAfterMove = canPriestSummon(current, priestAfterMove, registry);
         if (checkAfterMove.canSummon) {
           const result = attemptPriestSummon(current, priestAfterMove, registry);

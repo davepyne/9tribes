@@ -338,7 +338,7 @@
     "slotTypes": [],
     "baseHp": 12,
     "baseMoves": 3,
-    "baseAttack": 2,
+    "baseAttack": 4,
     "baseDefense": 3,
     "movementClass": "camel",
     "supplyCost": 2,

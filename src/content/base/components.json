@@ -197,7 +197,7 @@
     "name": "Fortress Training",
     "slotType": "training",
     "defenseBonus": 2,
-    "hpBonus": 2,
+    "hpBonus": 4,
     "compatibleChassis": [
       "infantry_frame",
       "heavy_infantry_frame",
@@ -215,6 +215,7 @@
     "name": "Shock Drill",
     "slotType": "training",
     "attackBonus": 2,
+    "defenseBonus": 1,
     "compatibleChassis": [
       "infantry_frame",
       "heavy_infantry_frame",
@@ -251,7 +252,8 @@
     "id": "druidic_missiles",
     "name": "Druidic Missiles",
     "slotType": "weapon",
-    "attackBonus": 4,
+    "attackBonus": 7,
+    "rangeBonus": 1,
     "compatibleChassis": [
       "ranged_frame"
     ],
@@ -683,6 +685,66 @@
     "capabilityPressure": {
       "horsemanship": 0.5,
       "mobility": 0.5
+    }
+  },
+  "nature_binding": {
+    "id": "nature_binding",
+    "name": "Nature Binding",
+    "slotType": "armor",
+    "defenseBonus": 1,
+    "hpBonus": 2,
+    "compatibleChassis": [
+      "infantry_frame",
+      "heavy_infantry_frame",
+      "ranged_frame"
+    ],
+    "tags": [
+      "druid",
+      "healing",
+      "forest"
+    ],
+    "capabilityPressure": {
+      "woodcraft": 0.5,
+      "endurance": 0.5
+    }
+  },
+  "hill_leather": {
+    "id": "hill_leather",
+    "name": "Hill Leather",
+    "slotType": "armor",
+    "defenseBonus": 3,
+    "compatibleChassis": [
+      "infantry_frame",
+      "heavy_infantry_frame",
+      "ranged_frame"
+    ],
+    "tags": [
+      "fortress",
+      "defensive"
+    ],
+    "capabilityPressure": {
+      "fortification": 0.5
+    }
+  },
+  "desert_silk": {
+    "id": "desert_silk",
+    "name": "Desert Silk",
+    "slotType": "armor",
+    "defenseBonus": 1,
+    "movesBonus": 1,
+    "compatibleChassis": [
+      "infantry_frame",
+      "heavy_infantry_frame",
+      "ranged_frame",
+      "camel_frame"
+    ],
+    "tags": [
+      "desert",
+      "mobility"
+    ],
+    "capabilityPressure": {
+      "desert_survival": 0.5,
+      "mobility": 0.25
     }
   }
 }

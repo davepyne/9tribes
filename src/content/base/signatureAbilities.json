@@ -32,7 +32,7 @@
       "name": "Polar Bear"
     },
     "summonDuration": 7,
-    "cooldownDuration": 3
+    "cooldownDuration": 5
   },
   "hill_clan": {
     "summon": {
@@ -96,7 +96,7 @@
     "cooldownDuration": 5
   },
   "river_people": {
-    "sneakAttackBonus": 0,
+    "sneakAttackBonus": 0.10,
     "summon": {
       "chassisId": "alligator_frame",
       "terrainTypes": ["river", "jungle", "swamp"],

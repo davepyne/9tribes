@@ -119,6 +119,10 @@ export function getCombatAttackModifier(
     return 0.15;
   }
 
+  if (passive === 'desert_logistics' && attackerTerrainId === 'desert') {
+    return 0.10;
+  }
+
   return 0;
 }
 
@@ -133,8 +137,8 @@ export function getCombatDefenseModifier(
     return 0.2;
   }
 
-  if (passive === 'hill_engineering' && terrainId === 'hill') {
-    return 0.1;
+  if (passive === 'hill_engineering' && ROUGH_TERRAINS.has(terrainId)) {
+    return terrainId === 'hill' ? 0.15 : 0.1;
   }
 
   if (passive === 'healing_druids' && ROUGH_TERRAINS.has(terrainId)) {
@@ -176,7 +180,7 @@ export function getEconomyProductionBonus(
 ): number {
   const passive = faction?.identityProfile.passiveTrait;
 
-  if (passive === 'cold_hardened_growth' && isPoorTerrain(terrainId)) {
+  if (passive === 'cold_hardened_growth' && terrainId === 'tundra') {
     return 0.10;
   }
 
@@ -194,6 +198,10 @@ export function getEconomyProductionBonus(
 
   if (passive === 'hill_engineering' && terrainId === 'hill') {
     return 0.04;
+  }
+
+  if (passive === 'hill_engineering' && ROUGH_TERRAINS.has(terrainId)) {
+    return 0.02;
   }
 
   if (passive === 'jungle_stalkers' && terrainId === 'jungle') {

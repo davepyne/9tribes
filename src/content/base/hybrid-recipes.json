@@ -206,7 +206,8 @@
     "tags": [
       "heavy_infantry",
       "capture",
-      "ranged"
+      "ranged",
+      "priest"
     ],
     "nativeFaction": "coral_people",
     "costOverride": 43
@@ -243,7 +244,8 @@
     "minLearnedDomains": 2,
     "tags": [
       "camel",
-      "desert"
+      "desert",
+      "priest"
     ],
     "nativeFaction": "desert_nomads",
     "costOverride": 35
@@ -314,7 +316,7 @@
       "cold_provisions"
     ],
     "tier": "mid",
-    "minLearnedDomains": 2,
+    "minLearnedDomains": 3,
     "tags": [
       "ranged",
       "healing",
@@ -354,7 +356,7 @@
       "simple_armor"
     ],
     "tier": "mid",
-    "minLearnedDomains": 4,
+    "minLearnedDomains": 3,
     "tags": [
       "infantry",
       "fortress",

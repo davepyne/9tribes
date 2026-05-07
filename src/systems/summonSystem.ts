@@ -25,6 +25,9 @@ export function canPriestSummon(
   unit: Unit,
   registry: RulesRegistry,
 ): PriestSummonCheck {
+  if (!unit.prototypeId) {
+    return { canSummon: false, summonName: null, blockedReason: 'Not a summoner' };
+  }
   const prototype = state.prototypes.get(unit.prototypeId);
   if (!prototype || (!prototype.tags?.includes('priest') && !prototype.tags?.includes('engineer'))) {
     return { canSummon: false, summonName: null, blockedReason: 'Not a summoner' };
