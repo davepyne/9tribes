@@ -1,215 +1,204 @@
-# War-Civ V2
+# 9 Tribes
 
-> ⚠️ **Active development.** Features, balance, and code are evolving. Expect breaking changes.
+> ⚠️ **Early access / active development.** Balance, features, and mechanics are still evolving.
+
+**9 Tribes** is a turn-based strategy game about civilizations shaped by war. It's not a traditional 4X — there are no economy screens, no linear tech trees, no peaceful victory conditions. Combat drives everything: technology, identity, and unit variety all emerge from what happens on the battlefield.
+
+## How It Works
+
+### Combat drives identity
+
+Every faction starts simple — two units, a home biome, and a native combat domain. From there, everything is earned:
+
+- **Units learn from kills.** When a unit kills an enemy, it can absorb the enemy's combat domain. A Jungle Clans spearman that kills a cavalry unit might learn skirmish tactics.
+- **Sacrifice unlocks research.** Units can be sacrificed at a home city to permanently encode learned abilities into faction-wide research.
+- **Terrain shapes doctrine.** The map exerts capability pressure — fighting in jungles pushes factions toward poisoncraft; fighting on plains pushes toward horsemanship.
+- **Identity is emergent.** Two Jungle Clans playthroughs can produce completely different military identities depending on who they fight and where.
+
+### No tech trees
+
+There are 10 combat domains in the game. Factions don't pick them from a menu — they learn them through combat encounters, sacrifice rituals, and terrain-driven research. A faction that started on the tundra can end up with poison cavalry if they fought the Jungle Clans hard enough.
+
+### Pair synergies
+
+When a faction knows two compatible domains, units carrying both tags unlock combined effects:
+
+- **Toxic Bulwark** (venom + fortress) — Fortress units radiate a poison zone around them
+- **Stampeding Death** (venom + charge) — Charge attacks inflict double poison duration
+- **Poisoned Skirmish** (venom + hitrun) — Skirmish attacks also apply poison
+
+There are 55 possible pair synergies. They create late-game build diversity — a plains faction can hybridize into poison-cavalry by learning venom from kills.
+
+## The 9 Tribes
+
+| Tribe | Home | Domain | Starts With | Playstyle |
+|-------|------|--------|-------------|-----------|
+| **Jungle Clans** | Jungle | Venom | Venom Spearman, Venom Archer | Poison attrition, stealth, venom stacks |
+| **Druid Circle** | Forest | Nature Healing | Druid Guardian, Druid Archer | Sustain, healing auras, forest control |
+| **Steppe Riders** | Plains | Skirmish Pursuit | Horse Archer, Steppe Warrior | Cavalry shock, hit-and-run, mobility |
+| **Hill Engineers** | Hills | Fortress | Hill Defender, Hill Archer | Fortification, siege engines, bulwark defense |
+| **Pirate Lords** | Coast | Slaving | Boarding Party, Pistol Gunner, Slave Trireme | Naval raids, capture enemies, village plunder |
+| **Desert Nomads** | Desert | Camel Adaptation | Desert Archer, Camel Warrior | Camel mobility, desert endurance, anti-cavalry |
+| **Savannah Lions** | Savannah | Charge | Shock Infantry, Assegai Impi | Elephant charges, stampede, open-ground tempo |
+| **River People** | River | River Stealth | River Infantry, River Galley | Amphibious assault, river mobility, sneak attacks |
+| **Arctic Wardens** | Tundra | Heavy Hitter | Frost Guard, Ice Archer | Cold endurance, armor piercing, polar bear summons |
+
+Pirate Lords start with 3 units (all others have 2). They're the only faction that can capture enemy units instead of killing them.
+
+## Domains
+
+| Domain | Native Tribe | What It Does |
+|--------|-------------|--------------|
+| Venom | Jungle Clans | Melee attacks apply poison stacks (1 damage per turn) |
+| Nature Healing | Druid Circle | Self-heal 2 HP/turn; adjacent allies heal 1 HP/turn |
+| Skirmish Pursuit | Steppe Riders | +2 bonus damage when you deal more than you take |
+| Fortress | Hill Engineers | Adjacent allies get +30% defense |
+| Slaving | Pirate Lords | Captured enemies become your units |
+| Camel Adaptation | Desert Nomads | Ignore terrain movement penalties |
+| Charge | Savannah Lions | Charge attacks strike first; no retaliation on kill |
+| River Stealth | River People | Stealthed; first attack from stealth deals +50% damage |
+| Tidal Warfare | River People | Naval-to-land attacks; enemies on coast get −25% defense |
+| Heavy Hitter | Arctic Wardens | Ignore 50% armor; bonus damage to fortified targets |
+
+## Signature Summons
+
+Each faction can call in a powerful signature unit on cooldown:
+
+| Summon | Tribe | HP | ATK | DEF | What Makes It Special |
+|--------|-------|----|-----|-----|-----------------------|
+| Serpent God | Jungle Clans | 18 | 5 | 2 | AoE poison; 3 poison damage per turn |
+| Treefolk | Druid Circle | 20 | 3 | 6 | Highest defense in the game; 7-turn duration |
+| Warlord | Steppe Riders | 20 | 5 | 3 | Aura buff for cavalry; plains/savannah terrain |
+| Siege Golem | Hill Engineers | 22 | 6 | 5 | Highest raw stats of any summon; siege + fortress |
+| Galley | Pirate Lords | 14 | 3 | 2 | Naval ranged + transport capacity |
+| Ancient Alligator | River People | 15 | 5 | 2 | River/jungle/swamp ambusher |
+| War Elephant | Savannah Lions | 14 | 4 | 2 | Charge + trample; knockback |
+| Polar Bear | Arctic Wardens | 25 | 7 | 3 | Highest HP of any unit in the game |
+
+## Unit Variety
+
+Units are assembled from parts, not picked from tiers:
+
+- **19 chassis** — infantry, ranged, cavalry, camel, elephant, chariot, naval, catapult, galley, heavy variants, plus 7 summon-only frames
+- **38 components** — weapons, armor, training upgrades that slot into chassis
+- **19 hybrid recipes** — named unlockable units (Healing Druids, Serpent Priest, Catapult, War Elephants, Desert Immortals, Polar Priest, etc.)
+
+Stats follow a simple formula: `chassis base + component bonuses`. Higher-tier chassis require the faction to have learned more domains before they unlock.
+
+## Terrain
+
+13 terrain types, all load-bearing:
+
+| Terrain | Move Cost | Defense | Notes |
+|---------|-----------|---------|-------|
+| Plains | 1 | 0 | Open ground; cavalry country |
+| Forest | 2 | +25% | Healing and stealth bonuses |
+| Jungle | 3 | +25% | Poison and woodcraft pressure |
+| Hill | 2 | +50% | Fortification and siege country |
+| Desert | 2 | −10% | Harsh; desert survival pressure |
+| Oasis | 1 | +10% | Desert respite |
+| Tundra | 2 | +5% | Cold and endurance pressure |
+| Savannah | 1 | 0 | Open ground; formation warfare |
+| Coast | 2 | +10% | Seafaring pressure; amphibious |
+| River | 2 | +5% | Navigation and stealth pressure |
+| Swamp | 3 | +25% | Stealth and ambush country |
+| Ocean | 1 | 0 | Naval-only |
+| Mountain | — | — | Impassable |
 
 ---
 
-**War-Civ V2** is a turn-based strategy simulation focused on how civilizations evolve through war. It is **not** a traditional 4X game — it optimizes for conflict-driven evolution, military identity, emergent behavior, and simple systems that create complex outcomes.
+## For Developers
 
-## Core Pillars
-
-- **Combat drives everything** — Technology and identity emerge from conflict, not separate economy screens
-- **Military identity is earned** — Terrain, battle outcomes, and doctrines shape each faction's personality over time
-- **Technology from environment + combat** — No linear tech trees; units learn from what they fight and where they fight it
-- **Units are persistent** — Veterans carry history and can "learn" enemy doctrines from battle
-- **Prototypes over unit tiers** — 16 chassis × 34 components x 176 domain combinations create unit variety without rigid upgrade ladders
-
-## Factions (9)
-
-Each faction has a home biome, unique units, signature abilities, and a native domain that shapes its research and hybrid potential.
-
-| Faction | Biome | Identity |
-|---------|-------|----------|
-| Jungle Clans | Jungle | Poison attrition, stealth, venom domain |
-| Druid Circle | Forest | Sustain, healing terrain control, nature domain |
-| Steppe Riders | Steppe/Plains | Cavalry shock, hit-and-run, charge domain |
-| Hill Engineers | Hills | Fortification, siege engines, fortress domain |
-| Pirate Lords | Coast | Naval raids, village capture, pistol skirmishers |
-| Desert Nomads | Desert | Camel mobility, desert endurance, heat domain |
-| Savannah Lions | Savannah | Elephant charges, pride domain |
-| River People | River | Transport, alligator ambush, river domain |
-| Arctic Wardens | Tundra | Polar bear riders, cold endurance, frost domain |
-
-## Terrain (12 types)
-
-Plains, forest, jungle, hill, desert, tundra, savannah, coast, river, swamp, mountain (impassable), ocean.
-
-Terrain is load-bearing: it determines faction identity formation, research bias, movement costs, and where signature abilities activate.
-
-## Tech Stack
+### Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Simulation engine | TypeScript (`src/`) — pure, no framework |
+| Simulation engine | TypeScript (`src/`) — pure logic, no framework |
 | Frontend | Vite 5 + React 18 + Phaser 3 (`web/`) |
-| Testing | Vitest |
-| Balance optimization | Optuna (via Python harness scripts) |
-| Deployment | Vercel (frontend only) |
+| Testing | Vitest (54 test files) |
+| Balance tuning | Optuna via Python harness |
+| Deployment | Vercel (frontend) |
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- npm 9+
-
-### Installation
+### Quick Start
 
 ```bash
 git clone <repo-url>
 cd war-civ-v2
 
-# Install backend/test dependencies
-npm install
+npm install                 # engine + test deps
+npm install --prefix web    # frontend deps
 
-# Install frontend dependencies
-npm install --prefix web
+npm run web:dev             # play in browser → http://localhost:5173
+npm run dev                 # headless CLI sim (turn-by-turn trace)
 ```
 
-### Running
+### Build & Test
 
 ```bash
-# Play the game (browser UI)
-npm run web:dev
-# → open http://localhost:5173
-
-# Run the headless simulation CLI (prints turn-by-turn trace)
-npm run dev
+npm run build               # type-check engine
+npm run web:build           # production frontend build
+npm test                    # run all tests
+npm run test:architecture   # architecture boundary checks
 ```
 
-### Build
+### Project Structure
+
+```
+src/
+  core/               Hex math, grid, RNG, enums, IDs
+  content/base/       JSON data: chassis, components, factions, terrains,
+                      domains, synergies, hybrid recipes, research
+  data/               Registry types, content loaders
+  features/           Units, factions, cities, villages, prototypes
+  systems/            56 engine modules + 30 sub-modules
+    combat-action/    Combat preview, resolution, application
+    simulation/       Victory, environment effects, turn orchestration
+    strategic-ai/     AI production, research, fronts, objectives
+    unit-activation/  Per-unit activation and movement
+  game/               GameState, scenarios, game loop
+  world/              Map generation
+  balance/            Optuna integration
+
+web/
+  src/app/            React shell, audio, GameShell
+  src/game/
+    controller/       GameSession (player actions), GameController
+    phaser/           MapScene, renderers, combat animation
+    view-model/       UI state + sprite resolution
+  src/ui/             HUD, inspectors, modals
+  public/assets/
+    playtest-units/   46 sprites × 2 (normal + flipped)
+    audio/sfx/        25 sound effects
+
+tests/                54 Vitest test files
+scripts/              Balance harness, replay export, scenario runner
+```
+
+### Architecture Gotchas
+
+**Dual combat paths.** Any combat mechanic must exist in both paths or they silently diverge:
+
+| Path | Entry point | Used by |
+|------|------------|---------|
+| AI simulation | `src/systems/warEcologySimulation.ts` | All AI turns, headless sim |
+| Player live-play | `web/src/game/controller/GameSession.ts` | Browser UI |
+
+**Audio feedback chain.** Route through `GameSession → GameController → clientState → sfxManager`. Don't scatter `new Audio()` calls.
+
+**External state.** `FogState` and `TransportMap` live outside `GameState`.
+
+**History arrays.** Cooldowns and transient state are tracked via `unit.history[]` / `faction.history[]`, not dedicated counters.
+
+### Balance Tuning
 
 ```bash
-# Type-check the backend
-npm run build
-
-# Build the frontend for production
-npm run web:build
-```
-
-### Testing
-
-```bash
-# Run all tests
-npm test
-
-# Single test file
-npx vitest run tests/combat.test.ts
-
-# Architecture boundary tests
-npm run test:architecture
-
-# Balance harness (Optuna, requires Python setup)
-npm run balance:harness
-```
-
-## Project Structure
-
-```
-war-civ-v2/
-├── src/                       # Simulation engine (TypeScript)
-│   ├── core/                 # Hex math, grid, deterministic RNG, enums, IDs
-│   ├── content/base/         # JSON data: chassis, components, factions, terrains,
-│   │                         #   synergies, signature abilities, hybrid recipes, research
-│   ├── data/                 # Registry types, content loaders, effectiveness tables
-│   ├── features/             # Domain entities: units, factions, cities, villages, prototypes
-│   ├── systems/              # ~50 rule-execution modules (see below)
-│   │   ├── combat-action/    # Combat action types, preview, application helpers
-│   │   ├── simulation/       # Victory, environment effects, faction-turn effects, trace
-│   │   ├── strategic-ai/     # Front management, objectives, posture, difficulty coordinator
-│   │   └── unit-activation/  # Per-unit activation logic
-│   ├── game/                 # GameState types, scenario builders, game loop
-│   ├── world/                # Map generation, terrain types
-│   ├── balance/              # Optuna objective function, harness integration
-│   └── replay/               # Replay recording/export
-│
-├── web/                       # Frontend (Vite + React + Phaser 3)
-│   ├── src/
-│   │   ├── app/              # React shell, audio (sfxManager), GameShell
-│   │   ├── game/
-│   │   │   ├── controller/   # GameSession.ts (player actions), GameController.ts
-│   │   │   ├── phaser/       # MapScene, UnitRenderer, FogRenderer, CombatAnimator
-│   │   │   └── view-model/   # worldViewModel — UI state + sprite key resolution
-│   │   └── ui/               # HUD panels, unit inspector, modals, tutorial overlay
-│   └── public/assets/
-│       ├── playtest-units/   # 86 unit sprites (48×64px, faction_unit.png naming)
-│       └── audio/sfx/        # ~20 gameplay sound effects
-│
-├── tests/                     # Vitest tests (~40 files)
-├── docs/                      # Implementation plans, difficulty reference
-├── scripts/                   # Balance harness, replay export
-└── .slim/                     # Auto-generated architecture indexes (symbols, imports, digest)
-```
-
-## Key Systems
-
-### Core gameplay
-- **`combatSystem.ts`** — Attack resolution, counter-attacks, multi-axis attacks, kill-shot bonuses
-- **`movementSystem.ts`** — Path execution, Zone of Control (Civ-style: entry costs all remaining moves), opportunity attacks
-- **`siegeSystem.ts`** — Wall degradation, city capture
-- **`productionSystem.ts`** — City production queues, unit and city project creation
-- **`warEcologySimulation.ts`** — Central orchestrator; runs one complete turn across all factions (31 import dependencies)
-
-### Identity & progression
-- **`factionIdentitySystem.ts`** — Emergent identity from terrain + combat outcomes
-- **`veterancySystem.ts`** / **`xpSystem.ts`** — 4 veteran tiers; combat XP gain
-- **`learnByKillSystem.ts`** — Units absorb enemy ability domains on kill
-- **`sacrificeSystem.ts`** — Units encode learned abilities into faction research at home city
-- **`signatureAbilitySystem.ts`** — Faction signature powers (Frost Nova, Desert Swarm, etc.)
-- **`synergyEngine.ts`** — 55 pair-based faction synergies
-
-### AI
-- **`strategicAi.ts`** / **`strategic-ai/`** — High-level production, research, front management
-- **`aiTactics.ts`** — Tactical flanking and positioning
-- **`aiDifficulty.ts`** — Difficulty scaling (Normal vs Hard vs Easy profiles)
-
-### World & support
-- **`fogSystem.ts`** — Per-faction fog of war (explored/visible/hidden)
-- **`transportSystem.ts`** — Naval transport of land units via galleys
-- **`hybridSystem.ts`** — 18 hybrid recipes for late-game unit creation
-- **`captureSystem.ts`** — Slaver mechanic: capture enemy units instead of killing
-
-## Architecture Notes
-
-### Dual Combat Paths ⚠️
-
-**Critical:** Any combat mechanic must be implemented in **both** paths or they silently diverge:
-
-| Path | File | Used By |
-|------|------|---------|
-| AI / autonomous simulation | `src/systems/warEcologySimulation.ts` | All AI turns, headless sim |
-| Player-facing live-play | `web/src/game/controller/GameSession.ts` | Player actions via browser UI |
-
-What commonly drifts: siege gating, retreat/hit-and-run, learn-by-kill, sacrifice, capture behavior, multi-axis attacks, kill-shot bonuses.
-
-### Feedback Chain
-
-Route all UI/audio feedback through this chain — do not scatter `new Audio()` calls:
-
-```
-GameSession.ts → GameController.ts → clientState.ts → sfxManager.ts
-```
-
-### External State
-
-`FogState` and `TransportMap` are **not** part of `GameState`. Callers manage them separately.
-
-### History Arrays
-
-Capture cooldowns and many other transient states are tracked via `unit.history[]` / `faction.history[]` entries, not dedicated counters.
-
-## Balance Optimization
-
-```bash
-npm run balance:harness              # Run Optuna optimization loop
+npm run balance:harness              # Optuna optimization loop
 npm run balance:harness:stratified   # Stratified variant
 npm run balance:evaluate             # Score a candidate
 npm run balance:validate             # Validate a candidate
 ```
 
-Optuna runs Python-side and calls back into the TypeScript harness via `balanceHarness.ts`.
-
 ---
 
-**Version:** 0.1.0-mvp  
+**Version:** 0.1.0-mvp
 **Status:** Active development
