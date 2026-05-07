@@ -27,34 +27,28 @@ describe('War Exhaustion System', () => {
     expect(updated.exhaustionPoints).toBe(0);
   });
 
-  it('production penalty scales with exhaustion', () => {
+  it('production penalty is always zero (WE disabled)', () => {
     expect(calculateProductionPenalty(0)).toBe(0);
-    expect(calculateProductionPenalty(20)).toBe(0.20);
-    expect(calculateProductionPenalty(21)).toBe(0.30);
-    expect(calculateProductionPenalty(41)).toBe(0.40);
-    expect(calculateProductionPenalty(61)).toBe(0.50);
-    expect(calculateProductionPenalty(81)).toBe(0.50);
-    expect(calculateProductionPenalty(101)).toBe(0.50);
+    expect(calculateProductionPenalty(20)).toBe(0);
+    expect(calculateProductionPenalty(100)).toBe(0);
   });
 
-  it('morale penalty only kicks in at high exhaustion', () => {
+  it('morale penalty is always zero (WE disabled)', () => {
     expect(calculateMoralePenalty(9)).toBe(0);
-    expect(calculateMoralePenalty(20)).toBe(2);
-    expect(calculateMoralePenalty(35)).toBe(4);
-    expect(calculateMoralePenalty(50)).toBe(6);
-    expect(calculateMoralePenalty(81)).toBe(8);
+    expect(calculateMoralePenalty(50)).toBe(0);
+    expect(calculateMoralePenalty(100)).toBe(0);
   });
 
-  it('decay reduces exhaustion when peaceful', () => {
+  it('decay is a no-op (WE disabled)', () => {
     const we = { ...createWarExhaustion('faction_1'), exhaustionPoints: 50 };
     const decayed = applyDecay(we, { noLossTurns: 5, territoryClear: false });
-    expect(decayed.exhaustionPoints).toBe(46); // actual decay value
+    expect(decayed.exhaustionPoints).toBe(50);
   });
 
-  it('decay is stronger when territory is clear', () => {
+  it('decay with territory clear is also a no-op', () => {
     const we = { ...createWarExhaustion('faction_1'), exhaustionPoints: 50 };
     const decayed = applyDecay(we, { noLossTurns: 5, territoryClear: true });
-    expect(decayed.exhaustionPoints).toBe(31); // different formula in actual code
+    expect(decayed.exhaustionPoints).toBe(50);
   });
 
   it('tick increments turns without loss', () => {
@@ -69,9 +63,9 @@ describe('War Exhaustion System', () => {
     expect(ticked.turnsWithoutLoss).toBe(0);
   });
 
-  it('config values are reasonable', () => {
-    expect(EXHAUSTION_CONFIG.UNIT_KILLED).toBe(5);
-    expect(EXHAUSTION_CONFIG.CITY_CAPTURED).toBe(15);
-    expect(EXHAUSTION_CONFIG.DECAY_NO_LOSS).toBe(4);
+  it('config values are zeroed (WE disabled)', () => {
+    expect(EXHAUSTION_CONFIG.UNIT_KILLED).toBe(0);
+    expect(EXHAUSTION_CONFIG.CITY_CAPTURED).toBe(0);
+    expect(EXHAUSTION_CONFIG.DECAY_NO_LOSS).toBe(0);
   });
 });

@@ -10,16 +10,16 @@ import { getSupplyDeficit, deriveResourceIncome } from './economySystem.js';
 import { applyMoraleLoss } from './moraleSystem.js';
 
 export const EXHAUSTION_CONFIG = {
-  UNIT_KILLED: 5,
-  UNIT_LOST: 8,
-  CITY_CAPTURED: 15,
-  VILLAGE_LOST: 3,
-  SUPPLY_DEFICIT_PER_POINT: 2,
-  BESIEGED_CITY_PER_TURN: 2,
-  CITY_CAPTURED_ATTACKER: 5,
-  DECAY_NO_LOSS: 4,
-  DECAY_TERRITORY_CLEARED: 15,
-  VICTORY_OFFSET: 10,
+  UNIT_KILLED: 0,
+  UNIT_LOST: 0,
+  CITY_CAPTURED: 0,
+  VILLAGE_LOST: 0,
+  SUPPLY_DEFICIT_PER_POINT: 0,
+  BESIEGED_CITY_PER_TURN: 0,
+  CITY_CAPTURED_ATTACKER: 0,
+  DECAY_NO_LOSS: 0,
+  DECAY_TERRITORY_CLEARED: 0,
+  VICTORY_OFFSET: 0,
 };
 
 /**
@@ -50,23 +50,14 @@ export function addExhaustion(
  * Calculate production penalty from war exhaustion.
  */
 export function calculateProductionPenalty(exhaustion: number): number {
-  if (exhaustion <= 5) return 0;
-  if (exhaustion <= 10) return 0.10;
-  if (exhaustion <= 20) return 0.20;
-  if (exhaustion <= 35) return 0.30;
-  if (exhaustion <= 50) return 0.40;
-  return 0.50;
+  return 0;
 }
 
 /**
  * Calculate morale penalty to all units from war exhaustion.
  */
 export function calculateMoralePenalty(exhaustion: number): number {
-  if (exhaustion < 10) return 0;
-  if (exhaustion <= 20) return 2;
-  if (exhaustion <= 35) return 4;
-  if (exhaustion <= 50) return 6;
-  return 8;
+  return 0;
 }
 
 /**
