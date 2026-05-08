@@ -435,7 +435,7 @@ def main() -> int:
     parser.add_argument(
         "--turns",
         type=int,
-        default=50,
+        default=150,
         help="Turn cap passed to the evaluation harness.",
     )
     parser.add_argument(

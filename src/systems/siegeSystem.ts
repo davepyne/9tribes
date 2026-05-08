@@ -14,9 +14,6 @@ import {
 import { syncFactionSettlementIds } from './factionOwnershipSystem.js';
 import { tryLearnFromCityCapture } from './learnByKillSystem.js';
 import { destroyVillagesInCityTerritory } from './villageSystem.js';
-import { MAX_LEARNED_DOMAINS } from './knowledgeSystem.js';
-import { loadRulesRegistry } from '../data/loader/loadRulesRegistry.js';
-import { codifyDomainsForFaction } from './sacrificeSystem.js';
 
 export const SIEGE_CONFIG = {
   WALL_DAMAGE_PER_TURN: 20,
@@ -155,7 +152,10 @@ export function captureCity(
 
 /**
  * Execute city capture: raze the city (destroy it), destroy its villages,
- * transfer the loser's nativeDomain to the victor.
+ * and grant the loser's nativeDomain to an adjacent capturing unit.
+ *
+ * The domain is learned by a unit (not auto-codified at the faction level),
+ * so the owner must sacrifice that unit at a friendly city to codify it.
  */
 export function captureCityWithResult(
   city: City,
@@ -211,30 +211,10 @@ export function captureCityWithResult(
   currentState = syncFactionSettlementIds(currentState, oldOwnerFactionId);
   currentState = syncFactionSettlementIds(currentState, newOwnerFactionId);
 
-  // Try domain learning: adjacent capturing unit receives the old owner's nativeDomain (100%)
+  // Unit-level learning: adjacent capturing unit learns the old owner's nativeDomain (100%)
+  // No faction-level auto-codify — the unit must be sacrificed to codify it
   const learnResult = tryLearnFromCityCapture(city, newOwnerFactionId, currentState);
-
-  // Faction-level domain transfer: victor gains the loser's nativeDomain
-  const victorFaction = learnResult.state.factions.get(newOwnerFactionId);
-  const loserFaction = learnResult.state.factions.get(oldOwnerFactionId);
-  if (victorFaction && loserFaction) {
-    const loserDomain = loserFaction.nativeDomain;
-    const alreadyHas =
-      loserDomain === victorFaction.nativeDomain ||
-      victorFaction.learnedDomains.includes(loserDomain);
-    if (!alreadyHas && victorFaction.learnedDomains.length < MAX_LEARNED_DOMAINS - 1) {
-      currentState = codifyDomainsForFaction(
-        learnResult.state,
-        newOwnerFactionId,
-        [loserDomain],
-        loadRulesRegistry(),
-      );
-    } else {
-      currentState = learnResult.state;
-    }
-  } else {
-    currentState = learnResult.state;
-  }
+  currentState = learnResult.state;
 
   return {
     state: currentState,

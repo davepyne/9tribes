@@ -72,3 +72,4 @@ nul
 .slim/
 .thinking-machine/
 .aider*
+__pycache__/

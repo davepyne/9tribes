@@ -22,6 +22,8 @@ import { DebugOverlay } from '../ui/DebugOverlay';
 import { ReportsOverlay } from '../ui/ReportsOverlay';
 import { KnowledgeGainedModalProvider, useLearnDetector, useKnowledgeModal } from '../ui/KnowledgeGainedModal';
 import { TechDiscoveryModalProvider, useTechDiscoveryDetector, useTechDiscoveryModal } from '../ui/TechDiscoveryModal';
+import { SynergyUnlockedModalProvider, useSynergyUnlockDetector, useSynergyModal } from '../ui/SynergyUnlockedModal';
+import { CityLimitModalProvider, useCityLimitDetector, useCityLimitModal } from '../ui/CityLimitModal';
 import { CombatLogPanel } from '../ui/CombatLogPanel';
 import { useCombatBridge } from './hooks/useCombatBridge';
 import { useSessionAudio } from './hooks/useSessionAudio';
@@ -104,6 +106,8 @@ function KnowledgeGainedShellContent({
 }: ShellContentProps) {
   const { showKnowledgeGained } = useKnowledgeModal();
   const { showTechDiscovery } = useTechDiscoveryModal();
+  const { showSynergyUnlock } = useSynergyModal();
+  const { showCityLimit } = useCityLimitModal();
 
   // Stable callbacks for panel open/close (avoid re-triggering auto-open effects)
   const handleInspectorOpen = useCallback(() => onSetInspectorOpen(true), [onSetInspectorOpen]);
@@ -120,6 +124,18 @@ function KnowledgeGainedShellContent({
   useTechDiscoveryDetector(
     state.playFeedback?.lastResearchCompletion ?? null,
     showTechDiscovery,
+  );
+
+  useSynergyUnlockDetector(
+    state.world.factions,
+    state.playFeedback?.playerFactionId ?? null,
+    showSynergyUnlock,
+  );
+
+  useCityLimitDetector(
+    state.world.factions,
+    state.playFeedback?.playerFactionId ?? null,
+    showCityLimit,
   );
 
   // ── Global hotkeys ──
@@ -455,6 +471,8 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
     return (
       <KnowledgeGainedModalProvider>
         <TechDiscoveryModalProvider>
+        <SynergyUnlockedModalProvider>
+        <CityLimitModalProvider>
         <KnowledgeGainedShellContent
           controller={controller}
           state={state}
@@ -487,6 +505,8 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
           onSaveGame={onSaveGame}
           getSaveSnapshot={() => controller.getSaveSnapshot()}
         />
+        </CityLimitModalProvider>
+        </SynergyUnlockedModalProvider>
         </TechDiscoveryModalProvider>
       </KnowledgeGainedModalProvider>
     );

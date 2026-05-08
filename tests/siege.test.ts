@@ -8,6 +8,7 @@ import {
   hasDefendingGarrison,
   getCapturingFaction,
   captureCity,
+  captureCityWithResult,
   SIEGE_CONFIG,
 } from '../src/systems/siegeSystem';
 import { runWarEcologySimulation } from '../src/systems/warEcologySimulation';
@@ -322,7 +323,7 @@ describe('city capture', () => {
     expect(result.cities.has(cityId)).toBe(false);
   });
 
-  it('transfers loser nativeDomain to victor on raze', () => {
+  it('grants defender nativeDomain to an adjacent capturing unit on raze (not auto-codified to faction)', () => {
     let state = buildMvpScenario(42);
     for (const factionId of state.factions.keys()) {
       state = initializeFogForFaction(state, factionId);
@@ -336,12 +337,38 @@ describe('city capture', () => {
     const cityId = defenderFaction.cityIds[0];
     const city = state.cities.get(cityId)!;
 
-    const result = captureCity(city, attackerId, state);
-    const updatedAttacker = result.factions.get(attackerId)!;
+    // Ensure an adjacent attacker unit exists to receive the domain
+    let adjacentUnitPlaced = false;
+    for (const [id, unit] of state.units) {
+      if (unit.factionId === attackerId && unit.hp > 0) {
+        state.units.set(id, {
+          ...unit,
+          position: { q: city.position.q + 1, r: city.position.r },
+        });
+        adjacentUnitPlaced = true;
+        break;
+      }
+    }
+    // If no attacker unit found, skip domains differ check
+    if (!adjacentUnitPlaced) return;
 
-    // Victor should have learned the defender's nativeDomain
+    const result = captureCityWithResult(city, attackerId, state);
+
+    // Unit-level learning: an adjacent unit should have learned the domain
+    expect(result.learnedDomain).toBeDefined();
+    expect(result.learnedDomain!.domainId).toBe(defenderFaction.nativeDomain);
+
+    // The learned unit should have the ability in its learnedAbilities
+    const learnedUnit = result.state.units.get(result.learnedDomain!.unitId);
+    expect(learnedUnit).toBeDefined();
+    expect(
+      learnedUnit!.learnedAbilities?.some(a => a.domainId === defenderFaction.nativeDomain)
+    ).toBe(true);
+
+    // Faction-level: the domain should NOT be auto-codified (must sacrifice to codify)
+    const updatedAttacker = result.state.factions.get(attackerId)!;
     if (defenderFaction.nativeDomain !== attackerFaction.nativeDomain) {
-      expect(updatedAttacker.learnedDomains).toContain(defenderFaction.nativeDomain);
+      expect(updatedAttacker.learnedDomains).not.toContain(defenderFaction.nativeDomain);
     }
   });
 });

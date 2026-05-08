@@ -39,7 +39,7 @@ export const helpContent: HelpContent = {
     title: 'Quick Start',
     body: `
 <h3>Welcome, Commander</h3>
-<p>You're looking at a war map populated by rival factions. There are two ways to win: <strong>eliminate</strong> all rival tribes, or <strong>control 40% of the cities</strong> on the map (domination). Expand your territory, build cities, and crush the competition. Here's everything you need to play your first few turns.</p>
+<p>You're looking at a war map populated by rival factions. There are two ways to win: <strong>eliminate</strong> all rival tribes, or <strong>control over half the cities</strong> on the map (domination — 51% threshold). Expand your territory, build cities, and crush the competition. Here's everything you need to play your first few turns.</p>
 
 <h3>Moving Units</h3>
 <p><strong>Click</strong> any of your units to select it. You'll see highlighted hexes showing where it can move. <strong>Right-click</strong> a highlighted hex (or click it directly) to send your unit there. Each unit has limited movement per turn — use it wisely.</p>
@@ -51,7 +51,7 @@ export const helpContent: HelpContent = {
 <p>During your turn, activate each unit — move, attack, or both. When you're done, click <strong>End Turn</strong> in the command tray at the bottom of the screen. The AI factions take their turns, then control returns to you.</p>
 
 <h3>Building &amp; Expanding</h3>
-<p>Select a unit near a suitable hex to <strong>found a city</strong>. Cities produce new units over time. Capture enemy cities by moving units onto them. Build forts to secure strategic positions.</p>
+<p>Select a unit near a suitable hex to <strong>found a city</strong>. Cities produce new units over time. You can possess up to <strong>3 cities total</strong> — plan their placement carefully. If you capture an enemy city by moving a unit onto it, the city is <strong>razed to the ground</strong> (you never take possession). However, the unit that captured it <strong>learns of their culture</strong>, gaining that faction's domain. <strong>Hill Engineers</strong> can build field forts to secure strategic positions — these grant defensive bonuses and project unignorable Zone of Control.</p>
 
 <h3>Opening Panels</h3>
 <ul>
@@ -70,20 +70,23 @@ export const helpContent: HelpContent = {
     title: 'Combat',
     body: `
 <h3>How Combat Works</h3>
-<p>Combat in War &amp; Civilization is straightforward: <strong>select a unit</strong>, then <strong>click an enemy</strong> within attack range. Your unit deals damage based on its attack stat, and then the defender <strong>counter-attacks</strong> — unless you killed them outright. Three big factors shape every fight: terrain, unit type, and faction abilities. A hilltop archer fights very differently than a plains cavalryman.</p>
+<p>Combat in War &amp; Civilization is straightforward: <strong>select a unit</strong>, then <strong>click an enemy</strong> within attack range. Your unit deals damage based on its attack stat, and then the defender <strong>counter-attacks</strong> — unless you killed them outright. <strong>Ranged attacks never trigger counter-attacks</strong> — archers and gunners fire safely from a distance. Three big factors shape every fight: terrain, unit type, and faction abilities. A hilltop archer fights very differently than a plains cavalryman.</p>
 
 <h3>Terrain Effects</h3>
 <p>The ground under your feet matters. <strong>Forests, hills, and fortifications</strong> grant defense bonuses that make units significantly harder to damage. A unit dug in behind walls or perched on high ground can hold off forces twice their size. On the flip side, open plains leave you fully exposed — great for charging, terrible for surviving.</p>
 <p>Some factions laugh at terrain penalties. <strong>Desert Nomads</strong> treat sand dunes like paved roads, and <strong>Jungle Clans</strong> move through dense vegetation without penalty. If you're fighting them on their home turf, don't expect terrain to save you.</p>
 
 <h3>Opportunity Attacks</h3>
-<p>Every unit projects a <strong>Zone of Control</strong> over the hexes surrounding it. If you march through an enemy-controlled hex, that unit gets a free attack on you — no action required. This means you can't just casually stroll past enemies. Plan your routes, or you'll arrive at your destination already bleeding.</p>
+<p>Most units project a <strong>Zone of Control (ZoC)</strong> over adjacent hexes. If you march through an enemy-controlled hex, that unit may get a <strong>free opportunity attack</strong> — no action required. Key exceptions: <strong>routed and dead units don't project ZoC</strong>, naval units don't exert ZoC on land units (and vice versa), and <strong>mounted units ignore normal ZoC</strong> when moving (though they can still be hit by opportunity attacks). Only <strong>melee units</strong> can deliver opportunity attacks, and these deal <strong>25% of a normal attack's damage</strong> (40% from fortifications). Field forts project unignorable ZoC that even mounted units cannot bypass. Plan your routes carefully, or you'll arrive already nicked up.</p>
 
 <h3>Skirmish Pursuit</h3>
 <p>Factions with the <strong>Skirmish Pursuit</strong> domain press their advantage in combat. When one of their units deals more damage than it takes in an exchange, they deal <strong>+2 bonus damage</strong> — pressing the wound before the enemy can recover. This rewards winning trades and makes skirmishers dangerous in sustained exchanges where they consistently come out ahead. Combined with research upgrades that add mobility and disengage options, pursuit forms the foundation of a hit-and-run playstyle built around attrition through repeated favorable exchanges.</p>
 
 <h3>Morale &amp; Rout</h3>
-<p>Units aren't mindless. When they take heavy losses and their HP drops low enough, they may <strong>rout</strong> — that is, flee the battlefield entirely. A routed unit is gone for that fight. Keep your units healthy, and watch for enemies who are one good hit away from breaking. Certain synergy effects can push the rout threshold higher or lower, turning a stable line into a rout cascade.</p>
+<p>Units aren't mindless — each has a <strong>morale</strong> stat starting at 100. Taking damage reduces morale, and when it drops below 25, the unit may <strong>rout</strong> — flee the battlefield entirely. A routed unit fights at 25% strength with a desperate attack penalty. It can rally if morale recovers above 60. Keep your units' morale healthy, and watch for enemies who are one good hit away from breaking. Nearby ally deaths also cause morale loss, so clustered formations can trigger cascade routs. Certain synergy effects can adjust the rout threshold.</p>
+
+<h3>Melee Advance</h3>
+<p>When a <strong>melee attacker</strong> kills an enemy unit (and survives), it <strong>advances into the defender's hex</strong>. Ranged attackers and capture outcomes don't trigger this — only a clean melee kill. This means successful melee pushes your line forward automatically, which is critical for controlling key terrain after engagements.</p>
 
 <h3>How Synergies Change Combat</h3>
 <p>Here's where things get wild. <strong>Synergies</strong> are combo abilities that activate when a unit carries tags from two different domains. Think of them as hidden power-ups unlocked by mixing playstyles. Here are three to get your imagination going:</p>
@@ -107,20 +110,28 @@ export const helpContent: HelpContent = {
 <p>You start with your faction's <strong>native domain</strong> — the one ability tree that's always yours (T1 is unlocked automatically). But to unlock the game's most powerful combos, you need <strong>foreign domains</strong>: abilities stolen from other factions. You acquire them through combat learning, city captures, and exposure, and then research them through tiers to unlock synergies and emergent rules.</p>
 
 <h3>Learn by Kill</h3>
-<p>When your units destroy an enemy, there's a chance they'll <strong>learn</strong> one of that enemy's faction domains. The chance scales with veterancy: <strong>Green 25%</strong>, <strong>Seasoned 40%</strong>, <strong>Veteran 55%</strong>, <strong>Elite 70%</strong>. Each unit can hold up to <strong>3 learned abilities</strong>. You can't learn your own faction's domains. Killing enemies near their cities also grants a guaranteed domain learn on capture. Veterans are your best students — send them to the front.</p>
+<p>When your units destroy an enemy, there's a chance they'll <strong>learn</strong> one of that enemy's faction domains. The chance scales with veterancy: <strong>Green 12%</strong>, <strong>Seasoned 20%</strong>, <strong>Veteran 28%</strong>, <strong>Elite 35%</strong>. Each unit can hold up to <strong>3 learned abilities</strong>. You can't learn your own faction's domains. Killing enemies near their cities also grants a guaranteed domain learn on capture. Veterans are your best students — send them to the front.</p>
+
+<h3>Capture a City, Learn Its Culture</h3>
+<p>You can possess up to <strong>3 cities total</strong>. Capturing an enemy city by moving a unit onto it <strong>razes the city to the ground</strong> — you never take possession. But the unit that took it <strong>learns of their culture</strong>, gaining that faction's domain as a learned ability. This is a reliable way to acquire a foreign domain from a faction you're at war with, especially if their units are avoiding combat.</p>
 
 <h3>Exposure (Proximity Learning)</h3>
-<p>Your faction learns foreign domains passively through <strong>proximity</strong> to enemy units. When your units are within 2 hexes of enemies, your faction gains 1 exposure point per contact per turn. After accumulating enough exposure (10 for the first foreign domain, 20 for the second), that domain is automatically added to your research tree with <strong>T1 already completed</strong>. A faction can learn up to <strong>3 domains total</strong> (native + 2 foreign) through exposure. This requires no kills or manual return trips — just press units against enemy territory and wait.</p>
+<p>Your faction learns foreign domains passively through <strong>proximity</strong> to enemy units. When your units are within 2 hexes of enemies, your faction gains 1 exposure point per contact per turn. After accumulating enough exposure (<strong>35</strong> for the first foreign domain, <strong>75</strong> for the second, <strong>140</strong> for the third), that domain is automatically added to your research tree with <strong>T1 already completed</strong>. A faction can hold up to <strong>3 domains total</strong> (native + 2 foreign). This requires no kills or manual return trips — just press units against enemy territory and wait.</p>
 
-<h3>Automatic Codification</h3>
-<p>When one of your units learns a foreign domain in battle, or when your faction acquires a domain through exposure or conquest, it is <strong>codified automatically</strong>. The faction immediately gains the domain and its <strong>T1 research node is completed for free</strong>. Units can still carry learned abilities for flavor and tracking, but you no longer need to ferry them home to unlock the faction benefit.</p>
+<h3>Codification</h3>
+<p>Domains enter your research tree through three paths, each with different codification rules:</p>
+<ul>
+  <li><strong>Exposure (automatic):</strong> When your faction accumulates enough proximity exposure, the domain is <strong>codified immediately</strong> with T1 completed for free. No action required.</li>
+  <li><strong>Learn-by-Kill / City Capture (requires sacrifice):</strong> When a unit learns a domain by killing an enemy or capturing their city, the domain stays on that unit only. You must <strong>sacrifice that unit at a friendly city</strong> (not under siege) to codify it at the faction level and unlock T1 research.</li>
+</ul>
+<p>Units can still carry learned abilities for tracking, but only exposure grants instant faction-wide access without sacrifice.</p>
 
 <h3>The Research Tree — Three Tiers</h3>
-<p>Each codified domain climbs through three tiers at a rate of <strong>8 XP per turn</strong>:</p>
+<p>Each codified domain climbs through three tiers at a rate of <strong>4 XP per turn</strong>:</p>
 <ul>
   <li><strong>T1 — Foundation (free):</strong> Automatic upon codification or exposure learn. The domain becomes available and <strong>pair synergies</strong> activate — if your faction knows both domains at T1, units carrying the right tags gain the paired synergy effect (e.g., Venom + Fortress = Toxic Bulwark).</li>
-  <li><strong>T2 — Mastery (60 XP, ~8 turns):</strong> Enhanced domain effects. Critically, T2 is the threshold for <strong>Emergent Rule</strong> eligibility — domains at T2+ count toward the 3-domain patterns that unlock emergent triple stacks.</li>
-  <li><strong>T3 — Transcendence (100 XP, ~13 turns):</strong> The ultimate domain effect. Each domain has a unique T3 bonus, with an extra-powerful version for your <strong>native</strong> domain. T3 deepens one domain but does not unlock new synergy tiers — pair synergies already work at T1.</li>
+  <li><strong>T2 — Mastery (60 XP, ~15 turns):</strong> Enhanced domain effects. Critically, T2 is the threshold for <strong>Emergent Rule</strong> eligibility — domains at T2+ count toward the 3-domain patterns that unlock emergent triple stacks.</li>
+  <li><strong>T3 — Transcendence (100 XP, ~25 turns):</strong> The ultimate domain effect. Each domain has a unique T3 bonus, with an extra-powerful version for your <strong>native</strong> domain. T3 deepens one domain but does not unlock new synergy tiers — pair synergies already work at T1.</li>
 </ul>
 
 <h3>Pair Synergies (55 total)</h3>
@@ -130,7 +141,7 @@ export const helpContent: HelpContent = {
 <p>When your faction reaches <strong>T2 in 3 domains</strong> that match a specific pattern, you unlock a powerful faction-wide bonus called an <strong>Emergent Rule</strong>. These are the ultimate builds — examples include <em>Ghost Army</em> (3 mobility domains = ignore all terrain penalties), <em>Iron Turtle</em> (fortress + heavy + terrain = damage reflection + zone control), and <em>Withering Citadel</em> (venom + fortress + healing = sustained poison fortress). The patterns vary — some require 3 domains from the same category (all mobility), others require 1 from each of 3 categories (terrain + combat + mobility). These are the endgame goals you build toward across the entire match.</p>
 
 <h3>How It Plays Out — An Example</h3>
-<p>You're playing <strong>Jungle Clans</strong> (native: Venom). You send your Serpent God into Steppe Rider territory and kill one of their units — the Serpent God learns <strong>Skirmish Pursuit</strong> (the Steppe Riders' native domain). The faction immediately codifies it, so Skirmish Pursuit appears in your research tree at T1. Right away, any unit with both <em>poison</em> and <em>skirmish</em> tags gains the <strong>Poisoned Skirmish</strong> pair synergy: after retreating, the unit leaves a poison trap on the hex it vacated. Now you research Skirmish Pursuit to T2, and if you acquire a third domain at T2 matching an emergent pattern, you unlock a game-changing Emergent Rule. <em>That's the loop.</em></p>
+<p>You're playing <strong>Jungle Clans</strong> (native: Venom). You send your Serpent God into Steppe Rider territory and kill one of their units — the Serpent God learns <strong>Skirmish Pursuit</strong> (the Steppe Riders' native domain). To unlock it for your faction, sacrifice the Serpent God at a friendly city — this <strong>codifies</strong> the domain, and Skirmish Pursuit appears in your research tree at T1. Right away, any unit with both <em>poison</em> and <em>skirmish</em> tags gains the <strong>Poisoned Skirmish</strong> pair synergy: after retreating, the unit leaves a poison trap on the hex it vacated. Now you research Skirmish Pursuit to T2, and if you acquire a third domain at T2 matching an emergent pattern, you unlock a game-changing Emergent Rule. <em>That's the loop.</em></p>
 
 <h3>Strategic Tips</h3>
 <ul>
@@ -149,17 +160,18 @@ export const helpContent: HelpContent = {
       color: '#2f7d4a',
       nativeDomain: 'venom',
       homeBiome: 'Jungle',
-      intro: 'The Jungle Clans thrive where others fear to tread — deep in the canopy, where poison drips from every leaf and visibility ends at arm\'s reach. Their units move through dense jungle as naturally as you walk down a hallway, turning hostile terrain into a weapon. Their signature unit, the Serpent God, is a terrifying summon that emerges from the undergrowth to shatter enemy formations. Thanks to their Jungle Stalkers trait, enemy scouts rarely spot them until it\'s way too late.',
+      intro: 'The Jungle Clans wage war through attrition. Every unit they field carries poison — a damage-over-time effect that keeps hurting long after the battle ends. Enemies who disengage from a Jungle Clan fight don\'t escape clean; they limp away bleeding, making every follow-up engagement easier than the last. Their Serpent God summon radiates a far stronger poison aura than regular units, turning clustered enemy formations into death zones. Late-game Serpent Priests add stealth and area-of-effect poison to the mix, letting you assassinate key targets from inside enemy lines. Play this faction if you enjoy wearing opponents down until they collapse under accumulated wounds.',
       strengths: [
-        'Jungle interiors are your kingdom. Enemies who enter fight blind while you strike from concealment — use the canopy to set up ambushes on anyone foolish enough to chase you.',
-        'Poison warfare means even battles you don\'t win outright still hurt. Enemies limp away damaged, making follow-up attacks devastating.',
-        'Attritional play suits you perfectly. Drag fights into the jungle, chip away, and watch opponents bleed out trying to root you out.',
+        'Poison creates compounding pressure. Even exchanges favor you because the enemy keeps taking damage after you disengage — chip away and they eventually crumble.',
+        'You control where fights happen. Lure enemies into jungle terrain where your poison units thrive, then fade back as they bog down in difficult ground.',
+        'Late-game Serpent Priests are devastating flankers. Stealth lets them bypass frontlines entirely, and AoE poison grenades punish grouped-up enemies caught off guard.',
       ],
       weaknesses: [
-        'Long-range armies that sit outside the jungle and shell you are your worst nightmare. If you can\'t close the distance, you\'re just targets in trees.',
-        'You struggle badly on open ground. Leaving your biome strips away most of your advantages — don\'t get dragged into fights on plains.',
+        'Your units are glass cannons — they hit hard but fold if cornered. You must dictate terms of engagement or get crushed in fair trades.',
+        'Enemies who sit outside your range and bombard you neutralize poison entirely. No contact means no stacks applied.',
+        'Open plains strip away your positional edge. Without dense terrain to hide in, fragile poison units have nowhere to survive an even fight.',
       ],
-      tip: 'Lure enemies into the jungle by retreating with a sacrificial unit, then spring your real force on them once they\'re deep in the canopy. The Serpent God is perfect for this — let them chase, then summon behind them.',
+      tip: 'Apply early poison pressure with your spearman, then use your archer to finish off weakened targets. Save the Serpent God for moments when enemies cluster together — its poison aura punishes tight formations brutally.',
     },
     {
       id: 'druid_circle',
@@ -167,17 +179,18 @@ export const helpContent: HelpContent = {
       color: '#5d8f57',
       nativeDomain: 'nature_healing',
       homeBiome: 'Forest',
-      intro: 'The Druid Circle believes the forest itself fights on their side — and honestly, it kind of does. Their Healing Druids passive means units recover faster when fighting near forest hexes, turning what should be costly victories for attackers into grinding stalemates. Their Druid Wizard unit can mend wounds mid-battle, keeping your front line alive long past when any normal army would have broken. If you like playing the long game and wearing opponents down through sheer endurance, these are your people.',
+      intro: 'The Druid Circle wins wars of exhaustion. Every unit regenerates health each turn, and fighting in forests grants first-strike — meaning you attack before the enemy counters. Their Treefolk summon is the single toughest creature you can put on a battlefield, capable of anchoring a defensive line that grinds attackers into dust. Late-game Druid Wizards bring serious ranged firepower while keeping the healing and nature synergy intact. This faction doesn\'t win flashy battles; it wins by still standing when everyone else has run out of bodies. Play Druid Circle if you love defensive holds that make attackers regret every hex of progress.',
       strengths: [
-        'Your units simply don\'t stay dead. Between the Healing Druids passive and the Druid Wizard\'s battlefield mending, you can sustain fights far longer than opponents expect.',
-        'Forest terrain amplifies everything good about you. Fighting in woods? You\'re tankier, you heal faster, and enemies have to come to you.',
-        'Patient defensive play is incredibly strong. Let attackers wear themselves out against your resilient warbands, then counter-attack with fresh units.',
+        'You outlast everyone. Regeneration means your units recover between fights while enemies stay damaged — time is always on your side.',
+        'Forest combat is your kingdom. First-strike, healing bonuses, and terrain synergy mean enemies who chase you into woods are fighting on your terms.',
+        'The Treefolk is an unbreakable anchor. Park it at a chokepoint and watch enemy after enemy break against a wall that simply won\'t fall.',
       ],
       weaknesses: [
-        'Fast shock cavalry can run circles around you before your healing kicks in. If you can\'t pin them down, they\'ll pick off your units one by one.',
-        'Your offensive punch is modest. You\'re great at not losing, but actually crushing an enemy in a timely way takes real effort.',
+        'Fast cavalry kites around your regenerating line. By the time healing kicks in, they\'ve already struck and repositioned — you can\'t pin what won\'t stand still.',
+        'Your offensive ceiling is modest. You\'re exceptional at not losing, but actually crushing a determined opponent takes patience and positioning.',
+        'The Treefolk commits wherever you place it. It\'s powerful but immobile — once anchored, it can\'t shift to respond to threats elsewhere.',
       ],
-      tip: 'Plant your forces just inside a forest edge and let enemies commit into the treeline. Your healing kicks in on forest hexes, so fight one step inside the woods — they\'ll take terrain penalties while you regenerate.',
+      tip: 'Fight just inside forest edges so your units get first-strike and healing bonuses while enemies eat terrain penalties. Anchor your center on the Treefolk and let attackers wear themselves down against it.',
     },
     {
       id: 'steppe_clan',
@@ -185,17 +198,18 @@ export const helpContent: HelpContent = {
       color: '#b98a2f',
       nativeDomain: 'hitrun',
       homeBiome: 'Plains',
-      intro: 'Speed is life for the Steppe Riders. These horse lords race across open plains, striking where enemies are weakest and vanishing before reinforcements arrive. Their Foraging Riders passive gives cavalry +15% attack, +20% defense, and faster movement on plains and savannah — plus extra production and supply income from these regions. Their signature Warlord unit rallies nearby cavalry with an aura boost, turning already-fast units into an absolute blur. If you like keeping opponents off-balance and never fighting fair, this is your faction.',
+      intro: 'The Steppe Riders never fight fair — and they don\'t have to. Every unit in their roster can attack and retreat in the same turn, meaning they choose when engagements start and stop. Their starters are faster than equivalent units from any other faction, giving them tempo control from the very first turn. The Warlord summon amplifies nearby cavalry into a blur of steel that strikes and vanishes before defenders can reposition. Mid-game Lancers add cavalry-level speed to skirmish tactics for flanking strikes that hit the exact moment enemies overcommit. Play Steppe Riders if you want to dance circles around opponents who never get a clean shot at you.',
       strengths: [
-        'You dictate when and where fights happen. Your Skirmish Pursuit domain deals +2 bonus damage whenever you win an exchange — press the advantage before enemies can recover.',
-        'Foraging Riders gives your cavalry +15% attack and +20% defense on open ground, plus faster movement — you win any fair fight on plains or savannah.',
-        'Slow, stationary armies are free food. Your horse archers punish anyone who tries to form a static firing line on open ground.',
+        'You own the tempo. Attack, retreat, reposition — repeat. The enemy reacts to you; you never react to them.',
+        'Skirmish Pursuit rewards winning trades with bonus damage. Each successful hit-and-run chips away more than the raw numbers suggest.',
+        'Your fastest units are also your starters. You don\'t need to tech up to be mobile — you\'re outrunning opponents from turn one.',
       ],
       weaknesses: [
-        'Camel riders hard-counter your horses. Desert Nomads in particular will shut down your cavalry advantage — avoid that matchup on open terrain.',
-        'Fortified spear walls on hills are a brick wall. You can\'t charge into a prepared hill position without bleeding units you can\'t afford to lose.',
+        'Your units die if caught in a fair fight. Fragile speedsters must avoid extended exchanges or get annihilated.',
+        'Fortified positions that won\'t move neuter your hit-and-run. You can\'t skirmish around an army that refuses to leave its walls.',
+        'Desert Nomad camels trade favorably against you in open terrain due to their durability and swarm bonuses — avoid extended skirmishes on open ground where they can leverage those advantages.',
       ],
-      tip: 'Use a single fast unit as bait to draw enemy forces out of position, then hit their exposed flank with the rest of your cavalry. The Warlord\'s aura makes this devastating — keep him near the main strike group.',
+      tip: 'Probe with fast units to draw enemies out of position, then crash into their exposed flank with everything you have. Keep the Warlord near your main strike force — its cavalry aura turns "fast" into "unstoppable."',
     },
     {
       id: 'hill_clan',
@@ -203,17 +217,19 @@ export const helpContent: HelpContent = {
       color: '#7a5b3f',
       nativeDomain: 'fortress',
       homeBiome: 'Hill',
-      intro: 'The Hill Engineers are the faction that turns "sit there and dare them to attack" into an art form. Their Hill Engineering passive makes their fortifications stronger and their siege resistance absurd — good luck cracking a Hill Engineer city without a serious investment of resources. Their signature Catapult unit provides ranged firepower that most factions can\'t match, softening up attackers before they even reach your walls. They\'re not flashy, but they\'re the faction you underestimate at your peril.',
+      intro: 'The Hill Engineers build the battlefield into a weapon. They begin the game with Fortification already mastered — a free head start no other faction gets. Their fortress-tagged units project a defensive aura to all adjacent allies, meaning clustering your forces makes every single unit tougher. The Siege Golem summon is the hardest-hitting creature you can call onto any field, and late-game Catapults let you pound enemies from outside their retaliation range. This faction doesn\'t chase victories — it builds positions so formidable that enemies break themselves trying to crack them. Play Hill Engineers if you want to make attackers pay for every hex of ground.',
       strengths: [
-        'Defensive positions are your superpower. A fortified hill hex held by Hill Engineers is one of the hardest nuts to crack in the entire game.',
-        'Your Catapult gives you ranged punch that compensates for slower movement. Use it to bombard enemies as they approach your positions.',
-        'Siege warfare is heavily tilted in your favor. Whether attacking or defending fortified positions, you get more value out of static fronts than anyone.',
+        'Free Fortification research gives you a structural edge from day one. Your forts are stronger and cheaper than anyone else\'s.',
+        'The bulwark aura means your whole army benefits from sticking together. Cluster near fortress units and every adjacent ally gains defense.',
+        'Your starter infantry trades better than almost any other faction\'s opener. You win early skirmishes through sheer durability.',
+        'The Siege Golem is the ultimate anchor — nothing else matches its combination of durability and offensive presence.',
       ],
       weaknesses: [
-        'Armies that refuse to engage on your terms are deeply frustrating. If an opponent maneuvers around your forts and raids elsewhere, you\'re too slow to respond.',
-        'Open-field fights without prepared positions expose your lack of mobility. If you\'re caught on flat ground without fortifications, you\'re just okay — not great.',
+        'You\'re glacially slow. Armies that refuse to engage can raid around your static positions while you plod toward threats you can\'t reach.',
+        'Caught in open ground away from forts, your units lose what makes them special. You\'re average at best outside prepared positions.',
+        'Catapults can\'t contribute to your defensive network — your best siege tool can\'t build the forts that define your strategy.',
       ],
-      tip: 'Fortify choke points between hills early, then use your Catapults to control the approaches. Don\'t chase — let enemies come to you. A single well-placed fort on a hill can hold off forces twice your size.',
+      tip: 'Fortify hill chokepoints on turn one and cluster your forces around them. The bulwark aura multiplies your defensive strength the tighter you group. Save the Siege Golem for the moment enemies commit their main assault — it turns a desperate hold into an impenetrable wall.',
     },
     {
       id: 'coral_people',
@@ -221,17 +237,19 @@ export const helpContent: HelpContent = {
       color: '#2a9d8f',
       nativeDomain: 'slaving',
       homeBiome: 'Coast',
-      intro: 'The Pirate Lords rule the coastlines and waterways, raiding settlements and growing rich off other people\'s misery. Their Greedy passive means they extract more resources from captured villages and plundered cities — every raid pays dividends. Their signature Galley unit dominates coastal waters, ferrying troops for lightning amphibious assaults that most factions can\'t respond to quickly enough. They\'re the faction that makes coastal cities everywhere nervous.',
+      intro: 'The Pirate Lords are the only faction that starts with three units — giving them more board presence than anyone else from moment one. Their defining gimmick is capture: instead of killing enemies, they enslave them and add those units to their own roster. Every raid feeds their economy through the Greedy passive, and they begin the game with Seafaring already researched alongside doubled city wall defenses. Their signature <strong>Galley</strong> summon is a formidable naval warship that anchors their mid-game fleet. Naval units gain bonuses when assaulting from water to land, making coastal cities vulnerable to lightning strikes they can\'t see coming. Play Pirate Lords if you want to snowball through theft — every enemy you defeat makes you stronger.',
       strengths: [
-        'Coastal raiding is your bread and butter. Galley transports let you strike anywhere with a shoreline, and your Greedy passive means every captured settlement pays off big.',
-        'Enemies near water are always vulnerable. Your amphibious assault capability means no coastal city is truly safe, creating constant pressure across the map.',
-        'Economic snowballing through raids is uniquely powerful. Other factions need to build economies; you can steal yours.',
+        'Three starting units give you immediate tactical flexibility that no other faction matches — infantry, ranged, and naval coverage from turn one.',
+        'Capture turns enemy strength into yours. Every enslaved unit joins your roster, and each capture pays economic dividends on top.',
+        'Naval dominance is built-in. Free Seafaring research, tougher coastal cities, and amphibious assault bonuses make you ruler of the coastline.',
+        'Pistol weaponry hits hard at close range without risking retaliation — a unique combat tool nobody else has access to.',
       ],
       weaknesses: [
-        'Deep inland, you\'re out of your element. Once you\'re far from water, your mobility advantage evaporates and your army is just average.',
-        'Land-locked factions that turtle inland are hard to crack. If there\'s no coast to raid, your economy engine sputters.',
+        'Inland maps gut your identity. No water means no naval mobility, no amphibious flanking, and half your economic engine goes quiet.',
+        'Individual land units are mediocre. You win through numbers and captures, not elite unit quality — fair fights go badly.',
+        'Opponents who turtle far from the coast starve your raid economy. No coastal targets means no Greedy payouts.',
       ],
-      tip: 'Prioritize coastal cities and settlements for early raids — each one feeds your economy through the Greedy passive. Use Galleys to hop between targets faster than opponents can react. Don\'t waste time pushing deep inland until your coastal economy is humming.',
+      tip: 'Use your trireme to ferry troops for early coastal drops while opponents are still walking into position. Chain raids along the shoreline — each captured settlement funds the next wave. Target wounded enemies for capture attempts and watch your stolen army grow.',
     },
     {
       id: 'desert_nomads',
@@ -239,17 +257,19 @@ export const helpContent: HelpContent = {
       color: '#e9c46a',
       nativeDomain: 'camel_adaptation',
       homeBiome: 'Desert',
-      intro: 'The Desert Nomads treat the scorching sands like a highway while other factions see them as a death trap. Their Desert Logistics passive means their units suffer far less attrition in desert terrain — where others wither, they thrive. Their signature Desert Immortals are elite shock troops that don\'t break, fighting at full strength even when supply lines would cripple any other army. They\'re the faction that turns the map\'s most hostile biome into a home-field advantage.',
+      intro: 'The Desert Nomads treat the harshest terrain on the map as home turf. They ignore all movement penalties in desert, striking from angles that other factions physically cannot reach. Their camel units hard-counter horse cavalry — crushing Steppe Riders and Savannah chariots in direct confrontations. When camel units cluster together, they grow stronger through a swarm bonus that rewards keeping your army tight. Late-game Immortals are self-regenerating anchors that refuse to die. Play Desert Nomads if you want to own terrain that everyone else avoids and counter the fastest factions in the game.',
       strengths: [
-        'Desert terrain is your playground. Where other factions lose units to attrition and heat, you march through like it\'s a pleasant Sunday — use this to strike from angles nobody expects.',
-        'Lean supply needs mean long campaigns don\'t drain you. Your Desert Logistics passive keeps your army fighting-fit far from base, letting you operate in areas others can\'t sustain.',
-        'Horse-dependent factions are natural prey. Your camels don\'t spook like horses do, giving you a real edge against cavalry-heavy opponents in open terrain.',
+        'Desert is your highway. Strike from directions enemies thought were impassable — they avoid the sands while you sprint through them.',
+        'Your camel units trade well against cavalry in open terrain thanks to durability and swarm bonuses, giving you an edge against Steppe Riders and Savannah charge armies on favorable ground.',
+        'Clustering your camel army activates swarm bonuses — the tighter your formation, the tougher and harder-hitting every unit becomes.',
+        'Your starter camel is durable and mobile — it trades well against almost any opening unit and reaches fights others can\'t get to in time.',
       ],
       weaknesses: [
-        'Heavy infantry in rough terrain can box you in. If an opponent occupies hills or forests and refuses to come out into the open, you\'ll struggle to dislodge them.',
-        'Maps without significant desert corridors reduce your advantage considerably. You\'re still playable, but you lose the terrain edge that makes you special.',
+        'Enemies dug into rough terrain box you in completely. If they won\'t leave hills or forests, your mobility advantage means nothing.',
+        'Maps light on desert reduce your uniqueness considerably. You\'re still functional, but you lose the terrain identity that defines you.',
+        'Your late-game anchors are slow despite their toughness — they hold ground but can\'t pursue fleeing enemies.',
       ],
-      tip: 'Use desert corridors as invasion routes that other factions won\'t expect — they avoid the desert while you sprint through it. Hit them from the "impossible" direction and watch their lines collapse.',
+      tip: 'Keep your camel units grouped to maintain swarm bonuses, and use desert corridors to bypass enemy front lines entirely. Against cavalry factions, seek open-ground engagements where your durability and swarm advantages give you the edge.',
     },
     {
       id: 'savannah_lions',
@@ -257,17 +277,19 @@ export const helpContent: HelpContent = {
       color: '#d4a373',
       nativeDomain: 'charge',
       homeBiome: 'Savannah',
-      intro: 'The Savannah Lions are all about one thing: momentum. Their Charge Momentum passive means their units hit harder after moving — the faster they come, the harder they smash. Their signature War Elephants are walking siege engines that trample through infantry like cardboard, and their charge bonuses make them genuinely terrifying on the approach. This is the faction for players who like to decide battles in a single thunderous collision.',
+      intro: 'The Savannah Lions decide battles in a single collision. Their playstyle is pure momentum — commit fully, hit hard, and end the fight before the enemy recovers. Their mid-game War Chariots are the fastest units in existence, able to reposition faster than any opponent can react. Late-game War Elephants smash through fortified positions with stampede knockback and siege-breaker traits that crumble walls other factions spend turns battering down. Charge Momentum amplifies damage when you commit to the attack — the harder you go in, the more it hurts. Play Savannah Lions if you want thunderous, decisive engagements where one good charge ends the battle.',
       strengths: [
-        'First-contact power is unmatched. A full charge from Savannah Lions hits like a freight train — if your opening clash goes well, the battle is often over before it starts.',
-        'Open ground maximizes everything good about you. Charge bonuses, elephant mobility, formation warfare — it all clicks on savannah and plains.',
-        'Light infantry and skirmishers get crushed. Your charge mechanics specifically punish small, scattered units that can\'t absorb the impact.',
+        'Opening impact is devastating. Your melee starter hits harder than any other faction\'s — you win initial trades through raw aggression.',
+        'War Chariots outmaneuver everything. Nothing catches them, and their speed lets you pick exactly where and when the battle happens.',
+        'War Elephants crack fortified positions that stall other armies. Stampede knockback and siege-breaker traits make walls and spears feel optional.',
+        'Charge Momentum rewards commitment. The deeper you commit to an assault, the more damage it deals — hesitation is punished, boldness rewarded.',
       ],
       weaknesses: [
-        'Disciplined anti-large formations are your kryptonite. Focused missile fire and spear walls that brace for impact can turn your charging elephants into very expensive casualties.',
-        'Terrain that slows your approach nullifies your charge bonus. Forests, hills, and jungles force you to fight at walking speed, where you\'re just decent.',
+        'Disciplined anti-large formations shred your signature units. Spear walls braced for impact and focused missile fire turn elephants into expensive casualties.',
+        'Rough terrain kills your momentum dead. Forests, hills, and jungles slow you to a crawl where charge bonuses don\'t exist.',
+        'Your units are fragile on the defensive. They hit hard but can\'t absorb counterattacks — a failed charge leaves you exposed and hurting.',
       ],
-      tip: 'Don\'t charge headlong into spear walls. Angle your approach so War Elephants hit the flank or rear of enemy formations — the charge bonus is just as devastating from the side, but the defensive penalty is much worse for them.',
+      tip: 'Never charge headlong into a prepared position. Use your chariots\' speed to outmaneuver enemies into exposing their flank, then commit the elephants from the angle they least expect. One good charge from the side ends fights that frontal assaults would lose.',
     },
     {
       id: 'river_people',
@@ -275,18 +297,19 @@ export const helpContent: HelpContent = {
       color: '#4f86c6',
       nativeDomain: 'river_stealth',
       homeBiome: 'River',
-      intro: 'The River People treat waterways like roads — except these roads let them appear anywhere along the bank without warning. Their River Assault passive gives their units combat bonuses near rivers, and their River Stealth transcendence now lets true stealth units cloak nearby allies for surprise strikes. Their signature Ancient Alligator is a nightmare amphibious predator that can strike from water onto land, turning every river crossing into a potential ambush point. They\'re the faction that makes you nervous every time there\'s water on the map.',
+      intro: 'The River People fight from angles the enemy can\'t cover. Waterways become their road network — invisible approach vectors that let forces appear anywhere along a bank without warning. Their River Assault passive tips routine fights in their favor whenever water is nearby, and their stealth capabilities let them ambush enemies who thought they knew where the threat was. The Ancient Alligator summon lurks in river crossings waiting to drag unsuspecting prey underwater. At higher tiers, stealth units can cloak nearby allies for coordinated surprise strikes. Play River People if you want to control sight lines and strike from directions enemies left unguarded.',
       strengths: [
-        'River corridors give you unmatched mobility and surprise. You can move forces along waterways faster than anyone, and your stealth means defenders rarely spot you in time.',
-        'Once River Stealth reaches Tier 3, a single hidden scout can cloak adjacent allies and hand them full sneak-attack pressure. Your front line stops telegraphing which unit is actually dangerous.',
-        'Cities split by waterways are incredibly vulnerable to you. Strike from the river side while the defender\'s attention is on land approaches — classic double-envelopment.',
-        'Your River Assault passive means even routine fights near water tip in your favor. Try to keep engagements close to rivers whenever possible.',
+        'Rivers are your highway system. Move forces along water faster than any land route, appearing where defenders aren\'t looking.',
+        'Stealth lets you pick which fight happens and when. Ambush enemies who thought they were safe, then vanish before reinforcements arrive.',
+        'Cities bisected by water are sitting ducks. Strike from the river side while defenders watch the land approaches — classic envelopment they can\'t defend against.',
+        'Fights near water naturally tilt your way. Seek riverbanks and crossings to stack the deck in routine engagements.',
       ],
       weaknesses: [
-        'Getting dragged into dry, inland fights strips away your biggest advantages. Without water nearby, you\'re fighting on even ground — and "even" isn\'t where you want to be.',
-        'Opponents who recognize your river dependency can bait you into unfavorable terrain. Don\'t chase too far from water just because you\'re winning.',
+        'Dry inland ground strips away every advantage. Without water nearby, you\'re fighting on even terms — and "even" isn\'t where you want to be.',
+        'Opponents who recognize your river dependency can bait you into bad terrain. Don\'t chase victories too far from water.',
+        'Your power scales with map features. Maps sparse on rivers or waterways significantly reduce what makes you dangerous.',
       ],
-      tip: 'Map out river networks early — they\'re your highway system. Once you hit River Stealth Tier 3, keep one real stealth unit tucked behind your lead attackers so it cloaks the whole contact point. The Ancient Alligator still excels at river crossing ambushes: hide one in a river hex near a crossing point and let enemies walk into it.',
+      tip: 'Map the river network before committing forces — it dictates every approach you have available. Hide the Ancient Alligator in a river hex near a crossing point and let enemies walk into it. At higher stealth tiers, keep a hidden scout behind your vanguard to cloak the entire contact point for surprise-strike pressure.',
     },
     {
       id: 'frost_wardens',
@@ -294,17 +317,19 @@ export const helpContent: HelpContent = {
       color: '#a8dadc',
       nativeDomain: 'heavy_hitter',
       homeBiome: 'Tundra',
-      intro: 'The Arctic Wardens are the faction that turns the game\'s worst terrain into the best neighborhood. Their Cold-Hardened Growth passive means they get better economic returns from poor land than anyone else — while other factions look at tundra and see wasteland, the Wardens see opportunity. Their signature Polar Bear unit is a heavy-hitting beast that thrives in cold terrain, and their overall toughness makes them surprisingly hard to dislodge from frozen positions. They\'re a slow-burn faction that rewards patience and terrain awareness.',
+      intro: 'The Arctic Wardens turn the map\'s worst land into their best asset. While other factions fight over fertile heartland, the Wardens claim frozen wasteland that nobody else wants — and build functioning economies on it. Their heavy units hit harder and last longer than anything else on the field, with the Polar Bear summon ranking among the toughest creatures in existence. Their Heavy Hitter domain shatters fortified positions, reflects damage back at attackers, and eventually ignores armor entirely. This is a slow-burn faction that rewards claiming ignored territory and grinding down opponents through superior durability. Play Arctic Wardens if you want to win the war of attrition that starts on turn one.',
       strengths: [
-        'Poor terrain is your advantage, not a problem. You grow stronger on tundra, hills, and marginal land while opponents fight over the "good" real estate — and then you attack them while they\'re overextended.',
-        'Economic resilience is unmatched. Your Cold-Hardened Growth passive means you can build a functioning economy on land other factions can\'t even farm effectively.',
-        'Heavy units like the Polar Bear hit extremely hard in sustained fights. You may not be fast, but you hit like a truck once you arrive.',
+        'You thrive where others starve. Claim frozen and marginal territory that opponents write off, then build a quiet economic base they never notice growing.',
+        'Heavy units dominate sustained fights. You may not arrive first, but whatever you hit stays hit — trading blows with your heavies is a losing proposition.',
+        'Economic resilience on poor land lets you weather setbacks that cripple other factions. Your infrastructure survives in places theirs cannot.',
+        'The Polar Bear is an endgame anchor that controls space through raw presence alone. Few things willingly approach it.',
       ],
       weaknesses: [
-        'Rich agrarian economies will out-produce you if left unchecked. A faction with fertile land and time to build will eventually overwhelm you with sheer numbers.',
-        'Your slow expansion means fast factions can grab key positions before you get there. You need to plan your expansion routes carefully.',
+        'Factions that snowball economies on fertile land will eventually drown you in numbers if left unchecked. Your resilience has limits.',
+        'Fast factions claim key positions while you\'re still marching into position. You must plan expansion routes carefully or get outpaced.',
+        'Your heavies are vulnerable to being kited around the battlefield. Mobile enemies can choose where and when to engage — and you can\'t force the issue.',
       ],
-      tip: 'Don\'t compete for the fertile center early — claim tundra and marginal hexes that others ignore. You\'ll get solid income from "worthless" land, while opponents waste resources fighting each other over the good stuff. By mid-game, you\'ll have a quiet economic base they never saw coming.',
+      tip: 'Claim frozen and marginal hexes that other factions ignore — your economy works on land they consider worthless. Let opponents bleed each other fighting over the fertile center while you build a quiet power base they won\'t notice until it\'s too late.',
     },
   ],
 
