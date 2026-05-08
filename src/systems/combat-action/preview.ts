@@ -283,7 +283,7 @@ export function previewCombatAction(
     situationalAttackModifier += 0.25;
   }
 
-  const improvementDefenseBonus = getImprovementBonus(state, defender.position);
+  const improvementDefenseBonus = getImprovementBonus(state, defender.position, defender.factionId);
   const wallDefenseBonus = getWallDefenseBonus(
     state,
     defender.position,

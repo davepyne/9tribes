@@ -11,10 +11,12 @@ import { hasCaptureAbility } from '../captureSystem.js';
 
 export const WATER_TERRAIN = new Set(['coast', 'river', 'ocean']);
 
-export function getImprovementBonus(state: GameState, position: { q: number; r: number }) {
+export function getImprovementBonus(state: GameState, position: { q: number; r: number }, factionId?: string) {
   for (const improvement of state.improvements.values()) {
     if (improvement.position.q === position.q && improvement.position.r === position.r) {
-      return improvement.defenseBonus ?? 0;
+      const base = improvement.defenseBonus ?? 0;
+      if (factionId === 'hill_clan' && improvement.type === 'fortification') return Math.max(base, 3);
+      return base;
     }
   }
   for (const city of state.cities.values()) {
