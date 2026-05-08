@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import type { ClientState } from '../game/types/clientState';
+import { FieldReportsPanel } from './FieldReportsPanel';
 
 type ReportsOverlayProps = {
-  reportType: 'faction_summary' | 'combat_log' | 'supply_report';
+  reportType: 'faction_summary' | 'combat_log' | 'supply_report' | 'field_reports';
   state: ClientState;
   onClose: () => void;
 };
@@ -11,6 +12,7 @@ const reportTitles: Record<string, string> = {
   faction_summary: 'Faction Summary',
   combat_log: 'Combat Log',
   supply_report: 'Supply & Logistics',
+  field_reports: 'Field Reports',
 };
 
 export const ReportsOverlay = React.memo(function ReportsOverlay({ reportType, state, onClose }: ReportsOverlayProps) {
@@ -71,6 +73,13 @@ export const ReportsOverlay = React.memo(function ReportsOverlay({ reportType, s
                 </div>
               ))}
             </div>
+          ) : null}
+
+          {reportType === 'field_reports' ? (
+            <FieldReportsPanel
+              intel={state.enemySynergyIntel}
+              factionSummaries={state.hud.factionSummaries}
+            />
           ) : null}
         </div>
       </div>

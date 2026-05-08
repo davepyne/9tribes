@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import pairSynergiesData from '../data/pair-synergies.json';
 import emergentRulesData from '../data/emergent-rules.json';
+import { SynergyCard } from './SynergyCard';
+import type { PairSynergyData, EmergentRuleData } from './SynergyCard';
 
 // ── Types ──
 
@@ -35,6 +37,10 @@ const PAIR_SYNERGIES: PairSynergy[] = (pairSynergiesData as { pairSynergies: Arr
   domains: s.domains,
   description: s.description,
 }));
+
+const PAIR_SYNERGIES_FULL: PairSynergyData[] = (pairSynergiesData as { pairSynergies: PairSynergyData[] }).pairSynergies;
+
+const EMERGENT_RULES_FULL: EmergentRuleData[] = (emergentRulesData as unknown as { rules: EmergentRuleData[] }).rules;
 
 const EMERGENT_RULES: EmergentRule[] = (emergentRulesData as unknown as { rules: EmergentRule[] }).rules;
 
@@ -162,7 +168,15 @@ type ModalInnerProps = {
 };
 
 function SynergyModalInner({ event, onDismiss }: ModalInnerProps) {
-  const totalUnlocks = event.synergies.length + (event.tripleStack ? 1 : 0);
+  // Resolve full synergy data with flavor strings
+  const pairCards = event.synergies.map((s) => {
+    const full = PAIR_SYNERGIES_FULL.find((p) => p.id === s.id);
+    return full ?? null;
+  }).filter(Boolean) as PairSynergyData[];
+
+  const tripleCard: EmergentRuleData | null = event.tripleStack
+    ? EMERGENT_RULES_FULL.find((r) => r.id === event.tripleStack!.id) ?? null
+    : null;
 
   return (
     <div className="sym-overlay" onClick={(e) => e.target === e.currentTarget && onDismiss()}>
@@ -177,25 +191,25 @@ function SynergyModalInner({ event, onDismiss }: ModalInnerProps) {
           <span className="sym-divider-gem" />
         </div>
 
-        {event.synergies.map((s) => (
-          <div key={s.id} className="synergy-unlock">
-            <div className="synergy-unlock__name">{s.name}</div>
-            <div className="synergy-unlock__domains">
-              {s.domains.map((d) => (
-                <span key={d} className="synergy-unlock__domain-tag">{formatDomainName(d)}</span>
-              ))}
-            </div>
-            <p className="synergy-unlock__desc">{s.description}</p>
-          </div>
-        ))}
-
-        {event.tripleStack ? (
-          <div className="synergy-unlock synergy-unlock--triple">
-            <div className="synergy-unlock__name">{event.tripleStack.name}</div>
-            <span className="synergy-unlock__badge">Emergent Triple</span>
-            <p className="synergy-unlock__desc">{event.tripleStack.description}</p>
-          </div>
-        ) : null}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '60vh', overflowY: 'auto', padding: '0 4px' }}>
+          {tripleCard && (
+            <SynergyCard
+              mode="friendly"
+              synergy={tripleCard}
+              kind="triple"
+              factionColor="#d6a34b"
+            />
+          )}
+          {pairCards.map((data) => (
+            <SynergyCard
+              key={data.id}
+              mode="friendly"
+              synergy={data}
+              kind="pair"
+              factionColor="#d6a34b"
+            />
+          ))}
+        </div>
 
         <button type="button" className="sym-dismiss" onClick={onDismiss}>
           Continue

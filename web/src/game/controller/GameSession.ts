@@ -34,7 +34,8 @@ export type { PendingCombat } from './combatSession.js';
 import { clearMoveQueueOnUnit, executeQueuedMovesForUnit } from './moveQueueSession.js';
 import { buildReachableMoves } from './movementExplorer.js';
 import { refreshFogForAllFactions, updateSiegeState, getFortBuildEligibility, buildFortAtUnit, getFortDestroyEligibility, destroyFortAtUnit, getPrototypeCost, getAiUnitIds, getPrototypeName, getActiveFactionName, hasCaptureAbility, canPriestSummon, attemptPriestSummon } from './sessionUtils.js';
-import type { GameAction } from '../types/clientState';
+import type { GameAction, EnemySynergyIntelMap } from '../types/clientState';
+import pairSynergiesData from '../../data/pair-synergies.json';
 import type { ReplayCombatEvent } from '../types/replay';
 import type { PlayStateSource, SerializedGameState } from '../types/playState';
 import type { AttackTargetView } from '../types/worldView';
@@ -182,6 +183,9 @@ export class GameSession {
     state: SerializedGameState;
     feedback: SessionFeedback;
   } | null = null;
+
+  private enemySynergyIntel: EnemySynergyIntelMap = {};
+  private firstContactQueue: Array<{ factionId: string; synergyId: string; synergyName: string }> = [];
 
   constructor(
     source: PlayStateSource = { type: 'fresh' },
@@ -633,6 +637,80 @@ export class GameSession {
       'combat',
       `${finalCombatEvent.attackerPrototypeName} attacked ${finalCombatEvent.defenderPrototypeName}: dealt ${preview.result.defenderDamage}, took ${preview.result.attackerDamage}.`,
     );
+
+    // ── Enemy synergy intel tracking ──
+    this.trackEnemySynergyContact(preview, applied.feedback);
+  }
+
+  /**
+   * Track first-contact with enemy synergies.
+   * Only tracks when a human-controlled faction is involved.
+   */
+  private trackEnemySynergyContact(
+    combatPreview: { attackerFactionId: string; defenderFactionId: string },
+    combatFeedback: { lastLearnedDomain?: any; absorbedDomains?: string[] },
+  ): void {
+    const playerFactionId = this.humanControlledFactionIds.values().next().value;
+    if (!playerFactionId) return;
+
+    const attackerIsPlayer = this.humanControlledFactionIds.has(combatPreview.attackerFactionId);
+    const defenderIsPlayer = this.humanControlledFactionIds.has(combatPreview.defenderFactionId);
+    if (!attackerIsPlayer && !defenderIsPlayer) return;
+
+    const enemyFactionId = attackerIsPlayer ? combatPreview.defenderFactionId : combatPreview.attackerFactionId;
+
+    // Resolve active synergies for the enemy faction
+    const enemyFaction = getFaction(this.state, enemyFactionId);
+    if (!enemyFaction) return;
+
+    const enemyDomains = enemyFaction.learnedDomains ?? [];
+    if (enemyDomains.length < 2) return;
+
+    const pairData = pairSynergiesData.pairSynergies as unknown as Array<{
+      id: string; name: string; domains: [string, string];
+    }>;
+
+    for (const synergy of pairData) {
+      const [d1, d2] = synergy.domains;
+      if (!enemyDomains.includes(d1) || !enemyDomains.includes(d2)) continue;
+
+      const existing = this.enemySynergyIntel[enemyFactionId]?.[synergy.id];
+      if (!existing) {
+        if (!this.enemySynergyIntel[enemyFactionId]) {
+          this.enemySynergyIntel[enemyFactionId] = {};
+        }
+        this.enemySynergyIntel[enemyFactionId][synergy.id] = {
+          encounters: 1,
+          studied: false,
+          firstContactTurn: this.state.turnNumber ?? 0,
+        };
+        this.firstContactQueue.push({
+          factionId: enemyFactionId,
+          synergyId: synergy.id,
+          synergyName: synergy.name,
+        });
+      } else {
+        existing.encounters += 1;
+      }
+    }
+
+    // Mark as studied on capture/sacrifice events
+    if (combatFeedback.lastLearnedDomain || (combatFeedback.absorbedDomains?.length ?? 0) > 0) {
+      const enemyIntel = this.enemySynergyIntel[enemyFactionId];
+      if (enemyIntel) {
+        for (const key of Object.keys(enemyIntel)) {
+          enemyIntel[key].studied = true;
+        }
+      }
+    }
+  }
+
+  getEnemySynergyIntel(): EnemySynergyIntelMap {
+    return this.enemySynergyIntel;
+  }
+
+  dequeueFirstContact(): { factionId: string; synergyId: string; synergyName: string } | null {
+    return this.firstContactQueue.shift() ?? null;
   }
 
   getPendingCombat(): PendingCombat | null {

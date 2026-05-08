@@ -32,6 +32,7 @@ const reportsMenu: MenuEntry[] = [
   { label: 'Faction Summary', action: 'open_faction_summary' },
   { label: 'Supply & Logistics', action: 'open_supply_report' },
   { label: 'Combat Log', action: 'open_combat_log' },
+  { label: 'Field Reports', action: 'open_field_reports' },
   { label: 'Research Tree', action: 'open_research' },
 ];
 

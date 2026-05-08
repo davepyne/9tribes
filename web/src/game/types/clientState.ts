@@ -369,6 +369,19 @@ export type TerrainInspectorViewModel = {
   playerFactionName: string | null;
 };
 
+// ── Enemy synergy intel (asymmetric reveal) ──
+
+export type EnemySynergyIntel = {
+  encounters: number;
+  studied: boolean;
+  firstContactTurn: number;
+};
+
+export type EnemySynergyIntelMap = Record<
+  string /* enemy factionId */,
+  Record<string /* synergyId */, EnemySynergyIntel>
+>;
+
 export type ClientState = {
   mode: ClientMode;
   turn: number;
@@ -386,6 +399,7 @@ export type ClientState = {
   productionPopupCityId: string | null;
   inspectorRequestId: number;
   terrainInspector: TerrainInspectorViewModel | null;
+  enemySynergyIntel: EnemySynergyIntelMap;
 };
 
 export type GameAction =

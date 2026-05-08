@@ -383,6 +383,7 @@ export class GameController {
       terrainInspector: this.inspectedTerrainPos
         ? buildTerrainInspectorViewModel(sessionState, session.getRegistry(), this.inspectedTerrainPos, playerFactionId)
         : null,
+      enemySynergyIntel: this.session?.getEnemySynergyIntel() ?? {},
     };
   }
 

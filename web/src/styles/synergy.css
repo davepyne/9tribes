@@ -796,3 +796,365 @@
   font-weight: 600;
   color: var(--text);
 }
+
+/* ═══════════════════════════════════════════
+   SynergyCard (scard-*) — MtG-style card
+   ═══════════════════════════════════════════ */
+
+/* ── Card frame ── */
+
+.scard {
+  position: relative;
+  border-radius: 10px;
+  background: rgba(10, 8, 6, 0.97);
+  /* Double-border: outer rule + inner inset line */
+  border: 1px solid color-mix(in srgb, var(--scard-accent, #d6a34b) 22%, rgba(255, 255, 255, 0.07));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  transition: border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.scard:hover {
+  border-color: color-mix(in srgb, var(--scard-accent, #d6a34b) 40%, rgba(255, 255, 255, 0.12));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 6px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Title bar ── */
+
+.scard__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px 8px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--scard-accent, #d6a34b) 14%, rgba(255, 255, 255, 0.02)),
+    color-mix(in srgb, var(--scard-accent, #d6a34b) 5%, transparent) 70%
+  );
+  border-bottom: 1px solid color-mix(in srgb, var(--scard-accent, #d6a34b) 18%, rgba(255, 255, 255, 0.04));
+}
+
+.scard__badge {
+  font-family: 'Inter', sans-serif;
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--scard-accent, #d6a34b) 16%, rgba(255, 255, 255, 0.04));
+  color: var(--scard-accent, #d6a34b);
+  border: 1px solid color-mix(in srgb, var(--scard-accent, #d6a34b) 25%, transparent);
+  flex-shrink: 0;
+}
+
+.scard--triple .scard__badge {
+  background: linear-gradient(
+    135deg,
+    var(--scard-accent, #d6a34b),
+    color-mix(in srgb, var(--scard-accent, #d6a34b) 55%, #fff8e1)
+  );
+  color: #1a1308;
+  font-weight: 800;
+  border-color: transparent;
+  text-shadow: none;
+}
+
+.scard__name {
+  font-family: 'Cinzel', 'Palatino', 'Georgia', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #f6ebcf);
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+/* ── Art area ── */
+
+.scard__art {
+  position: relative;
+  height: 110px;
+  background: rgba(6, 5, 4, 1);
+  overflow: hidden;
+  /* Separator rule between title and art */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* SVG scene fills the art container */
+.scard__art-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/* Edge vignette: fades the art into the card body at top/bottom edges */
+.scard__art-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(10, 8, 6, 0.55) 0%, transparent 30%, transparent 70%, rgba(10, 8, 6, 0.6) 100%),
+    linear-gradient(to right, rgba(10, 8, 6, 0.35) 0%, transparent 18%, transparent 82%, rgba(10, 8, 6, 0.35) 100%);
+  pointer-events: none;
+}
+
+/* ── Arc flow animation — dashes travel along the connection paths ── */
+
+@keyframes scard-arc-flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -8; }
+}
+
+.scard__art-arc {
+  animation: scard-arc-flow 2.2s linear infinite;
+}
+
+/* ── Nexus pulse — breathing outer ring ── */
+
+@keyframes scard-nexus-outer {
+  0%, 100% { transform: scale(1); opacity: 0.25; }
+  50% { transform: scale(1.6); opacity: 0.06; }
+}
+
+@keyframes scard-nexus-ring {
+  0%, 100% { transform: scale(1); opacity: 0.55; }
+  50% { transform: scale(1.25); opacity: 0.85; }
+}
+
+.scard__nexus-outer {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scard-nexus-outer 3.4s ease-in-out infinite;
+}
+
+.scard__nexus-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scard-nexus-ring 3.4s ease-in-out infinite;
+}
+
+/* ── Domain strip ── */
+
+.scard__domains {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  flex-wrap: wrap;
+}
+
+.scard__domain-chip {
+  font-size: 10px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  opacity: 0.9;
+}
+
+/* ── Prose body ── */
+
+.scard__prose {
+  padding: 10px 12px 8px;
+}
+
+.scard__prose p {
+  margin: 0;
+  font-family: 'Fraunces', 'Georgia', serif;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary, #c4b08a);
+  font-style: italic;
+}
+
+/* ── Mechanics block ── */
+
+.scard__mechanics {
+  padding: 8px 12px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.scard__mechanics p {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted, #c7b792);
+  opacity: 0.8;
+}
+
+/* ── Compact variant (inspector list) ── */
+
+.scard--compact {
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.scard--compact .scard__title {
+  padding: 5px 10px;
+}
+
+.scard--compact .scard__name {
+  font-size: 11px;
+}
+
+.scard--compact .scard__badge {
+  font-size: 7px;
+  padding: 1px 5px;
+}
+
+.scard--compact .scard__prose {
+  padding: 4px 10px 5px;
+}
+
+.scard--compact .scard__prose p {
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.scard--compact .scard__mechanics {
+  padding: 4px 10px 6px;
+}
+
+.scard--compact .scard__mechanics p {
+  font-size: 9px;
+}
+
+.scard__compact-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* ── Full-size variant (modal / encyclopedia) ── */
+
+.scard--full {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Triple gets extra glow treatment */
+.scard--triple {
+  border-color: color-mix(in srgb, var(--scard-accent, #d6a34b) 38%, transparent);
+}
+
+.scard--triple.scard--full {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 0 28px color-mix(in srgb, var(--scard-accent, #d6a34b) 10%, transparent),
+    0 12px 40px rgba(0, 0, 0, 0.5);
+  animation: scard-triple-glow 3.5s ease-in-out infinite;
+}
+
+@keyframes scard-triple-glow {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+      0 0 20px color-mix(in srgb, var(--scard-accent, #d6a34b) 8%, transparent),
+      0 12px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  50% {
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.09),
+      0 0 40px color-mix(in srgb, var(--scard-accent, #d6a34b) 16%, transparent),
+      0 12px 40px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ── Field-report mode ── */
+
+.scard--report .scard__prose p {
+  color: var(--muted, #c7b792);
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* Tier 0: name appears unknown */
+.scard--tier0 .scard__name {
+  color: var(--muted, #c7b792);
+  font-style: italic;
+  opacity: 0.5;
+}
+
+/* Tier 1 art gets scanline interference overlay on field-report art */
+.scard--report.scard--tier1 .scard__art-vignette::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.12) 3px,
+    rgba(0, 0, 0, 0.12) 4px
+  );
+  pointer-events: none;
+}
+
+/* Tier 2 studied mechanics block with discovered badge */
+.scard--tier2.scard--report .scard__mechanics {
+  border-top: 1px solid color-mix(in srgb, var(--scard-accent, #d6a34b) 18%, transparent);
+  position: relative;
+}
+
+.scard--tier2.scard--report .scard__mechanics::before {
+  content: 'STUDIED';
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--scard-accent, #d6a34b);
+  opacity: 0.55;
+}
+
+/* ── Inspector synergy section ── */
+
+.ci-synergy-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ci-synergy-section {
+  padding: 0;
+  border-bottom: none;
+}
+
+/* ── Field Reports panel ── */
+
+.frp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.frp-faction__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.frp-faction__count {
+  margin-left: auto;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* ── Encyclopedia card wrapper ── */
+
+.syn-enc__card-wrap {
+  cursor: pointer;
+}
