@@ -8,9 +8,10 @@
       "effect": {
         "type": "poison_aura",
         "damagePerTurn": 2,
-        "radius": 1
+        "radius": 2,
+        "poisonedCannotAttackSource": true
       },
-      "description": "Fortress units radiate a poison zone: enemies within 1 hex of a fortress-tagged unit take 2 poison damage per turn"
+      "description": "Fortress units radiate a poison zone: enemies within 2 hexes of a fortress-tagged unit take 2 poison damage per turn. Poisoned enemies cannot attack the source unit."
     },
     {
       "id": "venom+charge",
@@ -42,9 +43,11 @@
       "requiredTags": ["poison", "naval"],
       "effect": {
         "type": "contaminate",
-        "coastalDamage": 2
+        "coastalDamage": 2,
+        "contaminationDuration": 3,
+        "contaminationStackCap": 6
       },
-      "description": "Naval units with poison contaminate coastal hexes. Enemies on contaminated coast hexes take 2 poison damage/turn"
+      "description": "Naval units with poison contaminate coastal hexes for 3 turns. Enemies on contaminated coast hexes take 2 poison damage/turn. Stacks up to 6."
     },
     {
       "id": "venom+nature_healing",
@@ -53,9 +56,10 @@
       "requiredTags": ["poison", "druid"],
       "effect": {
         "type": "withering",
-        "healingReduction": 0.5
+        "healingReduction": 1.00,
+        "corruptionDamageNearEnemyHealer": 1
       },
-      "description": "Poisoned enemies heal less (50% healing reduction). Anti-healer"
+      "description": "Poisoned enemies cannot heal at all (100% healing reduction). Deals 1 corruption damage to any enemy healer attempting to heal a poisoned target."
     },
     {
       "id": "venom+river_stealth",
@@ -77,9 +81,10 @@
       "effect": {
         "type": "terrain_poison",
         "damagePerTurn": 2,
-        "terrainTypes": ["desert", "mountain"]
+        "terrainTypes": ["desert", "mountain"],
+        "poisonedInRoughTerrainCannotRetreat": true
       },
-      "description": "Camel units with venom apply poison through difficult terrain. Enemies in rough terrain near them take passive poison damage"
+      "description": "Camel units with venom apply poison through difficult terrain. Enemies in rough terrain near them take passive poison damage and cannot retreat."
     },
     {
       "id": "venom+slaving",
@@ -90,9 +95,10 @@
         "type": "poison_capture",
         "damagePerTurn": 3,
         "slaveDamageBonus": 0.25,
-        "slaveHealPenalty": 0.50
+        "slaveHealPenalty": 0.50,
+        "mercyKillBurst": { "stacks": 5, "radius": 1 }
       },
-      "description": "Captured units are poisoned and slowly weakened (3 damage/turn). Slave armies deal +25% damage but heal at half the normal rate"
+      "description": "Captured units are poisoned and slowly weakened (3 damage/turn). Slave armies deal +25% damage but heal at half the normal rate. Mercy-killing a captive triggers a 5-stack poison burst in 1-hex radius."
     },
     {
       "id": "venom+heavy_hitter",
@@ -101,9 +107,12 @@
       "requiredTags": ["poison", "heavy"],
       "effect": {
         "type": "heavy_poison",
-        "armorPiercing": 0.5
+        "armorPiercing": 0.50,
+        "armorPiercingPerStack": 0.25,
+        "armorPiercingMax": 1.00,
+        "stunOnFullPoison": 1
       },
-      "description": "Heavy strikes ignore 50% of enemy armor when attacking poisoned targets. Each poison stack increases heavy hit damage"
+      "description": "Heavy strikes ignore 50% of enemy armor when attacking poisoned targets. Each poison stack adds 25% armor piercing (cap 100%). Full poison = stun."
     },
     {
       "id": "venom+venom",
@@ -111,10 +120,11 @@
       "domains": ["venom", "venom"],
       "requiredTags": ["poison", "poison"],
       "effect": {
-        "type": "multiplier_stack",
-        "multiplier": 3
+        "type": "toxic_spread",
+        "transferStacksOnDeath": 1,
+        "transferRadius": 1
       },
-      "description": "Poison damage stacks multiplicatively: 2 poison sources = 3× damage, 3 sources = 6×"
+      "description": "When a poisoned enemy dies, poison transfers (1 stack) to all adjacent enemies. Cascading kills sweep formations."
     },
     {
       "id": "fortress+charge",
@@ -122,9 +132,10 @@
       "domains": ["fortress", "charge"],
       "requiredTags": ["fortress", "elephant"],
       "effect": {
-        "type": "charge_shield"
+        "type": "charge_shield",
+        "chargeAdjacentToFortressDamageBonus": 0.50
       },
-      "description": "Charging units adjacent to fortress units get a charge shield: first hit after charging deals 0 damage to the charger"
+      "description": "Charging units adjacent to fortress units get a charge shield: first hit after charging deals 0 damage to the charger. Charging adjacent to a fortress grants +50% damage bonus."
     },
     {
       "id": "fortress+hitrun",
@@ -133,9 +144,10 @@
       "requiredTags": ["fortress", "skirmish"],
       "effect": {
         "type": "dug_in",
-        "defenseBonus": 0.75
+        "defenseBonus": 0.75,
+        "dugInCounterDamageBonus": 0.50
       },
-      "description": "After hit-and-run retreat, the unit gains a 1-turn 'dug in' bonus: +75% defense until next action"
+      "description": "After hit-and-run retreat, the unit gains a 1-turn 'dug in' bonus: +75% defense until next action. Dug-in counter-attacks deal +50% damage."
     },
     {
       "id": "fortress+tidal_warfare",
@@ -143,11 +155,13 @@
       "domains": ["fortress", "tidal_warfare"],
       "requiredTags": ["fortress", "naval"],
       "effect": {
-        "type": "land_aura",
-        "defenseBonus": 0.30,
-        "radius": 1
+        "type": "bombardment",
+        "bombardmentRange": 3,
+        "bombardmentDamageMultiplier": 0.50,
+        "landAuraRadius": 2,
+        "landAuraDefenseBonus": 0.25
       },
-      "description": "Naval fortress units project a defense aura onto adjacent land hexes"
+      "description": "Ships bombard land targets within 3 hexes for 50% damage. Allied land units within 2 hexes gain +25% defense."
     },
     {
       "id": "fortress+nature_healing",
@@ -158,9 +172,11 @@
         "type": "extended_healing",
         "radius": 2,
         "selfHeal": 3,
-        "allyHeal": 3
+        "allyHeal": 3,
+        "countsAsCity": true,
+        "resourcePerTurn": 1
       },
-      "description": "Units with both fortress and healing create a 2-hex healing aura. The unit itself is immovable"
+      "description": "Units with both fortress and healing create a 2-hex healing aura. The unit counts as a city for defense purposes and generates 1 resource per turn."
     },
     {
       "id": "fortress+river_stealth",
@@ -169,9 +185,11 @@
       "requiredTags": ["fortress", "stealth"],
       "effect": {
         "type": "stealth_aura",
-        "revealRadius": 1
+        "revealRadius": 1,
+        "firstAttackCritMultiplier": 2.0,
+        "creepMovementHexes": 1
       },
-      "description": "Stealth fortress units are invisible until they attack or an enemy enters an adjacent hex"
+      "description": "Stealth fortress units are invisible until they attack or an enemy enters an adjacent hex. First attack from stealth has 2× critical multiplier. Can creep 1 hex while hidden."
     },
     {
       "id": "fortress+camel_adaptation",
@@ -179,11 +197,14 @@
       "domains": ["fortress", "camel_adaptation"],
       "requiredTags": ["fortress", "camel"],
       "effect": {
-        "type": "terrain_fortress",
-        "terrainTypes": ["desert"],
-        "defenseBonus": 0.30
+        "type": "mobile_stronghold",
+        "fortUpAvailable": true,
+        "fortUpDefenseBonus": 0.75,
+        "fortUpAuraRadius": 2,
+        "fortUpAlliedDefenseBonus": 0.25,
+        "decampFreeAction": true
       },
-      "description": "Camel fortress units ignore terrain penalties AND project a fortress aura on desert hexes"
+      "description": "Toggle Fort Up (+75% defense, 2-hex aura at +25% ally def) / Decamp (free action). Mobile fortress."
     },
     {
       "id": "fortress+slaving",
@@ -192,9 +213,11 @@
       "requiredTags": ["fortress", "capture"],
       "effect": {
         "type": "prison_fortress",
-        "defenseBonus": 0.50
+        "defenseBonus": 0.50,
+        "counterDamagePercentOfHpLost": 0.25,
+        "prisonerGarrisonBonus": 1
       },
-      "description": "Fortress units guarding slaves gain +50% defense. Captured units in fortress zones cannot escape"
+      "description": "Fortress units guarding slaves gain +50% defense. Counter-attack damage scales with HP lost (25%). Prisoners provide +1 garrison bonus."
     },
     {
       "id": "fortress+heavy_hitter",
@@ -203,9 +226,11 @@
       "requiredTags": ["fortress", "heavy"],
       "effect": {
         "type": "heavy_fortress",
-        "damageReflection": 0.25
+        "damageReflection": 0.25,
+        "reflectionScalesAt5Damage": 0.50,
+        "adjacentAllyKnockbackImmunity": true
       },
-      "description": "Heavy units in fortress formation reflect 25% damage back to attackers. They cannot be displaced"
+      "description": "Heavy units in fortress formation reflect 25% damage back to attackers (scaling to 50% at 5+ damage). Adjacent allies are immune to knockback."
     },
     {
       "id": "fortress+fortress",
@@ -213,10 +238,11 @@
       "domains": ["fortress", "fortress"],
       "requiredTags": ["fortress", "fortress"],
       "effect": {
-        "type": "aura_overlap",
-        "stackingBonus": 0.50
+        "type": "formation_wall",
+        "blocksEnemyMovement": true,
+        "rangedRangeReduction": 0.50
       },
-      "description": "Fortress aura stacks: overlapping auras multiply (+50% each instead of additive +30%)"
+      "description": "Two adjacent fortress units form an impassable line — enemies cannot move through hexes between them. Ranged attacks crossing the wall halve their range."
     },
     {
       "id": "charge+hitrun",
@@ -235,9 +261,11 @@
       "requiredTags": ["elephant", "naval"],
       "effect": {
         "type": "ram_attack",
-        "knockbackDistance": 1
+        "knockbackDistance": 1,
+        "ramDamageBonus": 0.75,
+        "randomDriftHexes": 2
       },
-      "description": "Naval charge: ships can ram enemy naval units, dealing massive damage and knocking them to an adjacent water hex"
+      "description": "Naval charge: ships can ram enemy naval units, dealing massive damage with +75% ram bonus and knocking them 1-2 hexes in a random drift direction."
     },
     {
       "id": "charge+nature_healing",
@@ -246,9 +274,10 @@
       "requiredTags": ["elephant", "druid"],
       "effect": {
         "type": "combat_healing",
-        "healPercent": 1.0
+        "healPercent": 1.0,
+        "chargeRestoresMovementPoints": 1
       },
-      "description": "Charging units adjacent to healing units regenerate 5 HP/turn. After a charge, the charger heals for 100% of the damage dealt"
+      "description": "Charging units adjacent to healing units regenerate after a charge. Successful charges restore 1 movement point."
     },
     {
       "id": "charge+river_stealth",
@@ -270,9 +299,10 @@
       "effect": {
         "type": "sandstorm",
         "aoeDamage": 2,
-        "accuracyDebuff": 0.25
+        "accuracyDebuff": 0.25,
+        "sandstormPersistTurns": 2
       },
-      "description": "Camel charge: camel units charge through desert terrain dealing AoE damage. Desert charges raise a sandstorm that gives -25% accuracy"
+      "description": "Camel charge: camel units charge through desert terrain dealing AoE damage. Desert charges raise a sandstorm that persists for 2 turns with -25% accuracy."
     },
     {
       "id": "charge+slaving",
@@ -292,9 +322,11 @@
       "requiredTags": ["elephant", "heavy"],
       "effect": {
         "type": "heavy_charge",
-        "stunDuration": 1
+        "stunDuration": 1,
+        "runUpDamagePerHex": 0.05,
+        "runUpDamageMax": 0.50
       },
-      "description": "Heavy charges deal massive knockback and stun enemies for 1 turn. Moving through enemy zones doesn't trigger opportunity attacks"
+      "description": "Heavy charges deal massive knockback and stun enemies for 1 turn. Each hex of run-up adds +5% damage (cap +50%)."
     },
     {
       "id": "charge+charge",
@@ -302,11 +334,12 @@
       "domains": ["charge", "charge"],
       "requiredTags": ["elephant", "elephant"],
       "effect": {
-        "type": "formation_crush",
-        "knockbackDistance": 2,
-        "stunDuration": 1
+        "type": "formation_pinball",
+        "collisionDamage": 4,
+        "stunDuration": 1,
+        "collisionTriggers": ["unit", "terrain_edge", "another_charge_unit"]
       },
-      "description": "Multiple charge units in formation: if 2+ charge units attack from adjacent hexes, knockback becomes a 2-hex push and stuns enemies for 1 turn"
+      "description": "Knockback victims collide with whatever's behind them for +4 damage and 1-turn stun."
     },
     {
       "id": "hitrun+tidal_warfare",
@@ -314,9 +347,12 @@
       "domains": ["hitrun", "tidal_warfare"],
       "requiredTags": ["skirmish", "naval"],
       "effect": {
-        "type": "impassable_retreat"
+        "type": "beach_raid",
+        "retreatToWaterRange": 2,
+        "landCannotPursue": true,
+        "attackDamageBonus": 0.25
       },
-      "description": "Naval hit-and-run: after attacking from water, ships retreat to a random adjacent water hex. Land units can't retaliate against naval raiders"
+      "description": "Attack from water with +25% damage. After attacking, retreat to any water within 2 hexes. Land units cannot pursue."
     },
     {
       "id": "hitrun+nature_healing",
@@ -324,10 +360,11 @@
       "domains": ["hitrun", "nature_healing"],
       "requiredTags": ["skirmish", "druid"],
       "effect": {
-        "type": "heal_on_retreat",
-        "healAmount": 3
+        "type": "vampiric_strike",
+        "healPercentOfDamage": 1.00,
+        "triggerOnHitRunOnly": true
       },
-      "description": "Units with hit-and-run heal for 3 HP when they retreat"
+      "description": "Hit-and-run attacks heal for 100% of damage dealt. Full vampiric lifesteal on retreat."
     },
     {
       "id": "hitrun+river_stealth",
@@ -345,9 +382,12 @@
       "domains": ["hitrun", "camel_adaptation"],
       "requiredTags": ["skirmish", "camel", "cavalry"],
       "effect": {
-        "type": "impassable_retreat"
+        "type": "ghost_pass",
+        "retreatThroughImpassable": true,
+        "movementBonusAfterImpassable": 1,
+        "stealthAfterImpassable": true
       },
-      "description": "Horse and Camel hit-and-run units can retreat through impassable terrain. They can chase them, but they'll retreat through the mountains you can't follow"
+      "description": "Retreat through impassable terrain. After passing through impassable, gain +1 movement and re-enter stealth."
     },
     {
       "id": "hitrun+slaving",
@@ -356,9 +396,11 @@
       "requiredTags": ["skirmish", "capture"],
       "effect": {
         "type": "capture_retreat",
-        "captureChance": 0.15
+        "captureChance": 0.15,
+        "captureChanceBelow25Hp": 0.40,
+        "instantRetreatWithCaptive": true
       },
-      "description": "Hit-and-run attacks have 15% chance to capture wounded enemies (below 50% HP). Captured units join your faction"
+      "description": "Hit-and-run attacks have 15% chance to capture wounded enemies (below 50% HP), rising to 40% below 25 HP. Instant retreat with captive."
     },
     {
       "id": "hitrun+heavy_hitter",
@@ -366,10 +408,11 @@
       "domains": ["hitrun", "heavy_hitter"],
       "requiredTags": ["skirmish", "heavy"],
       "effect": {
-        "type": "heavy_retreat",
-        "damageReduction": 0.30
+        "type": "fighting_retreat",
+        "freeOpportunityStrikeOnDisengage": true,
+        "strikeDamageMultiplier": 1.00
       },
-      "description": "Heavy units with hit-and-run take 30% less damage when retreating. They can retreat through enemy-occupied hexes"
+      "description": "Free opportunity strike at full damage when disengaging. Heavy skirmishers hit back on the way out."
     },
     {
       "id": "hitrun+hitrun",
@@ -377,10 +420,11 @@
       "domains": ["hitrun", "hitrun"],
       "requiredTags": ["skirmish", "skirmish"],
       "effect": {
-        "type": "swarm_speed",
-        "speedBonus": 1
+        "type": "formation_focus",
+        "perAttackerDamageBonus": 0.30,
+        "ignoresDefenseBonuses": true
       },
-      "description": "Units with hit-and-run that retreat to a hex adjacent to another hit-and-run unit gain +1 movement on their next turn"
+      "description": "When 2+ hitrun units attack the same target in one turn, each subsequent attacker deals +30% damage and ignores defender's defense bonuses."
     },
     {
       "id": "tidal_warfare+nature_healing",
@@ -388,12 +432,12 @@
       "domains": ["tidal_warfare", "nature_healing"],
       "requiredTags": ["naval", "druid"],
       "effect": {
-        "type": "extended_healing",
-        "radius": 2,
-        "selfHeal": 2,
-        "allyHeal": 2
+        "type": "tidal_cleanse",
+        "auraRadius": 2,
+        "healPerTurn": 4,
+        "clearedDebuffs": ["poison", "stun", "slow"]
       },
-      "description": "Naval units with healing project a 2-hex healing aura from water onto adjacent land. Friendly land units near friendly ships heal 2 HP/turn"
+      "description": "2-hex aura heals 4 HP/turn. Cleanses poison, stun, and slow from allies in range each turn."
     },
     {
       "id": "tidal_warfare+river_stealth",
@@ -402,9 +446,11 @@
       "requiredTags": ["naval", "stealth"],
       "effect": {
         "type": "stealth_aura",
-        "revealRadius": 0
+        "revealRadius": 0,
+        "firstAttackAfterLandingDamageBonus": 0.50,
+        "transportedTroopsStealth": true
       },
-      "description": "Stealth naval units can make amphibious landings without breaking stealth"
+      "description": "Stealth naval units can make amphibious landings without breaking stealth. First attack after landing deals +50% damage. Transported troops gain stealth."
     },
     {
       "id": "tidal_warfare+camel_adaptation",
@@ -412,11 +458,11 @@
       "domains": ["tidal_warfare", "camel_adaptation"],
       "requiredTags": ["naval", "camel"],
       "effect": {
-        "type": "coastal_nomad",
-        "defenseBonus": 0.25,
-        "speedBonus": 1
+        "type": "amphibious",
+        "fullMovementTerrains": ["coast", "desert", "shallow_water"],
+        "movementBonus": 1
       },
-      "description": "Camel units adjacent to water/coast hexes gain +25% defense and +1 movement. They can patrol both desert and shoreline equally"
+      "description": "Full movement on coast, desert, and shallow water. +1 movement bonus in all three terrains."
     },
     {
       "id": "tidal_warfare+slaving",
@@ -425,9 +471,12 @@
       "requiredTags": ["naval", "capture"],
       "effect": {
         "type": "naval_capture",
+        "captureRangeFromWater": 1,
+        "instantEmbark": true,
+        "deliveryDoubleCount": true,
         "coastalCaptureBonus": 0.30
       },
-      "description": "Naval units gain +30% capture chance on coastal hexes. Captured units can be immediately put to work on ships"
+      "description": "Capture from 1 hex away on water. Instant embark captured units. Delivering slaves to a city counts double."
     },
     {
       "id": "tidal_warfare+heavy_hitter",
@@ -436,9 +485,11 @@
       "requiredTags": ["naval", "heavy"],
       "effect": {
         "type": "heavy_naval",
+        "damageBonus": 0.50,
+        "treatCoastAsWater": true,
         "ramDamage": 2
       },
-      "description": "Heavy naval units deal massive ram damage. Ships with heavy_hitter ignore enemy armor when ramming"
+      "description": "+50% damage on water. Treats coast hexes as water for movement. Ram attacks deal 2 bonus damage."
     },
     {
       "id": "tidal_warfare+tidal_warfare",
@@ -446,10 +497,12 @@
       "domains": ["tidal_warfare", "tidal_warfare"],
       "requiredTags": ["naval", "naval"],
       "effect": {
-        "type": "aura_overlap",
-        "stackingBonus": 0.20
+        "type": "formation_chain",
+        "chainRange": 2,
+        "perChainShipBonus": 1,
+        "maxChainBonus": 4
       },
-      "description": "Multiple naval units in formation project an extended control zone: all enemy naval units within 3 hexes of any ship in the fleet get -20% attack"
+      "description": "Naval units within 2 hexes chain attacks — when one ship attacks, every chained ship contributes +1 damage to that attack (cap +4)."
     },
     {
       "id": "nature_healing+river_stealth",
@@ -457,9 +510,10 @@
       "domains": ["nature_healing", "river_stealth"],
       "requiredTags": ["druid", "stealth"],
       "effect": {
-        "type": "stealth_healing"
+        "type": "stealth_aura_share",
+        "shareStealthRadius": 1
       },
-      "description": "Stealth healing units can heal while stealthed without breaking stealth"
+      "description": "Adjacent allies share stealth state. If this unit is stealthed, adjacent allies gain stealth too."
     },
     {
       "id": "nature_healing+camel_adaptation",
@@ -467,9 +521,11 @@
       "domains": ["nature_healing", "camel_adaptation"],
       "requiredTags": ["druid", "camel"],
       "effect": {
-        "type": "oasis"
+        "type": "oasis",
+        "fullHpRestoreOnTurnEnd": true,
+        "oasisCooldownTurns": 5
       },
-      "description": "Camel units with healing create an 'oasis' effect: the hex they occupy and all adjacent hexes count as neutral terrain for movement purposes"
+      "description": "Camel units with healing create an 'oasis' effect: the hex they occupy and all adjacent hexes count as neutral terrain for movement purposes. Units at full HP are fully restored at turn end (5-turn cooldown)."
     },
     {
       "id": "nature_healing+slaving",
@@ -477,10 +533,12 @@
       "domains": ["nature_healing", "slaving"],
       "requiredTags": ["druid", "capture"],
       "effect": {
-        "type": "slave_healing",
-        "slaveHeal": 2
+        "type": "slave_economy",
+        "slaveHealPerTurn": 4,
+        "fullHpResourceBonus": 1,
+        "requiresAdjacentHealer": true
       },
-      "description": "Slave units regenerate 2 HP/turn but deal 25% less damage. Slaves near healing units heal at double rate"
+      "description": "Slaves heal 4 HP/turn. Slaves at full HP produce +1 resource. Requires adjacent healer unit."
     },
     {
       "id": "nature_healing+heavy_hitter",
@@ -489,9 +547,10 @@
       "requiredTags": ["druid", "heavy"],
       "effect": {
         "type": "heavy_regen",
-        "regenPercent": 0.30
+        "regenPercent": 0.30,
+        "killHealPercentMaxHp": 0.50
       },
-      "description": "Heavy units regenerate 30% of damage dealt as HP. Heavy_hitter + nature_healing = sustain in prolonged fights"
+      "description": "Heavy units regenerate 30% of damage dealt as HP. Killing an enemy heals 50% of max HP."
     },
     {
       "id": "nature_healing+nature_healing",
@@ -499,12 +558,15 @@
       "domains": ["nature_healing", "nature_healing"],
       "requiredTags": ["druid", "druid"],
       "effect": {
-        "type": "extended_healing",
-        "radius": 3,
-        "selfHeal": 6,
-        "allyHeal": 4
+        "type": "bloom_pulse",
+        "passiveAllyHeal": 4,
+        "passiveSelfHeal": 6,
+        "auraRadius": 3,
+        "pulseTurnInterval": 3,
+        "pulseInstantHeal": 8,
+        "pulseMovementBonus": 1
       },
-      "description": "Units with double healing sources create a 3-hex healing aura. All friendly units within 3 hexes heal 4 HP/turn. The unit itself regenerates 6 HP/turn"
+      "description": "3-hex aura, +4/+6 HP/turn. Every 3rd turn, instantly heals all allies in radius for +8 HP and grants them +1 movement."
     },
     {
       "id": "river_stealth+camel_adaptation",
@@ -513,9 +575,11 @@
       "requiredTags": ["stealth", "camel"],
       "effect": {
         "type": "permanent_stealth_terrain",
-        "terrainTypes": ["desert"]
+        "terrainTypes": ["desert"],
+        "phantomDecoyOnDesertMove": true,
+        "decoyDuration": 2
       },
-      "description": "Camel stealth units in desert terrain are permanently stealthed. Desert + stealth = you literally cannot see them coming"
+      "description": "Camel stealth units in desert terrain are permanently stealthed. Moving in desert spawns a phantom decoy that lasts 2 turns."
     },
     {
       "id": "river_stealth+slaving",
@@ -524,9 +588,11 @@
       "requiredTags": ["stealth", "capture"],
       "effect": {
         "type": "stealth_capture",
-        "captureChance": 0.40
+        "captureChance": 0.40,
+        "silentCapture": true,
+        "freeMovementAfterCapture": 1
       },
-      "description": "Stealth attacks have 40% chance to capture enemies instead of killing them. Captured units don't alert nearby enemies"
+      "description": "Stealth attacks have 40% chance to capture enemies instead of killing them. Silent capture doesn't alert nearby enemies. Gain 1 free movement hex after capture."
     },
     {
       "id": "river_stealth+heavy_hitter",
@@ -546,9 +612,12 @@
       "domains": ["river_stealth", "river_stealth"],
       "requiredTags": ["stealth", "stealth"],
       "effect": {
-        "type": "shadow_network"
+        "type": "position_swap",
+        "swapRange": 3,
+        "swapsPerTurn": 1,
+        "killDoesNotRevealOthers": true
       },
-      "description": "Multiple stealth units within 3 hexes of each other share stealth state. Killing one reveals nothing about the others"
+      "description": "Stealth units within 3 hexes can swap positions as a free action once per turn. Killing one doesn't reveal others."
     },
     {
       "id": "camel_adaptation+slaving",
@@ -556,10 +625,12 @@
       "domains": ["camel_adaptation", "slaving"],
       "requiredTags": ["camel", "capture"],
       "effect": {
-        "type": "terrain_slave",
-        "speedBonus": 1
+        "type": "caravan_passenger",
+        "carryCapturedUnits": true,
+        "releaseAnywhereOnPath": true,
+        "instantSlaveOnHomeDelivery": true
       },
-      "description": "Slave caravans move 1 hex faster across desert terrain. Camel slaves can traverse any desert without penalty"
+      "description": "Captured units ride as passengers; the raider may release them anywhere along their path as instant slaves at home cities."
     },
     {
       "id": "camel_adaptation+heavy_hitter",
@@ -569,9 +640,10 @@
       "effect": {
         "type": "sandstorm_aura",
         "auraRadius": 2,
-        "enemyAccuracyDebuff": 0.30
+        "enemyAccuracyDebuff": 0.20,
+        "appliesEverywhere": true
       },
-      "description": "Heavy camel units project a sandstorm aura (2 hex radius): enemies in the aura suffer -30% accuracy. They dominate both desert and coastal terrain"
+      "description": "2-hex sandstorm aura at -20% accuracy. Applies everywhere, not just desert."
     },
     {
       "id": "camel_adaptation+camel_adaptation",
@@ -579,9 +651,12 @@
       "domains": ["camel_adaptation", "camel_adaptation"],
       "requiredTags": ["camel", "cavalry"],
       "effect": {
-        "type": "nomad_network"
+        "type": "caravan_relay",
+        "shareVisionRange": 3,
+        "relayMarchEnabled": true,
+        "relayFreeMovementHexes": 1
       },
-      "description": "Horse and Camel units within 3 hexes of each other share terrain ignore: if one unit can traverse a hex type, all units in the network can"
+      "description": "Camel units within 3 hexes share vision. Once per turn, one moves full distance, then any network member makes a free 1-hex move into the vacated hex."
     },
     {
       "id": "slaving+slaving",
@@ -589,11 +664,13 @@
       "domains": ["slaving", "slaving"],
       "requiredTags": ["capture", "capture"],
       "effect": {
-        "type": "slave_army",
-        "slaveDamageBonus": 0.25,
-        "slaveDefensePenalty": 0.15
+        "type": "slave_horde",
+        "damageBonus": 0.50,
+        "defensePenalty": 0.30,
+        "ignoreZocAtGroupSize": 3,
+        "rageOnAdjacentSlaveDeath": { "movementBonus": 1, "duration": 1 }
       },
-      "description": "Multiple slave units fighting together gain +25% attack but -15% defense. Quantity over quality"
+      "description": "+50% damage, -30% defense. Groups of 3+ ignore ZoC. When one slave dies, adjacent slaves gain +1 movement that turn."
     },
     {
       "id": "slaving+heavy_hitter",
@@ -602,9 +679,11 @@
       "requiredTags": ["capture", "heavy"],
       "effect": {
         "type": "slave_coercion",
-        "damageBonus": 0.50
+        "damageBonus": 0.50,
+        "slaveAttackRangeBonusAdjacentOverseer": 1,
+        "executeRageBonus": { "damage": 0.50, "duration": 1, "radius": 1 }
       },
-      "description": "Heavy units commanding slaves increase slave damage by 50%. Slaves near heavy enforcers cannot rout"
+      "description": "Heavy units commanding slaves increase slave damage by 50%. Slaves adjacent to an overseer gain +1 attack range. Executing an enemy triggers rage in nearby slaves."
     },
     {
       "id": "heavy_hitter+heavy_hitter",
@@ -612,10 +691,11 @@
       "domains": ["heavy_hitter", "heavy_hitter"],
       "requiredTags": ["heavy", "heavy"],
       "effect": {
-        "type": "heavy_mass",
-        "knockbackDistance": 1
+        "type": "formation_pinball",
+        "collisionDamage": 4,
+        "stunDuration": 1
       },
-      "description": "Heavy units fighting together knock back enemies 1 hex on each hit. The front line is an immovable wall of steel"
+      "description": "Knockback persists; victims colliding with other heavy units or terrain edges take +4 damage and 1-turn stun."
     }
   ]
 }

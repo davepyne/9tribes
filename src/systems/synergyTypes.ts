@@ -32,27 +32,27 @@ export interface EmergentRuleConfig {
 }
 
 export type SynergyEffect =
-  | { type: 'poison_aura'; damagePerTurn: number; radius: number }
-  | { type: 'charge_shield' }
-  | { type: 'dug_in'; defenseBonus: number }
+  | { type: 'poison_aura'; damagePerTurn: number; radius: number; poisonedCannotAttackSource?: boolean }
+  | { type: 'charge_shield'; chargeAdjacentToFortressDamageBonus?: number }
+  | { type: 'dug_in'; defenseBonus: number; dugInCounterDamageBonus?: number }
   | { type: 'land_aura'; defenseBonus: number; radius: number }
-  | { type: 'extended_healing'; radius: number; selfHeal: number; allyHeal: number }
-  | { type: 'stealth_aura'; revealRadius: number }
+  | { type: 'extended_healing'; radius: number; selfHeal: number; allyHeal: number; countsAsCity?: boolean; resourcePerTurn?: number }
+  | { type: 'stealth_aura'; revealRadius: number; firstAttackCritMultiplier?: number; creepMovementHexes?: number }
   | { type: 'terrain_fortress'; terrainTypes: string[]; defenseBonus: number }
-  | { type: 'ram_attack'; knockbackDistance: number }
-  | { type: 'combat_healing'; healPercent: number }
-  | { type: 'sandstorm'; aoeDamage: number; accuracyDebuff: number }
+  | { type: 'ram_attack'; knockbackDistance: number; ramDamageBonus?: number; randomDriftHexes?: number }
+  | { type: 'combat_healing'; healPercent: number; chargeRestoresMovementPoints?: number }
+  | { type: 'sandstorm'; aoeDamage: number; accuracyDebuff: number; sandstormPersistTurns?: number }
   | { type: 'double_charge' }
   | { type: 'poison_trap'; damagePerTurn: number; slowAmount: number }
-  | { type: 'contaminate'; coastalDamage: number }
-  | { type: 'withering'; healingReduction: number }
+  | { type: 'contaminate'; coastalDamage: number; contaminationDuration?: number; contaminationStackCap?: number }
+  | { type: 'withering'; healingReduction: number; corruptionDamageNearEnemyHealer?: number }
   | { type: 'stealth_healing' }
-  | { type: 'terrain_poison'; damagePerTurn: number; terrainTypes: string[] }
+  | { type: 'terrain_poison'; damagePerTurn: number; terrainTypes: string[]; poisonedInRoughTerrainCannotRetreat?: boolean }
   | { type: 'multiplier_stack'; multiplier: number }
   | { type: 'aura_overlap'; stackingBonus: number }
   | { type: 'stealth_recharge' }
-  | { type: 'oasis' }
-  | { type: 'permanent_stealth_terrain'; terrainTypes: string[] }
+  | { type: 'oasis'; fullHpRestoreOnTurnEnd?: boolean; oasisCooldownTurns?: number }
+  | { type: 'permanent_stealth_terrain'; terrainTypes: string[]; phantomDecoyOnDesertMove?: boolean; decoyDuration?: number }
   | { type: 'shadow_network' }
   | { type: 'nomad_network' }
   | { type: 'heal_on_retreat'; healAmount: number }
@@ -60,27 +60,48 @@ export type SynergyEffect =
   | { type: 'swarm_speed'; speedBonus: number }
   | { type: 'formation_crush'; knockbackDistance: number; stunDuration: number }
   | { type: 'coastal_nomad'; defenseBonus: number; speedBonus: number }
-  | { type: 'sandstorm_aura'; auraRadius: number; enemyAccuracyDebuff: number }
-  | { type: 'poison_capture'; damagePerTurn: number; slaveDamageBonus: number; slaveHealPenalty: number }
-  | { type: 'heavy_poison'; armorPiercing: number }
-  | { type: 'prison_fortress'; defenseBonus: number }
-  | { type: 'heavy_fortress'; damageReflection: number }
+  | { type: 'sandstorm_aura'; auraRadius: number; enemyAccuracyDebuff: number; appliesEverywhere?: boolean }
+  | { type: 'poison_capture'; damagePerTurn: number; slaveDamageBonus: number; slaveHealPenalty: number; mercyKillBurst?: { stacks: number; radius: number } }
+  | { type: 'heavy_poison'; armorPiercing: number; armorPiercingPerStack?: number; armorPiercingMax?: number; stunOnFullPoison?: number }
+  | { type: 'prison_fortress'; defenseBonus: number; counterDamagePercentOfHpLost?: number; prisonerGarrisonBonus?: number }
+  | { type: 'heavy_fortress'; damageReflection: number; reflectionScalesAt5Damage?: number; adjacentAllyKnockbackImmunity?: boolean }
   | { type: 'capture_charge'; knockbackDistance: number }
-  | { type: 'heavy_charge'; stunDuration: number }
-  | { type: 'capture_retreat'; captureChance: number }
+  | { type: 'heavy_charge'; stunDuration: number; runUpDamagePerHex?: number; runUpDamageMax?: number }
+  | { type: 'capture_retreat'; captureChance: number; captureChanceBelow25Hp?: number; instantRetreatWithCaptive?: boolean }
   | { type: 'heavy_retreat'; damageReduction: number }
-  | { type: 'naval_capture'; coastalCaptureBonus: number }
-  | { type: 'heavy_naval'; ramDamage: number }
+  | { type: 'naval_capture'; coastalCaptureBonus: number; captureRangeFromWater?: number; instantEmbark?: boolean; deliveryDoubleCount?: boolean }
+  | { type: 'heavy_naval'; ramDamage: number; damageBonus?: number; treatCoastAsWater?: boolean }
   | { type: 'slave_healing'; slaveHeal: number }
-  | { type: 'heavy_regen'; regenPercent: number }
-  | { type: 'stealth_capture'; captureChance: number }
+  | { type: 'heavy_regen'; regenPercent: number; killHealPercentMaxHp?: number }
+  | { type: 'stealth_capture'; captureChance: number; silentCapture?: boolean; freeMovementAfterCapture?: number }
   | { type: 'armor_shred'; armorPiercing: number; permanent: boolean }
   | { type: 'lethal_ambush'; poisonStacks: number; actionPointCost: number }
   | { type: 'ambush_charge'; damageBonus: number; revealUntilNextTurn: boolean }
   | { type: 'terrain_slave'; speedBonus: number }
   | { type: 'slave_army'; slaveDamageBonus: number; slaveDefensePenalty: number }
-  | { type: 'slave_coercion'; damageBonus: number }
-  | { type: 'heavy_mass'; knockbackDistance: number };
+  | { type: 'slave_coercion'; damageBonus: number; slaveAttackRangeBonusAdjacentOverseer?: number; executeRageBonus?: { damage: number; duration: number; radius: number } }
+  | { type: 'heavy_mass'; knockbackDistance: number }
+  // Phase 4-6 new pair synergy effect types
+  | { type: 'toxic_spread'; transferStacksOnDeath: number; transferRadius: number }
+  | { type: 'formation_wall'; blocksEnemyMovement: boolean; rangedRangeReduction: number }
+  | { type: 'formation_pinball'; collisionDamage: number; stunDuration: number; collisionTriggers?: string[] }
+  | { type: 'formation_focus'; perAttackerDamageBonus: number; ignoresDefenseBonuses: boolean }
+  | { type: 'formation_chain'; chainRange: number; perChainShipBonus: number; maxChainBonus: number }
+  | { type: 'bloom_pulse'; passiveAllyHeal: number; passiveSelfHeal: number; auraRadius: number; pulseTurnInterval: number; pulseInstantHeal: number; pulseMovementBonus: number }
+  | { type: 'position_swap'; swapRange: number; swapsPerTurn: number; killDoesNotRevealOthers: boolean }
+  | { type: 'caravan_relay'; shareVisionRange: number; relayMarchEnabled: boolean; relayFreeMovementHexes: number }
+  | { type: 'slave_horde'; damageBonus: number; defensePenalty: number; ignoreZocAtGroupSize: number; rageOnAdjacentSlaveDeath: { movementBonus: number; duration: number } }
+  | { type: 'caravan_passenger'; carryCapturedUnits: boolean; releaseAnywhereOnPath: boolean; instantSlaveOnHomeDelivery: boolean }
+  | { type: 'bombardment'; bombardmentRange: number; bombardmentDamageMultiplier: number; landAuraRadius: number; landAuraDefenseBonus: number }
+  | { type: 'mobile_stronghold'; fortUpAvailable: boolean; fortUpDefenseBonus: number; fortUpAuraRadius: number; fortUpAlliedDefenseBonus: number; decampFreeAction: boolean }
+  | { type: 'beach_raid'; retreatToWaterRange: number; landCannotPursue: boolean; attackDamageBonus: number }
+  | { type: 'vampiric_strike'; healPercentOfDamage: number; triggerOnHitRunOnly: boolean }
+  | { type: 'ghost_pass'; retreatThroughImpassable: boolean; movementBonusAfterImpassable: number; stealthAfterImpassable: boolean }
+  | { type: 'fighting_retreat'; freeOpportunityStrikeOnDisengage: boolean; strikeDamageMultiplier: number }
+  | { type: 'tidal_cleanse'; auraRadius: number; healPerTurn: number; clearedDebuffs: string[] }
+  | { type: 'amphibious'; fullMovementTerrains: string[]; movementBonus: number }
+  | { type: 'stealth_aura_share'; shareStealthRadius: number }
+  | { type: 'slave_economy'; slaveHealPerTurn: number; fullHpResourceBonus: number; requiresAdjacentHealer: boolean };
 
 export type EmergentEffect =
   // Terrain Lord (was terrain_rider/terrain_charge)
@@ -227,6 +248,43 @@ export interface SynergyCombatResult {
   multiplierStackValue: number;
   dugInDefense: number;
   auraOverlapDefense: number;
+  // Phase 4-6 pair result fields
+  toxicSpreadTransferRadius: number;
+  toxicSpreadTransferStacks: number;
+  formationWallActive: boolean;
+  formationWallRangedReduction: number;
+  formationPinballCollisionDamage: number;
+  formationFocusBonus: number;
+  formationFocusIgnoresDefense: boolean;
+  formationChainBonus: number;
+  bloomPulseHeal: number;
+  bloomPulseSelfHeal: number;
+  bloomPulseAuraRadius: number;
+  bloomPulseMovementBonus: number;
+  positionSwapAvailable: boolean;
+  caravanRelayVisionRange: number;
+  slaveHordeDamageBonus: number;
+  slaveHordeDefensePenalty: number;
+  slaveHordeRageTriggered: boolean;
+  bombardmentRange: number;
+  bombardmentDamageMultiplier: number;
+  bombardmentLandAuraDefense: number;
+  mobileStrongholdFortUp: boolean;
+  mobileStrongholdDefenseBonus: number;
+  mobileStrongholdAlliedDefenseBonus: number;
+  beachRaidDamageBonus: number;
+  beachRaidRetreatToWater: boolean;
+  vampiricStrikeHealPercent: number;
+  ghostPassActive: boolean;
+  fightingRetreatFreeStrike: boolean;
+  fightingRetreatDamageMultiplier: number;
+  tidalCleanseHealPerTurn: number;
+  tidalCleanseClearedDebuffs: string[];
+  amphibiousMovementBonus: number;
+  stealthAuraShareRadius: number;
+  slaveEconomyHealPerTurn: number;
+  slaveEconomyResourceBonus: number;
+  caravanPassengerActive: boolean;
 }
 
 export interface HealingContext {

@@ -102,6 +102,43 @@ function makeEmptyResult(): SynergyCombatResult {
     multiplierStackValue: 0,
     dugInDefense: 0,
     auraOverlapDefense: 0,
+    // Phase 4-6 pair result fields
+    toxicSpreadTransferRadius: 0,
+    toxicSpreadTransferStacks: 0,
+    formationWallActive: false,
+    formationWallRangedReduction: 0,
+    formationPinballCollisionDamage: 0,
+    formationFocusBonus: 0,
+    formationFocusIgnoresDefense: false,
+    formationChainBonus: 0,
+    bloomPulseHeal: 0,
+    bloomPulseSelfHeal: 0,
+    bloomPulseAuraRadius: 0,
+    bloomPulseMovementBonus: 0,
+    positionSwapAvailable: false,
+    caravanRelayVisionRange: 0,
+    slaveHordeDamageBonus: 0,
+    slaveHordeDefensePenalty: 0,
+    slaveHordeRageTriggered: false,
+    bombardmentRange: 0,
+    bombardmentDamageMultiplier: 0,
+    bombardmentLandAuraDefense: 0,
+    mobileStrongholdFortUp: false,
+    mobileStrongholdDefenseBonus: 0,
+    mobileStrongholdAlliedDefenseBonus: 0,
+    beachRaidDamageBonus: 0,
+    beachRaidRetreatToWater: false,
+    vampiricStrikeHealPercent: 0,
+    ghostPassActive: false,
+    fightingRetreatFreeStrike: false,
+    fightingRetreatDamageMultiplier: 0,
+    tidalCleanseHealPerTurn: 0,
+    tidalCleanseClearedDebuffs: [],
+    amphibiousMovementBonus: 0,
+    stealthAuraShareRadius: 0,
+    slaveEconomyHealPerTurn: 0,
+    slaveEconomyResourceBonus: 0,
+    caravanPassengerActive: false,
   };
 }
 
@@ -443,6 +480,156 @@ const synergyEffectHandlers = new Map<string, EffectHandler>([
     result.knockbackDistance = Math.max(result.knockbackDistance, e.knockbackDistance);
     result.heavyMassStacks += 1;
     result.additionalEffects.push(`heavy_mass_stacks_${result.heavyMassStacks}`);
+  }],
+
+  // Phase 4-6 new pair synergy handlers
+  ['toxic_spread', (effect, _ctx, result) => {
+    const e = effect as { transferStacksOnDeath: number; transferRadius: number };
+    result.toxicSpreadTransferStacks = e.transferStacksOnDeath;
+    result.toxicSpreadTransferRadius = e.transferRadius;
+    result.additionalEffects.push(`toxic_spread_stacks_${e.transferStacksOnDeath}_radius_${e.transferRadius}`);
+  }],
+
+  ['formation_wall', (effect, _ctx, result) => {
+    const e = effect as { blocksEnemyMovement: boolean; rangedRangeReduction: number };
+    result.formationWallActive = e.blocksEnemyMovement;
+    result.formationWallRangedReduction = e.rangedRangeReduction;
+    result.additionalEffects.push('formation_wall');
+  }],
+
+  ['formation_pinball', (effect, _ctx, result) => {
+    const e = effect as { collisionDamage: number; stunDuration: number; collisionTriggers?: string[] };
+    result.formationPinballCollisionDamage = e.collisionDamage;
+    result.stunDuration = Math.max(result.stunDuration, e.stunDuration);
+    result.additionalEffects.push(`formation_pinball_damage_${e.collisionDamage}`);
+  }],
+
+  ['formation_focus', (effect, _ctx, result) => {
+    const e = effect as { perAttackerDamageBonus: number; ignoresDefenseBonuses: boolean };
+    result.formationFocusBonus = e.perAttackerDamageBonus;
+    result.formationFocusIgnoresDefense = e.ignoresDefenseBonuses;
+    result.damage = Math.floor(result.damage * (1 + e.perAttackerDamageBonus));
+    result.additionalEffects.push(`formation_focus_${e.perAttackerDamageBonus}`);
+  }],
+
+  ['formation_chain', (effect, _ctx, result) => {
+    const e = effect as { chainRange: number; perChainShipBonus: number; maxChainBonus: number };
+    result.formationChainBonus = e.perChainShipBonus;
+    result.additionalEffects.push(`formation_chain_${e.perChainShipBonus}_cap_${e.maxChainBonus}`);
+  }],
+
+  ['bloom_pulse', (effect, _ctx, result) => {
+    const e = effect as { passiveAllyHeal: number; passiveSelfHeal: number; auraRadius: number; pulseTurnInterval: number; pulseInstantHeal: number; pulseMovementBonus: number };
+    result.bloomPulseHeal = e.passiveAllyHeal;
+    result.bloomPulseSelfHeal = e.passiveSelfHeal;
+    result.bloomPulseAuraRadius = e.auraRadius;
+    result.bloomPulseMovementBonus = e.pulseMovementBonus;
+    result.additionalEffects.push(`bloom_pulse_heal_${e.passiveAllyHeal}_radius_${e.auraRadius}`);
+  }],
+
+  ['position_swap', (effect, _ctx, result) => {
+    const e = effect as { swapRange: number; swapsPerTurn: number; killDoesNotRevealOthers: boolean };
+    result.positionSwapAvailable = true;
+    result.additionalEffects.push(`position_swap_range_${e.swapRange}`);
+  }],
+
+  ['caravan_relay', (effect, _ctx, result) => {
+    const e = effect as { shareVisionRange: number; relayMarchEnabled: boolean; relayFreeMovementHexes: number };
+    result.caravanRelayVisionRange = e.shareVisionRange;
+    result.additionalEffects.push(`caravan_relay_vision_${e.shareVisionRange}`);
+  }],
+
+  ['slave_horde', (effect, _ctx, result) => {
+    const e = effect as { damageBonus: number; defensePenalty: number; ignoreZocAtGroupSize: number; rageOnAdjacentSlaveDeath: { movementBonus: number; duration: number } };
+    result.slaveHordeDamageBonus = e.damageBonus;
+    result.slaveHordeDefensePenalty = e.defensePenalty;
+    result.damage = Math.floor(result.damage * (1 + e.damageBonus));
+    result.defense = Math.max(0, result.defense - e.defensePenalty);
+    result.additionalEffects.push(`slave_horde_damage_${e.damageBonus}`);
+  }],
+
+  ['caravan_passenger', (effect, _ctx, result) => {
+    const e = effect as { carryCapturedUnits: boolean; releaseAnywhereOnPath: boolean; instantSlaveOnHomeDelivery: boolean };
+    result.caravanPassengerActive = e.carryCapturedUnits;
+    result.additionalEffects.push('caravan_passenger');
+  }],
+
+  ['bombardment', (effect, _ctx, result) => {
+    const e = effect as { bombardmentRange: number; bombardmentDamageMultiplier: number; landAuraRadius: number; landAuraDefenseBonus: number };
+    result.bombardmentRange = e.bombardmentRange;
+    result.bombardmentDamageMultiplier = e.bombardmentDamageMultiplier;
+    result.bombardmentLandAuraDefense = e.landAuraDefenseBonus;
+    result.defense += e.landAuraDefenseBonus;
+    result.additionalEffects.push(`bombardment_range_${e.bombardmentRange}`);
+  }],
+
+  ['mobile_stronghold', (effect, _ctx, result) => {
+    const e = effect as { fortUpAvailable: boolean; fortUpDefenseBonus: number; fortUpAuraRadius: number; fortUpAlliedDefenseBonus: number; decampFreeAction: boolean };
+    result.mobileStrongholdFortUp = e.fortUpAvailable;
+    result.mobileStrongholdDefenseBonus = e.fortUpDefenseBonus;
+    result.mobileStrongholdAlliedDefenseBonus = e.fortUpAlliedDefenseBonus;
+    result.defense += e.fortUpDefenseBonus;
+    result.antiDisplacement = true;
+    result.additionalEffects.push(`mobile_stronghold_def_${e.fortUpDefenseBonus}`);
+  }],
+
+  ['beach_raid', (effect, _ctx, result) => {
+    const e = effect as { retreatToWaterRange: number; landCannotPursue: boolean; attackDamageBonus: number };
+    result.beachRaidDamageBonus = e.attackDamageBonus;
+    result.beachRaidRetreatToWater = e.retreatToWaterRange > 0;
+    result.damage = Math.floor(result.damage * (1 + e.attackDamageBonus));
+    result.additionalEffects.push(`beach_raid_damage_${e.attackDamageBonus}`);
+  }],
+
+  ['vampiric_strike', (effect, context, result) => {
+    const e = effect as { healPercentOfDamage: number; triggerOnHitRunOnly: boolean };
+    result.vampiricStrikeHealPercent = e.healPercentOfDamage;
+    if (context.isRetreat || !e.triggerOnHitRunOnly) {
+      result.additionalEffects.push(`vampiric_strike_heal_${e.healPercentOfDamage}`);
+    }
+  }],
+
+  ['ghost_pass', (effect, context, result) => {
+    const e = effect as { retreatThroughImpassable: boolean; movementBonusAfterImpassable: number; stealthAfterImpassable: boolean };
+    if (context.isRetreat) {
+      result.ghostPassActive = true;
+      result.additionalEffects.push('ghost_pass');
+    }
+  }],
+
+  ['fighting_retreat', (effect, context, result) => {
+    const e = effect as { freeOpportunityStrikeOnDisengage: boolean; strikeDamageMultiplier: number };
+    if (context.isRetreat) {
+      result.fightingRetreatFreeStrike = e.freeOpportunityStrikeOnDisengage;
+      result.fightingRetreatDamageMultiplier = e.strikeDamageMultiplier;
+      result.additionalEffects.push('fighting_retreat');
+    }
+  }],
+
+  ['tidal_cleanse', (effect, _ctx, result) => {
+    const e = effect as { auraRadius: number; healPerTurn: number; clearedDebuffs: string[] };
+    result.tidalCleanseHealPerTurn = e.healPerTurn;
+    result.tidalCleanseClearedDebuffs = e.clearedDebuffs;
+    result.additionalEffects.push(`tidal_cleanse_heal_${e.healPerTurn}`);
+  }],
+
+  ['amphibious', (effect, _ctx, result) => {
+    const e = effect as { fullMovementTerrains: string[]; movementBonus: number };
+    result.amphibiousMovementBonus = e.movementBonus;
+    result.additionalEffects.push(`amphibious_bonus_${e.movementBonus}`);
+  }],
+
+  ['stealth_aura_share', (effect, _ctx, result) => {
+    const e = effect as { shareStealthRadius: number };
+    result.stealthAuraShareRadius = e.shareStealthRadius;
+    result.additionalEffects.push(`stealth_aura_share_${e.shareStealthRadius}`);
+  }],
+
+  ['slave_economy', (effect, _ctx, result) => {
+    const e = effect as { slaveHealPerTurn: number; fullHpResourceBonus: number; requiresAdjacentHealer: boolean };
+    result.slaveEconomyHealPerTurn = e.slaveHealPerTurn;
+    result.slaveEconomyResourceBonus = e.fullHpResourceBonus;
+    result.additionalEffects.push(`slave_economy_heal_${e.slaveHealPerTurn}`);
   }],
 ]);
 
