@@ -10,45 +10,49 @@ type EmergentRule = typeof emergentRulesData.rules[number];
 
 // Emergent rule descriptions for popup
 const EMERGENT_DESCRIPTIONS: Record<string, { effect: string; requirement: string }> = {
-  terrain_rider: {
-    effect: "Charge units with terrain adaptation gain terrain penetration (ignore terrain during charge) and +50% damage in their native terrain type",
+  terrain_lord: {
+    effect: "Charges ignore all terrain penalties. In native terrain: double charge range + +50% damage. Reshape: permanently convert 3 hexes to your native terrain type.",
     requirement: "1 terrain domain + 1 combat domain + 1 mobility domain (all to T2)",
   },
   paladin: {
-    effect: "Heals for 50% of damage dealt; can't drop below 1 HP from a single hit",
+    effect: "Heals for 50% of damage dealt; can't drop below 1 HP from a single hit. At full HP, next attack deals +100% damage (Radiant Smite).",
     requirement: "1 healing domain + 1 defensive domain + 1 offensive domain (all to T2)",
   },
   terrain_assassin: {
-    effect: "Attacks from stealth in matching terrain type are permanent stealth — enemies never detect you regardless of proximity",
+    effect: "Attacks from stealth in matching terrain type are permanent stealth — enemies never detect you regardless of proximity.",
     requirement: "1 stealth domain + 1 combat domain + 1 terrain domain (all to T2)",
   },
-  anchor: {
-    effect: "3-hex zone: +30% defense + 3 HP/turn for allies. Unit immovable, regens 5 HP/turn.",
+  standing_stone: {
+    effect: "Toggle stance each turn. Anchored: 3-hex aura (+30% defense, 5 HP/turn, damage share, enemies lose 2 movement). Marching: 1-hex aura, can move.",
     requirement: "1 fortress domain + 1 healing domain + 1 defensive domain (all to T2)",
   },
   ghost_army: {
-    effect: "Units with at least one of the mobility domains ignore all terrain penalties and gain +1 movement. Only affects units with at least one of the relevant domains.",
+    effect: "Phase: teleport up to 3 hexes through anything. On kill: re-stealth + re-emerge near any ally. Adjacent allies gain +2 movement when phasing.",
     requirement: "3 mobility domains to T2 (camel adaptation, charge, hit run, or river stealth)",
   },
   iron_turtle: {
-    effect: "Units gain +50% defense and reflect 25% damage back to attackers. Heavy units also gain zone control.",
+    effect: "2-hex crushing zone deals 2 damage/turn and -1 movement to enemies. 50% damage reflection. Cannot be displaced. Ignores zone of control.",
     requirement: "1 fortress + 1 heavy + 1 terrain domain (all to T2)",
   },
-  withering_citadel: {
-    effect: "Fortress units radiate poison. Enemies in adjacent hexes take passive poison damage. Combined with healing for self-sustain.",
-    requirement: "1 venom + 1 fortress + 1 healing domain (all to T2)",
+  slave_empire: {
+    effect: "Fortress zones auto-capture wounded enemies below 25% HP. Captured slaves produce +50% resources. Slaves immune to rout.",
+    requirement: "1 slaving + 1 heavy + 1 fortress domain (all to T2)",
   },
-  blood_tide: {
-    effect: "Naval charges deal +50% damage, push enemy ships 2 hexes, and create a zone control area.",
-    requirement: "1 tidal warfare + 1 charge + 1 combat domain (all to T2)",
+  raid_camp: {
+    effect: "Place Raid Camps within 5 hexes. Allies entering gain +2 movement and stealth. Enemies near camps suffer -25% defense. Capture chance +30%.",
+    requirement: "1 camel adaptation + 1 slaving + 1 mobility domain (all to T2)",
   },
-  endless_shadow: {
-    effect: "Stealth units can move twice per turn. Each movement doesn't break stealth if not attacking.",
-    requirement: "1 stealth + 2 mobility domains (all to T2)",
+  poison_shadow: {
+    effect: "Stealth attacks apply 3 poison stacks instantly. Retreating from stealth leaves a poison cloud. Enemies can't heal in the cloud.",
+    requirement: "1 venom + 1 stealth + 1 combat domain (all to T2)",
   },
-  beastmaster: {
-    effect: "Captured units are immediately usable without cooldown. All captured units gain +25% attack.",
-    requirement: "1 slaving + 1 charge + 1 combat domain (all to T2)",
+  juggernaut: {
+    effect: "Each combat domain contributes a signature ability. 3-combat unit collects 3 signatures. Survives lethal hits at 1 HP once. Ignores zone of control.",
+    requirement: "3 combat domains to T2 (venom, fortress, charge, slaving, heavy hitter, hit run, or tidal warfare)",
+  },
+  many_faced: {
+    effect: "Cycles stances based on combat context. Took damage → Bulwark. Dealt damage → Predator. Moving → Phantom. Each stance grants unique combat bonuses.",
+    requirement: "3 domains that don't match any specific pattern (all to T2)",
   },
 };
 

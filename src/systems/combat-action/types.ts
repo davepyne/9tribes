@@ -50,9 +50,31 @@ export interface CombatActionPreviewDetails {
   // Phase 4: emergent rule fields
   emergentSustainHealPercent: number;
   emergentSustainMinHp: number;
+  emergentSmiteBonus: number;
   emergentPermanentStealthTerrains: string[];
   emergentCaptureBonus: number;
   emergentDesertCaptureBonus: number;
+  // Juggernaut per-domain signature fields
+  emergentPoisonPerHit: number;
+  emergentDamageReflection: number;
+  emergentKnockbackOnKill: number;
+  emergentDamageBehindPercent: number;
+  emergentFreeReposition: number;
+  emergentArmorPierce: number;
+  emergentCaptureBelowHpPercent: number;
+  emergentBonusDamageAdjacentWater: number;
+  emergentUndying: boolean;
+  emergentIgnoreZoc: boolean;
+  // Iron Turtle expanded
+  emergentCrushZoneRadius: number;
+  emergentCrushZoneMovementPenalty: number;
+  // Many-Faced stance
+  emergentManyFacedStance: string;
+  emergentManyFacedDefense: number;
+  emergentManyFacedReflection: number;
+  emergentManyFacedDamage: number;
+  emergentManyFacedRangeBonus: number;
+  emergentManyFacedMovementBonus: number;
   // Phase 3A: direct combat effects
   instantKill: boolean;
   lethalAmbushPoison: number;
@@ -118,6 +140,9 @@ export interface CombatActionResolution {
   // Phase 4: emergent rule resolution
   emergentSustainHealApplied: number;
   emergentSustainMinHpSaved: boolean;
+  emergentSmiteApplied: number;
+  emergentUndyingSaved: boolean;
+  emergentManyFacedStance: string;
   // Phase 3A/3B/3C: synergy effect resolution
   instantKillTriggered: boolean;
   stunApplied: number;

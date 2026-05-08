@@ -513,15 +513,13 @@ export function processFactionPhases(
 
   if (tripleStack) {
     const emergent = tripleStack.emergentRule.effect;
-    if (emergent.type === 'mobility_unit') {
-      if (emergent.bonusMovement) {
-        current = applyGhostArmyMovement(current, factionId, emergent.bonusMovement);
-      }
+    if (emergent.type === 'ghost_army') {
+      // Ghost Army: phase teleport + kill-chain is combat-time, but allies get movement bonus at turn start
+      current = applyGhostArmyMovement(current, factionId, emergent.phaseAlliesMovementBonus);
     }
-    if (emergent.type === 'combat_unit') {
-      if (emergent.doubleCombatBonuses) {
-        current = applyJuggernautBonus(current, factionId);
-      }
+    if (emergent.type === 'juggernaut') {
+      // Juggernaut: per-domain signatures are applied at combat time; flag faction for undying
+      current = applyJuggernautBonus(current, factionId);
     }
     current = setFactionTripleStack(current, factionId, tripleStack);
   } else {

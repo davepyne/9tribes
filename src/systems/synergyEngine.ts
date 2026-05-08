@@ -144,6 +144,8 @@ export class SynergyEngine {
   }
 
   // Resolve the faction triple stack using tier-qualified domain sets.
+  // Triples fire based on faction-level domain achievement — no unit-tag gate.
+  // The faction earned 3 domains; any unit in that faction benefits.
   resolveFactionTriple(
     pairEligibleDomains: string[],
     emergentEligibleDomains: string[],
@@ -228,9 +230,9 @@ export class SynergyEngine {
       }
       case 'contains_fortress AND contains_healing AND contains_defensive': {
         if (!rule.domainSets) return false;
-        const hasFortress = domains.some(d => rule.domainSets!['fortress'].includes(d));
-        const hasHealing = domains.some(d => rule.domainSets!['healing'].includes(d));
-        const hasDefensive = domains.some(d => rule.domainSets!['defensive'].includes(d));
+        const hasFortress = domains.some(d => rule.domainSets!['fortress']?.includes(d));
+        const hasHealing = domains.some(d => rule.domainSets!['healing']?.includes(d));
+        const hasDefensive = domains.some(d => rule.domainSets!['defensive']?.includes(d));
         return hasFortress && hasHealing && hasDefensive;
       }
       case 'contains_slaving AND contains_heavy AND contains_fortress': {
@@ -281,11 +283,6 @@ export class SynergyEngine {
   private generateTripleName(domains: string[], pairs: string[]): string {
     const domainSet = new Set(domains);
 
-    // Withering Citadel: V+F+N
-    if (domainSet.has('venom') && domainSet.has('fortress') && domainSet.has('nature_healing')) {
-      return 'Withering Citadel';
-    }
-
     // Ghost Army: 3 mobility domains
     const mobilityCount = domains.filter(d =>
       ['charge', 'hitrun', 'camel_adaptation', 'river_stealth'].includes(d)
@@ -294,12 +291,12 @@ export class SynergyEngine {
       return 'Ghost Army';
     }
 
-    // Terrain Rider: terrain + combat + mobility
+    // Terrain Lord: terrain + combat + mobility
     const hasTerrain = ['camel_adaptation', 'tidal_warfare', 'heavy_hitter'].some(d => domainSet.has(d));
     const hasCombat = ['venom', 'fortress', 'charge', 'hitrun', 'slaving', 'heavy_hitter'].some(d => domainSet.has(d));
     const hasMobility = ['camel_adaptation', 'charge', 'hitrun', 'river_stealth'].some(d => domainSet.has(d));
     if (hasTerrain && hasCombat && hasMobility) {
-      return 'Terrain Rider';
+      return 'Terrain Lord';
     }
 
     // Slave Empire: slaving + heavy_hitter + fortress
@@ -307,10 +304,10 @@ export class SynergyEngine {
       return 'Slave Empire';
     }
 
-    // Desert Raider: camel_adaptation + slaving + (charge | hitrun)
+    // Raid Camp: camel_adaptation + slaving + (charge | hitrun)
     if (domainSet.has('camel_adaptation') && domainSet.has('slaving') &&
         (domainSet.has('charge') || domainSet.has('hitrun'))) {
-      return 'Desert Raider';
+      return 'Raid Camp';
     }
 
     // Poison Shadow: venom + river_stealth + (charge | hitrun)
@@ -334,12 +331,22 @@ export class SynergyEngine {
       }
     }
 
-    // Generate name from pair names
-    const pairNames = pairs.slice(0, 3).map(id => {
-      const synergy = this.pairSynergies.find(s => s.id === id);
-      return synergy ? synergy.name.split(' ')[0] : '';
-    }).filter(Boolean);
+    // Standing Stone: fortress + nature_healing + (tidal_warfare | heavy_hitter)
+    if (domainSet.has('fortress') && domainSet.has('nature_healing') &&
+        (domainSet.has('tidal_warfare') || domainSet.has('heavy_hitter'))) {
+      return 'Standing Stone';
+    }
 
-    return pairNames.length > 0 ? pairNames.join(' ') + ' Force' : 'Unknown';
+    // Terrain Assassin: river_stealth + combat + terrain
+    if (domainSet.has('river_stealth')) {
+      const hasCombatTA = ['venom', 'charge', 'hitrun', 'slaving'].some(d => domainSet.has(d));
+      const hasTerrainTA = ['camel_adaptation', 'tidal_warfare', 'heavy_hitter'].some(d => domainSet.has(d));
+      if (hasCombatTA && hasTerrainTA) {
+        return 'Terrain Assassin';
+      }
+    }
+
+    // Default fallback: Many-Faced
+    return 'Many-Faced';
   }
 }

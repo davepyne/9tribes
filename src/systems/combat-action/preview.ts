@@ -453,9 +453,31 @@ export function previewCombatAction(
       // Phase 4: emergent rule fields
       emergentSustainHealPercent: attackerSynergyResult.emergentSustainHealPercent,
       emergentSustainMinHp: attackerSynergyResult.emergentSustainMinHp,
+      emergentSmiteBonus: attackerSynergyResult.emergentSmiteBonus,
       emergentPermanentStealthTerrains: attackerSynergyResult.emergentPermanentStealthTerrains,
       emergentCaptureBonus: attackerSynergyResult.emergentCaptureBonus,
       emergentDesertCaptureBonus: attackerSynergyResult.emergentDesertCaptureBonus,
+      // Juggernaut per-domain signature fields
+      emergentPoisonPerHit: attackerSynergyResult.emergentPoisonPerHit,
+      emergentDamageReflection: attackerSynergyResult.emergentDamageReflection,
+      emergentKnockbackOnKill: attackerSynergyResult.emergentKnockbackOnKill,
+      emergentDamageBehindPercent: attackerSynergyResult.emergentDamageBehindPercent,
+      emergentFreeReposition: attackerSynergyResult.emergentFreeReposition,
+      emergentArmorPierce: attackerSynergyResult.emergentArmorPierce,
+      emergentCaptureBelowHpPercent: attackerSynergyResult.emergentCaptureBelowHpPercent,
+      emergentBonusDamageAdjacentWater: attackerSynergyResult.emergentBonusDamageAdjacentWater,
+      emergentUndying: attackerSynergyResult.emergentUndying,
+      emergentIgnoreZoc: attackerSynergyResult.emergentIgnoreZoc,
+      // Iron Turtle expanded
+      emergentCrushZoneRadius: attackerSynergyResult.emergentCrushZoneRadius,
+      emergentCrushZoneMovementPenalty: attackerSynergyResult.emergentCrushZoneMovementPenalty,
+      // Many-Faced stance
+      emergentManyFacedStance: attackerSynergyResult.emergentManyFacedStance,
+      emergentManyFacedDefense: attackerSynergyResult.emergentManyFacedDefense,
+      emergentManyFacedReflection: attackerSynergyResult.emergentManyFacedReflection,
+      emergentManyFacedDamage: attackerSynergyResult.emergentManyFacedDamage,
+      emergentManyFacedRangeBonus: attackerSynergyResult.emergentManyFacedRangeBonus,
+      emergentManyFacedMovementBonus: attackerSynergyResult.emergentManyFacedMovementBonus,
       // Phase 3A: direct combat effects
       instantKill: attackerSynergyResult.instantKill,
       lethalAmbushPoison: attackerSynergyResult.lethalAmbushPoison,

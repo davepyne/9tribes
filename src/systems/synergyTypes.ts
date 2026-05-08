@@ -83,17 +83,28 @@ export type SynergyEffect =
   | { type: 'heavy_mass'; knockbackDistance: number };
 
 export type EmergentEffect =
-  | { type: 'terrain_charge'; chargeTerrainPenetration: boolean; nativeTerrainDamageBonus: number; description: string }
-  | { type: 'sustain'; healPercentOfDamage: number; minHp: number; description: string }
+  // Terrain Lord (was terrain_rider/terrain_charge)
+  | { type: 'terrain_lord'; nativeTerrainDamageBonus: number; doubleChargeRangeInNativeTerrain: boolean; terraformCharges: number; description: string }
+  // Paladin (was sustain — added smite)
+  | { type: 'paladin'; healPercentOfDamage: number; minHp: number; smiteBonusAtFullHp: number; description: string }
+  // Terrain Assassin (unchanged)
   | { type: 'permanent_stealth'; terrainTypes: string[]; description: string }
-  | { type: 'zone_of_control'; radius: number; defenseBonus: number; healPerTurn: number; immovable: boolean; selfRegen: number; description: string }
-  | { type: 'mobility_unit'; scope: 'unit_only'; ignoreAllTerrain: boolean; bonusMovement: number; description: string }
-  | { type: 'combat_unit'; scope: 'unit_only'; doubleCombatBonuses: boolean; description: string }
+  // Standing Stone (was zone_of_control/anchor)
+  | { type: 'standing_stone'; anchoredAuraRadius: number; anchoredDefenseBonus: number; anchoredHealPerTurn: number; anchoredSelfRegen: number; anchoredAdjacentDamage: number; damageSharePercent: number; tarPitMovementPenalty: number; marchAuraRadius: number; marchDefenseBonus: number; marchHealPerTurn: number; description: string }
+  // Ghost Army (was mobility_unit)
+  | { type: 'ghost_army'; phaseDistance: number; killChainRedeployRange: number; phaseAlliesMovementBonus: number; description: string }
+  // Juggernaut (was combat_unit — per-domain signatures)
+  | { type: 'juggernaut'; domainSignatures: Record<string, Record<string, number | boolean>>; undyingOncePerCombat: boolean; ignoreZoc: boolean; description: string }
+  // Slave Empire (unchanged)
   | { type: 'slave_empire'; captureAuraRadius: number; captureChanceBonus: number; slaveProductionBonus: number; description: string }
-  | { type: 'desert_raider'; desertCaptureBonus: number; alliedDesertMovement: boolean; description: string }
+  // Raid Camp (was desert_raider)
+  | { type: 'raid_camp'; campPlacementRange: number; campDuration: number; campStealthDuration: number; campMovementBonus: number; campEnemyRadius: number; campEnemyDefensePenalty: number; captureBonus: number; description: string }
+  // Poison Shadow (unchanged)
   | { type: 'poison_shadow'; stealthPoisonStacks: number; retreatPoisonCloud: boolean; poisonCloudDamage: number; description: string }
-  | { type: 'iron_turtle'; crushingZoneRadius: number; crushingZoneDamage: number; damageReflection: number; description: string }
-  | { type: 'multiplier'; pairSynergyMultiplier: number; description: string };
+  // Iron Turtle (expanded)
+  | { type: 'iron_turtle'; crushingZoneRadius: number; crushingZoneDamage: number; crushingZoneMovementPenalty: number; damageReflection: number; ignoreZoc: boolean; description: string }
+  // Many-Faced (was adaptive/multiplier)
+  | { type: 'many_faced'; bulwarkDefense: number; bulwarkReflection: number; predatorDamage: number; predatorRangeBonus: number; phantomMovementBonus: number; description: string };
 
 export interface ActiveSynergy {
   pairId: string;
@@ -184,11 +195,34 @@ export interface SynergyCombatResult {
   slaveArmyDefensePenalty: number;
   slaveCoercionDamageBonus: number;
   heavyMassStacks: number;
+  // Emergent combat result fields
   emergentSustainHealPercent: number;
   emergentSustainMinHp: number;
+  emergentSmiteBonus: number;
   emergentPermanentStealthTerrains: string[];
   emergentCaptureBonus: number;
   emergentDesertCaptureBonus: number;
+  // Juggernaut per-domain signature fields
+  emergentPoisonPerHit: number;
+  emergentDamageReflection: number;
+  emergentKnockbackOnKill: number;
+  emergentDamageBehindPercent: number;
+  emergentFreeReposition: number;
+  emergentArmorPierce: number;
+  emergentCaptureBelowHpPercent: number;
+  emergentBonusDamageAdjacentWater: number;
+  emergentUndying: boolean;
+  emergentIgnoreZoc: boolean;
+  // Iron Turtle expanded
+  emergentCrushZoneRadius: number;
+  emergentCrushZoneMovementPenalty: number;
+  // Many-Faced stance
+  emergentManyFacedStance: string;
+  emergentManyFacedDefense: number;
+  emergentManyFacedReflection: number;
+  emergentManyFacedDamage: number;
+  emergentManyFacedRangeBonus: number;
+  emergentManyFacedMovementBonus: number;
   // Structured fields for synergyRuntime bonus calculations (4e)
   multiplierStackValue: number;
   dugInDefense: number;

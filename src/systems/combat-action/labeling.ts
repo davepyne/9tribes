@@ -53,6 +53,82 @@ export function humanizeCombatEffect(effect: string): { label: string; detail: s
   if (adaptiveMultiplier) {
     return { label: 'Adaptive Multiplier', detail: `Triple-stack multiplier boosted combat by ${adaptiveMultiplier[1]}x.` };
   }
+  const terrainLordCharge = effect.match(/^terrain_lord_charge$/);
+  if (terrainLordCharge) {
+    return { label: 'Terrain Lord Charge', detail: 'Terrain Lord charge gained terrain penetration and bonus damage.' };
+  }
+  const terrainLordTerraform = effect.match(/^terrain_lord_terraform_(\d+)$/);
+  if (terrainLordTerraform) {
+    return { label: 'Terrain Lord Terraform', detail: `${terrainLordTerraform[1]} terraform charges available.` };
+  }
+  const ghostArmyPhase = effect.match(/^ghost_army_phase_(\d+)$/);
+  if (ghostArmyPhase) {
+    return { label: 'Ghost Army Phase', detail: `Phase teleport up to ${ghostArmyPhase[1]} hexes.` };
+  }
+  const ghostArmyKillChain = effect.match(/^ghost_army_kill_chain$/);
+  if (ghostArmyKillChain) {
+    return { label: 'Ghost Army Kill Chain', detail: 'On kill: re-stealth and redeploy near any ally.' };
+  }
+  const ghostArmyMovement = effect.match(/^ghost_army_ally_movement_(\d+)$/);
+  if (ghostArmyMovement) {
+    return { label: 'Ghost Army Rally', detail: `Adjacent allies gain +${ghostArmyMovement[1]} movement.` };
+  }
+  const raidCampDefense = effect.match(/^raid_camp_enemy_def_penalty_([\d.]+)$/);
+  if (raidCampDefense) {
+    return { label: 'Raid Camp', detail: `Enemies near raid camps suffer -${Math.round(Number(raidCampDefense[1]) * 100)}% defense.` };
+  }
+  const raidCampMovement = effect.match(/^raid_camp_ally_movement_(\d+)$/);
+  if (raidCampMovement) {
+    return { label: 'Raid Camp Speed', detail: `Allies in camp gain +${raidCampMovement[1]} movement.` };
+  }
+  const juggernautIgnoreZoc = effect.match(/^juggernaut_ignore_zoc$/);
+  if (juggernautIgnoreZoc) {
+    return { label: 'Juggernaut Unstoppable', detail: 'Juggernaut ignores zone of control.' };
+  }
+  const juggernautSigs = effect.match(/^juggernaut_signatures$/);
+  if (juggernautSigs) {
+    return { label: 'Juggernaut Signatures', detail: 'Per-domain combat signatures active.' };
+  }
+  const standingStoneAnchored = effect.match(/^standing_stone_anchored_radius_(\d+)$/);
+  if (standingStoneAnchored) {
+    return { label: 'Standing Stone Aura', detail: `Anchored aura radius ${standingStoneAnchored[1]} hexes.` };
+  }
+  const standingStoneDamageShare = effect.match(/^standing_stone_damage_share_([\d.]+)$/);
+  if (standingStoneDamageShare) {
+    return { label: 'Damage Share', detail: `Allies split ${Math.round(Number(standingStoneDamageShare[1]) * 100)}% damage with Standing Stone.` };
+  }
+  const standingStoneTarPit = effect.match(/^standing_stone_tar_pit_(\d+)$/);
+  if (standingStoneTarPit) {
+    return { label: 'Tar Pit', detail: `Enemies in aura lose ${standingStoneTarPit[1]} movement.` };
+  }
+  const standingStoneAdjDamage = effect.match(/^standing_stone_adjacent_damage_(\d+)$/);
+  if (standingStoneAdjDamage) {
+    return { label: 'Crushing Aura', detail: `Adjacent enemies take ${standingStoneAdjDamage[1]} damage/turn.` };
+  }
+  const manyFacedBulwark = effect.match(/^many_faced_bulwark$/);
+  if (manyFacedBulwark) {
+    return { label: 'Many-Faced: Bulwark', detail: 'Adapted to defense — bonus defense and damage reflection.' };
+  }
+  const manyFacedPredator = effect.match(/^many_faced_predator$/);
+  if (manyFacedPredator) {
+    return { label: 'Many-Faced: Predator', detail: 'Adapted to offense — bonus damage and extended range.' };
+  }
+  const manyFacedPhantom = effect.match(/^many_faced_phantom$/);
+  if (manyFacedPhantom) {
+    return { label: 'Many-Faced: Phantom', detail: 'Adapted to movement — ignores ZoC and gains movement.' };
+  }
+  const ironTurtleIgnoreZoc = effect.match(/^iron_turtle_ignore_zoc$/);
+  if (ironTurtleIgnoreZoc) {
+    return { label: 'Iron Turtle Unstoppable', detail: 'Iron Turtle ignores zone of control.' };
+  }
+  const ironTurtleCrushing = effect.match(/^iron_turtle_crushing_zone_(\d+)_radius_(\d+)$/);
+  if (ironTurtleCrushing) {
+    return { label: 'Iron Turtle Crushing Zone', detail: `Deals ${ironTurtleCrushing[1]} damage/turn in ${ironTurtleCrushing[2]}-hex radius.` };
+  }
+  const ironTurtleReflection = effect.match(/^iron_turtle_reflection_([\d.]+)$/);
+  if (ironTurtleReflection) {
+    return { label: 'Iron Turtle Reflection', detail: `Reflects ${Math.round(Number(ironTurtleReflection[1]) * 100)}% of damage.` };
+  }
 
   const labels: Record<string, string> = {
     charge_shield: 'Charge Shield',
@@ -85,6 +161,7 @@ export function humanizeCombatEffect(effect: string): { label: string; detail: s
     nomad_network: 'Nomad Network',
     impassable_retreat: 'Impassable Retreat',
     paladin_sustain: 'Paladin Sustain',
+    terrain_charge_penetration: 'Terrain Charge',
     juggernaut_doubled: 'Juggernaut Doubled',
     ambush_damage: 'Ambush Damage',
   };

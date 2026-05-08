@@ -187,11 +187,11 @@ export function applyHealingForFaction(
       }
     }
 
-    // E1 — Anchor emergent: faction units gain healPerTurn bonus from the anchor aura
+    // E1 — Standing Stone emergent: faction units gain healPerTurn bonus from the aura
     const tripleStack = faction.activeTripleStack;
-    if (tripleStack?.emergentRule.effect.type === 'zone_of_control') {
-      const anchorEffect = tripleStack.emergentRule.effect as import('./synergyEngine.js').EmergentEffect & { type: 'zone_of_control' };
-      healRate += anchorEffect.healPerTurn;
+    if (tripleStack?.emergentRule.effect.type === 'standing_stone') {
+      const stoneEffect = tripleStack.emergentRule.effect as import('./synergyEngine.js').EmergentEffect & { type: 'standing_stone' };
+      healRate += stoneEffect.anchoredHealPerTurn;
     }
 
     // Withering: nearby enemies reduce healing

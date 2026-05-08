@@ -74,7 +74,7 @@ const PAIR_SYNERGIES: PairSynergyConfig[] = [
 
 const EMERGENT_RULES: EmergentRuleConfig[] = [
   makeEmergent({
-    id: 'terrain_rider',
+    id: 'terrain_lord',
     condition: 'contains_terrain AND contains_combat AND contains_mobility',
     domainSets: {
       terrain: ['camel_adaptation', 'tidal_warfare', 'heavy_hitter'],
@@ -82,9 +82,10 @@ const EMERGENT_RULES: EmergentRuleConfig[] = [
       mobility: ['camel_adaptation', 'charge', 'hitrun', 'river_stealth'],
     },
     effect: {
-      type: 'terrain_charge',
-      chargeTerrainPenetration: true,
+      type: 'terrain_lord',
       nativeTerrainDamageBonus: 0.50,
+      doubleChargeRangeInNativeTerrain: true,
+      terraformCharges: 3,
       description: 'test',
     },
   }),
@@ -92,12 +93,12 @@ const EMERGENT_RULES: EmergentRuleConfig[] = [
     id: 'ghost_army',
     condition: 'contains_3_mobility',
     mobilityDomains: ['charge', 'hitrun', 'camel_adaptation', 'river_stealth'],
-    effect: { type: 'mobility_unit', scope: 'unit_only', ignoreAllTerrain: true, bonusMovement: 1, description: 'test' },
+    effect: { type: 'ghost_army', phaseDistance: 3, killChainRedeployRange: 99, phaseAlliesMovementBonus: 2, description: 'test' },
   }),
   makeEmergent({
     id: 'fallback',
     condition: 'default',
-    effect: { type: 'multiplier', pairSynergyMultiplier: 1.5, description: 'test' },
+    effect: { type: 'many_faced', bulwarkDefense: 0.40, bulwarkReflection: 0.25, predatorDamage: 0.40, predatorRangeBonus: 1, phantomMovementBonus: 1, description: 'test' },
   }),
 ];
 
@@ -287,7 +288,7 @@ describe('SynergyEngine.resolveFactionTriple', () => {
 
     expect(triple).not.toBeNull();
     expect(triple!.domains).toEqual(['camel_adaptation', 'charge', 'hitrun']);
-    expect(triple!.emergentRule.id).toBe('terrain_rider');
+    expect(triple!.emergentRule.id).toBe('terrain_lord');
     expect(triple!.name).toBeTruthy();
     // camel_adaptation+charge is a pair? No pair in our data for that combo.
     // charge+hitrun IS a pair. Let's check if it was found.
@@ -308,8 +309,8 @@ describe('SynergyEngine.resolveFactionTriple', () => {
     expect(triple!.pairs).toHaveLength(2);
     const pairIds = triple!.pairs.map(p => p.pairId).sort();
     expect(pairIds).toEqual(['venom+charge', 'venom+fortress']);
-    // Emergent should still be terrain_rider
-    expect(triple!.emergentRule.id).toBe('terrain_rider');
+    // Emergent should still be terrain_lord
+    expect(triple!.emergentRule.id).toBe('terrain_lord');
   });
 
   it('default rule matches anything and returns multiplier', () => {
@@ -328,10 +329,10 @@ describe('SynergyEngine.resolveFactionTriple', () => {
     const engine = createEngine();
     const triple = engine.resolveFactionTriple(
       [],  // empty pairEligibleDomains
-      ['camel_adaptation', 'charge', 'hitrun'],  // matches terrain_rider
+      ['camel_adaptation', 'charge', 'hitrun'],  // matches terrain_lord
     );
     expect(triple).not.toBeNull();
-    expect(triple!.emergentRule.id).toBe('terrain_rider');
+    expect(triple!.emergentRule.id).toBe('terrain_lord');
     expect(triple!.pairs).toHaveLength(0);
   });
 });
@@ -350,7 +351,7 @@ describe('SynergyEngine emergent rule matching', () => {
         defensive: ['fortress', 'tidal_warfare', 'heavy_hitter'],
         offensive: ['venom', 'charge', 'hitrun', 'slaving'],
       },
-      effect: { type: 'sustain', healPercentOfDamage: 0.50, minHp: 1, description: 'test' },
+      effect: { type: 'paladin', healPercentOfDamage: 0.50, minHp: 1, smiteBonusAtFullHp: 1.0, description: 'test' },
     }),
     makeEmergent({
       id: 'terrain_assassin',
@@ -363,14 +364,14 @@ describe('SynergyEngine emergent rule matching', () => {
       effect: { type: 'permanent_stealth', terrainTypes: ['desert', 'coast'], description: 'test' },
     }),
     makeEmergent({
-      id: 'anchor',
+      id: 'standing_stone',
       condition: 'contains_fortress AND contains_healing AND contains_defensive',
       domainSets: {
         fortress: ['fortress'],
         healing: ['nature_healing'],
         defensive: ['tidal_warfare', 'heavy_hitter'],
       },
-      effect: { type: 'zone_of_control', radius: 3, defenseBonus: 0.30, healPerTurn: 3, immovable: true, selfRegen: 5, description: 'test' },
+      effect: { type: 'standing_stone', anchoredAuraRadius: 3, anchoredDefenseBonus: 0.30, anchoredHealPerTurn: 5, anchoredSelfRegen: 8, anchoredAdjacentDamage: 2, damageSharePercent: 0.50, tarPitMovementPenalty: 2, marchAuraRadius: 1, marchDefenseBonus: 0.15, marchHealPerTurn: 2, description: 'test' },
     }),
     makeEmergent({
       id: 'slave_empire',
@@ -383,14 +384,14 @@ describe('SynergyEngine emergent rule matching', () => {
       effect: { type: 'slave_empire', captureAuraRadius: 2, captureChanceBonus: 0.20, slaveProductionBonus: 0.50, description: 'test' },
     }),
     makeEmergent({
-      id: 'desert_raider',
+      id: 'raid_camp',
       condition: 'contains_camels AND contains_slaving AND contains_mobility',
       domainSets: {
         camels: ['camel_adaptation'],
         slaving: ['slaving'],
         mobility: ['charge', 'hitrun'],
       },
-      effect: { type: 'desert_raider', desertCaptureBonus: 0.30, alliedDesertMovement: true, description: 'test' },
+      effect: { type: 'raid_camp', campPlacementRange: 5, campDuration: 2, campStealthDuration: 1, campMovementBonus: 2, campEnemyRadius: 3, campEnemyDefensePenalty: 0.25, captureBonus: 0.30, description: 'test' },
     }),
     makeEmergent({
       id: 'poison_shadow',
@@ -410,7 +411,7 @@ describe('SynergyEngine emergent rule matching', () => {
         heavy: ['heavy_hitter'],
         terrain: ['tidal_warfare', 'camel_adaptation'],
       },
-      effect: { type: 'iron_turtle', crushingZoneRadius: 1, crushingZoneDamage: 2, damageReflection: 0.25, description: 'test' },
+      effect: { type: 'iron_turtle', crushingZoneRadius: 2, crushingZoneDamage: 2, crushingZoneMovementPenalty: 1, damageReflection: 0.50, ignoreZoc: true, description: 'test' },
     }),
   ];
 
@@ -445,7 +446,7 @@ describe('SynergyEngine emergent rule matching', () => {
       ['fortress', 'nature_healing', 'tidal_warfare'],
     );
     expect(triple).not.toBeNull();
-    expect(triple!.emergentRule.id).toBe('anchor');
+    expect(triple!.emergentRule.id).toBe('standing_stone');
   });
 
   it('matches Slave Empire: slaving + heavy_hitter + fortress', () => {
@@ -465,7 +466,7 @@ describe('SynergyEngine emergent rule matching', () => {
       ['camel_adaptation', 'slaving', 'charge'],
     );
     expect(triple).not.toBeNull();
-    expect(triple!.emergentRule.id).toBe('desert_raider');
+    expect(triple!.emergentRule.id).toBe('raid_camp');
   });
 
   it('matches Desert Raider: camel_adaptation + slaving + hitrun', () => {
@@ -475,7 +476,7 @@ describe('SynergyEngine emergent rule matching', () => {
       ['camel_adaptation', 'slaving', 'hitrun'],
     );
     expect(triple).not.toBeNull();
-    expect(triple!.emergentRule.id).toBe('desert_raider');
+    expect(triple!.emergentRule.id).toBe('raid_camp');
   });
 
   it('matches Poison Shadow: venom + river_stealth + charge', () => {
@@ -508,20 +509,20 @@ describe('SynergyEngine emergent rule matching', () => {
     expect(triple!.emergentRule.id).toBe('iron_turtle');
   });
 
-  // Domains that are in multiple sets — charge is in both combat and mobility for terrain_rider
+  // Domains that are in multiple sets — charge is in both combat and mobility for terrain_lord
   it('handles domain appearing in multiple rule domain sets', () => {
-    const engine = createEngine(); // has terrain_rider
+    const engine = createEngine(); // has terrain_lord
     // camel_adaptation (terrain), charge (combat+mobility), river_stealth (mobility)
     const triple = engine.resolveFactionTriple(
       [],
       ['camel_adaptation', 'charge', 'river_stealth'],
     );
     expect(triple).not.toBeNull();
-    expect(triple!.emergentRule.id).toBe('terrain_rider');
+    expect(triple!.emergentRule.id).toBe('terrain_lord');
   });
 
   it('returns null when only 2 of 3 categories match (partial match)', () => {
-    const engine = createEngine(); // terrain_rider needs terrain, combat, mobility
+    const engine = createEngine(); // terrain_lord needs terrain, combat, mobility
     // camel_adaptation (terrain+mobility), river_stealth (mobility) — no combat
     const triple = engine.resolveFactionTriple(
       [],
@@ -633,7 +634,7 @@ describe('SynergyEngine emergent rule: contains_3_mobility / contains_3_combat /
 
 describe('SynergyEngine.getDomainSynergyScore', () => {
   it('returns 3 when direct pair AND both in emergent rule', () => {
-    // venom+fortress is a direct pair, venom in combat, fortress in combat → both in terrain_rider
+    // venom+fortress is a direct pair, venom in combat, fortress in combat → both in terrain_lord
     const engine = createEngine();
     expect(engine.getDomainSynergyScore('venom', 'fortress')).toBe(3);
   });
@@ -641,7 +642,7 @@ describe('SynergyEngine.getDomainSynergyScore', () => {
   it('returns 2 when direct pair synergy exists but NOT in same emergent rule', () => {
     // charge+hitrun is a direct pair. They are both in mobility set of ghost_army,
     // so they ARE in same emergent rule — score would be 3.
-    // Let's check: charge and hitrun both appear in terrain_rider (combat, mobility),
+    // Let's check: charge and hitrun both appear in terrain_lord (combat, mobility),
     // so they're in same emergent rule. Need a pair where they DON'T share a rule.
     // Create them without emergent rules that mention both.
     const pairs: PairSynergyConfig[] = [
@@ -666,10 +667,10 @@ describe('SynergyEngine.getDomainSynergyScore', () => {
 
   it('returns 2 when both domains appear together in an emergent rule (no direct pair)', () => {
     const engine = createEngine();
-    // camel_adaptation and charge both appear in terrain_rider (terrain and combat+mobility)
+    // camel_adaptation and charge both appear in terrain_lord (terrain and combat+mobility)
     // No direct pair between them → score 2
     // But actually let me check: is there a pair between camel_adaptation and charge? No in our data.
-    // And they are in terrain_rider: camel_adaptation in terrain+mobility, charge in combat+mobility
+    // And they are in terrain_lord: camel_adaptation in terrain+mobility, charge in combat+mobility
     // So they both appear → score 2
     expect(engine.getDomainSynergyScore('camel_adaptation', 'charge')).toBe(2);
   });
@@ -700,8 +701,8 @@ describe('SynergyEngine.getDomainSynergyScore', () => {
 
   it('returns 0 when no pair and no emergent rule mentions both', () => {
     const engine = createEngine();
-    // venom is in terrain_rider combat. hitrun is in terrain_rider combat+mobility.
-    // Both in terrain_rider → score 2 or 3. Need unrelated domains.
+    // venom is in terrain_lord combat. hitrun is in terrain_lord combat+mobility.
+    // Both in terrain_lord → score 2 or 3. Need unrelated domains.
     expect(engine.getDomainSynergyScore('made_up_a', 'made_up_b')).toBe(0);
   });
 
@@ -724,7 +725,7 @@ describe('SynergyEngine.getHighSynergyDomains', () => {
   it('returns domains with score >= 2', () => {
     const engine = createEngine();
     // venom has pair(s) with fortress and charge, both score 3 (pair + emergent)
-    // venom also is in terrain_rider combat, so shares emergent with camel_adaptation (score 2), hitrun (score 2)
+    // venom also is in terrain_lord combat, so shares emergent with camel_adaptation (score 2), hitrun (score 2)
     const high = engine.getHighSynergyDomains('venom');
     expect(high).toContain('fortress');
     expect(high).toContain('charge');
@@ -756,20 +757,20 @@ describe('SynergyEngine.getHighSynergyDomains', () => {
 describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
   const namingRules: EmergentRuleConfig[] = [
     makeEmergent({
-      id: 'terrain_rider',
+      id: 'terrain_lord',
       condition: 'contains_terrain AND contains_combat AND contains_mobility',
       domainSets: {
         terrain: ['camel_adaptation', 'tidal_warfare', 'heavy_hitter'],
         combat: ['venom', 'fortress', 'charge', 'hitrun', 'slaving', 'heavy_hitter'],
         mobility: ['camel_adaptation', 'charge', 'hitrun', 'river_stealth'],
       },
-      effect: { type: 'terrain_charge', chargeTerrainPenetration: true, nativeTerrainDamageBonus: 0.50, description: 'test' },
+      effect: { type: 'terrain_lord', nativeTerrainDamageBonus: 0.50, doubleChargeRangeInNativeTerrain: true, terraformCharges: 3, description: 'test' },
     }),
     makeEmergent({
       id: 'ghost_army',
       condition: 'contains_3_mobility',
       mobilityDomains: ['charge', 'hitrun', 'camel_adaptation', 'river_stealth'],
-      effect: { type: 'mobility_unit', scope: 'unit_only', ignoreAllTerrain: true, bonusMovement: 1, description: 'test' },
+      effect: { type: 'ghost_army', phaseDistance: 3, killChainRedeployRange: 99, phaseAlliesMovementBonus: 2, description: 'test' },
     }),
     makeEmergent({
       id: 'slave_empire',
@@ -782,14 +783,14 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
       effect: { type: 'slave_empire', captureAuraRadius: 2, captureChanceBonus: 0.20, slaveProductionBonus: 0.50, description: 'test' },
     }),
     makeEmergent({
-      id: 'desert_raider',
+      id: 'raid_camp',
       condition: 'contains_camels AND contains_slaving AND contains_mobility',
       domainSets: {
         camels: ['camel_adaptation'],
         slaving: ['slaving'],
         mobility: ['charge', 'hitrun'],
       },
-      effect: { type: 'desert_raider', desertCaptureBonus: 0.30, alliedDesertMovement: true, description: 'test' },
+      effect: { type: 'raid_camp', campPlacementRange: 5, campDuration: 2, campStealthDuration: 1, campMovementBonus: 2, campEnemyRadius: 3, campEnemyDefensePenalty: 0.25, captureBonus: 0.30, description: 'test' },
     }),
     makeEmergent({
       id: 'poison_shadow',
@@ -809,7 +810,7 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
         heavy: ['heavy_hitter'],
         terrain: ['tidal_warfare', 'camel_adaptation'],
       },
-      effect: { type: 'iron_turtle', crushingZoneRadius: 1, crushingZoneDamage: 2, damageReflection: 0.25, description: 'test' },
+      effect: { type: 'iron_turtle', crushingZoneRadius: 2, crushingZoneDamage: 2, crushingZoneMovementPenalty: 1, damageReflection: 0.50, ignoreZoc: true, description: 'test' },
     }),
     makeEmergent({
       id: 'paladin',
@@ -819,12 +820,12 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
         defensive: ['fortress', 'tidal_warfare', 'heavy_hitter'],
         offensive: ['venom', 'charge', 'hitrun', 'slaving'],
       },
-      effect: { type: 'sustain', healPercentOfDamage: 0.50, minHp: 1, description: 'test' },
+      effect: { type: 'paladin', healPercentOfDamage: 0.50, minHp: 1, smiteBonusAtFullHp: 1.0, description: 'test' },
     }),
     makeEmergent({
       id: 'fallback',
       condition: 'default',
-      effect: { type: 'multiplier', pairSynergyMultiplier: 1, description: 'test' },
+      effect: { type: 'many_faced', bulwarkDefense: 0.40, bulwarkReflection: 0.25, predatorDamage: 0.40, predatorRangeBonus: 1, phantomMovementBonus: 1, description: 'test' },
     }),
   ];
 
@@ -843,14 +844,14 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
     return new SynergyEngine(namingPairs, namingRules, ABILITY_DOMAINS);
   }
 
-  it('names "Withering Citadel" for venom + fortress + nature_healing', () => {
+  it('names "Paladin" for venom + fortress + nature_healing (healing+defensive+offensive)', () => {
     const engine = namingEngine();
     const triple = engine.resolveFactionTriple(
       ['venom', 'fortress', 'nature_healing'],
       ['venom', 'fortress', 'nature_healing'],
     );
     expect(triple).not.toBeNull();
-    expect(triple!.name).toBe('Withering Citadel');
+    expect(triple!.name).toBe('Paladin');
   });
 
   it('names "Ghost Army" for 3 mobility domains (no terrain)', () => {
@@ -865,14 +866,14 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
     expect(triple!.name).toBe('Ghost Army');
   });
 
-  it('names "Terrain Rider" for terrain + combat + mobility', () => {
+  it('names "Terrain Lord" for terrain + combat + mobility', () => {
     const engine = namingEngine();
     const triple = engine.resolveFactionTriple(
       [],
       ['camel_adaptation', 'venom', 'charge'],
     );
     expect(triple).not.toBeNull();
-    expect(triple!.name).toBe('Terrain Rider');
+    expect(triple!.name).toBe('Terrain Lord');
   });
 
   it('names "Slave Empire" for slaving + heavy_hitter + fortress', () => {
@@ -886,17 +887,17 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
     expect(triple!.name).toBe('Slave Empire');
   });
 
-  it('names "Terrain Rider" for camel_adaptation + slaving + charge (priority over Desert Raider)', () => {
-    // Terrain Rider check in generateTripleName has higher priority than Desert Raider
+  it('names "Terrain Lord" for camel_adaptation + slaving + charge (priority over RaidCamp)', () => {
+    // Terrain Lord check in generateTripleName has higher priority than Raid Camp
     const engine = namingEngine();
     const triple = engine.resolveFactionTriple(
       [],
       ['camel_adaptation', 'slaving', 'charge'],
     );
     expect(triple).not.toBeNull();
-    // emergent rule matches terrain_rider (checked before desert_raider in rules list)
-    expect(triple!.emergentRule.id).toBe('terrain_rider');
-    expect(triple!.name).toBe('Terrain Rider');
+    // emergent rule matches terrain_lord (checked before raid_camp in rules list)
+    expect(triple!.emergentRule.id).toBe('terrain_lord');
+    expect(triple!.name).toBe('Terrain Lord');
   });
 
   it('names "Poison Shadow" for venom + river_stealth + hitrun', () => {
@@ -909,20 +910,20 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
     expect(triple!.name).toBe('Poison Shadow');
   });
 
-  it('names "Terrain Rider" for fortress + heavy_hitter + camel_adaptation (priority over Iron Turtle)', () => {
-    // Terrain Rider check in generateTripleName has higher priority than Iron Turtle
+  it('names "Terrain Lord" for fortress + heavy_hitter + camel_adaptation (priority over Iron Turtle)', () => {
+    // Terrain Lord check in generateTripleName has higher priority than Iron Turtle
     const engine = namingEngine();
     const triple = engine.resolveFactionTriple(
       [],
       ['fortress', 'heavy_hitter', 'camel_adaptation'],
     );
     expect(triple).not.toBeNull();
-    expect(triple!.emergentRule.id).toBe('terrain_rider');
-    expect(triple!.name).toBe('Terrain Rider');
+    expect(triple!.emergentRule.id).toBe('terrain_lord');
+    expect(triple!.name).toBe('Terrain Lord');
   });
 
-  it('names "Withering Citadel" for nature_healing + fortress + venom (priority over Paladin)', () => {
-    // Withering Citadel check in generateTripleName has higher priority than Paladin
+  it('names "Paladin" for nature_healing + fortress + venom (healing+defensive+offensive)', () => {
+    // nature_healing + fortress + venom matches Paladin (healing+defensive+offensive)
     const engine = namingEngine();
     const triple = engine.resolveFactionTriple(
       [],
@@ -930,7 +931,7 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
     );
     expect(triple).not.toBeNull();
     expect(triple!.emergentRule.id).toBe('paladin');
-    expect(triple!.name).toBe('Withering Citadel');
+    expect(triple!.name).toBe('Paladin');
   });
 
   it('generates name from pair names when no specific triple name matches', () => {
@@ -943,10 +944,10 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
     );
     // tidal_warfare + nature_healing: no pair in namingPairs. 
     // Actually tidal_warfare and nature_healing don't have a pair, so pairs will be empty
-    // Fallback name generation: pairNames is empty → 'Unknown'
+    // Fallback name generation: pairNames is empty → 'Many-Faced' (default)
     expect(triple).not.toBeNull();
     // No domainSets match for 'made_up', so default rule matches
-    // generateTripleName won't match any named triple, pairs is empty, result: 'Unknown'
-    expect(triple!.name).toBe('Unknown');
+    // generateTripleName won't match any named triple → falls through to 'Many-Faced'
+    expect(triple!.name).toBe('Many-Faced');
   });
 });

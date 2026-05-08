@@ -77,9 +77,28 @@ function makeEmptyResult(): SynergyCombatResult {
     heavyMassStacks: 0,
     emergentSustainHealPercent: 0,
     emergentSustainMinHp: 0,
+    emergentSmiteBonus: 0,
     emergentPermanentStealthTerrains: [],
     emergentCaptureBonus: 0,
     emergentDesertCaptureBonus: 0,
+    emergentPoisonPerHit: 0,
+    emergentDamageReflection: 0,
+    emergentKnockbackOnKill: 0,
+    emergentDamageBehindPercent: 0,
+    emergentFreeReposition: 0,
+    emergentArmorPierce: 0,
+    emergentCaptureBelowHpPercent: 0,
+    emergentBonusDamageAdjacentWater: 0,
+    emergentUndying: false,
+    emergentIgnoreZoc: false,
+    emergentCrushZoneRadius: 0,
+    emergentCrushZoneMovementPenalty: 0,
+    emergentManyFacedStance: '',
+    emergentManyFacedDefense: 0,
+    emergentManyFacedReflection: 0,
+    emergentManyFacedDamage: 0,
+    emergentManyFacedRangeBonus: 0,
+    emergentManyFacedMovementBonus: 0,
     multiplierStackValue: 0,
     dugInDefense: 0,
     auraOverlapDefense: 0,
@@ -432,59 +451,108 @@ const synergyEffectHandlers = new Map<string, EffectHandler>([
 type EmergentHandler = (rule: EmergentRuleConfig, context: CombatContext, result: SynergyCombatResult) => void;
 
 const emergentEffectHandlers = new Map<string, EmergentHandler>([
-  ['sustain', (rule, _ctx, result) => {
-    const e = rule.effect as { healPercentOfDamage: number; minHp: number };
+  // Paladin: sustain + smite
+  ['paladin', (rule, _ctx, result) => {
+    const e = rule.effect as { healPercentOfDamage: number; minHp: number; smiteBonusAtFullHp: number };
     result.emergentSustainHealPercent = e.healPercentOfDamage;
     result.emergentSustainMinHp = e.minHp;
+    result.emergentSmiteBonus = e.smiteBonusAtFullHp;
     result.additionalEffects.push('paladin_sustain');
   }],
 
-  ['terrain_charge', (rule, context, result) => {
-    const e = rule.effect as { nativeTerrainDamageBonus: number };
+  // Terrain Lord: terrain penetration + double charge range + terraform charges
+  ['terrain_lord', (rule, context, result) => {
+    const e = rule.effect as { nativeTerrainDamageBonus: number; doubleChargeRangeInNativeTerrain: boolean; terraformCharges: number };
     if (context.isCharge) {
       result.damage = Math.floor(result.damage * (1 + e.nativeTerrainDamageBonus));
-      result.additionalEffects.push('terrain_charge_penetration');
+      result.additionalEffects.push('terrain_lord_charge');
     }
+    result.additionalEffects.push(`terrain_lord_terraform_${e.terraformCharges}`);
   }],
 
+  // Terrain Assassin: permanent stealth (unchanged)
   ['permanent_stealth', (rule, _ctx, result) => {
     const e = rule.effect as { terrainTypes: string[] };
     result.emergentPermanentStealthTerrains = e.terrainTypes ?? [];
     result.additionalEffects.push('permanent_stealth');
   }],
 
-  ['zone_of_control', (rule, _ctx, result) => {
-    const e = rule.effect as { defenseBonus: number; radius: number };
-    result.defense += e.defenseBonus;
+  // Standing Stone: anchored/marching toggle with damage share + tar pit
+  ['standing_stone', (rule, _ctx, result) => {
+    const e = rule.effect as { anchoredDefenseBonus: number; anchoredAuraRadius: number; damageSharePercent: number; tarPitMovementPenalty: number; anchoredAdjacentDamage: number };
+    result.defense += e.anchoredDefenseBonus;
     result.antiDisplacement = true;
-    result.additionalEffects.push(`zone_of_control_radius_${e.radius}`);
+    result.emergentCaptureBonus = 0; // no capture component
+    result.additionalEffects.push(`standing_stone_anchored_radius_${e.anchoredAuraRadius}`);
+    result.additionalEffects.push(`standing_stone_damage_share_${e.damageSharePercent}`);
+    result.additionalEffects.push(`standing_stone_tar_pit_${e.tarPitMovementPenalty}`);
+    result.additionalEffects.push(`standing_stone_adjacent_damage_${e.anchoredAdjacentDamage}`);
   }],
 
-  ['mobility_unit', (_rule, _ctx, result) => {
-    result.additionalEffects.push('mobility_unit_ignore_terrain');
+  // Ghost Army: phase teleport + kill-chain redeployment
+  ['ghost_army', (rule, _ctx, result) => {
+    const e = rule.effect as { phaseDistance: number; killChainRedeployRange: number; phaseAlliesMovementBonus: number };
+    result.additionalEffects.push(`ghost_army_phase_${e.phaseDistance}`);
+    result.additionalEffects.push(`ghost_army_kill_chain`);
+    result.additionalEffects.push(`ghost_army_ally_movement_${e.phaseAlliesMovementBonus}`);
   }],
 
-  ['combat_unit', (rule, _ctx, result) => {
-    const e = rule.effect as { doubleCombatBonuses: boolean };
-    if (e.doubleCombatBonuses) {
-      result.damage = Math.floor(result.damage * 2);
-      result.defense *= 2;
-      result.additionalEffects.push('combat_unit_doubled');
+  // Juggernaut: per-domain signature kit
+  ['juggernaut', (rule, _ctx, result) => {
+    const e = rule.effect as { domainSignatures: Record<string, Record<string, number | boolean>>; undyingOncePerCombat: boolean; ignoreZoc: boolean };
+    const sigs = e.domainSignatures;
+    result.emergentUndying = e.undyingOncePerCombat;
+    result.emergentIgnoreZoc = e.ignoreZoc;
+
+    if (sigs.venom) {
+      result.emergentPoisonPerHit = (sigs.venom.poisonPerHit as number) ?? 1;
+      result.poisonStacks += result.emergentPoisonPerHit;
     }
+    if (sigs.fortress) {
+      result.emergentDamageReflection = (sigs.fortress.damageReflection as number) ?? 0.30;
+      result.damageReflection += result.emergentDamageReflection;
+    }
+    if (sigs.charge) {
+      result.emergentKnockbackOnKill = (sigs.charge.knockbackOnKill as number) ?? 1;
+      result.emergentDamageBehindPercent = (sigs.charge.damageBehindPercent as number) ?? 0.50;
+      result.knockbackDistance = Math.max(result.knockbackDistance, result.emergentKnockbackOnKill);
+    }
+    if (sigs.hitrun) {
+      result.emergentFreeReposition = (sigs.hitrun.freeRepositionAfterKill as number) ?? 1;
+    }
+    if (sigs.heavy_hitter) {
+      result.emergentArmorPierce = (sigs.heavy_hitter.armorPiercePercent as number) ?? 0.50;
+      result.armorPiercing = Math.max(result.armorPiercing, result.emergentArmorPierce);
+    }
+    if (sigs.slaving) {
+      result.emergentCaptureBelowHpPercent = (sigs.slaving.captureBelowHpPercent as number) ?? 0.25;
+    }
+    if (sigs.tidal_warfare) {
+      result.emergentBonusDamageAdjacentWater = (sigs.tidal_warfare.bonusDamageAdjacentToWater as number) ?? 2;
+    }
+
+    if (e.ignoreZoc) {
+      result.additionalEffects.push('juggernaut_ignore_zoc');
+    }
+    result.additionalEffects.push('juggernaut_signatures');
   }],
 
+  // Slave Empire (unchanged)
   ['slave_empire', (rule, _ctx, result) => {
     const e = rule.effect as { captureChanceBonus: number; captureAuraRadius: number };
     result.emergentCaptureBonus = e.captureChanceBonus;
     result.additionalEffects.push(`slave_empire_capture_aura_${e.captureAuraRadius}`);
   }],
 
-  ['desert_raider', (rule, _ctx, result) => {
-    const e = rule.effect as { desertCaptureBonus: number };
-    result.emergentDesertCaptureBonus = e.desertCaptureBonus;
-    result.additionalEffects.push('desert_raider_capture_bonus');
+  // Raid Camp: deployable forward base
+  ['raid_camp', (rule, _ctx, result) => {
+    const e = rule.effect as { captureBonus: number; campEnemyDefensePenalty: number; campMovementBonus: number };
+    result.emergentCaptureBonus = e.captureBonus;
+    result.additionalEffects.push(`raid_camp_enemy_def_penalty_${e.campEnemyDefensePenalty}`);
+    result.additionalEffects.push(`raid_camp_ally_movement_${e.campMovementBonus}`);
   }],
 
+  // Poison Shadow (unchanged)
   ['poison_shadow', (rule, context, result) => {
     const e = rule.effect as { stealthPoisonStacks: number; retreatPoisonCloud: boolean; poisonCloudDamage: number };
     if (context.isStealthAttack) {
@@ -498,17 +566,48 @@ const emergentEffectHandlers = new Map<string, EmergentHandler>([
     }
   }],
 
+  // Iron Turtle: expanded 2-hex crush + movement penalty + 50% reflection + ignore ZoC
   ['iron_turtle', (rule, _ctx, result) => {
-    const e = rule.effect as { damageReflection: number; crushingZoneDamage: number };
+    const e = rule.effect as { damageReflection: number; crushingZoneDamage: number; crushingZoneRadius: number; crushingZoneMovementPenalty: number; ignoreZoc: boolean };
     result.damageReflection = e.damageReflection;
-    result.additionalEffects.push(`iron_turtle_crushing_zone_${e.crushingZoneDamage}`);
+    result.emergentCrushZoneRadius = e.crushingZoneRadius;
+    result.emergentCrushZoneMovementPenalty = e.crushingZoneMovementPenalty;
+    result.antiDisplacement = true;
+    if (e.ignoreZoc) {
+      result.emergentIgnoreZoc = true;
+      result.additionalEffects.push('iron_turtle_ignore_zoc');
+    }
+    result.additionalEffects.push(`iron_turtle_crushing_zone_${e.crushingZoneDamage}_radius_${e.crushingZoneRadius}`);
+    result.additionalEffects.push(`iron_turtle_reflection_${e.damageReflection}`);
   }],
 
-  ['multiplier', (rule, _ctx, result) => {
-    const e = rule.effect as { pairSynergyMultiplier: number };
-    const multiplier = e.pairSynergyMultiplier;
-    result.damage = Math.floor(result.damage * multiplier);
-    result.additionalEffects.push(`adaptive_multiplier_${multiplier}x`);
+  // Many-Faced: stance cycling based on context
+  ['many_faced', (rule, context, result) => {
+    const e = rule.effect as { bulwarkDefense: number; bulwarkReflection: number; predatorDamage: number; predatorRangeBonus: number; phantomMovementBonus: number };
+
+    // Determine stance from combat context
+    if (context.isRetreat || context.defenderHp < context.attackerHp) {
+      // Took damage or retreating → Bulwark
+      result.emergentManyFacedStance = 'bulwark';
+      result.emergentManyFacedDefense = e.bulwarkDefense;
+      result.emergentManyFacedReflection = e.bulwarkReflection;
+      result.defense += e.bulwarkDefense;
+      result.damageReflection += e.bulwarkReflection;
+      result.additionalEffects.push('many_faced_bulwark');
+    } else if (context.isCharge || context.isStealthAttack) {
+      // Dealing damage aggressively → Predator
+      result.emergentManyFacedStance = 'predator';
+      result.emergentManyFacedDamage = e.predatorDamage;
+      result.emergentManyFacedRangeBonus = e.predatorRangeBonus;
+      result.damage = Math.floor(result.damage * (1 + e.predatorDamage));
+      result.additionalEffects.push('many_faced_predator');
+    } else {
+      // Moving or default → Phantom
+      result.emergentManyFacedStance = 'phantom';
+      result.emergentManyFacedMovementBonus = e.phantomMovementBonus;
+      result.emergentIgnoreZoc = true;
+      result.additionalEffects.push('many_faced_phantom');
+    }
   }],
 ]);
 

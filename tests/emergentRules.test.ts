@@ -40,11 +40,12 @@ function makeEmergentTriple(effectType: string, effectFields: Record<string, unk
 }
 
 describe('Phase 4: Emergent rule wiring', () => {
-  describe('E5 — Paladin (sustain)', () => {
+  describe('E5 — Paladin', () => {
     it('stores healPercentOfDamage and minHp from emergent rule', () => {
-      const triple = makeEmergentTriple('sustain', {
+      const triple = makeEmergentTriple('paladin', {
         healPercentOfDamage: 0.50,
         minHp: 1,
+        smiteBonusAtFullHp: 1.0,
       });
       const ctx = makeContext();
       const result = applyCombatSynergies(ctx, [], triple);
@@ -81,21 +82,21 @@ describe('Phase 4: Emergent rule wiring', () => {
     });
   });
 
-  describe('E1 — Anchor (zone_of_control)', () => {
+  describe('E1 — Standing Stone (standing_stone)', () => {
     it('adds defense bonus and sets antiDisplacement', () => {
-      const triple = makeEmergentTriple('zone_of_control', {
-        radius: 3,
-        defenseBonus: 0.30,
-        healPerTurn: 3,
-        immovable: true,
-        selfRegen: 5,
+      const triple = makeEmergentTriple('standing_stone', {
+        anchoredDefenseBonus: 0.30,
+        anchoredAuraRadius: 3,
+        damageSharePercent: 0.50,
+        tarPitMovementPenalty: 1,
+        anchoredAdjacentDamage: 2,
       });
       const ctx = makeContext();
       const result = applyCombatSynergies(ctx, [], triple);
 
       expect(result.defense).toBe(0.30);
       expect(result.antiDisplacement).toBe(true);
-      expect(result.additionalEffects).toContain('zone_of_control_radius_3');
+      expect(result.additionalEffects).toContain('standing_stone_anchored_radius_3');
     });
 
     it('defaults: no defense bonus, no antiDisplacement', () => {
@@ -121,34 +122,35 @@ describe('Phase 4: Emergent rule wiring', () => {
     });
   });
 
-  describe('E4 — Desert Raider (desert_raider)', () => {
-    it('stores desert capture bonus', () => {
-      const triple = makeEmergentTriple('desert_raider', {
-        desertCaptureBonus: 0.30,
-        alliedDesertMovement: true,
+  describe('E4 — Raid Camp (raid_camp)', () => {
+    it('stores capture bonus', () => {
+      const triple = makeEmergentTriple('raid_camp', {
+        captureBonus: 0.30,
+        campEnemyDefensePenalty: 0.20,
+        campMovementBonus: 1,
       });
       const ctx = makeContext();
       const result = applyCombatSynergies(ctx, [], triple);
 
-      expect(result.emergentDesertCaptureBonus).toBe(0.30);
-      expect(result.additionalEffects).toContain('desert_raider_capture_bonus');
+      expect(result.emergentCaptureBonus).toBe(0.30);
+      expect(result.additionalEffects).toContain('raid_camp_enemy_def_penalty_0.2');
     });
 
-    it('defaults to zero when no desert_raider emergent is active', () => {
+    it('defaults to zero when no raid_camp emergent is active', () => {
       const ctx = makeContext();
       const result = applyCombatSynergies(ctx, [], null);
-      expect(result.emergentDesertCaptureBonus).toBe(0);
+      expect(result.emergentCaptureBonus).toBe(0);
     });
   });
 
   describe('Emergent effects stack with pair synergies', () => {
-    it('Anchor antiDisplacement does not override heavy_fortress reflection', () => {
-      const anchor = makeEmergentTriple('zone_of_control', {
-        radius: 3,
-        defenseBonus: 0.30,
-        healPerTurn: 3,
-        immovable: true,
-        selfRegen: 5,
+    it('Standing Stone antiDisplacement does not override heavy_fortress reflection', () => {
+      const standingStone = makeEmergentTriple('standing_stone', {
+        anchoredDefenseBonus: 0.30,
+        anchoredAuraRadius: 3,
+        damageSharePercent: 0.50,
+        tarPitMovementPenalty: 1,
+        anchoredAdjacentDamage: 2,
       });
       const pairSynergy: ActiveSynergy = {
         pairId: 'heavy_fortress_test',
@@ -157,7 +159,7 @@ describe('Phase 4: Emergent rule wiring', () => {
         effect: { type: 'heavy_fortress', damageReflection: 0.25 },
       };
       const ctx = makeContext();
-      const result = applyCombatSynergies(ctx, [pairSynergy], anchor);
+      const result = applyCombatSynergies(ctx, [pairSynergy], standingStone);
 
       expect(result.antiDisplacement).toBe(true);
       expect(result.damageReflection).toBe(0.25);

@@ -65,6 +65,9 @@ export function applyCombatAction(
     pursuitDamageApplied: 0,
     emergentSustainHealApplied: 0,
     emergentSustainMinHpSaved: false,
+    emergentSmiteApplied: 0,
+    emergentUndyingSaved: false,
+    emergentManyFacedStance: '',
     instantKillTriggered: false,
     stunApplied: 0,
     formationCrushApplied: 0,
@@ -166,6 +169,12 @@ export function applyCombatAction(
   if (minHpFloor > 0 && rawAttackerHp <= 0 && attacker.hp > 0) {
     attackerHp = Math.min(minHpFloor, attacker.hp);
     baseResolution.emergentSustainMinHpSaved = true;
+  }
+
+  // Juggernaut undying: survive at 1 HP once per combat
+  if (preview.details.emergentUndying && rawAttackerHp <= 0 && attacker.hp > 0 && attackerHp <= 0) {
+    attackerHp = 1;
+    baseResolution.emergentUndyingSaved = true;
   }
 
   let nextAttacker: Unit = {
@@ -289,6 +298,22 @@ export function applyCombatAction(
     }
   }
 
+  // E5b — Paladin smite: bonus damage when attacker is at full HP
+  let emergentSmiteApplied = 0;
+  if (preview.details.emergentSmiteBonus > 0 && attacker.hp >= attacker.maxHp && nextDefender.hp > 0) {
+    const smiteDamage = Math.floor(preview.result.defenderDamage * preview.details.emergentSmiteBonus);
+    if (smiteDamage > 0) {
+      const smittenDefender = current.units.get(preview.defenderId);
+      if (smittenDefender && smittenDefender.hp > 0) {
+        const afterSmite = new Map(current.units);
+        afterSmite.set(preview.defenderId, { ...smittenDefender, hp: Math.max(0, smittenDefender.hp - smiteDamage) });
+        current = { ...current, units: afterSmite };
+        emergentSmiteApplied = smiteDamage;
+        baseResolution.emergentSmiteApplied = smiteDamage;
+      }
+    }
+  }
+
   // Pursuit bonus: hitrun domain units press their advantage when winning the exchange
   const hasHitrunDomain = attackerFaction && (
     attackerFaction.nativeDomain === 'hitrun'
@@ -333,7 +358,8 @@ export function applyCombatAction(
   const totalCaptureBonus = emergentCaptureBonus + synergyCaptureBonus;
 
   // E5 — Paladin sustain overrides attackerDestroyed when minHp saved the unit
-  const attackerActuallyDestroyed = preview.result.attackerDestroyed && !baseResolution.emergentSustainMinHpSaved;
+  // Juggernaut undying also prevents attacker destruction once per combat
+  const attackerActuallyDestroyed = preview.result.attackerDestroyed && !baseResolution.emergentSustainMinHpSaved && !baseResolution.emergentUndyingSaved;
 
   let capturedOnKill = false;
   let retreatCaptured = false;
@@ -881,6 +907,17 @@ export function applyCombatAction(
   if (baseResolution.emergentSustainMinHpSaved) {
     pushCombatEffect(triggeredEffects, 'Undying Will', `Attacker survived a lethal blow at ${preview.details.emergentSustainMinHp} HP.`, 'aftermath');
   }
+  if (baseResolution.emergentSmiteApplied > 0) {
+    pushCombatEffect(triggeredEffects, 'Radiant Smite', `Paladin at full HP dealt +${baseResolution.emergentSmiteApplied} smite damage.`, 'synergy');
+  }
+  if (baseResolution.emergentUndyingSaved) {
+    pushCombatEffect(triggeredEffects, 'Juggernaut Undying', 'Juggernaut survived a lethal blow at 1 HP.', 'synergy');
+  }
+  if (preview.details.emergentManyFacedStance) {
+    const stanceLabel = preview.details.emergentManyFacedStance.charAt(0).toUpperCase() + preview.details.emergentManyFacedStance.slice(1);
+    pushCombatEffect(triggeredEffects, `Many-Faced: ${stanceLabel}`, `Adapted stance based on combat context.`, 'synergy');
+    baseResolution.emergentManyFacedStance = preview.details.emergentManyFacedStance;
+  }
   if (baseResolution.instantKillTriggered) {
     pushCombatEffect(triggeredEffects, 'Lethal Ambush', 'Synergy enabled an instant kill bypassing all defenses.', 'synergy');
   }
@@ -922,6 +959,9 @@ export function applyCombatAction(
       pursuitDamageApplied,
       emergentSustainHealApplied: baseResolution.emergentSustainHealApplied,
       emergentSustainMinHpSaved: baseResolution.emergentSustainMinHpSaved,
+      emergentSmiteApplied: baseResolution.emergentSmiteApplied,
+      emergentUndyingSaved: baseResolution.emergentUndyingSaved,
+      emergentManyFacedStance: baseResolution.emergentManyFacedStance,
       instantKillTriggered: baseResolution.instantKillTriggered,
       stunApplied: baseResolution.stunApplied,
       formationCrushApplied: baseResolution.formationCrushApplied,
