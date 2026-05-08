@@ -81,7 +81,7 @@ export function getDomainProgression(
     t2Domains,
     t3Domains,
     pairEligibleDomains: t1Domains,
-    emergentEligibleDomains: t2Domains,
+    emergentEligibleDomains: t1Domains,
     nativeT3Domains,
     foreignT3Domains,
     canBuildMidTier: learnedDomains.length >= 2,

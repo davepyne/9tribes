@@ -150,7 +150,7 @@ describe('Phase 3B capture synergy effects', () => {
     it('sets charge capture chance and knockback on charge', () => {
       const ctx = makeContext({ isCharge: true });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.chargeCaptureChance).toBe(0.50);
+      expect(result.chargeCaptureChance).toBe(0.30);
       expect(result.knockbackDistance).toBe(2);
       expect(result.additionalEffects).toContain('capture_charge');
     });
@@ -416,7 +416,7 @@ describe('Phase 3C lower-value synergy effects', () => {
         isStealthed: false,
       };
       const heal = applyHealingSynergies(healCtx, [synergy]);
-      expect(heal).toBe(3); // flat 3 from heavy_regen
+      expect(heal).toBe(1); // max(1, floor(0 * 0.30)) = 1
     });
   });
 

@@ -16,14 +16,14 @@ const registry = loadRulesRegistry();
 
 describe('progression pipeline constants', () => {
   describe('exposure thresholds', () => {
-    it('first foreign domain threshold is 35', () => {
-      expect(getNextExposureThreshold(1, 'venom')).toBe(35);
+    it('first foreign domain threshold is 20', () => {
+      expect(getNextExposureThreshold(1, 'venom')).toBe(20);
     });
-    it('second foreign domain threshold is 75', () => {
-      expect(getNextExposureThreshold(2, 'venom')).toBe(75);
+    it('second foreign domain threshold is 120', () => {
+      expect(getNextExposureThreshold(2, 'venom')).toBe(120);
     });
-    it('third foreign domain threshold is 140', () => {
-      expect(getNextExposureThreshold(3, 'venom')).toBe(140);
+    it('third foreign domain threshold is 200', () => {
+      expect(getNextExposureThreshold(3, 'venom')).toBe(200);
     });
   });
 

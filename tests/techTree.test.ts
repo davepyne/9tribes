@@ -699,11 +699,11 @@ describe('Domain Progression', () => {
       expect(progression.pairEligibleDomains.sort()).toEqual(progression.t1Domains.sort());
     });
 
-    it('emergentEligibleDomains includes all t2 domains', () => {
+    it('emergentEligibleDomains includes all t1 domains', () => {
       const research = state.research.get(jungleClans.id);
       const progression = getDomainProgression(jungleClans, research);
-      // emergentEligibleDomains should match t2Domains
-      expect(progression.emergentEligibleDomains.sort()).toEqual(progression.t2Domains.sort());
+      // emergentEligibleDomains now matches t1Domains (lowered from t2 for faster triple activation)
+      expect(progression.emergentEligibleDomains.sort()).toEqual(progression.t1Domains.sort());
     });
 
     it('distinguishes native from foreign T3 domains', () => {

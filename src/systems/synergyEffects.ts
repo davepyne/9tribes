@@ -289,7 +289,7 @@ const synergyEffectHandlers = new Map<string, EffectHandler>([
   ['capture_charge', (effect, context, result) => {
     const e = effect as { knockbackDistance: number };
     if (context.isCharge) {
-      result.chargeCaptureChance = 0.50;
+      result.chargeCaptureChance = 0.30;
       result.knockbackDistance = Math.max(result.knockbackDistance, e.knockbackDistance);
       result.additionalEffects.push('capture_charge');
     }
@@ -566,7 +566,8 @@ export function applyHealingSynergies(
     }
 
     if (effect.type === 'heavy_regen') {
-      healAmount += 3;
+      const e = effect as { regenPercent: number };
+      healAmount += Math.max(1, Math.floor(context.baseHeal * (e.regenPercent ?? 0.30)));
     }
   }
 
