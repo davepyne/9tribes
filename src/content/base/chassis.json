@@ -10,6 +10,7 @@
     "baseDefense": 2,
     "movementClass": "infantry",
     "supplyCost": 1,
+    "baseProductionCost": 20,
     "tags": ["infantry", "formation"],
     "capabilityPressure": {
       "formation_warfare": 0.5
@@ -27,6 +28,7 @@
     "movementClass": "infantry",
     "baseRange": 1,
     "supplyCost": 1,
+    "baseProductionCost": 24,
     "tags": ["ranged", "skirmish"],
     "capabilityPressure": {
       "woodcraft": 0.5,
@@ -45,6 +47,7 @@
     "movementClass": "cavalry",
     "baseRange": 1,
     "supplyCost": 1.5,
+    "baseProductionCost": 36,
     "tags": ["cavalry", "mounted", "mobility"],
     "tier": "mid",
     "minLearnedDomains": 2,
@@ -64,6 +67,7 @@
     "baseDefense": 1,
     "movementClass": "naval",
     "supplyCost": 1.25,
+    "baseProductionCost": 30,
     "tags": ["naval"],
     "tier": "mid",
     "minLearnedDomains": 2,
@@ -83,6 +87,7 @@
     "baseDefense": 2,
     "movementClass": "camel",
     "supplyCost": 1.5,
+    "baseProductionCost": 24,
     "tags": ["mounted", "camel"],
     "tier": "mid",
     "minLearnedDomains": 2,
@@ -102,6 +107,7 @@
     "baseDefense": 2,
     "movementClass": "beast",
     "supplyCost": 2,
+    "baseProductionCost": 36,
     "tags": ["mounted", "elephant", "shock"],
     "tier": "mid",
     "minLearnedDomains": 2,
@@ -122,6 +128,7 @@
     "baseDefense": 3,
     "movementClass": "cavalry",
     "supplyCost": 1.75,
+    "baseProductionCost": 36,
     "tags": ["cavalry", "mounted", "heavy"],
     "tier": "late",
     "minLearnedDomains": 3,
@@ -141,6 +148,7 @@
     "baseDefense": 3,
     "movementClass": "infantry",
     "supplyCost": 1.5,
+    "baseProductionCost": 20,
     "tags": ["infantry", "heavy", "formation"],
     "tier": "mid",
     "minLearnedDomains": 2,
@@ -160,6 +168,7 @@
     "baseDefense": 3,
     "movementClass": "beast",
     "supplyCost": 2.5,
+    "baseProductionCost": 20,
     "tags": ["beast", "summon", "frost"],
     "capabilityPressure": {}
   },
@@ -174,6 +183,7 @@
     "baseDefense": 1,
     "movementClass": "cavalry",
     "supplyCost": 1.5,
+    "baseProductionCost": 36,
     "tags": ["cavalry", "mounted", "chariot", "shock"],
     "tier": "mid",
     "minLearnedDomains": 2,
@@ -193,6 +203,7 @@
     "baseDefense": 2,
     "movementClass": "beast",
     "supplyCost": 2.5,
+    "baseProductionCost": 20,
     "tags": ["beast", "summon", "jungle", "poison"],
     "capabilityPressure": {}
   },
@@ -207,6 +218,7 @@
     "baseDefense": 2,
     "movementClass": "beast",
     "supplyCost": 2.5,
+    "baseProductionCost": 20,
     "tags": ["beast", "summon", "river"],
     "capabilityPressure": {}
   },
@@ -221,6 +233,7 @@
     "baseDefense": 3,
     "movementClass": "cavalry",
     "supplyCost": 2.5,
+    "baseProductionCost": 36,
     "tags": ["cavalry", "mounted", "warlord", "summon", "aura"],
     "capabilityPressure": {}
   },
@@ -236,6 +249,7 @@
     "baseRange": 3,
     "movementClass": "infantry",
     "supplyCost": 2,
+    "baseProductionCost": 24,
     "tags": ["ranged", "siege", "no_fort_build"],
     "tier": "mid",
     "minLearnedDomains": 2,
@@ -256,6 +270,7 @@
     "baseDefense": 5,
     "movementClass": "infantry",
     "supplyCost": 2.5,
+    "baseProductionCost": 20,
     "tags": ["beast", "summon", "siege", "fortress"],
     "capabilityPressure": {}
   },
@@ -271,6 +286,7 @@
     "baseRange": 3,
     "movementClass": "naval",
     "supplyCost": 1.5,
+    "baseProductionCost": 32,
     "tags": ["naval", "ranged", "skirmish"],
     "tier": "mid",
     "minLearnedDomains": 2,
@@ -291,6 +307,7 @@
     "baseRange": 3,
     "movementClass": "naval",
     "supplyCost": 2,
+    "baseProductionCost": 40,
     "tags": ["naval", "ranged", "transport"],
     "transportCapacity": 4,
     "tier": "late",
@@ -313,6 +330,7 @@
     "baseRange": 1,
     "movementClass": "infantry",
     "supplyCost": 2,
+    "baseProductionCost": 20,
     "tags": ["beast", "summon", "forest", "treefolk"],
     "capabilityPressure": {}
   },
@@ -327,6 +345,7 @@
     "baseDefense": 2,
     "movementClass": "beast",
     "supplyCost": 2.5,
+    "baseProductionCost": 36,
     "tags": ["beast", "charge", "trample"],
     "capabilityPressure": {}
   }

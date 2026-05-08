@@ -13,7 +13,7 @@ import {
   getFactionVillageCount,
 } from './factionOwnershipSystem.js';
 import { calculatePrototypeCost, getDomainIdsByTags } from './knowledgeSystem.js';
-import { getAvailableProductionPrototypes, getCityProductionYield, getPrototypeCostType, getUnitCost } from './productionSystem.js';
+import { getAvailableProductionPrototypes, getCityProductionYield, getPrototypeCostType } from './productionSystem.js';
 import { getDomainProgression } from './domainProgression.js';
 import {
   createSimulationTrace,
@@ -347,10 +347,10 @@ function getPrototypeProductionCost(
   faction: NonNullable<ReturnType<typeof buildMvpScenario>['factions'] extends Map<any, infer F> ? F : never>,
 ): number {
   if (getPrototypeCostType(prototype) === 'villages') {
-    return prototype.sourceRecipeId === 'settler' ? 0 : getUnitCost(prototype.chassisId);
+    return prototype.sourceRecipeId === 'settler' ? 0 : prototype.productionCost;
   }
 
-  return calculatePrototypeCost(getUnitCost(prototype.chassisId), faction, getDomainIdsByTags(prototype.tags ?? []), prototype);
+  return calculatePrototypeCost(prototype.productionCost, faction, getDomainIdsByTags(prototype.tags ?? []), prototype);
 }
 
 function averageRecordCounts(records: Record<string, number>[]): Record<string, number> {
@@ -596,7 +596,7 @@ export function collectSeedBalanceMetrics(
   seed: number,
   registry: RulesRegistry,
   maxTurns = DEFAULT_HARNESS_TURNS,
-  mapMode: MapGenerationMode = 'fixed',
+  mapMode: MapGenerationMode = 'randomClimateBands',
   balanceOverrides?: BalanceOverrides,
   difficulty?: DifficultyLevel,
 ): SeedBalanceMetrics {
@@ -669,7 +669,7 @@ export function runBalanceHarness(
   registry: RulesRegistry,
   seeds: readonly number[] = SMOKE_HARNESS_SEEDS,
   maxTurns = DEFAULT_HARNESS_TURNS,
-  mapMode: MapGenerationMode = 'fixed',
+  mapMode: MapGenerationMode = 'randomClimateBands',
   balanceOverrides?: BalanceOverrides,
   difficulty?: DifficultyLevel,
 ): BatchBalanceSummary {
@@ -785,7 +785,7 @@ export function runBalanceHarness(
 export function runStratifiedBalanceHarness(
   registry: RulesRegistry,
   maxTurns = DEFAULT_HARNESS_TURNS,
-  mapMode: MapGenerationMode = 'fixed',
+  mapMode: MapGenerationMode = 'randomClimateBands',
   balanceOverrides?: BalanceOverrides,
   difficulty?: DifficultyLevel,
 ): BatchBalanceSummary {
@@ -834,7 +834,7 @@ export function runPairedDifficultyBalanceHarness(
   registry: RulesRegistry,
   seeds: readonly number[] = SMOKE_HARNESS_SEEDS,
   maxTurns = DEFAULT_HARNESS_TURNS,
-  mapMode: MapGenerationMode = 'fixed',
+  mapMode: MapGenerationMode = 'randomClimateBands',
   balanceOverrides?: BalanceOverrides,
 ): DifficultyComparisonSummary {
   const normal = runBalanceHarness(registry, seeds, maxTurns, mapMode, balanceOverrides, 'normal');
@@ -877,7 +877,7 @@ export function runPairedDifficultyBalanceHarness(
 export function runStratifiedPairedDifficultyBalanceHarness(
   registry: RulesRegistry,
   maxTurns = DEFAULT_HARNESS_TURNS,
-  mapMode: MapGenerationMode = 'fixed',
+  mapMode: MapGenerationMode = 'randomClimateBands',
   balanceOverrides?: BalanceOverrides,
 ): DifficultyComparisonSummary {
   return runPairedDifficultyBalanceHarness(registry, STRATIFIED_HARNESS_SEEDS, maxTurns, mapMode, balanceOverrides);
@@ -908,7 +908,7 @@ export function runValidationComparison(
   registry: RulesRegistry,
   seeds: readonly number[] = VALIDATION_HARNESS_SEEDS,
   maxTurns = DEFAULT_HARNESS_TURNS,
-  mapMode: MapGenerationMode = 'fixed',
+  mapMode: MapGenerationMode = 'randomClimateBands',
   balanceOverrides?: BalanceOverrides,
 ): ValidationSummary {
   const easy = runBalanceHarness(registry, seeds, maxTurns, mapMode, balanceOverrides, 'easy');

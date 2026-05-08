@@ -12,7 +12,6 @@ import {
   getAvailableProductionPrototypes,
   getPrototypeCostType,
   getPrototypeEconomicProfile,
-  getUnitCost,
   isSettlerPrototype,
   SETTLER_VILLAGE_COST,
 } from './productionSystem.js';
@@ -168,7 +167,7 @@ export function rankProductionPriorities(
         difficultyProfile.production.codifiedPivotScoringBonus,
       );
       const settlerScore = scoreSettlerExpansionValue(state, factionId, strategy, prototype, difficultyProfile, difficulty);
-      const baseCost = getUnitCost(prototype.chassisId);
+      const baseCost = prototype.productionCost;
       const totalCost = calculatePrototypeCost(baseCost, faction, domains);
       const economic = getPrototypeEconomicProfile(prototype, registry);
       const projectedSupplyMargin = getProjectedSupplyMarginAfterBuild(state, factionId, prototype, registry);
@@ -291,7 +290,7 @@ export function chooseStrategicProduction(
   if (!prototype || !faction) return null;
 
   const cost = calculatePrototypeCost(
-    getUnitCost(prototype.chassisId),
+    prototype.productionCost,
     faction,
     getDomainIdsByTags(prototype.tags ?? []),
     prototype,
@@ -331,7 +330,7 @@ function rankRushProductionPriorities(
   return candidates
     .map((prototype) => {
       const domains = getDomainIdsByTags(prototype.tags ?? []);
-      const baseCost = getUnitCost(prototype.chassisId);
+      const baseCost = prototype.productionCost;
       const totalCost = calculatePrototypeCost(baseCost, faction, domains);
       const supplyEfficiency = scoreSupplyEfficiency(prototype, registry);
       const forceProjection = scoreForceProjectionValue(prototype, strategy);

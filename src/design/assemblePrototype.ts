@@ -94,7 +94,7 @@ export function assemblePrototype(
     derivedStats,
     tags,
     sourceRecipeId: options.sourceRecipeId,
-    productionCost: options.productionCost,
+    productionCost: options.productionCost ?? chassis.baseProductionCost ?? 10,
     rangeBonus: options.rangeBonus,
     movesBonus: options.movesBonus,
   };

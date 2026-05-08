@@ -14,7 +14,7 @@ export function createCuratedPlaytestPayload(): SerializedGameState {
   const registry = loadRulesRegistry();
   const state = buildMvpScenario(PLAYTEST_SEED, {
     registry,
-    mapMode: 'fixed',
+    mapMode: 'randomClimateBands',
   });
 
   curatePlaytestState(state);

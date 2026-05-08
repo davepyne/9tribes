@@ -31,6 +31,7 @@ export interface ChassisDef {
   minLearnedDomains?: number;
   capabilityPressure?: Record<string, number>;
   supplyCost?: number;
+  baseProductionCost?: number;
   transportCapacity?: number; // max land units this chassis can carry (transport)
   nativeFaction?: string; // if set, only this faction can produce units with this chassis
 }

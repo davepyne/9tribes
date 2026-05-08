@@ -116,7 +116,7 @@ export function getCombatAttackModifier(
   }
 
   if (passive === 'cold_hardened_growth' && attackerTerrainId === 'tundra') {
-    return 0.15;
+    return 0;
   }
 
   if (passive === 'desert_logistics' && attackerTerrainId === 'desert') {
@@ -146,7 +146,7 @@ export function getCombatDefenseModifier(
   }
 
   if (passive === 'cold_hardened_growth' && terrainId === 'tundra') {
-    return 0.25;
+    return 0.1;
   }
 
   if (passive === 'jungle_stalkers' && terrainId === 'jungle') {

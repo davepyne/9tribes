@@ -7,8 +7,6 @@ import {
   advanceProduction,
   isProductionComplete,
   completeProduction,
-  getUnitCost,
-  UNIT_COSTS,
 } from '../src/systems/productionSystem';
 import { calculatePrototypeCost, getDomainIdsByTags } from '../src/systems/knowledgeSystem';
 import { initializeFogForFaction } from '../src/systems/fogSystem';
@@ -17,24 +15,28 @@ import type { City } from '../src/features/cities/types';
 const registry = loadRulesRegistry();
 
 describe('unit costs', () => {
-  it('infantry costs 20 production', () => {
-    expect(getUnitCost('infantry_frame')).toBe(20);
+  it('infantry chassis has baseProductionCost 20', () => {
+    expect(registry.getChassis('infantry_frame')?.baseProductionCost).toBe(20);
   });
 
-  it('ranged costs 24 production', () => {
-    expect(getUnitCost('ranged_frame')).toBe(24);
+  it('ranged chassis has baseProductionCost 24', () => {
+    expect(registry.getChassis('ranged_frame')?.baseProductionCost).toBe(24);
   });
 
-  it('cavalry costs 36 production', () => {
-    expect(getUnitCost('cavalry_frame')).toBe(36);
+  it('cavalry chassis has baseProductionCost 36', () => {
+    expect(registry.getChassis('cavalry_frame')?.baseProductionCost).toBe(36);
   });
 
-  it('unknown chassis defaults to 10', () => {
-    expect(getUnitCost('unknown_frame')).toBe(10);
+  it('prototype inherits chassis baseProductionCost when no override', () => {
+    const proto = assemblePrototype('frost_wardens' as never, 'infantry_frame', ['basic_spear'], registry);
+    expect(proto.productionCost).toBe(20);
   });
 
-  it('has unit cost entries for the expanded chassis roster', () => {
-    expect(Object.keys(UNIT_COSTS).length).toBe(8);
+  it('prototype uses costOverride when provided', () => {
+    const proto = assemblePrototype('frost_wardens' as never, 'infantry_frame', ['basic_spear'], registry, [], {
+      productionCost: 42,
+    });
+    expect(proto.productionCost).toBe(42);
   });
 
   it('keeps prototype costs finite once domain mastery is fully integrated', () => {
@@ -59,13 +61,13 @@ describe('unit costs', () => {
     };
 
     const cost = calculatePrototypeCost(
-      getUnitCost(cavalryPrototype!.chassisId),
+      cavalryPrototype!.productionCost,
       masteredFaction,
       domains,
     );
 
     expect(Number.isFinite(cost)).toBe(true);
-    expect(cost).toBe(getUnitCost(cavalryPrototype!.chassisId));
+    expect(cost).toBe(cavalryPrototype!.productionCost);
   });
 });
 

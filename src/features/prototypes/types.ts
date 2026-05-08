@@ -20,7 +20,7 @@ export interface Prototype {
   derivedStats: UnitStats;
   tags?: string[];
   sourceRecipeId?: string;
-  productionCost?: number;
+  productionCost: number;
   supplyCost?: number;
   rangeBonus?: number;
   movesBonus?: number;

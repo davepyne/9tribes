@@ -142,6 +142,7 @@ export function attemptPriestSummon(
         role: summonRole,
       },
       tags: summonConfig.tags,
+      productionCost: chassisDef?.baseProductionCost ?? 10,
     };
     const prototypes = new Map(current.prototypes);
     prototypes.set(prototypeId, summonPrototype);

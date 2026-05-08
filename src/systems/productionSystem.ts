@@ -23,18 +23,6 @@ export interface UnitEconomicProfile {
 
 export const SETTLER_VILLAGE_COST = 6;
 
-// Unit production costs (in production points)
-export const UNIT_COSTS: Record<string, number> = {
-  infantry_frame: 20,
-  ranged_frame: 24,
-  cavalry_frame: 36,
-  naval_frame: 30,
-  ranged_naval_frame: 32,
-  galley_frame: 40,
-  camel_frame: 24,
-  elephant_frame: 36,
-};
-
 /**
  * Queue a unit for production in a city.
  */
@@ -122,8 +110,8 @@ export function getPrototypeVillageCost(
   return isSettlerPrototype(prototype) ? SETTLER_VILLAGE_COST : 0;
 }
 
-export function getPrototypeQueueCost(prototype: Pick<Prototype, 'chassisId' | 'name' | 'tags' | 'sourceRecipeId'>): number {
-  return isSettlerPrototype(prototype) ? SETTLER_VILLAGE_COST : getUnitCost(prototype.chassisId);
+export function getPrototypeQueueCost(prototype: Pick<Prototype, 'productionCost' | 'name' | 'tags' | 'sourceRecipeId'>): number {
+  return isSettlerPrototype(prototype) ? SETTLER_VILLAGE_COST : prototype.productionCost;
 }
 
 export function canPaySettlerVillageCost(state: GameState, factionId: FactionId, villageCost = SETTLER_VILLAGE_COST): boolean {
@@ -380,13 +368,6 @@ function findSpawnHex(
   return null;
 }
 
-/**
- * Get the production cost for a chassis type.
- */
-export function getUnitCost(chassisId: string): number {
-  return UNIT_COSTS[chassisId] ?? 10;
-}
-
 export function getUnitSupplyCost(
   prototype: Pick<Prototype, 'chassisId'>,
   registry: RulesRegistry,
@@ -397,11 +378,11 @@ export function getUnitSupplyCost(
 }
 
 export function getPrototypeEconomicProfile(
-  prototype: Pick<Prototype, 'chassisId'>,
+  prototype: Pick<Prototype, 'productionCost' | 'chassisId'>,
   registry: RulesRegistry,
 ): UnitEconomicProfile {
   return {
-    productionCost: getUnitCost(prototype.chassisId),
+    productionCost: prototype.productionCost,
     supplyCost: getUnitSupplyCost(prototype, registry),
   };
 }

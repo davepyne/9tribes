@@ -13,9 +13,11 @@ import type { BalanceOverrides } from '../src/balance/types.js';
 import type { DifficultyLevel } from '../src/systems/aiDifficulty.js';
 
 const registry = loadRulesRegistry();
-const mapMode = process.argv.includes('--random') ? 'randomClimateBands' : 'fixed';
+const mapMode = process.argv.includes('--fixed') ? 'fixed' : 'randomClimateBands';
 const turnsIdx = process.argv.indexOf('--turns');
 const maxTurns = turnsIdx !== -1 && process.argv[turnsIdx + 1] ? Number(process.argv[turnsIdx + 1]) : DEFAULT_HARNESS_TURNS;
+const useFixedSeeds = process.argv.includes('--fixed-seeds');
+const randomSeeds = Array.from({ length: 10 }, () => Math.floor(Math.random() * 200) + 1);
 
 const widthIdx = process.argv.indexOf('--width');
 const heightIdx = process.argv.indexOf('--height');
@@ -63,12 +65,11 @@ if (process.argv.includes('--validate')) {
     ? (
         process.argv.includes('--stratified')
           ? runStratifiedPairedDifficultyBalanceHarness(registry, maxTurns, mapMode, overrides)
-          : runPairedDifficultyBalanceHarness(registry, SMOKE_HARNESS_SEEDS, maxTurns, mapMode, overrides)
-      )
+          : runPairedDifficultyBalanceHarness(registry, useFixedSeeds ? SMOKE_HARNESS_SEEDS : randomSeeds, maxTurns, mapMode, overrides)      )
     : (
         process.argv.includes('--stratified')
           ? runStratifiedBalanceHarness(registry, maxTurns, mapMode, overrides, difficulty)
-          : runBalanceHarness(registry, SMOKE_HARNESS_SEEDS, maxTurns, mapMode, overrides, difficulty)
+          : runBalanceHarness(registry, useFixedSeeds ? SMOKE_HARNESS_SEEDS : randomSeeds, maxTurns, mapMode, overrides, difficulty)
       );
 
   console.log(JSON.stringify(summary, null, 2));

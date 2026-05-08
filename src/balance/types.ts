@@ -9,7 +9,7 @@ export interface TerrainYieldOverride {
 }
 
 export interface ChassisOverride extends Partial<
-  Pick<ChassisDef, 'baseHp' | 'baseMoves' | 'baseAttack' | 'baseDefense' | 'baseRange' | 'supplyCost'>
+  Pick<ChassisDef, 'baseHp' | 'baseMoves' | 'baseAttack' | 'baseDefense' | 'baseRange' | 'supplyCost' | 'baseProductionCost'>
 > {}
 
 export interface ComponentOverride extends Partial<
@@ -68,7 +68,7 @@ const KNOWN_COMPONENT_IDS = new Set(Object.keys(componentsData));
 
 const TOP_LEVEL_KEYS = new Set(['terrainYields', 'chassis', 'components', 'factions', 'scenario', 'signatureAbilities']);
 const TERRAIN_OVERRIDE_KEYS = new Set(['productionYield']);
-const CHASSIS_OVERRIDE_KEYS = new Set(['baseHp', 'baseMoves', 'baseAttack', 'baseDefense', 'baseRange', 'supplyCost']);
+const CHASSIS_OVERRIDE_KEYS = new Set(['baseHp', 'baseMoves', 'baseAttack', 'baseDefense', 'baseRange', 'supplyCost', 'baseProductionCost']);
 const COMPONENT_OVERRIDE_KEYS = new Set(['attackBonus', 'defenseBonus', 'rangeBonus', 'hpBonus', 'movesBonus']);
 const FACTION_OVERRIDE_KEYS = new Set(['capabilitySeeds', 'researchRate']);
 const SCENARIO_OVERRIDE_KEYS = new Set(['roundsToWin', 'mapWidth', 'mapHeight']);

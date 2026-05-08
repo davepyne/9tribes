@@ -15,7 +15,6 @@ import {
   getPrototypeQueueCost,
   getPrototypeEconomicProfile,
   getProjectedSupplyDemandWithPrototype,
-  getUnitCost,
   isSettlerPrototype,
   SETTLER_VILLAGE_COST,
 } from './productionSystem.js';
@@ -73,13 +72,13 @@ export function getTargetArmySize(
 }
 
 export function getProductionCostForPrototype(
-  prototype: Pick<Prototype, 'name' | 'chassisId' | 'tags' | 'sourceRecipeId'>,
+  prototype: Pick<Prototype, 'name' | 'chassisId' | 'tags' | 'sourceRecipeId' | 'productionCost'>,
   faction: NonNullable<GameState['factions'] extends Map<any, infer F> ? F : never>,
 ): number {
   if (getPrototypeCostType(prototype) === 'villages') {
     return prototype.sourceRecipeId === 'settler' ? 0 : getPrototypeQueueCost(prototype);
   }
-  return calculatePrototypeCost(getUnitCost(prototype.chassisId), faction, getDomainIdsByTags(prototype.tags ?? []), prototype);
+  return calculatePrototypeCost(prototype.productionCost, faction, getDomainIdsByTags(prototype.tags ?? []), prototype);
 }
 
 export function getSupplyMargin(economy: { supplyIncome: number; supplyDemand: number }): number {
@@ -101,7 +100,7 @@ export function getProjectedSupplyMarginAfterBuild(
 // Scoring functions
 // ---------------------------------------------------------------------------
 
-export function scoreSupplyEfficiency(prototype: Pick<Prototype, 'chassisId'> & {
+export function scoreSupplyEfficiency(prototype: Pick<Prototype, 'chassisId' | 'productionCost'> & {
   derivedStats: { attack: number; defense: number; hp: number; moves: number; range: number };
 }, registry: RulesRegistry): number {
   const economic = getPrototypeEconomicProfile(prototype, registry);

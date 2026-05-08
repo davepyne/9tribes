@@ -97,7 +97,7 @@
       "defensive"
     ],
     "nativeFaction": "hill_clan",
-    "costOverride": 31
+    "costOverride": 27
   },
   "steppe_raiders": {
     "id": "steppe_raiders",
@@ -189,7 +189,7 @@
       "siege"
     ],
     "nativeFaction": "hill_clan",
-    "costOverride": 50
+    "costOverride": 40
   },
   "slaver": {
     "id": "slaver",
@@ -285,7 +285,7 @@
       "shock"
     ],
     "nativeFaction": "savannah_lions",
-    "costOverride": 43
+    "costOverride": 36
   },
   "river_raiders": {
     "id": "river_raiders",
@@ -322,7 +322,7 @@
       "priest"
     ],
     "nativeFaction": "river_people",
-    "costOverride": 31
+    "costOverride": 38
   },
   "polar_priest": {
     "id": "polar_priest",
@@ -364,6 +364,6 @@
       "siege"
     ],
     "nativeFaction": "hill_clan",
-    "costOverride": 42
+    "costOverride": 35
   }
 }

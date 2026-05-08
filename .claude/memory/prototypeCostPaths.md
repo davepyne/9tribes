@@ -1,35 +1,33 @@
 ---
 name: prototypeCostPaths
-description: Production costs are now unified via Prototype.productionCost override — single source of truth replacing the old 3-path split
+description: Production costs unified via Prototype.productionCost — single source of truth from chassis.json baseProductionCost or costOverride in content JSON
 type: architecture
-originSessionId: 64035bca-210b-45fc-be0f-52580fc47def
 ---
-## Cost Unification via productionCost Override (2026-04-15)
+## Cost Unification via Prototype.productionCost (2026-05-08)
 
-**Old problem:** Three disconnected cost systems produced different numbers:
-- UI displayed `UNIT_COSTS` table values (infantry=20)
-- GameSession used hardcoded switch (infantry=8)
-- AI used calculatePrototypeCost with mastery modifier
+**Single source of truth:** `prototype.productionCost` is always populated (required field). No more separate cost tables.
 
-**Solution:** Added `productionCost?: number` to `Prototype` interface. Now all cost consumers check this first:
+**How it gets set during assembly:**
+- `assemblePrototype()` in `assemblePrototype.ts` sets: `options.productionCost ?? chassis.baseProductionCost ?? 10`
+- Starting units: `civilizations.json` → `costOverride` → `options.productionCost`
+- Hybrid recipes: `hybrid-recipes.json` → `costOverride` → `options.productionCost`
+- No override: falls back to `chassis.baseProductionCost` from `chassis.json`
 
-| Consumer | File | Priority |
-|----------|------|----------|
-| Human queue | `GameSession.getPrototypeCost()` in `sessionUtils.ts` | `prototype.productionCost ?? switch(chassisId)` |
-| AI queue | `aiProductionStrategy.ts` `getProductionCostForPrototype()` | Uses `calculatePrototypeCost()` reading base from `getUnitCost()` — **does NOT check `prototype.productionCost`** (missing from Pick type) |
-| UI display | `cityInspectorViewModel.ts` (moved from worldViewModel.ts) | `prototype.productionCost ?? getUnitCost()` then mastery modifier |
+**Chassis base costs** are in `src/content/base/chassis.json` as `baseProductionCost` on each chassis entry. The old `UNIT_COSTS` table in productionSystem.ts has been removed.
 
-**Where overrides come from:**
-- Starting units: `civilizations.json` → `startingUnits[].costOverride` → threaded through `buildMvpScenario.ts` → `assemblePrototype(options.productionCost)`
-- Unlock prototypes: `hybrid-recipes.json` → `recipe.costOverride` → threaded through `hybridSystem.ts` → `assemblePrototype(options.productionCost)`
-- No override: falls back to `UNIT_COSTS[chassisId]` table (for display) or hardcoded switch (for human queue)
+**Cost resolution flow (all paths unified):**
+1. Read `prototype.productionCost` as base cost
+2. For unlock prototypes: `calculatePrototypeCost(base, faction, domains)` applies mastery modifier (2x/1.5x/1.2x/1x)
+3. For starting/other prototypes: base cost used directly
 
-**Cost scale established this session:**
-- Early (starting): 9–14 prod (faction-specific, stronger = more expensive)
-- Mid (unlock): 14–22 prod (2 components, mid chassis)
-- Late (unlock): 18–34 prod (3+ components, late/heavy chassis)
-- Culture shock still applies 2.0x/1.5x/1.2x on first few builds of unlock prototypes
+**Key functions:**
+- `getPrototypeQueueCost(prototype)` — reads `prototype.productionCost` (settlers use village cost)
+- `getPrototypeEconomicProfile(prototype, registry)` — reads `prototype.productionCost`
+- `getPrototypeCost(state, registry, prototypeId)` in sessionUtils — reads `prototype.productionCost`, applies mastery for unlocks
+- `getProductionCostForPrototype(prototype, faction)` in aiProductionScoring — reads `prototype.productionCost`, applies mastery for unlocks
 
-**Why:** User wanted faction-specific costs so powerful factions (Arctic Wardens, Savannah Lions) pay more for their strong units. Also fixed the UI showing wrong costs entirely.
+**Balance tuning:** Adjust `costOverride` in `civilizations.json` (starting units) or `hybrid-recipes.json` (unlock units). Adjust `baseProductionCost` in `chassis.json` to change the default for all units on that chassis.
 
-**How to apply:** When adding a new unit (starter or hybrid), always set `costOverride` in the content JSON. Don't rely on chassis defaults. Check both `GameSession.getPrototypeCost()` AND `cityInspectorViewModel.ts` production display — they must agree. Note: AI cost path (`aiProductionStrategy.ts`) does NOT see `productionCost` overrides — only human player and UI do.
+**Why:** Fixed 3-way cost split where AI ignored productionCost overrides, player saw different costs than AI, and hardcoded switch in sessionUtils returned different values than UNIT_COSTS table.
+
+**How to apply:** When adding a new unit, set `costOverride` in the content JSON for precise tuning. If omitted, the chassis default from `chassis.json` applies. The balance harness and AI now see the exact same costs the player sees.

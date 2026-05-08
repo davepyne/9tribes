@@ -60,7 +60,7 @@
       },
       "effect": {
         "type": "standing_stone",
-        "anchoredAuraRadius": 3,
+        "anchoredAuraRadius": 4,
         "anchoredDefenseBonus": 0.30,
         "anchoredHealPerTurn": 5,
         "anchoredSelfRegen": 8,
@@ -80,7 +80,7 @@
       "mobilityDomains": ["charge", "hitrun", "camel_adaptation", "river_stealth"],
       "effect": {
         "type": "ghost_army",
-        "phaseDistance": 3,
+        "phaseDistance": 4,
         "killChainRedeployRange": 99,
         "phaseAlliesMovementBonus": 2,
         "description": "Phase: teleport up to 3 hexes through anything (0 movement cost, must be outside enemy vision). On kill: re-stealth + re-emerge near any ally. Adjacent allies gain +2 movement when this unit phases."
@@ -173,7 +173,7 @@
       },
       "effect": {
         "type": "iron_turtle",
-        "crushingZoneRadius": 2,
+        "crushingZoneRadius": 3,
         "crushingZoneDamage": 2,
         "crushingZoneMovementPenalty": 1,
         "damageReflection": 0.50,

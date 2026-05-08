@@ -19,7 +19,6 @@ import {
   completeProduction,
   getAvailableProductionPrototypes,
   getProjectedSupplyDemandWithPrototype,
-  getUnitCost,
   isSettlerPrototype,
   queueUnit,
 } from '../productionSystem.js';
@@ -616,7 +615,7 @@ export function processFactionPhases(
         const domains = getDomainIdsByTags(proto.tags ?? []);
         const cost = isSettler
           ? (cityCount >= 3 ? 6 : 6)
-          : calculatePrototypeCost(getUnitCost(proto.chassisId), faction, domains, proto);
+          : calculatePrototypeCost(proto.productionCost, faction, domains, proto);
         const costType = isSettler ? 'villages' as const : 'production' as const;
         updatedCity = queueUnit(updatedCity, proto.id, proto.chassisId, cost, costType);
         log(trace, `${faction.name} queued ${proto.chassisId} at ${updatedCity.name} (${priority.reason})`);

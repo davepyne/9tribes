@@ -11,7 +11,6 @@ import { updateFogState } from '../../../../src/systems/fogSystem.js';
 import { getFaction, getPrototype, getResearch, asImprovementId, asFactionId } from '../stateAccess.js';
 import { isCityEncircled } from '../../../../src/systems/territorySystem.js';
 import { calculatePrototypeCost, getDomainIdsByTags, isUnlockPrototype } from '../../../../src/systems/knowledgeSystem.js';
-import { getUnitCost } from '../../../../src/systems/productionSystem.js';
 import { hasCaptureAbility } from '../../../../src/systems/captureSystem.js';
 import { canPriestSummon, attemptPriestSummon } from '../../../../src/systems/summonSystem.js';
 import type { RulesRegistry } from '../../../../src/data/registry/types.js';
@@ -208,17 +207,12 @@ export function getPrototypeCost(state: GameState, registry: RulesRegistry, prot
     return 10;
   }
 
-  // Prototype-level cost override (faction-specific starting units)
-  if (prototype.productionCost != null) {
-    return prototype.productionCost;
-  }
-
   // Unlock prototypes (hybrid recipes) use the mastery cost modifier
   if (isUnlockPrototype(prototype)) {
     const faction = getFaction(state, prototype.factionId);
     if (faction) {
       return calculatePrototypeCost(
-        getUnitCost(prototype.chassisId),
+        prototype.productionCost,
         faction,
         getDomainIdsByTags(prototype.tags ?? []),
         prototype,
@@ -226,25 +220,7 @@ export function getPrototypeCost(state: GameState, registry: RulesRegistry, prot
     }
   }
 
-  // Starting prototypes use hardcoded balance-tuned costs
-  switch (prototype.chassisId) {
-    case 'infantry_frame':
-      return 8;
-    case 'heavy_infantry_frame':
-      return 11;
-    case 'ranged_frame':
-      return 10;
-    case 'cavalry_frame':
-      return 14;
-    case 'naval_frame':
-      return 12;
-    case 'camel_frame':
-      return 10;
-    case 'elephant_frame':
-      return 14;
-    default:
-      return 10;
-  }
+  return prototype.productionCost;
 }
 
 // ---------------------------------------------------------------------------

@@ -19,7 +19,6 @@ import {
   getAvailableProductionPrototypes,
   getPrototypeCostType,
   getPrototypeQueueCost,
-  getUnitCost,
   SETTLER_VILLAGE_COST,
 } from '../../../../../src/systems/productionSystem.js';
 import { calculatePrototypeCost, getDomainIdsByTags, getPrototypeCostModifier, isUnlockPrototype } from '../../../../../src/systems/knowledgeSystem.js';
@@ -87,7 +86,7 @@ export function buildCityInspectorViewModel(state: GameState, cityId: string, re
     production: {
       status: city.currentProduction ? 'producing' : 'idle',
       current: city.currentProduction ? (() => {
-        const baseCost = currentItem ? getUnitCost(currentItem.chassisId) : undefined;
+        const baseCost = currentItem ? currentItem.productionCost : undefined;
         let costModifier: number | undefined;
         let costModifierReason: string | undefined;
         if (currentItem && faction && isUnlockPrototype(currentItem) && currentCostType === 'production') {
@@ -126,7 +125,7 @@ export function buildCityInspectorViewModel(state: GameState, cityId: string, re
         let costModifier: number | undefined;
         let costModifierReason: string | undefined;
         if (prototype && faction && isUnlockPrototype(prototype) && costType === 'production') {
-          const rawBase = getUnitCost(prototype.chassisId);
+          const rawBase = prototype.productionCost;
           const domainIds = getDomainIdsByTags(prototype.tags ?? []);
           const maxModifier = domainIds.reduce((max: number, d: string) => Math.max(max, getPrototypeCostModifier(faction, d)), 1.0);
           if (maxModifier > 1.0) {
@@ -152,8 +151,8 @@ export function buildCityInspectorViewModel(state: GameState, cityId: string, re
     productionOptions: (!faction ? [] : getAvailableProductionPrototypes(state, city.factionId, registry))
       .map((prototype) => {
         const costType = getPrototypeCostType(prototype);
-        const baseRawCost = prototype.productionCost ?? getUnitCost(prototype.chassisId);
-        let cost = prototype.productionCost ?? getPrototypeQueueCost(prototype);
+        const baseRawCost = prototype.productionCost;
+        let cost = getPrototypeQueueCost(prototype);
         let baseCost: number | undefined;
         let costModifier: number | undefined;
         let costModifierReason: string | undefined;
