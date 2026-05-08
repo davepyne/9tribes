@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { ClientState } from '../game/types/clientState';
 import type { FactionInfo } from '../data/faction-info';
 import { FactionInfoPopup } from './FactionInfoPopup';
 import { MetaRow } from './inspectors/MetaRow';
 import { UnitInspectorSection } from './inspectors/UnitInspectorSection';
 import { CityInspectorSection } from './inspectors/CityInspectorSection';
+import { resolveActiveSynergies } from './resolveActiveSynergies';
 
 type ContextInspectorProps = {
   state: ClientState;
@@ -74,6 +75,21 @@ export const ContextInspector = React.memo(function ContextInspector({ state, is
   const hoveredKey = state.hoveredHex ? `${state.hoveredHex.q},${state.hoveredHex.r}` : null;
   const hoveredTile = hoveredKey ? state.world.map.hexes.find((hex) => hex.key === hoveredKey) : null;
 
+  // Resolve active synergies for the selected unit's faction
+  const selectedUnitFactionColor = useMemo(() => {
+    if (!selectedUnit) return undefined;
+    const faction = state.world.factions.find((f) => f.id === selectedUnit.factionId);
+    return faction?.color;
+  }, [selectedUnit, state.world.factions]);
+
+  const selectedUnitSynergies = useMemo(() => {
+    if (!selectedUnit || !selectedUnit.isActiveFaction) return null;
+    const capabilities = state.research?.capabilities ?? [];
+    const pairEligible = capabilities.filter((c) => c.level >= 3).map((c) => c.domainId);
+    const emergentEligible = capabilities.filter((c) => c.level >= 2).map((c) => c.domainId);
+    return resolveActiveSynergies(pairEligible, emergentEligible);
+  }, [selectedUnit, state.research?.capabilities]);
+
   return (
     <aside className="ci-root ci-root--open">
       {/* Faction Popup */}
@@ -120,6 +136,28 @@ export const ContextInspector = React.memo(function ContextInspector({ state, is
               unit={selectedUnit}
               mode={state.mode}
               settlementPreview={settlementPreview}
+              activeSynergies={selectedUnitSynergies}
+              factionColor={selectedUnitFactionColor}
+              onPrepareAbility={onPrepareAbility}
+              onBoardTransport={onBoardTransport}
+              onDisembarkUnit={onDisembarkUnit}
+              onFactionPopup={(info) => setFactionPopup(info)}
+              onDomainPopup={(popup) => setDomainPopup(popup)}
+            />
+          </>
+        ) : null}
+
+        {/* Enemy Unit Inspector */}
+        {selectedUnit && !selectedUnit.isActiveFaction ? (
+          <>
+            <p className="ci-desc">{state.hud.selectedDescription}</p>
+            <UnitInspectorSection
+              unit={selectedUnit}
+              mode={state.mode}
+              settlementPreview={null}
+              enemySynergyIntel={state.enemySynergyIntel}
+              enemyFactionId={selectedUnit.factionId}
+              factionColor={selectedUnitFactionColor}
               onPrepareAbility={onPrepareAbility}
               onBoardTransport={onBoardTransport}
               onDisembarkUnit={onDisembarkUnit}

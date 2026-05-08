@@ -2,67 +2,13 @@ import React, { useState, useMemo } from 'react';
 import { helpContent } from '../data/help-content';
 import pairSynergiesData from '../data/pair-synergies.json';
 import emergentRulesData from '../data/emergent-rules.json';
+import { SynergyCard } from './SynergyCard';
+import type { PairSynergyData, EmergentRuleData } from './SynergyCard';
+import { domainGlyph, domainColor, domainDisplayName } from './SynergyChip';
 
-// ── Domain palette (duplicated from SynergyChip — not exported) ──
+const ALL_DOMAIN_IDS = ['venom', 'fortress', 'charge', 'hitrun', 'tidal_warfare', 'slaving', 'nature_healing', 'river_stealth', 'camel_adaptation', 'heavy_hitter'];
 
-const DOMAIN_COLORS: Record<string, string> = {
-  venom: '#4ade80',
-  fortress: '#60a5fa',
-  charge: '#f59e0b',
-  hitrun: '#94a3b8',
-  tidal_warfare: '#22d3ee',
-  slaving: '#dc2626',
-  nature_healing: '#10b981',
-  river_stealth: '#a855f7',
-  camel_adaptation: '#d97706',
-  heavy_hitter: '#64748b',
-};
-
-const DOMAIN_ICONS: Record<string, string> = {
-  venom: '\u2623',
-  fortress: '\u26E8',
-  charge: '\uD83D\uDC18',
-  hitrun: '\u276F',
-  tidal_warfare: '\uD83C\uDF0A',
-  slaving: '\u2694',
-  nature_healing: '\u273E',
-  river_stealth: '\uD83C\uDF0F',
-  camel_adaptation: '\uD83D\uDC2A',
-  heavy_hitter: '\u2696',
-};
-
-const DOMAIN_NAMES: Record<string, string> = {
-  venom: 'Venomcraft',
-  fortress: 'Fortress Discipline',
-  charge: 'Charge',
-  hitrun: 'Skirmish Pursuit',
-  tidal_warfare: 'Tidal Warfare',
-  slaving: 'Slaving',
-  nature_healing: 'Nature Healing',
-  river_stealth: 'River Stealth',
-  camel_adaptation: 'Camel Adaptation',
-  heavy_hitter: 'Heavy Hitter',
-};
-
-function domainGlyph(domainId: string): string {
-  return DOMAIN_ICONS[domainId] ?? domainId.slice(0, 2).toUpperCase();
-}
-
-function domainColor(domainId: string): string {
-  return DOMAIN_COLORS[domainId] ?? '#888';
-}
-
-function domainDisplayName(domainId: string): string {
-  return DOMAIN_NAMES[domainId] ?? domainId.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-}
-
-type PairSynergy = (typeof pairSynergiesData.pairSynergies)[number];
-type EmergentRule = (typeof emergentRulesData.rules)[number];
-
-const ALL_DOMAIN_IDS = Object.keys(DOMAIN_COLORS);
-
-// Map emergent condition strings to human-readable descriptions
-function emergentConditionLabel(rule: EmergentRule): string {
+function emergentConditionLabel(rule: EmergentRuleData): string {
   switch (rule.condition) {
     case 'contains_terrain AND contains_combat AND contains_mobility':
       return 'Requires: one terrain + one combat + one mobility domain';
@@ -92,6 +38,7 @@ function emergentConditionLabel(rule: EmergentRule): string {
 export const SynergyEncyclopediaTab = React.memo(function SynergyEncyclopediaTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
   const toggleFilter = (domainId: string) => {
     setActiveFilters((prev) => {
@@ -117,33 +64,30 @@ export const SynergyEncyclopediaTab = React.memo(function SynergyEncyclopediaTab
 
   const filteredSynergies = useMemo(() => {
     const search = searchTerm.toLowerCase().trim();
-    return pairSynergiesData.pairSynergies.filter((pair: PairSynergy) => {
-      // Domain filter
+    return (pairSynergiesData.pairSynergies as PairSynergyData[]).filter((pair) => {
       if (activeFilters.size > 0) {
-        const domains = pair.domains as string[];
         for (const f of activeFilters) {
-          if (!domains.includes(f)) return false;
+          if (!pair.domains.includes(f)) return false;
         }
       }
-      // Search filter
       if (search) {
         const nameMatch = pair.name.toLowerCase().includes(search);
         const descMatch = (guideMap.get(pair.id) ?? pair.description ?? '').toLowerCase().includes(search);
-        const tagMatch = (pair.requiredTags as string[]).some((t) => t.toLowerCase().includes(search));
-        if (!nameMatch && !descMatch && !tagMatch) return false;
+        if (!nameMatch && !descMatch) return false;
       }
       return true;
     });
   }, [searchTerm, activeFilters, guideMap]);
 
   const emergentRules = useMemo(
-    () => emergentRulesData.rules.filter((r: EmergentRule) => r.condition !== 'default'),
+    () => (emergentRulesData.rules as EmergentRuleData[]).filter((r) => r.condition !== 'default'),
     [],
   );
 
+  const neutralColor = '#a8a29e';
+
   return (
     <div className="syn-enc">
-      {/* Search */}
       <input
         type="text"
         className="syn-enc__search"
@@ -152,7 +96,6 @@ export const SynergyEncyclopediaTab = React.memo(function SynergyEncyclopediaTab
         onChange={(e) => setSearchTerm(e.target.value)}
       />
 
-      {/* Domain filter row */}
       <div className="syn-enc__filters">
         {activeFilters.size > 0 && (
           <button
@@ -180,64 +123,47 @@ export const SynergyEncyclopediaTab = React.memo(function SynergyEncyclopediaTab
         })}
       </div>
 
-      {/* Count */}
       <div className="syn-enc__count">
         Showing {filteredSynergies.length} of {pairSynergiesData.pairSynergies.length} synergies
       </div>
 
-      {/* Synergy list */}
       {filteredSynergies.length > 0 ? (
         <div className="syn-enc__list">
-          {filteredSynergies.map((pair: PairSynergy) => {
-            const domains = pair.domains as [string, string];
-            const description = guideMap.get(pair.id) ?? pair.description;
-            const tags = (pair.requiredTags as string[]).filter(
-              (t, i, arr) => arr.indexOf(t) === i,
-            );
-            return (
-              <div key={pair.id} className="syn-enc__item">
-                <div className="syn-enc__item__domains">
-                  <span
-                    className="syn-enc__item__dot"
-                    style={{ backgroundColor: domainColor(domains[0]) }}
-                    title={domainDisplayName(domains[0])}
-                  >
-                    {domainGlyph(domains[0])}
-                  </span>
-                  <span className="syn-enc__item__plus">+</span>
-                  <span
-                    className="syn-enc__item__dot"
-                    style={{ backgroundColor: domainColor(domains[1]) }}
-                    title={domainDisplayName(domains[1])}
-                  >
-                    {domainGlyph(domains[1])}
-                  </span>
-                </div>
-                <div className="syn-enc__item__name">{pair.name}</div>
-                <div className="syn-enc__item__desc">{description}</div>
-                {tags.length > 0 && (
-                  <div className="syn-enc__item__tags">
-                    {tags.map((tag) => (
-                      <span key={tag} className="syn-enc__item__tag">{tag}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {filteredSynergies.map((pair) => (
+            <div
+              key={pair.id}
+              className="syn-enc__card-wrap"
+              onClick={() => setExpandedCardId(expandedCardId === pair.id ? null : pair.id)}
+            >
+              <SynergyCard
+                mode="friendly"
+                synergy={pair}
+                kind="pair"
+                factionColor={neutralColor}
+                compact={expandedCardId !== pair.id}
+              />
+            </div>
+          ))}
         </div>
       ) : (
         <div className="syn-enc__empty">No synergies match your filters.</div>
       )}
 
-      {/* Emergent Triple Stacks */}
       <div className="syn-enc__section">Emergent Triple Stacks</div>
       <div className="syn-enc__list">
-        {emergentRules.map((rule: EmergentRule) => (
-          <div key={rule.id} className="syn-enc__emergent">
-            <div className="syn-enc__emergent__name">{rule.name}</div>
-            <div className="syn-enc__emergent__condition">{emergentConditionLabel(rule)}</div>
-            <div className="syn-enc__emergent__effect">{rule.effect.description}</div>
+        {emergentRules.map((rule) => (
+          <div
+            key={rule.id}
+            className="syn-enc__card-wrap"
+            onClick={() => setExpandedCardId(expandedCardId === rule.id ? null : rule.id)}
+          >
+            <SynergyCard
+              mode="friendly"
+              synergy={rule}
+              kind="triple"
+              factionColor={neutralColor}
+              compact={expandedCardId !== rule.id}
+            />
           </div>
         ))}
       </div>

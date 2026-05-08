@@ -19,6 +19,8 @@ export interface PairSynergyConfig {
   requiredTags: string[];
   effect: SynergyEffect;
   description: string;
+  friendlyFlavor: string;
+  enemyFlavor: string;
 }
 
 export interface EmergentRuleConfig {
@@ -29,6 +31,8 @@ export interface EmergentRuleConfig {
   mobilityDomains?: string[];
   combatDomains?: string[];
   effect: EmergentEffect;
+  friendlyFlavor: string;
+  enemyFlavor: string;
 }
 
 export type SynergyEffect =

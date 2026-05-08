@@ -24,6 +24,9 @@ import { KnowledgeGainedModalProvider, useLearnDetector, useKnowledgeModal } fro
 import { TechDiscoveryModalProvider, useTechDiscoveryDetector, useTechDiscoveryModal } from '../ui/TechDiscoveryModal';
 import { SynergyUnlockedModalProvider, useSynergyUnlockDetector, useSynergyModal } from '../ui/SynergyUnlockedModal';
 import { CityLimitModalProvider, useCityLimitDetector, useCityLimitModal } from '../ui/CityLimitModal';
+import { EnemySynergyContactModal } from '../ui/EnemySynergyContactModal';
+import pairSynergiesData from '../data/pair-synergies.json';
+import emergentRulesData from '../data/emergent-rules.json';
 import { CombatLogPanel } from '../ui/CombatLogPanel';
 import { useCombatBridge } from './hooks/useCombatBridge';
 import { useSessionAudio } from './hooks/useSessionAudio';
@@ -132,6 +135,36 @@ function KnowledgeGainedShellContent({
     showSynergyUnlock,
   );
 
+  // ── Enemy synergy first-contact detection ──
+  const [pendingContacts, setPendingContacts] = useState<Array<{
+    factionId: string; synergyId: string; synergyName: string;
+  }>>([]);
+  const seenIntelRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const intel = state.enemySynergyIntel ?? {};
+    const newContacts: typeof pendingContacts = [];
+    for (const [factionId, synergies] of Object.entries(intel)) {
+      for (const [synergyId, entry] of Object.entries(synergies)) {
+        const key = `${factionId}:${synergyId}`;
+        if (entry.encounters > 0 && !seenIntelRef.current.has(key)) {
+          seenIntelRef.current.add(key);
+          // Resolve synergy name from the data
+          const found = pairSynergiesData.pairSynergies.find((p: any) => p.id === synergyId)
+            ?? emergentRulesData.rules.find((r: any) => r.id === synergyId);
+          if (found) {
+            newContacts.push({ factionId, synergyId, synergyName: found.name });
+          }
+        }
+      }
+    }
+    if (newContacts.length > 0) {
+      setPendingContacts(prev => [...prev, ...newContacts]);
+    }
+  }, [state.enemySynergyIntel]);
+
+  const dismissContacts = useCallback(() => setPendingContacts([]), []);
+
   useCityLimitDetector(
     state.world.factions,
     state.playFeedback?.playerFactionId ?? null,
@@ -206,6 +239,9 @@ function KnowledgeGainedShellContent({
         break;
       case 'open_supply_report':
         onSetActiveOverlay('supply_report');
+        break;
+      case 'open_field_reports':
+        onSetActiveOverlay('field_reports');
         break;
       case 'toggle_debug_overlay':
         onSetDebugVisible(!debugVisible);
@@ -318,7 +354,7 @@ function KnowledgeGainedShellContent({
 
       {activeOverlay ? (
         <ReportsOverlay
-          reportType={activeOverlay as 'faction_summary' | 'combat_log' | 'supply_report'}
+          reportType={activeOverlay as 'faction_summary' | 'combat_log' | 'supply_report' | 'field_reports'}
           state={state}
           onClose={() => onSetActiveOverlay(null)}
         />
@@ -374,6 +410,16 @@ function KnowledgeGainedShellContent({
       ) : null}
       {loadOpen && <LoadOverlay onClose={() => onSetLoadOpen(false)} />}
       {saveOpen && <SaveOverlay onClose={() => onSetSaveOpen(false)} getSaveSnapshot={getSaveSnapshot ?? (() => null)} />}
+
+      {pendingContacts.length > 0 && (
+        <EnemySynergyContactModal
+          firstContactQueue={pendingContacts}
+          intel={state.enemySynergyIntel}
+          factionNames={Object.fromEntries(state.world.factions.map((f) => [f.id, f.name]))}
+          factionColors={Object.fromEntries(state.world.factions.map((f) => [f.id, f.color]))}
+          onDismiss={dismissContacts}
+        />
+      )}
     </div>
   );
 }
@@ -450,6 +496,9 @@ export function GameShell({ controller, onRestartSession, onSaveGame }: GameShel
         break;
       case 'open_supply_report':
         setActiveOverlay('supply_report');
+        break;
+      case 'open_field_reports':
+        setActiveOverlay('field_reports');
         break;
       case 'toggle_debug_overlay':
         setDebugVisible((v) => !v);

@@ -15,7 +15,9 @@
         "doubleChargeRangeInNativeTerrain": true,
         "terraformCharges": 3,
         "description": "Charges ignore all terrain penalties. In native terrain: double charge range + +50% damage. Reshape: permanently convert 3 hexes to your native terrain type."
-      }
+      },
+      "friendlyFlavor": "Your armies become the land's true masters. The terrain bends to your will — you reshape it, charge through it, and weaponize it like no force before you.",
+      "enemyFlavor": "They changed the ground under our feet. I swear it. Hills flattened, rivers dried. Their charges crossed terrain that should have stopped a mountain goat. When they were done, the land itself bore their mark."
     },
     {
       "id": "paladin",
@@ -32,7 +34,9 @@
         "minHp": 1,
         "smiteBonusAtFullHp": 1.0,
         "description": "Heals for 50% of damage dealt; can't drop below 1 HP from a single hit. At full HP, next attack deals +100% damage (Radiant Smite)."
-      }
+      },
+      "friendlyFlavor": "Your champions are touched by the divine — their wounds seal as they deal death, and at full strength they unleash radiant fury that annihilates anything it touches.",
+      "enemyFlavor": "We wounded their champion again and again. Every time, the cuts sealed shut. When they struck back at full health, the blow was blinding — literally. Men near the impact couldn't see for minutes afterward."
     },
     {
       "id": "terrain_assassin",
@@ -47,7 +51,9 @@
         "type": "permanent_stealth",
         "terrainTypes": ["desert", "coast", "hill"],
         "description": "Attacks from stealth in matching terrain type are permanent stealth — enemies never detect you regardless of proximity"
-      }
+      },
+      "friendlyFlavor": "Your assassins become one with the terrain — invisible forever in their chosen environment. They kill without revealing themselves, over and over, until nothing remains.",
+      "enemyFlavor": "We posted sentries. We used dogs. We burned torches in a ring around the camp. They still died. Whatever is out there, it knows the land in a way we never will. We never saw it. We never will."
     },
     {
       "id": "standing_stone",
@@ -71,7 +77,9 @@
         "marchDefenseBonus": 0.15,
         "marchHealPerTurn": 2,
         "description": "Toggle stance each turn. Anchored: 3-hex aura (+30% defense, 5 HP/turn, damage share 50/50, enemies lose 2 movement, adjacent enemies take 2 damage). Marching: 1-hex aura (+15% defense, 2 HP/turn), can move."
-      }
+      },
+      "friendlyFlavor": "Your standing stones anchor the battlefield. In stillness, you are immovable — healing, shielding, and punishing all who approach. In motion, your protective aura marches with you.",
+      "enemyFlavor": "They planted something in the ground — a stone, a totem, I couldn't tell. After that, everything near it was wrong. Our arrows curved. Our men slowed. Theirs got back up when they should have stayed down."
     },
     {
       "id": "ghost_army",
@@ -84,7 +92,9 @@
         "killChainRedeployRange": 99,
         "phaseAlliesMovementBonus": 2,
         "description": "Phase: teleport up to 3 hexes through anything (0 movement cost, must be outside enemy vision). On kill: re-stealth + re-emerge near any ally. Adjacent allies gain +2 movement when this unit phases."
-      }
+      },
+      "friendlyFlavor": "Your phantom soldiers phase through the battlefield like smoke — teleporting, killing, and vanishing to re-emerge beside any ally. Their presence alone quickens your entire force.",
+      "enemyFlavor": "We had them surrounded. Then they weren't there anymore — and they were behind us. Killing one didn't help; it just appeared somewhere else. We were fighting ghosts."
     },
     {
       "id": "juggernaut",
@@ -105,7 +115,9 @@
         "undyingOncePerCombat": true,
         "ignoreZoc": true,
         "description": "Each combat domain contributes a signature ability. 3-combat unit collects 3 signatures simultaneously. Cannot be killed by a single hit (survives at 1 HP once). Ignores zone of control."
-      }
+      },
+      "friendlyFlavor": "Your juggernauts collect the essence of every combat art they master. They cannot be stopped by a single blow, cannot be contained by formation, and carry the fury of three warriors in one body.",
+      "enemyFlavor": "This one soldier had everything — poison, armor-breaking, the works. We hit it with everything and it just kept coming. It should have died three times over. It walked through our shield wall like it wasn't there."
     },
     {
       "id": "slave_empire",
@@ -122,7 +134,9 @@
         "captureChanceBonus": 0.20,
         "slaveProductionBonus": 0.50,
         "description": "Fortress zones (2-hex radius) auto-capture wounded enemies below 25% HP. Captured slaves produce +50% resources. Heavy enforcers make slaves immune to rout."
-      }
+      },
+      "friendlyFlavor": "Your empire runs on chains. Fortress zones drag in the wounded automatically, your slaves produce at double efficiency, and your heavy enforcers ensure no captives ever break free.",
+      "enemyFlavor": "If you fall below a certain threshold, you don't die — you belong to them. The wounded were dragged inside their walls and never seen again. Their entire economy runs on this."
     },
     {
       "id": "raid_camp",
@@ -143,7 +157,9 @@
         "campEnemyDefensePenalty": 0.25,
         "captureBonus": 0.30,
         "description": "Each turn, place a Raid Camp within 5 hexes. Allies entering gain +2 movement and stealth for 1 turn. Enemies within 3 hexes of a camp on hostile territory suffer -25% defense. Capture chance +30%. Camp persists 2 turns."
-      }
+      },
+      "friendlyFlavor": "Your raiders establish forward camps that turn any position into an ambush point. Allies surge with speed and stealth while enemies falter under the shadow of your presence.",
+      "enemyFlavor": "They set up somewhere nearby — we could feel it. Our scouts couldn't find it, but suddenly our whole flank was exposed. Men were slower, arrows went wide. By the time we located the camp, they'd already taken half our force."
     },
     {
       "id": "poison_shadow",
@@ -160,7 +176,9 @@
         "retreatPoisonCloud": true,
         "poisonCloudDamage": 2,
         "description": "Stealth attacks apply 3 poison stacks instantly. Retreating from stealth leaves a poison cloud (2 damage/turn, 2-hex radius). Enemies can't heal while in the cloud."
-      }
+      },
+      "friendlyFlavor": "Your shadow-venom assassins are the nightmare your enemies never wake from. Strike from darkness with triple venom, then retreat into a cloud of poison that chokes the life from anyone who dares follow.",
+      "enemyFlavor": "They struck from nowhere — three of our men dropped instantly, veins black. We tried to pursue but the area they'd vacated was wrong. Clouds of something. Anyone who entered started coughing blood. The healers couldn't help; their medicine wouldn't take hold."
     },
     {
       "id": "iron_turtle",
@@ -179,7 +197,9 @@
         "damageReflection": 0.50,
         "ignoreZoc": true,
         "description": "2-hex crushing zone deals 2 damage/turn and -1 movement to enemies inside. 50% damage reflection. Cannot be displaced. Ignores zone of control."
-      }
+      },
+      "friendlyFlavor": "Your iron turtles are immovable juggernauts that crush everything nearby. They reflect pain, grind down opposition, and walk through enemy formations as if they weren't there.",
+      "enemyFlavor": "We surrounded one and it didn't matter. Men near it took damage just standing there. Our strikes bounced back — I watched my own sword swing return into my shoulder. We couldn't displace it. We couldn't ignore it. We just had to leave."
     },
     {
       "id": "many_faced",
@@ -192,8 +212,10 @@
         "predatorDamage": 0.40,
         "predatorRangeBonus": 1,
         "phantomMovementBonus": 1,
-        "description": "Cycles stances based on last turn's events. Took damage → Bulwark (+40% defense, 25% reflection). Dealt damage → Predator (+40% damage, +1 range). Moved → Phantom (ignore ZoC, +1 movement, stealth on rough terrain). Stance persists until the next event reassigns it."
-      }
+        "description": "Cycles stances based on last turn's events. Took damage -> Bulwark (+40% defense, 25% reflection). Dealt damage -> Predator (+40% damage, +1 range). Moved -> Phantom (ignore ZoC, +1 movement, stealth on rough terrain). Stance persists until the next event reassigns it."
+      },
+      "friendlyFlavor": "Your many-faced warriors adapt to every moment of battle. They are shield when struck, blade when striking, and shadow when moving — ever shifting, never the same twice.",
+      "enemyFlavor": "Every time we thought we'd figured them out, they changed. Aggressive one moment, impenetrable the next, then gone entirely. They don't have a strategy. They have all of them."
     }
   ]
 }

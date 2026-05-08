@@ -796,3 +796,283 @@
   font-weight: 600;
   color: var(--text);
 }
+
+/* ═══════════════════════════════════════════
+   SynergyCard (scard-*) — MtG-style card
+   ═══════════════════════════════════════════ */
+
+.scard {
+  position: relative;
+  border-radius: 10px;
+  background: rgba(18, 15, 12, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.scard:hover {
+  border-color: color-mix(in srgb, var(--scard-accent, #d6a34b) 30%, rgba(255,255,255,0.12));
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Title bar ── */
+
+.scard__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--scard-accent, #d6a34b) 12%, transparent),
+    color-mix(in srgb, var(--scard-accent, #d6a34b) 4%, transparent)
+  );
+  border-bottom: 1px solid color-mix(in srgb, var(--scard-accent, #d6a34b) 15%, transparent);
+}
+
+.scard__badge {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--scard-accent, #d6a34b) 18%, transparent);
+  color: var(--scard-accent, #d6a34b);
+  flex-shrink: 0;
+}
+
+.scard--triple .scard__badge {
+  background: linear-gradient(135deg, var(--scard-accent, #d6a34b), color-mix(in srgb, var(--scard-accent, #d6a34b) 60%, #fff));
+  color: #1a1915;
+  font-weight: 800;
+  text-shadow: 0 0 4px rgba(0,0,0,0.2);
+}
+
+.scard__name {
+  font-family: 'Cinzel', 'Palatino', 'Georgia', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+/* ── Art / Sigil area ── */
+
+.scard__art {
+  position: relative;
+  height: 80px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--scard-accent, #d6a34b) 8%, rgba(255,255,255,0.02)),
+    color-mix(in srgb, var(--scard-accent, #d6a34b) 3%, rgba(255,255,255,0.01)),
+    color-mix(in srgb, var(--scard-accent, #d6a34b) 6%, rgba(255,255,255,0.02))
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.scard__art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(18, 15, 12, 0.6) 100%);
+  pointer-events: none;
+}
+
+.scard__sigil {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.scard__sigil-glyph {
+  font-size: 36px;
+  line-height: 1;
+  filter: drop-shadow(0 0 8px currentColor);
+  opacity: 0.6;
+}
+
+.scard--triple .scard__sigil-glyph {
+  font-size: 42px;
+  opacity: 0.75;
+}
+
+/* ── Domain strip ── */
+
+.scard__domains {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  flex-wrap: wrap;
+}
+
+.scard__domain-chip {
+  font-size: 10px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* ── Prose body ── */
+
+.scard__prose {
+  padding: 10px 12px;
+}
+
+.scard__prose p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-secondary, #c4b08a);
+  font-style: italic;
+}
+
+/* ── Mechanics block ── */
+
+.scard__mechanics {
+  padding: 8px 12px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.scard__mechanics p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* ── Compact variant (for inspector) ── */
+
+.scard--compact {
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.scard--compact .scard__title {
+  padding: 6px 10px;
+}
+
+.scard--compact .scard__name {
+  font-size: 11px;
+}
+
+.scard--compact .scard__badge {
+  font-size: 7px;
+  padding: 1px 4px;
+}
+
+.scard--compact .scard__prose {
+  padding: 4px 10px 6px;
+}
+
+.scard--compact .scard__prose p {
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.scard--compact .scard__mechanics {
+  padding: 4px 10px 6px;
+}
+
+.scard--compact .scard__mechanics p {
+  font-size: 9px;
+}
+
+.scard__compact-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* ── Field-report mode ── */
+
+.scard--report .scard__prose p {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.scard--tier0 .scard__name {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.scard--tier2.scard--report .scard__mechanics {
+  border-top: 1px solid color-mix(in srgb, var(--scard-accent, #d6a34b) 15%, transparent);
+  position: relative;
+}
+
+.scard--tier2.scard--report .scard__mechanics::before {
+  content: 'STUDIED';
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--scard-accent, #d6a34b);
+  opacity: 0.6;
+}
+
+/* ── Full-size variant (for modal) ── */
+
+.scard--full {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 1px rgba(255, 255, 255, 0.06) inset;
+}
+
+.scard--full .scard__art {
+  height: 100px;
+}
+
+/* ── Inspector synergy section ── */
+
+.ci-synergy-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ci-synergy-section {
+  padding: 0;
+  border-bottom: none;
+}
+
+/* ── Field Reports panel ── */
+
+.frp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.frp-faction__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.frp-faction__count {
+  margin-left: auto;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* ── Encyclopedia card wrapper ── */
+
+.syn-enc__card-wrap {
+  cursor: pointer;
+}

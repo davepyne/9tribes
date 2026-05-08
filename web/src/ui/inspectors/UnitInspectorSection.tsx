@@ -1,15 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { UnitView } from '../../game/types/worldView';
-import type { ClientState, SettlementPreviewViewModel } from '../../game/types/clientState';
+import type { ClientState, SettlementPreviewViewModel, EnemySynergyIntelMap } from '../../game/types/clientState';
 import type { FactionInfo } from '../../data/faction-info';
 import { getFactionInfo } from '../../data/faction-info';
 import { MetaRow } from './MetaRow';
 import { formatNativeDomainName, getDomainDescription } from './domainFormatters';
+import { SynergyCard } from '../SynergyCard';
+import type { ResolvedActiveSynergies } from '../resolveActiveSynergies';
+import { intelTier } from '../../game/synergy/intelTiers';
+import pairSynergiesData from '../../data/pair-synergies.json';
+import emergentRulesData from '../../data/emergent-rules.json';
+import type { PairSynergyData, EmergentRuleData } from '../SynergyCard';
 
 type UnitInspectorSectionProps = {
   unit: UnitView;
   mode: ClientState['mode'];
   settlementPreview: SettlementPreviewViewModel | null;
+  activeSynergies?: ResolvedActiveSynergies | null;
+  enemySynergyIntel?: EnemySynergyIntelMap;
+  enemyFactionId?: string;
+  factionColor?: string;
   onPrepareAbility: (unitId: string, ability: 'brace' | 'ambush') => void;
   onBoardTransport: (unitId: string, transportId: string) => void;
   onDisembarkUnit: (unitId: string, transportId: string, destination: { q: number; r: number }) => void;
@@ -21,12 +31,39 @@ export const UnitInspectorSection = React.memo(function UnitInspectorSection({
   unit,
   mode,
   settlementPreview,
+  activeSynergies,
+  enemySynergyIntel,
+  enemyFactionId,
+  factionColor,
   onPrepareAbility,
   onBoardTransport,
   onDisembarkUnit,
   onFactionPopup,
   onDomainPopup,
 }: UnitInspectorSectionProps) {
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+
+  const hasSynergies = activeSynergies && (
+    activeSynergies.activePairs.length > 0 || activeSynergies.activeTriple
+  );
+
+  // Build enemy intel cards from intel state
+  const enemyIntelCards = (() => {
+    if (!enemySynergyIntel || !enemyFactionId) return [];
+    const factionIntel = enemySynergyIntel[enemyFactionId] ?? {};
+    const cards: Array<{ data: PairSynergyData | EmergentRuleData; kind: 'pair' | 'triple'; tier: number }> = [];
+    for (const [synergyId, intel] of Object.entries(factionIntel)) {
+      const tier = intelTier(intel);
+      if (tier < 1) continue;
+      const pairData = (pairSynergiesData.pairSynergies as PairSynergyData[]).find(p => p.id === synergyId);
+      if (pairData) { cards.push({ data: pairData, kind: 'pair', tier }); continue; }
+      const ruleData = (emergentRulesData.rules as EmergentRuleData[]).find(r => r.id === synergyId);
+      if (ruleData) { cards.push({ data: ruleData, kind: 'triple', tier }); }
+    }
+    return cards;
+  })();
+
+  const hasEnemyIntel = enemyIntelCards.length > 0;
   return (
     <div className="ci-section">
       {/* STATS */}
@@ -145,6 +182,75 @@ export const UnitInspectorSection = React.memo(function UnitInspectorSection({
           ) : null}
         </div>
       ) : null}
+
+      {/* Active Synergies */}
+      {hasSynergies && (
+        <div className="ci-domains ci-synergy-section">
+          <p className="panel-kicker">Synergies</p>
+          <div className="ci-synergy-cards">
+            {activeSynergies!.activeTriple && (
+              <div
+                onClick={() => setExpandedCardId(
+                  expandedCardId === activeSynergies!.activeTriple!.id
+                    ? null
+                    : activeSynergies!.activeTriple!.id
+                )}
+              >
+                <SynergyCard
+                  mode="friendly"
+                  synergy={activeSynergies!.activeTriple!}
+                  kind="triple"
+                  factionColor={factionColor ?? '#d6a34b'}
+                  compact={expandedCardId !== activeSynergies!.activeTriple!.id}
+                />
+              </div>
+            )}
+            {activeSynergies!.activePairs.map(({ data }) => (
+              <div
+                key={data.id}
+                onClick={() => setExpandedCardId(
+                  expandedCardId === data.id ? null : data.id
+                )}
+              >
+                <SynergyCard
+                  mode="friendly"
+                  synergy={data}
+                  kind="pair"
+                  factionColor={factionColor ?? '#d6a34b'}
+                  compact={expandedCardId !== data.id}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Enemy Intel */}
+      {hasEnemyIntel && (
+        <div className="ci-domains ci-synergy-section">
+          <p className="panel-kicker">Intel</p>
+          <div className="ci-synergy-cards">
+            {enemyIntelCards.map(({ data, kind, tier }) => (
+              <div
+                key={data.id}
+                onClick={() => setExpandedCardId(
+                  expandedCardId === data.id ? null : data.id
+                )}
+              >
+                <SynergyCard
+                  mode="field-report"
+                  synergy={data}
+                  kind={kind}
+                  factionColor={factionColor ?? '#888'}
+                  factionName={unit.factionName}
+                  tier={tier as 0 | 1 | 2}
+                  compact={expandedCardId !== data.id}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Conditions */}
       {(unit.isStealthed || unit.poisoned || unit.routed || unit.preparedAbility) ? (
