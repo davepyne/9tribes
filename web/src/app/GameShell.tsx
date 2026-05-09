@@ -25,7 +25,6 @@ import { TechDiscoveryModalProvider, useTechDiscoveryDetector, useTechDiscoveryM
 import { SynergyUnlockedModalProvider, useSynergyUnlockDetector, useSynergyModal } from '../ui/SynergyUnlockedModal';
 import { CityLimitModalProvider, useCityLimitDetector, useCityLimitModal } from '../ui/CityLimitModal';
 import { EnemySynergyContactModal } from '../ui/EnemySynergyContactModal';
-import { SynergySigilDefs } from '../ui/SynergySigil';
 import pairSynergiesData from '../data/pair-synergies.json';
 import emergentRulesData from '../data/emergent-rules.json';
 import { CombatLogPanel } from '../ui/CombatLogPanel';
@@ -422,7 +421,6 @@ function KnowledgeGainedShellContent({
         />
       )}
 
-      <SynergySigilDefs />
     </div>
   );
 }

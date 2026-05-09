@@ -946,14 +946,74 @@
   display: block;
 }
 
-.scard-sigil-svg {
+/* SVG procedural-art scene fills the art container */
+.scard__art-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
-  display: block;
 }
 
-.scard-sigil-svg--obscured {
-  opacity: 0.55;
+/* Edge vignette: fades the art into the card body at top/bottom edges */
+.scard__art-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(10, 8, 6, 0.55) 0%, transparent 30%, transparent 70%, rgba(10, 8, 6, 0.6) 100%),
+    linear-gradient(to right, rgba(10, 8, 6, 0.35) 0%, transparent 18%, transparent 82%, rgba(10, 8, 6, 0.35) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Arc flow animation — dashes travel along the connection paths ── */
+
+@keyframes scard-arc-flow {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -8; }
+}
+
+.scard__art-arc {
+  animation: scard-arc-flow 2.2s linear infinite;
+}
+
+/* ── Nexus pulse — breathing outer ring + steady inner ring ── */
+
+@keyframes scard-nexus-outer {
+  0%, 100% { transform: scale(1);   opacity: 0.25; }
+  50%      { transform: scale(1.6); opacity: 0.06; }
+}
+
+@keyframes scard-nexus-ring {
+  0%, 100% { transform: scale(1);    opacity: 0.55; }
+  50%      { transform: scale(1.25); opacity: 0.85; }
+}
+
+.scard__nexus-outer {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scard-nexus-outer 3.4s ease-in-out infinite;
+}
+
+.scard__nexus-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scard-nexus-ring 3.4s ease-in-out infinite;
+}
+
+/* Tier-1 field-report scanline overlay — gives "intercepted transmission" feel */
+.scard--report.scard--tier1 .scard__art-vignette::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.12) 3px,
+    rgba(0, 0, 0, 0.12) 4px
+  );
+  pointer-events: none;
 }
 
 /* Inner frame (ornamented border on the art window) */
