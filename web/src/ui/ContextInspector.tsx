@@ -47,25 +47,7 @@ export const ContextInspector = React.memo(function ContextInspector({ state, is
 
   const selection = state.selected;
 
-  // Only render full panel when explicitly open
-  if (!isOpen || !selection) {
-    return (
-      <aside className="ci-root">
-        {selection && !isOpen && (
-          <button
-            type="button"
-            className="ci-toggle"
-            onClick={() => onOpen()}
-            aria-label="Open inspector"
-          >
-            <span className="ci-toggle__icon">&#9776;</span>
-          </button>
-        )}
-      </aside>
-    );
-  }
-
-  const selectedUnitId = selection.type === 'unit' ? selection.unitId : null;
+  const selectedUnitId = selection?.type === 'unit' ? selection.unitId : null;
   const selectedUnit = selectedUnitId
     ? state.world.units.find((u) => u.id === selectedUnitId)
     : null;
@@ -89,6 +71,24 @@ export const ContextInspector = React.memo(function ContextInspector({ state, is
     const emergentEligible = capabilities.filter((c) => c.level >= 2).map((c) => c.domainId);
     return resolveActiveSynergies(pairEligible, emergentEligible);
   }, [selectedUnit, state.research?.capabilities]);
+
+  // Only render full panel when explicitly open
+  if (!isOpen || !selection) {
+    return (
+      <aside className="ci-root">
+        {selection && !isOpen && (
+          <button
+            type="button"
+            className="ci-toggle"
+            onClick={() => onOpen()}
+            aria-label="Open inspector"
+          >
+            <span className="ci-toggle__icon">&#9776;</span>
+          </button>
+        )}
+      </aside>
+    );
+  }
 
   return (
     <aside className="ci-root ci-root--open">
