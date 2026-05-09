@@ -28,7 +28,10 @@ type SoundId =
   | 'defeat'
   | 'research_tier'
   | 'ranged'
-  | 'hit_and_run';
+  | 'hit_and_run'
+  | 'synergy_unlock'
+  | 'synergy_contact'
+  | 'synergy_studied';
 
 type AudioSnapshot = {
   moveCount: number;
@@ -46,6 +49,8 @@ type AudioSnapshot = {
   unitOwners: Map<string, string>;
   villages: Map<string, { factionId: string; name: string }>;
   playerWon: boolean;
+  /** "factionId:synergyId" → encounters count. Detects tier-up (<3 → ≥3) for the studied sting. */
+  intelSnapshot: Map<string, { encounters: number; studied: boolean }>;
 };
 
 const SOUND_SOURCES: Record<SoundId, string> = {
@@ -75,6 +80,10 @@ const SOUND_SOURCES: Record<SoundId, string> = {
   research_tier: '/assets/audio/sfx/druman.wav',
   ranged: '/assets/audio/sfx/archers_4s.wav',
   hit_and_run: '/assets/audio/sfx/feedbkxx.wav',
+  // ── Synergy stings (drop-in: add the wav files later, keys are stable) ──
+  synergy_unlock: '/assets/audio/sfx/synergy_unlock.wav',
+  synergy_contact: '/assets/audio/sfx/synergy_contact.wav',
+  synergy_studied: '/assets/audio/sfx/synergy_studied.wav',
 };
 
 const SOUND_VOLUMES: Partial<Record<SoundId, number>> = {
@@ -218,6 +227,18 @@ function buildAudioSnapshot(state: ClientState): AudioSnapshot | null {
       && state.playFeedback.victory.victoryType !== 'unresolved',
   );
 
+  const intelSnapshot = new Map<string, { encounters: number; studied: boolean }>();
+  if (state.enemySynergyIntel) {
+    for (const [factionId, synergyMap] of Object.entries(state.enemySynergyIntel)) {
+      for (const [synergyId, entry] of Object.entries(synergyMap)) {
+        intelSnapshot.set(`${factionId}:${synergyId}`, {
+          encounters: entry.encounters,
+          studied: entry.studied,
+        });
+      }
+    }
+  }
+
   return {
     moveCount: state.playFeedback.moveCount,
     lastMoveUnitId: state.playFeedback.lastMove?.unitId ?? null,
@@ -246,6 +267,7 @@ function buildAudioSnapshot(state: ClientState): AudioSnapshot | null {
     unitOwners,
     villages,
     playerWon,
+    intelSnapshot,
   };
 }
 
@@ -335,4 +357,25 @@ export function playSessionDeltaSounds(prevState: ClientState | null, nextState:
   if (!prev.playerWon && next.playerWon) {
     playSound('victory');
   }
+
+  // ── Synergy intel tier-up: encounters crossed 3 OR studied flipped true ──
+  const STUDY_THRESHOLD = 3;
+  for (const [key, nextEntry] of next.intelSnapshot.entries()) {
+    const prevEntry = prev.intelSnapshot.get(key);
+    const prevStudied = prevEntry ? (prevEntry.studied || prevEntry.encounters >= STUDY_THRESHOLD) : false;
+    const nextStudied = nextEntry.studied || nextEntry.encounters >= STUDY_THRESHOLD;
+    if (!prevStudied && nextStudied) {
+      playSound('synergy_studied');
+      break;  // one sting per delta tick
+    }
+  }
+}
+
+/** Fired by modal-mount components when a synergy unlock or first-contact reveal happens. */
+export function playSynergyUnlockSting() {
+  playSound('synergy_unlock');
+}
+
+export function playSynergyContactSting() {
+  playSound('synergy_contact');
 }

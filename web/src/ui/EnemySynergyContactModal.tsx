@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { SynergyCard } from './SynergyCard';
 import type { PairSynergyData, EmergentRuleData } from './SynergyCard';
 import type { EnemySynergyIntelMap } from '../game/types/clientState';
 import { intelTier } from '../game/synergy/intelTiers';
+import { playSynergyContactSting } from '../app/audio/sfxManager';
 import pairSynergiesData from '../data/pair-synergies.json';
 import emergentRulesData from '../data/emergent-rules.json';
 
@@ -31,6 +32,13 @@ export const EnemySynergyContactModal = React.memo(function EnemySynergyContactM
 
   const current = firstContactQueue[currentIndex];
   const hasMore = currentIndex < firstContactQueue.length - 1;
+
+  // Play the contact sting whenever a new card is shown (initial mount + each "Next").
+  useEffect(() => {
+    if (current) {
+      playSynergyContactSting();
+    }
+  }, [current?.factionId, current?.synergyId]);
 
   const handleNext = useCallback(() => {
     if (hasMore) {
@@ -70,14 +78,17 @@ export const EnemySynergyContactModal = React.memo(function EnemySynergyContactM
         <p style={{ margin: '0 0 12px', fontSize: '11px', color: '#9ca3af', fontStyle: 'italic' }}>
           New intelligence from contact with {factionName}
         </p>
-        <SynergyCard
-          mode="field-report"
-          synergy={synergyData}
-          kind={kind}
-          factionColor={factionColor}
-          factionName={factionName}
-          tier={tier}
-        />
+        <div className="scard-flip-stage" key={`${current.factionId}:${current.synergyId}`}>
+          <SynergyCard
+            mode="field-report"
+            synergy={synergyData}
+            kind={kind}
+            factionColor={factionColor}
+            factionName={factionName}
+            factionId={current.factionId}
+            tier={tier}
+          />
+        </div>
         <button type="button" className="sym-dismiss" onClick={handleNext}>
           {hasMore ? 'Next Report' : 'Close'}
         </button>

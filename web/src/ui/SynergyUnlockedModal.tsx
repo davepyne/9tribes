@@ -4,6 +4,7 @@ import pairSynergiesData from '../data/pair-synergies.json';
 import emergentRulesData from '../data/emergent-rules.json';
 import { SynergyCard } from './SynergyCard';
 import type { PairSynergyData, EmergentRuleData } from './SynergyCard';
+import { playSynergyUnlockSting } from '../app/audio/sfxManager';
 
 // ── Types ──
 
@@ -168,6 +169,11 @@ type ModalInnerProps = {
 };
 
 function SynergyModalInner({ event, onDismiss }: ModalInnerProps) {
+  // Synergy unlock sting fires once on mount (per event).
+  useEffect(() => {
+    playSynergyUnlockSting();
+  }, []);
+
   // Resolve full synergy data with flavor strings
   const pairCards = event.synergies.map((s) => {
     const full = PAIR_SYNERGIES_FULL.find((p) => p.id === s.id);

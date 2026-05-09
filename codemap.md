@@ -24,8 +24,8 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 
 - INPUT: GameState, FactionId, RulesRegistry, optional SimulationTrace + AiDifficultyProfile
 - OUTPUT: GameState (new, immutable)
-- SIDE EFFECTS: Orchestrates entire AI faction turn: fog update, strategy, triple-synergy, exposure gains, research (8 XP/turn), production, economy, environmental damage, summon/warlord abilities, healing/refresh, sacrifice (non-destructive), village spawn, siege, war exhaustion
-- INVARIANTS: Must be called once per faction per round. Triple-stack resolved before production/healing. Exposure thresholds [10,20,35] for successive foreign domains. Research rate 8 XP/turn. Sacrifice strips learned abilities but keeps unit alive (range 1 hex from home city). Warlord aura radius-3, +10 morale, cavalry/mounted only. Summon cycle: summoned→expires→cooldown→re-summon. Dead units skipped in loop.
+- SIDE EFFECTS: Orchestrates entire AI faction turn: fog update, strategy compute, triple-synergy resolve, ecology pressure, force composition pressure, codification/research (base 4 XP/turn, modified by difficulty profile: easy=4, normal=5, hard=7), hybrid recipe unlock, capture timer advancement, economy, production, environmental damage, summon tick, warlord aura, unit healing/refresh (including stealth cooldown and prepared ability expiry), exposure from proximity (seenEnemyDomains loop), village spawn, siege management, war exhaustion
+- INVARIANTS: Must be called once per faction per round. Triple-stack resolved before production/healing. Exposure thresholds [20,120,200] for successive foreign domains. Warlord aura radius-3, +10 morale, cavalry/mounted only. Summon cycle: summoned→expires→cooldown→re-summon. Dead units skipped in loop.
 - CALLERS: warEcologySimulation.ts
 
 ## Simulation — Trace Recorder (`src/systems/simulation/traceRecorder.ts`)
@@ -46,10 +46,10 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 
 ## Combat Action — Apply (`src/systems/combat-action/apply.ts`)
 
-- INPUT: GameState, RulesRegistry, CombatActionPreview
+- INPUT: GameState, RulesRegistry, CombatActionPreview, learnChanceScale = 1
 - OUTPUT: {state: GameState, feedback: CombatActionFeedback}
-- SIDE EFFECTS: Returns new GameState. Applies HP damage, morale loss, routing, stealth break, brace clear. Handles kill-learning, XP/promotion, capture on kill, melee advance, retreat capture, knockback, transport destruction, faction absorption, war exhaustion, hit-and-run, poison/contamination/frostbite DoT, reflection, re-stealth, combat healing, sandstorm splash, pursuit bonus, emergent sustain (Paladin). Calls pruneDeadUnits.
-- INVARIANTS: Paladin emergent sustain caps minimum HP from single hit. Pursuit bonus +2 to defender when attacker wins exchange. Hit-and-run requires doctrine OR (cavalry+skirmish + doctrine). Melee advance only on kill, not capture/ranged. Stealth breaks on attack unless permanent.
+- SIDE EFFECTS: Returns new GameState. Applies HP damage (with paladin min-HP floor, juggernaut undying at 1 HP), morale loss, routing, stealth break, brace clear. Handles lethal ambush instant kill, slave coercion damage, heavy naval ram, learn-by-kill (scaled by learnChanceScale), XP/promotion, paladin smite/sustain, pursuit bonus, capture on kill, greedy coastal capture, melee advance, retreat capture, knockback, transport destruction, combat signals, contact transfer, faction absorption, hybrid recipe unlock, combat record streaks, war exhaustion, hit-and-run retreat, battle history recording, poison DoT (tag-based + synergy), contamination, facing rotation, damage reflection (doctrine + synergy), stampede extra move, charge cooldown waived, stealth recharge. Synergy aftermath: poison traps on retreat, retreat healing, combat healing, heavy regen, slave healing, sandstorm splash AoE, synergy AoE, contamination, frostbite, stun, formation crush, sandstorm accuracy aura, lethal ambush poison splash, withering reduction, slave army buffs, capture aftermath (poison/slave damage/heal penalty/escape prevention), many-faced stance. Final pruneDeadUnits.
+- INVARIANTS: Paladin emergent sustain caps minimum HP from single hit. Pursuit bonus: +2 damage dealt to defender when attacker wins damage exchange. Hit-and-run requires doctrine OR (cavalry+skirmish + doctrine). Melee advance only on kill, not capture/ranged. Stealth breaks on attack unless permanent. AI path passes learnChanceScale=2.
 - CALLERS: combatActionSystem.ts (re-export facade), GameSession.ts
 
 ## Combat Action — Preview (`src/systems/combat-action/preview.ts`)
@@ -73,23 +73,23 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 - INPUT: unit, faction, state, RulesRegistry, optional SimulationTrace
 - OUTPUT: canSacrifice → boolean; performSacrifice → GameState; autoCompleteResearchForDomains → GameState
 - SIDE EFFECTS: Returns new GameState. Non-destructive: strips unit's learnedAbilities (keeps unit alive). Adds learned domains to faction, auto-completes T1 research, re-evaluates triple synergy.
-- INVARIANTS: Sacrifice range = hexDistance(unit, homeCity) <= 1. Home city must not be besieged. Unit must have learnedAbilities. MAX_LEARNED_DOMAINS cap on faction domains. SynergyEngine is module-level singleton.
-- CALLERS: warEcologySimulation.ts, factionTurnEffects.ts, knowledgeSystem.ts
+- INVARIANTS: Sacrifice range = hexDistance(unit, homeCity) <= 1. Home city must not be besieged. Unit must have learnedAbilities. MAX_LEARNED_DOMAINS cap on faction domains (enforced upstream by knowledgeSystem). SynergyEngine accessed via synergyRuntime singleton.
+- CALLERS: unit-activation/activateUnit.ts (canSacrifice, performSacrifice), GameSession.ts (performSacrifice), factionAbsorption.ts (autoCompleteResearchForDomains), knowledgeSystem.ts (autoCompleteResearchForDomains)
 
 ## Knowledge System (`src/systems/knowledgeSystem.ts`)
 
 - INPUT: GameState, FactionId, domainId, amount, optional trace + registry
 - OUTPUT: gainExposure → GameState; getNextExposureThreshold → number; isForeignDomain → boolean; checkDomainLearned → string|null
 - SIDE EFFECTS: Returns new GameState. Accumulates exposure progress, learns domains on threshold crossing, auto-completes T1 research if registry provided.
-- INVARIANTS: EXPOSURE_THRESHOLDS = [10, 20, 35]. MAX_LEARNED_DOMAINS = 3 (including native). Early return if at cap or domain is native/already-learned. Threshold index = foreign domain count.
-- CALLERS: factionTurnEffects.ts, balanceHarness.ts
+- INVARIANTS: EXPOSURE_THRESHOLDS = [20, 120, 200]. MAX_LEARNED_DOMAINS = 3 (including native). Early return if at cap or domain is native/already-learned. Threshold index = foreign domain count.
+- CALLERS: factionTurnEffects.ts, balanceHarness.ts, factionAbsorption.ts, productionSystem.ts, aiProductionStrategy.ts, aiProductionScoring.ts, strategicAi.ts, sessionUtils.ts
 
 ## Learn-by-Kill System (`src/systems/learnByKillSystem.ts`)
 
-- INPUT: attacker Unit, defender Unit, GameState, RNGState, optional trace
+- INPUT: attacker Unit, defender Unit, GameState, RNGState, optional trace, optional learnChanceScale
 - OUTPUT: tryLearnFromKill → {unit, learned, domainId?, fromFactionId?}; tryLearnFromCityCapture → {state, learned, unitId?, domainId?}
 - SIDE EFFECTS: tryLearnFromKill returns new Unit (no state write). tryLearnFromCityCapture returns new GameState.
-- INVARIANTS: Learn chances: Green 25%, Seasoned 40%, Veteran 55%, Elite 70%. Domain learned = defender's faction nativeDomain. Max 3 learned abilities per unit. City capture learning is 100% (no RNG). Same-faction kills never learn.
+- INVARIANTS: Base learn chances: Green 12%, Seasoned 20%, Veteran 28%, Elite 35%. AI doubles these via learnChanceScale=2. Domain learned = defender's faction nativeDomain. Max 3 learned abilities per unit. City capture learning is 100% (no RNG). Same-faction kills never learn.
 - CALLERS: combat-action/apply.ts, siegeSystem.ts
 
 ## Siege System (`src/systems/siegeSystem.ts`)
@@ -97,7 +97,7 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 - INPUT: City, FactionId, GameState
 - OUTPUT: captureCityWithResult → {state, learnedDomain?}; degradeWalls → City; isCityVulnerable → boolean; getCapturingFaction → FactionId|null
 - SIDE EFFECTS: captureCityWithResult returns new GameState. RAZES city (deletes from map), destroys city's villages, applies war exhaustion, triggers domain learning.
-- INVARIANTS: Wall damage 20/turn (10 coastal). Repair 3/turn when not besieged. Vulnerable = wallHP<=0 AND encircled AND no garrison. City capture = raze, not transfer — victor does NOT gain the city. Faction-level domain transfer on capture (loser's nativeDomain to victor). VILLAGES_PER_CITY_CAP = 6.
+- INVARIANTS: Wall damage 20/turn (10 coastal). Repair 3/turn when not besieged. Vulnerable = wallHP<=0 AND encircled AND no garrison. City capture = raze, not transfer — victor does NOT gain the city. Faction-level domain transfer on capture (loser's nativeDomain to victor).
 - CALLERS: combat-action/apply.ts, factionTurnEffects.ts, sessionUtils.ts
 
 ## Village System (`src/systems/villageSystem.ts`)
@@ -113,8 +113,8 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 - INPUT: pair-eligible domain IDs, emergent-eligible domain IDs, unit tags
 - OUTPUT: resolveFactionTriple → ActiveTripleStack|null; resolveUnitPairs → ActiveSynergy[]; getDomainSynergyScore → number
 - SIDE EFFECTS: None (pure computation).
-- INVARIANTS: Triple-stack gate requires emergentEligibleDomains.length >= 3. Emergent rules match by domain-category conditions (terrain+combat+mobility, healing+defensive+offensive, etc). Pair synergies require both domains at T3.
-- CALLERS: sacrificeSystem.ts, synergyRuntime.ts
+- INVARIANTS: Triple-stack gate requires emergentEligibleDomains.length >= 3. Emergent rules match by domain-category conditions (terrain+combat+mobility, healing+defensive+offensive, etc). Pair synergies require both domains at T1 (pairEligibleDomains sourced from t1Domains in domainProgression).
+- CALLERS: synergyRuntime.ts, factionTurnEffects.ts (type imports), aiResearchScoring.ts, learnLoopCoordinator.ts
 
 ## Combat Action — Helpers (`src/systems/combat-action/helpers.ts`)
 

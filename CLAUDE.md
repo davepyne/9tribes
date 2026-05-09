@@ -34,165 +34,50 @@ npm run balance:validate      # validate balance candidate
 npm run replay:export         # export replay data
 ```
 
-## ⚠️ CRITICAL: Dual Combat Paths (THE #1 Trap)
-
-Two separate combat resolution paths exist. **Any combat mechanic must be added to BOTH.**
-
-| Path | File | When Used |
-|------|------|-----------|
-| AI/Autonomous simulation | `src/systems/warEcologySimulation.ts` | Runs all AI and autonomous turns end-to-end |
-| Player-facing live-play | `web/src/game/controller/GameSession.ts` | Player executes actions; splits into `resolveAttack()` (math) then `applyResolvedCombat()` (mutation after animation) |
-
-**What drifts between paths:** siege gating, retreat/hit-and-run, learn-by-kill, sacrifice feedback, capture behavior, combat audio, kill-shot bonuses.
-
-If AI uses a feature but the player doesn't → check `applyResolvedCombat()` — it's probably missing there.
-
-## Architecture
-
-### Monorepo Structure (two build pipelines)
+## Monorepo Structure (two build pipelines)
 
 - **`src/`** — Game engine / simulation backend. Pure TypeScript, no framework. Compiles to `dist/`. Entry: `src/main.ts`.
 - **`web/`** — Frontend application. Vite + React 18 + Phaser 3. Separate `package.json`, separate TypeScript config. Entry: `web/src/main.tsx`.
 
-### Backend Layering (`src/`)
+## Codebase Navigation
 
-```
-src/core/        → Primitives: grid math (hex.ts, grid.ts), enums, IDs, deterministic RNG (rng.ts)
-src/content/base/→ JSON data files: chassis, components, civilizations, terrains, research,
-                   synergies, signature abilities, veteran levels, hybrid recipes, etc.
-src/data/        → Registry types, content loaders, role/weapon effectiveness tables
-src/features/    → Domain entities: units, factions, cities, villages, prototypes, research trees
-src/systems/     → 51 rule-execution modules (see system table below)
-src/game/        → GameState types, scenario builders, game loop types
-src/world/       → Map generation, terrain types
-src/balance/     → Balance evaluation, Optuna objective function, harness integration
-src/replay/      → Replay recording/playback
-```
+This repo has 56+ system modules across `src/systems/` with deep cross-cutting dependencies. Rather than guessing where things live or grepping broadly, use the auto-generated structured data in `.slim/` to narrow your search before reading source files. This is faster than grep for "how does X connect to Y" questions and stays current automatically via the cartography-v2 skill.
 
-### All Systems (`src/systems/` — 51 total)
+1. **`.slim/symbols.json`** — every export: name, kind, line number, signature
+2. **`.slim/imports.json`** — bidirectional dependency graph (imports + importedBy)
+3. **`.slim/digest.md`** — rolling changelog of recent architectural changes
+4. **`codemap.md`** — per-system contracts (inputs/outputs/side effects/invariants/callers). Auto-updated by the cartography skill when source files change.
 
-**Central orchestrator:**
-| System | Purpose |
-|--------|---------|
-| `warEcologySimulation.ts` | "God function" — runs one complete turn, activates all units. 31 import dependencies; changes cascade everywhere. |
+When to use which:
+- "What does this file export?" → look up the file in symbols.json
+- "Who calls this function?" → search imports.json for the name in `importedBy`
+- "What's the blast radius of changing X?" → trace `importedBy` transitively
+- "What changed recently?" → read digest.md
+- "What are the invariants for this system?" → read codemap.md
 
-**Core gameplay:**
-| System | Purpose |
-|--------|---------|
-| `combatSystem.ts` | Attack resolution, counter-attacks, HP mutation |
-| `combatActionSystem.ts` | Combat action selection (strikes, maneuvers) |
-| `combatSignalSystem.ts` | Combat signal/event propagation |
-| `movementSystem.ts` | Path execution, ZoC checks, opportunity attacks, faction identity bonuses |
-| `unitActivationSystem.ts` | Per-unit activation logic per turn |
-| `productionSystem.ts` | City production queues, unit/city project creation |
-| `siegeSystem.ts` | Wall degradation, city capture mechanics |
-| `territorySystem.ts` | Territory control, claimed hexes, supply lines |
-| `moraleSystem.ts` | Unit morale changes from events |
-| `zocSystem.ts` | Zone of Control rules |
-| `opportunityAttackSystem.ts` | Free attacks on units leaving ZoC |
-| `occupancySystem.ts` | Unit/city occupancy rules |
-| `pathfinder.ts` | Pathfinding (shared utility, not a system) |
-
-**Identity & progression:**
-| System | Purpose |
-|--------|---------|
-| `signatureAbilitySystem.ts` | Faction-specific powers (Frost Nova, Desert Swarm, etc.) |
-| `factionIdentitySystem.ts` | Emergent identity from terrain/combat outcomes |
-| `veterancySystem.ts` | Unit experience tiers and leveling |
-| `xpSystem.ts` | Combat XP gain |
-| `researchSystem.ts` | Technology from combat/environment (no linear tree) |
-| `knowledgeSystem.ts` | Knowledge tracking and unlocks |
-| `domainProgression.ts` | Domain-based progression tracking |
-| `capabilityDoctrine.ts` | Doctrine-based capability modifiers |
-| `capabilitySystem.ts` | Unit capability calculations |
-| `sacrificeSystem.ts` | Units codify learned abilities into faction research at home city |
-| `learnByKillSystem.ts` | Units learn enemy ability domains by killing |
-| `historySystem.ts` | Event/history tracking across game |
-
-**Capture, transport & villages:**
-| System | Purpose |
-|--------|---------|
-| `captureSystem.ts` | Slaver mechanic — capture enemy units instead of killing |
-| `transportSystem.ts` | Naval transport of land units (galley + infantry) |
-| `villageSystem.ts` | Village lifecycle |
-| `villageCaptureSystem.ts` | Pirate Greedy trait — capture villages instead of destroying |
-| `citySiteSystem.ts` | City site detection and founding |
-
-**Synergies:**
-| System | Purpose |
-|--------|---------|
-| `synergyEngine.ts` | Pair-based faction synergy evaluation |
-| `synergyEffects.ts` | Synergy effect application |
-| `synergyRuntime.ts` | Synergy runtime state management |
-
-**Faction management:**
-| System | Purpose |
-|--------|---------|
-| `factionOwnershipSystem.ts` | Faction ownership rules |
-| `factionPhaseSystem.ts` | Per-faction turn phase management |
-| `factionStrategy.ts` | Faction strategic planning |
-| `economySystem.ts` | Economy/economic rules |
-| `warExhaustionSystem.ts` | War exhaustion tracking |
-
-**AI systems:**
-| System | Purpose |
-|--------|---------|
-| `strategicAi.ts` | High-level AI decisions (production, research, movement priorities) |
-| `aiTactics.ts` | Tactical AI (flanking, positioning) |
-| `aiProductionStrategy.ts` | AI production queue management |
-| `aiResearchStrategy.ts` | AI research prioritization |
-| `aiPersonality.ts` | Faction personality profiles |
-| `aiDifficulty.ts` | AI difficulty scaling (recently rewritten) |
-
-**Map & world:**
-| System | Purpose |
-|--------|---------|
-| `fogSystem.ts` | Fog of War — per-faction visibility (explored/visible/hidden) |
-| `healingSystem.ts` | Per-turn healing based on location/faction/synergies |
-| `turnSystem.ts` | Turn sequencing |
-
-**Hybrid & balance:**
-| System | Purpose |
-|--------|---------|
-| `hybridSystem.ts` | Hybrid unit creation |
-| `balanceHarness.ts` | Optuna balance evaluation harness |
-
-### Frontend Architecture (`web/src/`)
-
-```
-web/src/
-├── app/              → React app shell (App.tsx, page/layout components)
-├── game/
-│   ├── controller/   → GameSession.ts (main controller), GameController.ts
-│   ├── types/        → Client state types, world view types, play state types
-│   ├── view-model/   → worldViewModel.ts (UI state model, sprite key resolution)
-│   └── phaser/
-│       ├── scenes/   → MapScene.ts (main Phaser scene)
-│       ├── systems/  → UnitRenderer.ts, FogRenderer.ts, CombatAnimator.ts
-│       └── assets/   → Texture keys, asset manifest (39 playtest sprites)
-├── data/             → JSON content copied from src/content/base/
-├── ui/               → React UI components (HUD, inspectors, modals, overlays)
-└── styles.css        → Global styles
+To refresh after code changes:
+```bash
+python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py changes --root ./
+python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py extract --root ./ --changed-only
+python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py digest --root ./ --output .slim/digest.md
+python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py update --root ./
 ```
 
-**Sprite system:** 39 unique faction-unit sprites in `web/public/assets/playtest-units/`. Naming: `{faction}_{unit}.png`. Display size 48×64, yOffset 8. Resolution order: sourceRecipeId → special chassisId → faction+chassisId lookup.
+## Combat Architecture
 
-### Data Flow
+Both the AI path and the player path converge on a **single shared function**: `applyCombatAction()` in `src/systems/combat-action/apply.ts`. All post-combat mechanics live there exclusively.
 
-1. **Content JSON files** (`src/content/base/`) define all game entities
-2. **Systems** read content via RulesRegistry and operate on GameState
-3. **`warEcologySimulation.ts`** orchestrates all systems per turn
-4. **Frontend GameSession** calls systems for player actions and renders via Phaser + React
+| Path | Orchestration | Calls |
+|------|---------------|-------|
+| AI/Autonomous | `activateUnit()` in `src/systems/unit-activation/activateUnit.ts` | `previewCombatAction()` → `applyCombatAction()` |
+| Player-facing | `GameSession.ts` — `resolveAttack()` then `applyResolvedCombat()` | `previewCombatAction()` → `applyCombatAction()` |
 
-### Feedback Chain (UI/SFX)
+**When adding a new combat mechanic:** implement it inside `applyCombatAction()` (or `previewCombatAction()` for modifiers). Both paths call these functions, so no manual duplication is needed.
 
-Narrow pipe — don't scatter ad hoc frontend hacks. If you need UI/SFX feedback:
-
-```
-GameSession.ts → GameController.ts → clientState.ts → sfxManager.ts
-```
-
-If missing data for feedback, extend the controller chain rather than adding `new Audio()` calls.
+**What differs between paths (intentionally):**
+- AI passes `learnChanceScale=2` (double learn-by-kill chance)
+- Player path adds animation delay between preview and apply
+- Player path adds UI feedback (combat log, enemy synergy intel tracking, siege state rendering)
 
 ## Code Conventions
 
@@ -203,21 +88,6 @@ If missing data for feedback, extend the controller chain rather than adding `ne
 - **History arrays as state**: Many systems write to `unit.history[]` or `faction.history[]` for event tracking (e.g., capture cooldowns tracked via history entries, not dedicated counters).
 - **Deterministic RNG** (`src/core/rng.ts`) for reproducible simulations. Tests use seeded RNG states.
 - **Tests** use fixtures from `tests/fixtures/` and seed RNG for determinism
-
-## Recent Work (not yet fully reflected in docs)
-
-- **Known start positions** — fixed 4/13/2026
-- **Kill-shot execute bonuses** — fixed 4/13/2026
-- **AI difficulty reshuffle** — `aiDifficulty.ts` rewritten with bug fixes
-- **Multi-axis attacks** — combat can now resolve along multiple axes
-- **Fog of war** — `fogSystem.ts` active development
-- **Queued movement across turns** — rendering + execution
-
-## Navigation
-
-Read `codemap.md` for detailed per-system contracts (inputs/outputs/invariants/callers). It is auto-generated by the cartography-v2 skill and kept current.
-
-For structured symbol/import data, check `.slim/symbols.json` and `.slim/imports.json` (generated by cartography-v2).
 
 ## Sound Effects
 
