@@ -80,10 +80,9 @@ const SOUND_SOURCES: Record<SoundId, string> = {
   research_tier: '/assets/audio/sfx/druman.wav',
   ranged: '/assets/audio/sfx/archers_4s.wav',
   hit_and_run: '/assets/audio/sfx/feedbkxx.wav',
-  // ── Synergy stings (drop-in: add the wav files later, keys are stable) ──
-  synergy_unlock: '/assets/audio/sfx/synergy_unlock.wav',
-  synergy_contact: '/assets/audio/sfx/synergy_contact.wav',
-  synergy_studied: '/assets/audio/sfx/synergy_studied.wav',
+  synergy_unlock: '/assets/audio/sfx/druman.wav',
+  synergy_contact: '/assets/audio/sfx/druman.wav',
+  synergy_studied: '/assets/audio/sfx/druman.wav',
 };
 
 const SOUND_VOLUMES: Partial<Record<SoundId, number>> = {
