@@ -224,10 +224,18 @@ export class MapSceneInput {
 
   handleUnitSelection(state: ClientState, unitId: string, pointer?: Phaser.Input.Pointer): void {
     if (this.isAnimating()) return;
-    if (MapSceneInput.isRightClick(pointer)) return;
 
     const unit = state.world.units.find((entry) => entry.id === unitId);
     if (!unit) {
+      return;
+    }
+
+    if (MapSceneInput.isRightClick(pointer)) {
+      const city = state.world.cities.find((c) => c.q === unit.q && c.r === unit.r);
+      if (city) {
+        this.controller.dispatch({ type: 'select_city', cityId: city.id });
+        return;
+      }
       return;
     }
 
