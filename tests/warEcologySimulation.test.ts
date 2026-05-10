@@ -1,5 +1,6 @@
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
+import { createCityId } from '../src/core/ids';
 import {
   applyContactTransfer,
   applyEcologyPressure,
@@ -186,6 +187,21 @@ function buildAlternatingState() {
   const keptFactions = new Set([alphaId, betaId]);
   const keptUnits = new Set([...alphaUnits, ...betaUnits]);
 
+  // Give each faction a besieged city so supply penalties fire (cityIds must be
+  // non-empty after 0570e42), but the siege zeroes out income → maximum deficit.
+  const alphaCityId = createCityId();
+  const betaCityId = createCityId();
+  const makeCity = (id: string, factionId: string, pos: { q: number; r: number }) => ({
+    id, factionId: factionId as never, position: pos, name: 'Besieged',
+    productionQueue: [], productionProgress: 0,
+    territoryRadius: 2, wallHP: 100, maxWallHP: 100,
+    besieged: true, turnsUnderSiege: 0, isCapital: false,
+    siteBonuses: { productionBonus: 0, supplyBonus: 0, villageCooldownReduction: 0, researchBonus: 0, traits: [] },
+  });
+  state.cities = new Map([
+    [alphaCityId, makeCity(alphaCityId, alphaId, { q: 1, r: 0 })],
+    [betaCityId, makeCity(betaCityId, betaId, { q: 13, r: 0 })],
+  ]);
   state.factions = new Map(
     Array.from(state.factions.entries())
       .filter(([factionId]) => keptFactions.has(factionId))
@@ -194,7 +210,7 @@ function buildAlternatingState() {
         {
           ...faction,
           unitIds: factionId === alphaId ? alphaUnits : betaUnits,
-          cityIds: [],
+          cityIds: [factionId === alphaId ? alphaCityId : betaCityId],
           villageIds: [],
         },
       ])
@@ -211,7 +227,6 @@ function buildAlternatingState() {
         },
       ])
   );
-  state.cities = new Map();
   state.villages = new Map();
   state.improvements = new Map();
   state.economy = new Map(
@@ -242,7 +257,7 @@ describe('alternating activation simulation', () => {
 
     const result = runWarEcologySimulation(state, registry, 1);
 
-    // Supply attrition: no cities → 0 supply income → deficit → targeted 50% strikes.
+    // Supply attrition: besieged cities → 0 supply income → deficit → targeted 50% strikes.
     // deficit >= unit count, so all units get struck for floor(maxHp * 0.5).
     const alphaMaxHp = state.units.get(alphaUnits[0])!.maxHp;
     const betaMaxHp = state.units.get(betaUnits[0])!.maxHp;
@@ -294,6 +309,23 @@ describe('alternating activation simulation', () => {
       ],
     ]);
 
+    // Give each faction a besieged city so supply penalties fire (cityIds must be
+    // non-empty after 0570e42), but the siege zeroes out income → maximum deficit.
+    const makeCity = (id: string, fId: string, pos: { q: number; r: number }) => ({
+      id, factionId: fId as never, position: pos, name: 'Besieged',
+      productionQueue: [], productionProgress: 0,
+      territoryRadius: 2, wallHP: 100, maxWallHP: 100,
+      besieged: true, turnsUnderSiege: 0, isCapital: false,
+      siteBonuses: { productionBonus: 0, supplyBonus: 0, villageCooldownReduction: 0, researchBonus: 0, traits: [] },
+    });
+    const jungleCityId = createCityId();
+    const steppeCityId = createCityId();
+    const druidCityId = createCityId();
+    state.cities = new Map([
+      [jungleCityId, makeCity(jungleCityId, jungleId, { q: 6, r: 5 })],
+      [steppeCityId, makeCity(steppeCityId, steppeId, { q: 15, r: 5 })],
+      [druidCityId, makeCity(druidCityId, druidId, { q: 22, r: 5 })],
+    ]);
     state.factions = new Map(
       Array.from(state.factions.entries())
         .filter(([factionId]) => [jungleId, steppeId, druidId].includes(factionId as never))
@@ -307,12 +339,15 @@ describe('alternating activation simulation', () => {
                 : factionId === steppeId
                   ? [steppeUnitId]
                   : [druidUnitId],
-            cityIds: [],
+            cityIds: [
+              factionId === jungleId ? jungleCityId
+                : factionId === steppeId ? steppeCityId
+                : druidCityId,
+            ],
             villageIds: [],
           },
         ])
     );
-    state.cities = new Map();
     state.villages = new Map();
     state.improvements = new Map();
     state.economy = new Map(
@@ -334,7 +369,7 @@ describe('alternating activation simulation', () => {
 
     const result = runWarEcologySimulation(state, registry, 1);
 
-    // Supply attrition: no cities → deficit → targeted 50% strikes.
+    // Supply attrition: besieged cities → 0 income → deficit → targeted 50% strikes.
     const jungleSupplyDmg = Math.floor(jungleMaxHp * 0.5);
     const steppeSupplyDmg = Math.floor(steppeMaxHp * 0.5);
     const druidSupplyDmg = Math.floor(druidMaxHp * 0.5);
