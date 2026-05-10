@@ -12,51 +12,14 @@ export class SelectionRenderer {
 
   render(world: WorldViewModel, selected: ClientSelection, inspectedKey: string | null, hoveredKey: string | null) {
     this.layer.removeAll(true);
-    const reachableKeys = new Set(world.overlays.reachableHexes.map((entry) => entry.key));
-    const attackKeys = new Set(world.overlays.attackHexes.map((entry) => entry.key));
 
-    if (hoveredKey && !reachableKeys.has(hoveredKey) && !attackKeys.has(hoveredKey)) {
-      const [q, r] = hoveredKey.split(',').map(Number);
-      const point = this.worldToScreen(q, r);
+    if (hoveredKey) {
+      const point = this.worldToScreen(...hoveredKey.split(',').map(Number) as [number, number]);
       this.layer.add(
         this.scene.add.image(point.x, point.y, TEXTURES.selection, 1)
           .setOrigin(0.5, 1)
           .setAlpha(0.16)
           .setTint(0xd8c06f),
-      );
-    }
-
-    for (const target of world.overlays.reachableHexes) {
-      const point = this.worldToScreen(target.q, target.r);
-      this.layer.add(
-        this.scene.add.image(point.x, point.y, TEXTURES.selection, 1)
-          .setOrigin(0.5, 1)
-          .setScale(1.02)
-          .setAlpha(0.62)
-          .setTint(0x7ff0bf),
-      );
-    }
-
-    for (const target of world.overlays.attackHexes) {
-      const point = this.worldToScreen(target.q, target.r);
-      this.layer.add(
-        this.scene.add.image(point.x, point.y, TEXTURES.selection, 1)
-          .setOrigin(0.5, 1)
-          .setScale(1.02)
-          .setAlpha(0.62)
-          .setTint(0xff8d7b),
-      );
-    }
-
-    if (hoveredKey && (reachableKeys.has(hoveredKey) || attackKeys.has(hoveredKey))) {
-      const [q, r] = hoveredKey.split(',').map(Number);
-      const point = this.worldToScreen(q, r);
-      this.layer.add(
-        this.scene.add.image(point.x, point.y, TEXTURES.selection, 1)
-          .setOrigin(0.5, 1)
-          .setScale(0.96)
-          .setAlpha(0.3)
-          .setTint(attackKeys.has(hoveredKey) ? 0xffd1c8 : 0xf5f1b2),
       );
     }
 
