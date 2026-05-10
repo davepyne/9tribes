@@ -17,8 +17,8 @@ export class SelectionRenderer {
       this.layer.add(
         this.scene.add.image(point.x, point.y, TEXTURES.selection, 1)
           .setOrigin(0.5, 1)
-          .setAlpha(0.16)
-          .setTint(0xd8c06f),
+          .setAlpha(0.45)
+          .setTint(0xf7e7bf),
       );
     }
 

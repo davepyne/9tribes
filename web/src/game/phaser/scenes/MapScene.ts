@@ -55,7 +55,8 @@ export class MapScene extends Phaser.Scene {
     this.unitLayer = this.add.container().setDepth(5);
     this.combatOverlayLayer = this.add.container().setDepth(6);
     this.selectionLayer = this.add.container().setDepth(7);
-    this.fogLayer = this.add.container().setDepth(8);
+    this.fogLayer = this.add.container().setDepth(7);
+    this.selectionLayer = this.add.container().setDepth(8);
 
     this.tileRenderer = new TileLayerRenderer(this, this.tileLayer, this.worldToScreenFn);
     this.borderRenderer = new BorderRenderer(this, this.borderLayer, this.worldToScreenFn);
@@ -135,13 +136,14 @@ export class MapScene extends Phaser.Scene {
       skipUnitIds: this.combatAnimator.getAnimatedUnitIds(),
     });
 
+    this.fogRenderer.render(state.world);
+
     this.selectionRenderer.render(
       state.world,
       state.selected,
       state.inspectedTerrain ? `${state.inspectedTerrain.q},${state.inspectedTerrain.r}` : null,
       state.hoveredHex ? `${state.hoveredHex.q},${state.hoveredHex.r}` : null,
     );
-    this.fogRenderer.render(state.world);
 
     this.cameraManager.layout(state);
   }
