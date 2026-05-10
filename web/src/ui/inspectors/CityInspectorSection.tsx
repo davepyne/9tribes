@@ -21,7 +21,7 @@ export const CityInspectorSection = React.memo(function CityInspectorSection({
   onRemoveFromQueue,
   onReorderQueue,
 }: CityInspectorSectionProps) {
-  const [cityTab, setCityTab] = useState<CityTab>('overview');
+  const [cityTab, setCityTab] = useState<CityTab>('production');
   const [draggedQueueIndex, setDraggedQueueIndex] = useState<number | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [tabsCanScrollLeft, setTabsCanScrollLeft] = useState(false);

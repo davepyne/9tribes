@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import type { GameController } from '../../controller/GameController';
 import type { ClientState } from '../../types/clientState';
-import { TILE_HALF_HEIGHT, TILE_HALF_WIDTH } from '../assets/constants';
 import { screenToWorld } from './MapSceneCamera';
 
 export class MapSceneInput {
@@ -225,10 +224,18 @@ export class MapSceneInput {
 
   handleUnitSelection(state: ClientState, unitId: string, pointer?: Phaser.Input.Pointer): void {
     if (this.isAnimating()) return;
-    if (MapSceneInput.isRightClick(pointer)) return;
 
     const unit = state.world.units.find((entry) => entry.id === unitId);
     if (!unit) {
+      return;
+    }
+
+    if (MapSceneInput.isRightClick(pointer)) {
+      const city = state.world.cities.find((c) => c.q === unit.q && c.r === unit.r);
+      if (city) {
+        this.controller.dispatch({ type: 'select_city', cityId: city.id });
+        return;
+      }
       return;
     }
 
@@ -253,10 +260,14 @@ export class MapSceneInput {
 
   handleCitySelection(state: ClientState, cityId: string, pointer?: Phaser.Input.Pointer): void {
     if (this.isAnimating()) return;
-    if (MapSceneInput.isRightClick(pointer)) return;
 
     const city = state.world.cities.find((entry) => entry.id === cityId);
     if (!city) {
+      return;
+    }
+
+    if (MapSceneInput.isRightClick(pointer)) {
+      this.controller.dispatch({ type: 'select_city', cityId });
       return;
     }
 
@@ -272,8 +283,7 @@ export class MapSceneInput {
 
     const occupyingUnit = state.world.units.find((unit) => unit.q === city.q && unit.r === city.r && unit.isActiveFaction);
     if (occupyingUnit) {
-      const screenPos = { x: (city.q - city.r) * TILE_HALF_WIDTH, y: (city.q + city.r) * TILE_HALF_HEIGHT };
-      window.openHoverSelect?.(screenPos.x, screenPos.y + 20, { id: occupyingUnit.id, name: occupyingUnit.prototypeName }, { id: city.id, name: city.name });
+      this.controller.dispatch({ type: 'select_unit', unitId: occupyingUnit.id });
       return;
     }
 
