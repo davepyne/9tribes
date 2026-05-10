@@ -76,7 +76,7 @@
   "70": {
     "class_type": "UNETLoader",
     "inputs": {
-      "unet_name": "flux-2-klein-base-4b-fp8.safetensors",
+      "unet_name": "flux-2-klein-4b-fp8.safetensors",
       "weight_dtype": "default"
     }
   },

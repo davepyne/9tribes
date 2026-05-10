@@ -32,20 +32,30 @@ function isPairSynergy(s: SynergyDataBase): s is PairSynergyData {
 
 // ── Props ──
 
+export type TierDescriptions = {
+  t1: string;
+  t2: string;
+  t3: string;
+  t1Complete?: boolean;
+  t2Complete?: boolean;
+  t3Complete?: boolean;
+};
+
 type FriendlySynergyCardProps = {
   mode: 'friendly';
   synergy: SynergyDataBase;
-  kind: 'pair' | 'triple';
+  kind: 'pair' | 'triple' | 'solo';
   factionColor: string;
   /** Optional faction id; used for art resolution (faction-specific triple art). */
   factionId?: string;
   compact?: boolean;
+  tierDescriptions?: TierDescriptions;
 };
 
 type FieldReportSynergyCardProps = {
   mode: 'field-report';
   synergy: SynergyDataBase;
-  kind: 'pair' | 'triple';
+  kind: 'pair' | 'triple' | 'solo';
   factionColor: string;
   factionName: string;
   factionId?: string;
@@ -182,7 +192,7 @@ function SynergyArt({
   synergy: SynergyDataBase;
   domains: string[];
   factionColor: string;
-  kind: 'pair' | 'triple';
+  kind: 'pair' | 'triple' | 'solo';
   obscured: boolean;
 }) {
   const W = 280;
@@ -190,16 +200,18 @@ function SynergyArt({
   const cx = W / 2;
   const cy = H / 2;
 
-  // Anchor positions: pair = left/right, triple = equilateral triangle
+  // Anchor positions: solo = center, pair = left/right, triple = equilateral triangle
   const anchors =
-    kind === 'triple' && domains.length >= 3
-      ? [
-          { x: cx, y: 26 },
-          { x: cx - 54, y: cy + 22 },
-          { x: cx + 54, y: cy + 22 },
-        ]
-      : [
-          { x: 62, y: cy },
+    kind === 'solo'
+      ? [{ x: cx, y: cy }]
+      : kind === 'triple' && domains.length >= 3
+        ? [
+            { x: cx, y: 26 },
+            { x: cx - 54, y: cy + 22 },
+            { x: cx + 54, y: cy + 22 },
+          ]
+        : [
+            { x: 62, y: cy },
           { x: W - 62, y: cy },
         ];
 
@@ -207,7 +219,7 @@ function SynergyArt({
   const artOpacity = obscured ? 0.22 : 1;
   const uid = `sart-${synergy.id.replace(/[^a-z0-9]/gi, '-')}`;
 
-  // Connection paths: pair = arc through nexus; triple = each anchor → nexus
+  // Connection paths: pair = arc through nexus; triple = each anchor → nexus; solo = none
   const arcs: Array<{ d: string; color: string }> = [];
   if (kind === 'pair' && anchors.length >= 2) {
     const a = anchors[0];
@@ -216,7 +228,7 @@ function SynergyArt({
       d: `M ${a.x} ${a.y} Q ${cx} ${cy - 22} ${b.x} ${b.y}`,
       color: dColors[0] ?? factionColor,
     });
-  } else {
+  } else if (kind === 'triple') {
     anchors.forEach((a, i) => {
       arcs.push({
         d: `M ${a.x} ${a.y} L ${cx} ${cy}`,
@@ -339,9 +351,10 @@ function SynergyArt({
 
 /**
  * Resolves card art with a fallback chain:
- *   1. Faction-specific triple art    /assets/synergy-cards/triples/{factionId}_{tripleId}.jpg
- *   2. Generic pair art               /assets/synergy-cards/pairs/{domainA}_{domainB}.jpg   (alphabetical)
- *   3. Procedural SynergyArt SVG      (always available)
+ *   1. Solo domain art               /assets/synergy-cards/solos/{domainId}.jpg
+ *   2. Faction-specific triple art    /assets/synergy-cards/triples/{factionId}_{tripleId}.jpg
+ *   3. Generic pair art               /assets/synergy-cards/pairs/{domainA}_{domainB}.jpg   (alphabetical)
+ *   4. Procedural SynergyArt SVG      (always available)
  *
  * Returns the first URL whose image successfully loads, or null
  * if nothing exists yet — caller falls back to the procedural scene.
@@ -349,7 +362,7 @@ function SynergyArt({
 function useArtUrl(
   synergyId: string,
   domains: string[],
-  kind: 'pair' | 'triple',
+  kind: 'pair' | 'triple' | 'solo',
   factionId: string | undefined,
 ): string | null {
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
@@ -357,6 +370,9 @@ function useArtUrl(
   useEffect(() => {
     let cancelled = false;
     const candidates: string[] = [];
+    if (kind === 'solo' && domains.length >= 1) {
+      candidates.push(`/assets/synergy-cards/solos/${domains[0]}.jpg`);
+    }
     if (kind === 'triple' && factionId) {
       candidates.push(`/assets/synergy-cards/triples/${factionId}_${synergyId}.jpg`);
     }
@@ -395,9 +411,9 @@ function useArtUrl(
 
 // ── Particle accent: domain-flavored micro-motes drifting up across art ──
 
-function DomainParticles({ domains, kind }: { domains: string[]; kind: 'pair' | 'triple' }) {
+function DomainParticles({ domains, kind }: { domains: string[]; kind: 'pair' | 'triple' | 'solo' }) {
   if (domains.length === 0) return null;
-  const count = kind === 'triple' ? 9 : 6;
+  const count = kind === 'triple' ? 9 : kind === 'solo' ? 4 : 6;
   return (
     <div className="scard__particles" aria-hidden="true">
       {Array.from({ length: count }).map((_, i) => {
@@ -427,6 +443,7 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
   const factionId = props.factionId;
   const isFriendly = mode === 'friendly';
   const tier = isFriendly ? 2 : (props as FieldReportSynergyCardProps).tier;
+  const tierDescriptions = isFriendly && 'tierDescriptions' in props ? props.tierDescriptions : undefined;
 
   const domains = isPairSynergy(synergy) ? synergy.domains : [];
 
@@ -443,11 +460,14 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
   // Try to resolve a painted JPG; null until/unless one loads successfully.
   const artUrl = useArtUrl(synergy.id, domains, kind, factionId);
 
+  const badgeText = kind === 'solo' ? 'DOMAIN' : kind === 'pair' ? 'PAIR' : 'TRIPLE';
+
   const rootClass = [
     'scard',
     compact ? 'scard--compact' : 'scard--full',
     `scard--${isFriendly ? 'friendly' : 'report'}`,
     kind === 'triple' ? 'scard--triple' : '',
+    kind === 'solo' ? 'scard--solo' : '',
     `scard--tier${tier}`,
     obscured ? 'scard--obscured' : '',
   ].filter(Boolean).join(' ');
@@ -462,7 +482,7 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
 
       {/* Title bar */}
       <div className="scard__title">
-        <span className="scard__badge">{kind === 'pair' ? 'PAIR' : 'TRIPLE'}</span>
+        <span className="scard__badge">{badgeText}</span>
         <span className="scard__name">
           {obscured ? <span className="scard__name-redacted">UNKNOWN ART</span> : title}
         </span>
@@ -523,8 +543,28 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
         </div>
       )}
 
-      {/* Mechanics block (friendly always, field-report tier 2) */}
-      {(isFriendly || tier === 2) && mechanics && (
+      {/* Solo tier progression block */}
+      {kind === 'solo' && isFriendly && tierDescriptions && !compact && (
+        <div className="scard__tiers">
+          <div className="scard__tier-row scard__tier-row--base">
+            <span className="scard__tier-label">Base</span>
+            <span className="scard__tier-desc">{mechanics}</span>
+          </div>
+          {([
+            { label: 'T1', desc: tierDescriptions.t1, done: tierDescriptions.t1Complete },
+            { label: 'T2', desc: tierDescriptions.t2, done: tierDescriptions.t2Complete },
+            { label: 'T3', desc: tierDescriptions.t3, done: tierDescriptions.t3Complete },
+          ] as const).map((t) => (
+            <div key={t.label} className={`scard__tier-row${t.done ? ' scard__tier-row--done' : ''}`}>
+              <span className="scard__tier-label">{t.label}</span>
+              <span className="scard__tier-desc">{t.desc}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Mechanics block (friendly always, field-report tier 2) — non-solo only */}
+      {kind !== 'solo' && (isFriendly || tier === 2) && mechanics && (
         <div className="scard__mechanics">
           <p>{mechanics}</p>
         </div>

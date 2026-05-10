@@ -37,6 +37,8 @@ const pairs = JSON.parse(fs.readFileSync(path.join(CONTENT, 'pair-synergies.json
 const rules = JSON.parse(fs.readFileSync(path.join(CONTENT, 'emergent-rules.json'), 'utf8')).rules;
 const civsRaw = JSON.parse(fs.readFileSync(path.join(CONTENT, 'civilizations.json'), 'utf8'));
 const civs = Object.values(civsRaw);
+const domainsData = JSON.parse(fs.readFileSync(path.join(CONTENT, 'ability-domains.json'), 'utf8')).domains;
+const researchData = JSON.parse(fs.readFileSync(path.join(CONTENT, 'research.json'), 'utf8'));
 
 // ── Style anchors — locked across the whole set so cards feel cohesive ──
 const STYLE_BASE =
@@ -141,8 +143,48 @@ function triplePrompt(rule, faction) {
   return fragments.join(', ');
 }
 
+// ── Solo domain prompts ──
+
+function soloPrompt(domainId) {
+  const v = vocab(domainId);
+  const d = domainsData[domainId];
+  const baseDesc = d?.baseEffect?.description ?? '';
+  const fragments = [
+    `${d?.name ?? domainId}, wide landscape scene depicting ${v.motif}`,
+    `single-icon composition with the domain's elemental theme filling the frame`,
+    `dominant palette ${v.color}, mood: ${v.tone}`,
+    baseDesc ? `evokes: ${baseDesc}` : null,
+    STYLE_BASE,
+  ].filter(Boolean);
+  return fragments.join(', ');
+}
+
+function soloTierDescriptions(domainId) {
+  const nodes = researchData[domainId]?.nodes;
+  if (!nodes) return null;
+  return {
+    t1: nodes[`${domainId}_t1`]?.qualitativeEffect?.description ?? '',
+    t2: nodes[`${domainId}_t2`]?.qualitativeEffect?.description ?? '',
+    t3: nodes[`${domainId}_t3`]?.qualitativeEffect?.description ?? '',
+  };
+}
+
 // ── Build manifest ──
 const entries = [];
+
+// Solo art — one per domain
+for (const domainId of Object.keys(domainsData)) {
+  entries.push({
+    kind: 'solo',
+    filename: `solos/${domainId}.jpg`,
+    domainId,
+    domainName: domainsData[domainId].name,
+    baseEffect: domainsData[domainId].baseEffect?.description ?? '',
+    tierDescriptions: soloTierDescriptions(domainId),
+    prompt: soloPrompt(domainId),
+    negative_prompt: NEGATIVE,
+  });
+}
 
 // Pair art — one per unique unordered pair of domains across all synergies
 const seenPairs = new Set();
@@ -181,6 +223,7 @@ for (const rule of rules) {
 
 // ── Write outputs ──
 fs.mkdirSync(OUT_DIR, { recursive: true });
+fs.mkdirSync(path.join(OUT_DIR, 'solos'), { recursive: true });
 fs.mkdirSync(path.join(OUT_DIR, 'pairs'), { recursive: true });
 fs.mkdirSync(path.join(OUT_DIR, 'triples'), { recursive: true });
 
@@ -200,12 +243,14 @@ const batchLines = entries.map((e) => `${e.filename}||${e.prompt}`);
 fs.writeFileSync(path.join(OUT_DIR, 'comfyui-batch.txt'), batchLines.join('\n'));
 
 // Summary
+const soloCount = entries.filter((e) => e.kind === 'solo').length;
 const pairCount = entries.filter((e) => e.kind === 'pair').length;
 const tripleCount = entries.filter((e) => e.kind === 'triple').length;
-console.log(`Wrote ${entries.length} prompts (${pairCount} pairs, ${tripleCount} triples)`);
+console.log(`Wrote ${entries.length} prompts (${soloCount} solos, ${pairCount} pairs, ${tripleCount} triples)`);
 console.log(`  -> ${path.relative(ROOT, path.join(OUT_DIR, 'prompts.json'))}`);
 console.log(`  -> ${path.relative(ROOT, path.join(OUT_DIR, 'prompts.csv'))}`);
 console.log(`  -> ${path.relative(ROOT, path.join(OUT_DIR, 'comfyui-batch.txt'))}`);
-console.log(`Place generated PNGs at:`);
+console.log(`Place generated images at:`);
+console.log(`  web/public/assets/synergy-cards/solos/<domainId>.jpg`);
 console.log(`  web/public/assets/synergy-cards/pairs/<a>_<b>.jpg`);
 console.log(`  web/public/assets/synergy-cards/triples/<factionId>_<ruleId>.jpg`);

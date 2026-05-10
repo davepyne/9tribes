@@ -384,6 +384,14 @@
   transition: background 120ms ease;
 }
 
+.syn-domain-item--clickable {
+  cursor: pointer;
+}
+
+.syn-domain-item--clickable:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .syn-domain-item:hover {
   background: rgba(255, 255, 255, 0.05);
 }
@@ -797,6 +805,47 @@
   color: var(--text);
 }
 
+/* Solo domain card popup */
+.syn-solo-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.syn-solo-popup {
+  position: relative;
+  max-width: 320px;
+}
+
+.syn-solo-popup__close {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-primary, #1a1915);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+
+.syn-solo-popup__close:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
 /* ═══════════════════════════════════════════
    SynergyCard (scard-*) — MtG-style card
    ═══════════════════════════════════════════ */
@@ -1144,6 +1193,53 @@
   font-size: 11px;
   line-height: 1.5;
   color: var(--muted);
+}
+
+/* ── Solo domain tier progression ── */
+
+.scard__tiers {
+  padding: 8px 12px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.scard__tier-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 3px 0;
+  opacity: 0.5;
+}
+
+.scard__tier-row--base {
+  opacity: 0.7;
+}
+
+.scard__tier-row--done {
+  opacity: 1;
+}
+
+.scard__tier-label {
+  flex-shrink: 0;
+  width: 32px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.scard__tier-row--done .scard__tier-label {
+  color: var(--scard-accent, #d6a34b);
+}
+
+.scard__tier-desc {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.scard__tier-row--done .scard__tier-desc {
+  color: var(--text);
 }
 
 /* ── Compact variant (for inspector) ── */

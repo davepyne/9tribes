@@ -4,6 +4,8 @@ import type { CapabilityPipViewModel } from '../game/types/clientState';
 import pairSynergiesData from '../data/pair-synergies.json';
 import emergentRulesData from '../data/emergent-rules.json';
 import abilityDomainsData from '../data/ability-domains.json';
+import researchData from '../data/research.json';
+import { SynergyCard, type TierDescriptions } from './SynergyCard';
 
 type PairSynergy = typeof pairSynergiesData.pairSynergies[number];
 type EmergentRule = typeof emergentRulesData.rules[number];
@@ -112,6 +114,31 @@ export function domainDisplayName(domainId: string): string {
 
 export function domainBenefit(domainId: string): string {
   return (abilityDomainsData.domains as Record<string, { baseEffect?: { description?: string } }>)[domainId]?.baseEffect?.description ?? '';
+}
+
+function buildTierDescriptions(domainId: string, capabilities: CapabilityPipViewModel[]): TierDescriptions {
+  const nodes = (researchData as Record<string, { nodes: Record<string, { qualitativeEffect?: { description: string } }> }>)[domainId]?.nodes;
+  const cap = capabilities.find((c) => c.domainId === domainId);
+  return {
+    t1: nodes?.[`${domainId}_t1`]?.qualitativeEffect?.description ?? '',
+    t2: nodes?.[`${domainId}_t2`]?.qualitativeEffect?.description ?? '',
+    t3: nodes?.[`${domainId}_t3`]?.qualitativeEffect?.description ?? '',
+    t1Complete: cap?.t1Ready ?? false,
+    t2Complete: cap?.t2Ready ?? false,
+    t3Complete: (cap?.level ?? 0) >= 3,
+  };
+}
+
+function buildSoloSynergyData(domainId: string) {
+  const domain = (abilityDomainsData.domains as Record<string, { id: string; name: string; baseEffect?: { description: string } }>)[domainId];
+  return {
+    id: domainId,
+    name: domain?.name ?? domainId,
+    domains: [domainId],
+    description: domain?.baseEffect?.description ?? '',
+    friendlyFlavor: domain?.baseEffect?.description ?? '',
+    enemyFlavor: '',
+  };
 }
 
 // ── Resolution logic ──
@@ -300,6 +327,7 @@ type SynergyChipProps = {
 
 export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChipProps) {
   const [expanded, setExpanded] = useState(false);
+  const [soloDomain, setSoloDomain] = useState<string | null>(null);
 
   const capabilities = state.research?.capabilities ?? [];
   const activeFaction = state.world.factions.find((f) => f.id === state.activeFactionId);
@@ -438,7 +466,7 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
                   const isNative = d === nativeDomain;
                   const isUnlocked = isNative || pairEligibleDomains.includes(d);
                   return (
-                    <div key={d} className={`syn-domain-item${!isUnlocked ? ' syn-domain-item--locked' : ''}`} data-native={isNative || undefined}>
+                    <div key={d} className={`syn-domain-item syn-domain-item--clickable${!isUnlocked ? ' syn-domain-item--locked' : ''}`} data-native={isNative || undefined} onClick={() => setSoloDomain(d)}>
                       <DomainDot domainId={d} size={18} isNative={isNative} />
                       <div className="syn-domain-item__info">
                         <span className="syn-domain-item__name">{domainDisplayName(d)}</span>
@@ -580,6 +608,25 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
                     <span className="syn-emergent-popup__label">Requirement:</span>
                     <span>{EMERGENT_DESCRIPTIONS[emergentPopup.id]?.requirement ?? 'See rule details'}</span>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Solo Domain Card Popup */}
+            {soloDomain && (
+              <div className="syn-solo-overlay" onClick={() => setSoloDomain(null)}>
+                <div className="syn-solo-popup" onClick={(e) => e.stopPropagation()}>
+                  <button type="button" className="syn-solo-popup__close" onClick={() => setSoloDomain(null)}>
+                    &#x2715;
+                  </button>
+                  <SynergyCard
+                    mode="friendly"
+                    kind="solo"
+                    synergy={buildSoloSynergyData(soloDomain)}
+                    factionColor={factionColor}
+                    factionId={activeFaction?.id}
+                    tierDescriptions={buildTierDescriptions(soloDomain, capabilities)}
+                  />
                 </div>
               </div>
             )}
