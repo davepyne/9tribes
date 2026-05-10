@@ -15,7 +15,7 @@ export class SelectionRenderer {
     if (hoveredKey) {
       const point = this.worldToScreen(...hoveredKey.split(',').map(Number) as [number, number]);
       this.layer.add(
-        this.scene.add.image(point.x, point.y, TEXTURES.selection, 1)
+        this.scene.add.image(point.x, point.y + 4, TEXTURES.selection, 1)
           .setOrigin(0.5, 1)
           .setAlpha(0.45)
           .setTint(0xf7e7bf),
@@ -26,7 +26,7 @@ export class SelectionRenderer {
       const [q, r] = inspectedKey.split(',').map(Number);
       const point = this.worldToScreen(q, r);
       this.layer.add(
-        this.scene.add.image(point.x, point.y, TEXTURES.selection, 0)
+        this.scene.add.image(point.x, point.y + 4, TEXTURES.selection, 0)
           .setOrigin(0.5, 1)
           .setScale(1.1)
           .setAlpha(0.9)
