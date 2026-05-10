@@ -258,15 +258,6 @@ function KnowledgeGainedShellContent({
       case 'undo':
         controller.dispatch({ type: 'undo' });
         break;
-      default:
-        if (action.startsWith('hover_select_unit:')) {
-          const unitId = action.replace('hover_select_unit:', '');
-          controller.dispatch({ type: 'hover_select_unit', unitId });
-        } else if (action.startsWith('hover_select_city:')) {
-          const cityId = action.replace('hover_select_city:', '');
-          controller.dispatch({ type: 'hover_select_city', cityId });
-        }
-        break;
     }
   };
 
