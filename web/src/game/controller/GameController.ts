@@ -227,11 +227,13 @@ export class GameController {
   }
 
   setHoveredHex(key: string | null) {
+    if (this.hoveredKey === key) return;
     this.hoveredKey = key;
     this.emit();
   }
 
   setZoom(zoom: number) {
+    if (this.zoom === zoom) return;
     this.zoom = zoom;
     this.emit();
   }
