@@ -2,6 +2,9 @@ import Phaser from 'phaser';
 import type { ClientState } from '../../types/clientState';
 import type { WorldViewModel } from '../../types/worldView';
 import { getUnitTextureSpec, getUnitRearTextureSpec } from '../assets/keys';
+import { TILE_HALF_HEIGHT } from '../assets/keys';
+
+const CY_OFFSET = -24;
 
 type UnitCallbacks = {
   onUnitSelected: (unitId: string, pointer?: Phaser.Input.Pointer) => void;
@@ -44,7 +47,7 @@ export class UnitRenderer {
       const markerColor = isSelected ? 0xffd84d : tint;
       const marker = this.scene.add.ellipse(
         point.x,
-        point.y - 20,
+        point.y + CY_OFFSET,
         isSelected ? 38 : 34,
         isSelected ? 22 : 18,
         markerColor,
@@ -96,10 +99,10 @@ export class UnitRenderer {
       sprite.on('pointerover', () => {
         if (isAttackTarget) {
           const color = 0x33cc55;
-          const ring = this.scene.add.ellipse(point.x, point.y - 20, 56, 32, color, 0.08).setStrokeStyle(2, color, 0.6);
+          const ring = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, 56, 32, color, 0.08).setStrokeStyle(2, color, 0.6);
           const check = this.scene.add.graphics();
           check.lineStyle(2.5, color, 1);
-          const cx = point.x, cy = point.y - 36;
+          const cx = point.x, cy = point.y + CY_OFFSET - 16;
           check.lineBetween(cx - 5, cy, cx - 1, cy + 5);
           check.lineBetween(cx - 1, cy + 5, cx + 6, cy - 5);
           attackIndicators.push(ring, check);
@@ -116,7 +119,7 @@ export class UnitRenderer {
       this.layer.add(sprite);
 
       if (isLastMoved) {
-        const movedRing = this.scene.add.ellipse(point.x, point.y - 20, 46, 24, 0xf2d67b, 0.12)
+        const movedRing = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, 46, 24, 0xf2d67b, 0.12)
           .setStrokeStyle(2, 0xf2d67b, 0.95);
         this.layer.add(movedRing);
       }
@@ -130,7 +133,7 @@ export class UnitRenderer {
 
       // Summon countdown timer — show turns remaining for special summoned units
       if (unit.summonTurnsRemaining !== undefined && unit.summonTurnsRemaining > 0) {
-        const countdownText = this.scene.add.text(point.x, point.y - 36, `${unit.summonTurnsRemaining}`, {
+        const countdownText = this.scene.add.text(point.x, point.y + CY_OFFSET - 16, `${unit.summonTurnsRemaining}`, {
           fontSize: '14px',
           fontStyle: 'bold',
           color: unit.summonTurnsRemaining <= 2 ? '#ff4444' : '#ffcc00',
@@ -146,16 +149,16 @@ export class UnitRenderer {
         const pulse = 0.6 + 0.4 * Math.sin(this.scene.time.now * 0.003);
 
         // Outer soft glow — large, pulsing halo
-        const outerGlow = this.scene.add.ellipse(point.x, point.y - 20, 64, 36, 0x00e5ff, 0.12 * pulse);
+        const outerGlow = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, 64, 36, 0x00e5ff, 0.12 * pulse);
         this.layer.add(outerGlow);
 
         // Mid glow — bright core ring with stroke for definition
-        const midGlow = this.scene.add.ellipse(point.x, point.y - 20, 52, 30, 0x00e5ff, 0.22 * pulse)
+        const midGlow = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, 52, 30, 0x00e5ff, 0.22 * pulse)
           .setStrokeStyle(2, 0x00e5ff, 0.5 * pulse);
         this.layer.add(midGlow);
 
         // Inner bright center
-        const innerGlow = this.scene.add.ellipse(point.x, point.y - 20, 40, 22, 0x00e5ff, 0.18 * pulse);
+        const innerGlow = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, 40, 22, 0x00e5ff, 0.18 * pulse);
         this.layer.add(innerGlow);
 
         // Domain pips below HP bar — slightly larger and bolder
@@ -176,7 +179,7 @@ export class UnitRenderer {
       }
 
       if (unit.acted && unit.isActiveFaction) {
-        const spentTag = this.scene.add.text(point.x, point.y - 58, 'Spent', {
+        const spentTag = this.scene.add.text(point.x, point.y + CY_OFFSET - 38, 'Spent', {
           fontFamily: 'Inter, sans-serif',
           fontSize: '10px',
           color: '#f7d7c4',

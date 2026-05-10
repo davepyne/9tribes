@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import type { WorldViewModel } from '../../types/worldView';
 
+const CY_OFFSET = -24;
+
 export class PathRenderer {
   constructor(
     private readonly scene: Phaser.Scene,
@@ -13,21 +15,21 @@ export class PathRenderer {
 
     for (const hex of world.overlays.reachableHexes) {
       const point = this.worldToScreen(hex.q, hex.r);
-      const ring = this.scene.add.ellipse(point.x, point.y - 20, 62, 28, 0x5ec7a0, 0.28)
+      const ring = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, 62, 28, 0x5ec7a0, 0.28)
         .setStrokeStyle(3, 0xb8ffe4, 0.95);
       this.layer.add(ring);
     }
 
     for (const hex of world.overlays.attackHexes) {
       const point = this.worldToScreen(hex.q, hex.r);
-      const ring = this.scene.add.ellipse(point.x, point.y - 20, 62, 28, 0xb84242, 0.26)
+      const ring = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, 62, 28, 0xb84242, 0.26)
         .setStrokeStyle(3, 0xffb2a7, 0.95);
       this.layer.add(ring);
     }
 
     if (world.overlays.lastMove) {
       const point = this.worldToScreen(world.overlays.lastMove.destination.q, world.overlays.lastMove.destination.r);
-      const marker = this.scene.add.ellipse(point.x, point.y - 20, 68, 32, 0xf2d67b, 0.08)
+      const marker = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, 68, 32, 0xf2d67b, 0.08)
         .setStrokeStyle(3, 0xf2d67b, 0.95);
       this.layer.add(marker);
     }
@@ -41,7 +43,7 @@ export class PathRenderer {
         const next = world.overlays.queuedPath[index + 1];
         const from = this.worldToScreen(current.q, current.r);
         const to = this.worldToScreen(next.q, next.r);
-        this.drawDashedLine(queuedGraphics, from.x, from.y - 8, to.x, to.y - 8, 8, 5);
+        this.drawDashedLine(queuedGraphics, from.x, from.y + CY_OFFSET, to.x, to.y + CY_OFFSET, 8, 5);
       }
       this.layer.add(queuedGraphics);
 
@@ -50,7 +52,7 @@ export class PathRenderer {
         const isLast = node.step === world.overlays.queuedPath.length - 1;
         const marker = this.scene.add.ellipse(
           point.x,
-          point.y - 20,
+          point.y + CY_OFFSET,
           isLast ? 16 : 10,
           isLast ? 8 : 5,
           0x4ecdc4,
@@ -71,13 +73,13 @@ export class PathRenderer {
       const next = world.overlays.pathPreview[index + 1];
       const from = this.worldToScreen(current.q, current.r);
       const to = this.worldToScreen(next.q, next.r);
-      graphics.lineBetween(from.x, from.y - 8, to.x, to.y - 8);
+      graphics.lineBetween(from.x, from.y + CY_OFFSET, to.x, to.y + CY_OFFSET);
     }
     this.layer.add(graphics);
 
     for (const node of world.overlays.pathPreview) {
       const point = this.worldToScreen(node.q, node.r);
-      const marker = this.scene.add.ellipse(point.x, point.y - 20, node.step === 0 ? 18 : 14, node.step === 0 ? 10 : 8, 0xf7e7a8, node.step === 0 ? 0.78 : 0.9)
+      const marker = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, node.step === 0 ? 18 : 14, node.step === 0 ? 10 : 8, 0xf7e7a8, node.step === 0 ? 0.78 : 0.9)
         .setStrokeStyle(2, 0xfff4c8, 0.95);
       this.layer.add(marker);
     }
@@ -88,7 +90,7 @@ export class PathRenderer {
       const reachEntry = world.overlays.reachableHexes.find((hex) => hex.key === dest.key);
       if (reachEntry?.terrainCausesDamage) {
         const point = this.worldToScreen(dest.q, dest.r);
-        const skull = this.scene.add.text(point.x, point.y - 38, '💀', { fontSize: '18px' }).setOrigin(0.5, 0.5);
+        const skull = this.scene.add.text(point.x, point.y + CY_OFFSET - 18, '💀', { fontSize: '18px' }).setOrigin(0.5, 0.5);
         this.layer.add(skull);
       }
     }
