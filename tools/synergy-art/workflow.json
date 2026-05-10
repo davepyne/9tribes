@@ -15,7 +15,7 @@
   "62": {
     "class_type": "Flux2Scheduler",
     "inputs": {
-      "steps": 28,
+      "steps": 4,
       "width": ["68", 0],
       "height": ["69", 0]
     }
@@ -26,7 +26,7 @@
       "model": ["70", 0],
       "positive": ["74", 0],
       "negative": ["67", 0],
-      "cfg": 5
+      "cfg": 1
     }
   },
   "64": {

@@ -327,7 +327,6 @@ type SynergyChipProps = {
 
 export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChipProps) {
   const [expanded, setExpanded] = useState(false);
-  const [soloDomain, setSoloDomain] = useState<string | null>(null);
 
   const capabilities = state.research?.capabilities ?? [];
   const activeFaction = state.world.factions.find((f) => f.id === state.activeFactionId);
@@ -363,19 +362,30 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
     setExpanded((v) => !v);
   }, []);
 
-  const [emergentPopup, setEmergentPopup] = useState<EmergentRule | null>(null);
-
-  const handleEmergentClick = useCallback((e: React.MouseEvent, rule: EmergentRule) => {
-    e.stopPropagation();
-    setEmergentPopup(rule);
-  }, []);
-
-  const handleEmergentClose = useCallback(() => setEmergentPopup(null), []);
-
   const handleClose = useCallback(() => setExpanded(false), []);
   const handlePanelClick = useCallback((e: React.MouseEvent) => e.stopPropagation(), []);
 
   const hasContent = resolved.foreignDomains.length > 0 || resolved.activePairs.length > 0;
+
+  // Build all cards for the hand
+  const handCards = useMemo(() => {
+    const cards: Array<{ key: string; kind: 'solo' | 'pair' | 'triple'; synergy: any; tierDescriptions?: TierDescriptions }> = [];
+    for (const d of resolved.allDomains) {
+      cards.push({
+        key: `solo-${d}`,
+        kind: 'solo',
+        synergy: buildSoloSynergyData(d),
+        tierDescriptions: buildTierDescriptions(d, capabilities),
+      });
+    }
+    for (const { pair, domains } of resolved.activePairs) {
+      cards.push({ key: `pair-${pair.id}`, kind: 'pair', synergy: pair });
+    }
+    if (resolved.activeTriple) {
+      cards.push({ key: `triple-${resolved.activeTriple.id}`, kind: 'triple', synergy: resolved.activeTriple });
+    }
+    return cards;
+  }, [resolved, capabilities]);
 
   return (
     <div className="syn-chip-wrap" onClick={handleClick}>
@@ -384,7 +394,7 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
         type="button"
         className={`syn-chip ${hasContent ? 'syn-chip--active' : ''} ${expanded ? 'syn-chip--open' : ''}`}
         style={{ '--syn-accent': factionColor } as React.CSSProperties}
-        title="Ability Synergies — click to expand"
+        title="Ability Synergies — click to view cards"
       >
         <span className="syn-chip__label">ABILITY SYNERGIES</span>
         <span className="syn-chip__domains">
@@ -408,20 +418,6 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
           </span>
         )}
 
-        {resolved.emergentProgress.some((ep) => ep.progress > 0 && !ep.isComplete) && (() => {
-          const best = resolved.emergentProgress
-            .filter((ep) => ep.progress > 0 && !ep.isComplete)
-            .sort((a, b) => b.progress - a.progress)[0];
-          return best ? (
-            <span className="syn-chip__emergent" title={`${best.rule.name}: ${best.satisfiedCategories.length}/${best.totalCategories}`}>
-              <span className="syn-chip__emergent-bar">
-                <span className="syn-chip__emergent-fill" style={{ width: `${best.progress * 100}%` }} />
-              </span>
-              <span className="syn-chip__emergent-text">{best.satisfiedCategories.length}/{best.totalCategories}</span>
-            </span>
-          ) : null;
-        })()}
-
         {resolved.activeTriple && (
           <span className="syn-chip__triple" style={{ color: factionColor }}>
             &#9733; {resolved.activeTriple.name}
@@ -429,211 +425,35 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
         )}
       </button>
 
-      {/* ── Expanded Panel ── */}
+      {/* ── Card Hand Overlay ── */}
       {expanded && (
         <>
-          <div className="syn-backdrop" onClick={handleClose} />
-          <div className="syn-panel" onClick={handlePanelClick}>
-            {/* Header */}
-            <div className="syn-panel__header">
-              <h3 className="syn-panel__title">Ability Synergies</h3>
-              <button type="button" className="syn-panel__close" onClick={handleClose}>
+          <div className="syn-hand-backdrop" onClick={handleClose} />
+          <div className="syn-hand-overlay" onClick={handlePanelClick}>
+            <div className="syn-hand-header">
+              <h3 className="syn-hand-title">Ability Synergies</h3>
+              <span className="syn-hand-count">{handCards.length} card{handCards.length !== 1 ? 's' : ''}</span>
+              <button type="button" className="syn-hand-close" onClick={handleClose}>
                 &#x2715;
               </button>
             </div>
-
-            {/* Domain Constellation */}
-            <section className="syn-section">
-              <h4 className="syn-section__label">Domains</h4>
-              <div className="syn-constellation">
-                <svg className="syn-constellation__svg" width="100%" height="36" preserveAspectRatio="xMinYMid meet">
-                  {resolved.activePairs.map((pair) => (
-                    <PairConnection
-                      key={pair.pair.id}
-                      pair={pair}
-                      domainIndexMap={Object.fromEntries(resolved.allDomains.map((d, i) => [d, i]))}
-                    />
-                  ))}
-                </svg>
-                <div className="syn-constellation__dots">
-                  {resolved.allDomains.map((d) => (
-                    <DomainDot key={d} domainId={d} size={24} isNative={d === nativeDomain} />
-                  ))}
-                </div>
-              </div>
-              <div className="syn-domain-list">
-                {resolved.allDomains.map((d) => {
-                  const isNative = d === nativeDomain;
-                  const isUnlocked = isNative || pairEligibleDomains.includes(d);
-                  return (
-                    <div key={d} className={`syn-domain-item syn-domain-item--clickable${!isUnlocked ? ' syn-domain-item--locked' : ''}`} data-native={isNative || undefined} onClick={() => setSoloDomain(d)}>
-                      <DomainDot domainId={d} size={18} isNative={isNative} />
-                      <div className="syn-domain-item__info">
-                        <span className="syn-domain-item__name">{domainDisplayName(d)}</span>
-                        <span className="syn-domain-item__benefit">{domainBenefit(d)}</span>
-                        {!isUnlocked && (
-                          <span className="syn-domain-item__unlock-hint">Unlocks when T3 researched</span>
-                        )}
-                      </div>
-                      {isNative && (
-                        <span className="syn-domain-item__tag syn-domain-item__tag--native">Native</span>
-                      )}
-                      {!isNative && (
-                        <span className={`syn-domain-item__tag ${isUnlocked ? 'syn-domain-item__tag--codified' : 'syn-domain-item__tag--locked'}`}>Acquired</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              {resolved.allDomains.length <= 1 && (
-                <p className="syn-empty">No foreign domains unlocked yet. Defeat enemies, capture rivals, or stay in contact long enough to learn one.</p>
-              )}
-            </section>
-
-            {/* Active Pair Synergies */}
-            <section className="syn-section">
-              <h4 className="syn-section__label">
-                Active Pairs
-                {resolved.activePairs.length > 0 && (
-                  <span className="syn-section__count">{resolved.activePairs.length}</span>
-                )}
-              </h4>
-              {resolved.activePairs.length > 0 ? (
-                <ul className="syn-pair-list">
-                  {resolved.activePairs.map(({ pair, domains }) => (
-                    <li key={pair.id} className="syn-pair-item">
-                      <span className="syn-pair-item__domains">
-                        <DomainDot domainId={domains[0]} size={14} />
-                        <span className="syn-pair-item__plus">+</span>
-                        <DomainDot domainId={domains[1]} size={14} />
-                      </span>
-                      <div className="syn-pair-item__info">
-                        <span className="syn-pair-item__name">{pair.name}</span>
-                        <span className="syn-pair-item__desc">{pair.description}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="syn-empty">
-                  {resolved.allDomains.length < 2
-                    ? 'Learn a second domain to build toward pair synergies.'
-                    : 'Finish Tier 3 research in eligible domains to activate their pair synergies.'}
-                </p>
-              )}
-            </section>
-
-            {/* Emergent Rules Progress */}
-            <section className="syn-section">
-              <h4 className="syn-section__label">Emergent Rules</h4>
-              {resolved.activeTriple ? (
-                <div className="syn-triple-active">
-                  <div className="syn-triple-active__icon">&#9733;</div>
-                  <div className="syn-triple-active__info">
-                    <span className="syn-triple-active__name" style={{ color: factionColor }}>
-                      {resolved.activeTriple.name}
-                    </span>
-                    <span className="syn-triple-active__effect">
-                      {resolved.activeTriple.effect.description}
-                    </span>
-                  </div>
-                </div>
-              ) : null}
-              <div className="syn-rule-list">
-                {resolved.emergentProgress
-                  .filter((ep) => ep.rule.condition !== 'default')
-                  .map((ep) => {
-                    const info = EMERGENT_DESCRIPTIONS[ep.rule.id];
-                    return (
-                      <div
-                        key={ep.rule.id}
-                        className={`syn-rule-item ${ep.isComplete ? 'syn-rule-item--done' : ''} ${info ? 'syn-rule-item--clickable' : ''}`}
-                        onClick={(e) => info && handleEmergentClick(e, ep.rule)}
-                      >
-                        <div className="syn-rule-item__header">
-                          <span className="syn-rule-item__name">{ep.rule.name}</span>
-                          <span className="syn-rule-item__progress-text">
-                            {ep.satisfiedCategories.length}/{ep.totalCategories}
-                          </span>
-                        </div>
-                        <div className="syn-rule-item__bar">
-                          <span
-                            className="syn-rule-item__fill"
-                            style={{
-                              width: `${ep.progress * 100}%`,
-                              '--syn-rule-color': ep.isComplete ? factionColor : domainColor(ep.satisfiedDomains[0] ?? ''),
-                            } as React.CSSProperties}
-                          />
-                        </div>
-                        <div className="syn-rule-item__detail">
-                          {ep.isComplete ? (
-                            <span className="syn-rule-item__effect">{ep.rule.effect.description}</span>
-                          ) : (
-                            <>
-                              <span>Have: </span>
-                              {ep.satisfiedDomains.map((d) => (
-                                <span key={d} className="syn-rule-item__domain" style={{ color: domainColor(d) }}>
-                                  {domainGlyph(d)} {domainDisplayName(d)}
-                                </span>
-                              ))}
-                              {ep.missingDomains.length > 0 && (
-                                <>
-                                  <span> &middot; Need: </span>
-                                  {ep.missingDomains.slice(0, 2).map((d) => (
-                                    <span key={d} className="syn-rule-item__domain syn-rule-item__domain--missing">
-                                      {domainGlyph(d)} {domainDisplayName(d)}
-                                    </span>
-                                  ))}
-                                </>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </section>
-
-            {/* Emergent Rule Popup */}
-            {emergentPopup && (
-              <div className="syn-emergent-overlay" onClick={handleEmergentClose}>
-                <div className="syn-emergent-popup" onClick={(e) => e.stopPropagation()}>
-                  <button type="button" className="syn-emergent-popup__close" onClick={handleEmergentClose}>
-                    &#x2715;
-                  </button>
-                  <h4 className="syn-emergent-popup__title">{emergentPopup.name}</h4>
-                  <p className="syn-emergent-popup__effect">{EMERGENT_DESCRIPTIONS[emergentPopup.id]?.effect ?? emergentPopup.effect.description}</p>
-                  <div className="syn-emergent-popup__req">
-                    <span className="syn-emergent-popup__label">Requirement:</span>
-                    <span>{EMERGENT_DESCRIPTIONS[emergentPopup.id]?.requirement ?? 'See rule details'}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Solo Domain Card Popup */}
-            {soloDomain && (
-              <div className="syn-solo-overlay" onClick={() => setSoloDomain(null)}>
-                <div className="syn-solo-popup" onClick={(e) => e.stopPropagation()}>
-                  <button type="button" className="syn-solo-popup__close" onClick={() => setSoloDomain(null)}>
-                    &#x2715;
-                  </button>
+            <div className="syn-hand">
+              {handCards.map((card, i) => (
+                <div
+                  key={card.key}
+                  className="syn-hand__card"
+                  style={{ '--hand-index': i, '--hand-total': handCards.length } as React.CSSProperties}
+                >
                   <SynergyCard
                     mode="friendly"
-                    kind="solo"
-                    synergy={buildSoloSynergyData(soloDomain)}
+                    kind={card.kind}
+                    synergy={card.synergy}
                     factionColor={factionColor}
                     factionId={activeFaction?.id}
-                    tierDescriptions={buildTierDescriptions(soloDomain, capabilities)}
+                    tierDescriptions={card.tierDescriptions}
                   />
                 </div>
-              </div>
-            )}
-
-            {/* Footer hint */}
-            <div className="syn-panel__footer">
-              <span>Domains unlock automatically when learned, then research pushes them to T2 for emergent rules and T3 for full pair activation.</span>
+              ))}
             </div>
           </div>
         </>
