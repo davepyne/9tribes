@@ -4,7 +4,9 @@ This file provides guidance to AI agents working in this repository.
 
 ## Project Overview
 
-War-Civ V2 is a turn-based strategy simulation focused on how civilizations evolve through war. It is **not** a traditional 4X game — it optimizes for conflict-driven evolution, military identity, emergent behavior, and simple systems that create complex outcomes. The guiding rule: *If a system does not meaningfully affect war, cut it.*
+**Formerly "War-Civ V2"** (also seen as `war-civ-v2`, `war-civ-2`, or `War-Civ-2` in source comments, config, and scripts). The project was renamed to **9 Tribes** — these are the same codebase.
+
+9 Tribes is a turn-based strategy simulation focused on how civilizations evolve through war. It is **not** a traditional 4X game — it optimizes for conflict-driven evolution, military identity, emergent behavior, and simple systems that create complex outcomes. The guiding rule: *If a system does not meaningfully affect war, cut it.*
 
 **Core pillars:** Combat drives everything, military identity emerges from terrain/outcomes/doctrines, technology comes from environment+combat (no linear tech trees), units are persistent with history, prototypes over unit tiers (chassis + components).
 

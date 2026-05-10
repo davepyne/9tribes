@@ -123,7 +123,7 @@ Stats follow a simple formula: `chassis base + component bonuses`. Higher-tier c
 
 ```bash
 git clone <repo-url>
-cd war-civ-v2
+cd 9tribes
 
 npm install                 # engine + test deps
 npm install --prefix web    # frontend deps

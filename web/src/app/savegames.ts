@@ -1,7 +1,7 @@
 import type { SessionSaveSnapshot } from '../game/controller/GameSession';
 import type { SerializedGameState } from '../game/types/playState';
 
-const STORAGE_KEY = 'war-civ-v2.savegames.v1';
+const STORAGE_KEY = '9tribes.savegames.v1';
 
 export type SaveGameRecord = {
   id: string;
