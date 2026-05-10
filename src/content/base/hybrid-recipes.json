@@ -355,7 +355,7 @@
       "simple_armor"
     ],
     "tier": "mid",
-    "minLearnedDomains": 2,
+    "minLearnedDomains": 3,
     "tags": [
       "infantry",
       "fortress",
