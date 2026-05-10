@@ -105,7 +105,7 @@ export class MapScene extends Phaser.Scene {
   private readonly worldToScreenFn = (q: number, r: number) => worldToScreen(q, r);
 
   private updateHoverFromPointer(pointer: Phaser.Input.Pointer) {
-    const coord = screenToWorld(pointer.worldX, pointer.worldY + 8);
+    const coord = screenToWorld(pointer.worldX, pointer.worldY + 20);
     if (coord) {
       this.controller.setHoveredHex(`${coord.q},${coord.r}`);
     } else {
