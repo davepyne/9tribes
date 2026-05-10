@@ -114,6 +114,11 @@ export function applySupplyDeficitPenalties(
   const faction = state.factions.get(factionId);
   if (!faction) return state;
 
+  // When no cities exist, skip supply penalties entirely.
+  // This allows the starting units (settler + military) to explore
+  // for a good city site without dying from supply starvation.
+  if (faction.cityIds.length === 0) return state;
+
   const economy = deriveResourceIncome(state, factionId, registry);
   const supplyDeficit = getSupplyDeficit(economy);
   if (supplyDeficit <= 0) return state;
