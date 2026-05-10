@@ -37,16 +37,21 @@ export class UnitRenderer {
       const isSelected = state.selected?.type === 'unit' && state.selected.unitId === unit.id;
       const isLastMoved = state.playFeedback?.lastMove?.unitId === unit.id;
 
+      const markerBaseAlpha = unit.canAct ? 0.66 : unit.isActiveFaction ? 0.34 : 0.22;
+      const markerAlpha = isSelected
+        ? 0.6 + 0.4 * Math.sin(this.scene.time.now * 0.005)
+        : markerBaseAlpha;
+      const markerColor = isSelected ? 0xffd84d : tint;
       const marker = this.scene.add.ellipse(
         point.x,
         point.y - 8,
         isSelected ? 38 : 34,
         isSelected ? 22 : 18,
-        tint,
-        unit.canAct ? 0.66 : unit.isActiveFaction ? 0.34 : 0.22,
+        markerColor,
+        markerAlpha,
       );
-      if (unit.canAct) {
-        marker.setStrokeStyle(2, 0xf7e7bf, 0.3);
+      if (unit.canAct || isSelected) {
+        marker.setStrokeStyle(2, isSelected ? 0xffd84d : 0xf7e7bf, isSelected ? 0.7 + 0.3 * Math.sin(this.scene.time.now * 0.005) : 0.3);
       }
       this.layer.add(marker);
 
