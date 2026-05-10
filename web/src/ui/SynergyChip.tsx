@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import type { ClientState } from '../game/types/clientState';
 import type { CapabilityPipViewModel } from '../game/types/clientState';
 import pairSynergiesData from '../data/pair-synergies.json';
@@ -425,8 +426,8 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
         )}
       </button>
 
-      {/* ── Card Hand Overlay ── */}
-      {expanded && (
+      {/* ── Card Hand Overlay (ported to body to escape backdrop-filter containing block) ── */}
+      {expanded && createPortal(
         <>
           <div className="syn-hand-backdrop" onClick={handleClose} />
           <div className="syn-hand-overlay" onClick={handlePanelClick}>
@@ -456,7 +457,8 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
               ))}
             </div>
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </div>
   );
