@@ -187,13 +187,11 @@ function SynergyArt({
   domains,
   factionColor,
   kind,
-  obscured,
 }: {
   synergy: SynergyDataBase;
   domains: string[];
   factionColor: string;
   kind: 'pair' | 'triple' | 'solo';
-  obscured: boolean;
 }) {
   const W = 280;
   const H = 110;
@@ -216,7 +214,6 @@ function SynergyArt({
         ];
 
   const dColors = domains.map((d) => domainColor(d));
-  const artOpacity = obscured ? 0.22 : 1;
   const uid = `sart-${synergy.id.replace(/[^a-z0-9]/gi, '-')}`;
 
   // Connection paths: pair = arc through nexus; triple = each anchor → nexus; solo = none
@@ -244,7 +241,7 @@ function SynergyArt({
       height="100%"
       preserveAspectRatio="xMidYMid slice"
       className="scard__art-svg"
-      style={{ opacity: artOpacity }}
+      style={{ opacity: 1 }}
       aria-hidden="true"
     >
       <defs>
@@ -359,12 +356,17 @@ function SynergyArt({
  * Returns the first URL whose image successfully loads, or null
  * if nothing exists yet — caller falls back to the procedural scene.
  */
+const FIELD_REPORT_PARCHMENT = '/assets/synergy-cards/field_report_parchment.png';
+
 function useArtUrl(
   synergyId: string,
   domains: string[],
   kind: 'pair' | 'triple' | 'solo',
   factionId: string | undefined,
+  obscured: boolean,
 ): string | null {
+  if (obscured) return FIELD_REPORT_PARCHMENT;
+
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -458,7 +460,7 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
   const obscured = !isFriendly && tier < 2;
 
   // Try to resolve a painted JPG; null until/unless one loads successfully.
-  const artUrl = useArtUrl(synergy.id, domains, kind, factionId);
+  const artUrl = useArtUrl(synergy.id, domains, kind, factionId, obscured);
 
   const badgeText = kind === 'solo' ? 'DOMAIN' : kind === 'pair' ? 'PAIR' : 'TRIPLE';
 
@@ -469,7 +471,7 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
     kind === 'triple' ? 'scard--triple' : '',
     kind === 'solo' ? 'scard--solo' : '',
     `scard--tier${tier}`,
-    obscured ? 'scard--obscured' : '',
+    '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -484,7 +486,7 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
       <div className="scard__title">
         <span className="scard__badge">{badgeText}</span>
         <span className="scard__name">
-          {obscured ? <span className="scard__name-redacted">UNKNOWN ART</span> : title}
+          {obscured ? <span className="scard__name-redacted">UNKNOWN</span> : title}
         </span>
       </div>
 
@@ -498,7 +500,6 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
                 src={artUrl}
                 alt=""
                 draggable={false}
-                style={obscured ? { filter: 'blur(6px) brightness(0.5)' } : undefined}
               />
             ) : (
               <SynergyArt
@@ -506,18 +507,17 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
                 domains={domains}
                 factionColor={factionColor}
                 kind={kind}
-                obscured={obscured}
               />
             )}
           </div>
-          {!obscured && <DomainParticles domains={domains} kind={kind} />}
+          <DomainParticles domains={domains} kind={kind} />
           <div className="scard__art-vignette" aria-hidden="true" />
           <div className="scard__art-frame" aria-hidden="true" />
         </div>
       )}
 
       {/* Domain glyphs strip */}
-      {domains.length > 0 && !compact && !obscured && (
+      {domains.length > 0 && !compact && (
         <div className="scard__domains">
           {domains.map((d) => (
             <span key={d} className="scard__domain-chip" style={{ color: domainColor(d) }}>
@@ -528,7 +528,7 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
       )}
 
       {/* Compact domain dots */}
-      {compact && domains.length > 0 && !obscured && (
+      {compact && domains.length > 0 && (
         <span className="scard__compact-dots">
           {domains.map((d) => (
             <span key={d} style={{ color: domainColor(d) }}>{domainGlyph(d)}</span>
