@@ -61,7 +61,12 @@ export const ResearchWindow = React.memo(function ResearchWindow({ state, onStar
             </div>
             <div className="research-header-stats">
               <span className="research-header-stat">
-                <strong>{research.rateBreakdown.total}</strong> XP/turn
+                <strong>{research.rateBreakdown.total}</strong> XP/turn directed
+                {research.rateBreakdown.ecologyTotal > 0 ? (
+                  <span className="research-header-stat--ecology-inline">
+                    +{research.rateBreakdown.ecologyTotal.toFixed(1)} auto
+                  </span>
+                ) : null}
               </span>
               {research.activeNodeName && (
                 <span className="research-header-stat research-header-stat--active">

@@ -557,6 +557,12 @@
   margin-left: 0.25rem;
 }
 
+.research-header-stat--ecology-inline {
+  color: #4ade80;
+  font-size: 0.75rem;
+  margin-left: 0.35rem;
+}
+
 /* ── Ecology detail panel sources ── */
 .research-detail__section--ecology {
   border: 1px solid rgba(74, 222, 128, 0.3);

@@ -304,6 +304,10 @@ export function buildResearchInspectorViewModel(
   // Simplified rate breakdown — flat base rate only
   const totalRate = research.researchPerTurn;
 
+  // Ecology total from all active ecology nodes
+  const ecologyNodes = nodes.filter(n => n.isEcologyActive);
+  const ecologyTotal = ecologyNodes.reduce((sum, n) => sum + (n.ecologyBonus ?? 0), 0);
+
   return {
     factionId,
     activeNodeId: research.activeNodeId,
@@ -322,6 +326,7 @@ export function buildResearchInspectorViewModel(
           ? `${learnedDomains.length} domains unlocked · mid-tier production available`
           : `${learnedDomains.length} domain unlocked · base production only`,
       total: totalRate,
+      ecologyTotal,
     },
     hasKnowledgeDiscount: false,
   };

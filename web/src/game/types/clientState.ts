@@ -330,6 +330,7 @@ export type ResearchRateBreakdown = {
   base: number;
   detail: string;
   total: number;
+  ecologyTotal: number;
 };
 
 export type ResearchInspectorViewModel = {
