@@ -12,6 +12,16 @@ export const RENDEZVOUS_OFFSET_HEXES = 4;
 export const RENDEZVOUS_READY_DISTANCE = 2;
 export const HOLD_DEFENSE_RADIUS = 1;
 
+/**
+ * Compute the effective rendezvous offset based on map dimensions.
+ * On small maps (width < 45), use a reduced offset of 2 instead of the default 4.
+ */
+function getEffectiveRendezvousOffset(state: GameState): number {
+  const mapWidth = state.map?.width ?? 50;
+  if (mapWidth < 45) return 2;
+  return RENDEZVOUS_OFFSET_HEXES;
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -105,10 +115,13 @@ export function computeRendezvousHex(
   const dr = friendlyAnchorHex.r - objectiveHex.r;
   const len = Math.sqrt(dq * dq + dr * dr);
 
+  // Use map-size-scaled offset (Priority 4)
+  const rendezvousOffset = getEffectiveRendezvousOffset(state);
+
   // Normalize and offset; degenerate case (same hex) defaults to north
-  const scale = len > 0 ? RENDEZVOUS_OFFSET_HEXES / len : 0;
+  const scale = len > 0 ? rendezvousOffset / len : 0;
   const offsetDq = len > 0 ? Math.round(dq * scale) : 0;
-  const offsetDr = len > 0 ? Math.round(dr * scale) : -RENDEZVOUS_OFFSET_HEXES;
+  const offsetDr = len > 0 ? Math.round(dr * scale) : -rendezvousOffset;
 
   const rawCandidate: HexCoord = {
     q: objectiveHex.q + offsetDq,

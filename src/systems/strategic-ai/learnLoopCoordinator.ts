@@ -28,6 +28,11 @@ export function applyDifficultyLearnAndSacrificeCoordinator(
     return [`${learnLoopLabel}=skipped:no_home_city`];
   }
 
+  // Priority 3: Skip learn loop for tiny armies so units keep their advance intents
+  if (friendlyUnits.length < 4) {
+    return [`${learnLoopLabel}=skipped:army_too_small(${friendlyUnits.length})`];
+  }
+
   const minAbilitiesToReturn = difficultyProfile.strategy.learnLoopMinAbilitiesToReturn;
   const maxAbilitiesToLearn = difficultyProfile.strategy.learnLoopMaxAbilitiesToLearn;
   const farFromHomeDistance = difficultyProfile.strategy.learnLoopFarFromHomeDistance;

@@ -3,6 +3,7 @@ import { buildMvpScenario } from '../src/game/buildMvpScenario.js';
 import { runWarEcologySimulation, createSimulationTrace } from '../src/systems/warEcologySimulation.js';
 import { generateTraceReport, type ReportFocus } from '../src/systems/simulation/traceReport.js';
 import type { DifficultyLevel } from '../src/systems/aiDifficulty.js';
+import type { BuildMvpScenarioOptions } from '../src/game/buildMvpScenario.js';
 
 const args = process.argv.slice(2);
 
@@ -22,6 +23,7 @@ Options:
   --seed <N>           RNG seed (default: 37)
   --turns <N>          Max turns to simulate (default: 50)
   --difficulty <level> AI difficulty: easy|normal|hard (default: normal)
+  --map-size <size>    Map size: small|medium|large (default: medium)
   --focus <type>       Report focus: siege|combat|ai|strategy|research|synergy|full (default: full)
   --factions <ids>     Comma-separated faction IDs to filter
   --turn-range <a-b>   Only show turns a through b (e.g. 20-30)
@@ -34,6 +36,7 @@ Options:
 const seed = Number(getArg('seed') ?? 37);
 const turns = Number(getArg('turns') ?? 50);
 const difficulty = (getArg('difficulty') ?? 'normal') as DifficultyLevel;
+const mapSize = (getArg('map-size') ?? 'medium') as BuildMvpScenarioOptions['mapSize'];
 const focus = (getArg('focus') ?? 'full') as ReportFocus;
 const factionsStr = getArg('factions');
 const factions = factionsStr ? factionsStr.split(',') : undefined;
@@ -42,7 +45,7 @@ const turnRange = turnRangeStr ? turnRangeStr.split('-').map(Number) as [number,
 const jsonMode = hasFlag('json');
 
 const registry = loadRulesRegistry();
-const state = buildMvpScenario(seed, { registry });
+const state = buildMvpScenario(seed, { registry, mapSize });
 const trace = createSimulationTrace(true);
 
 const finalState = runWarEcologySimulation(state, registry, turns, trace, difficulty);
@@ -52,6 +55,7 @@ if (jsonMode) {
     seed,
     turns,
     difficulty,
+    mapSize,
     finalRound: finalState.round,
     lines: trace.lines,
     combatEvents: trace.combatEvents,

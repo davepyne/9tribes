@@ -50,24 +50,38 @@ export function applyDifficultyCoordinator(
     return [`${coordinatorLabel}_coordinator=skipped:no_active_army`];
   }
 
-  const garrisonUnit = [...activeArmy].sort((left, right) => {
-    const distanceDelta =
-      hexDistance(left.unit.position, homeCity.position) - hexDistance(right.unit.position, homeCity.position);
-    if (distanceDelta !== 0) {
-      return distanceDelta;
+  // Priority 2: Skip garrison for tiny armies when no immediate threats nearby
+  let garrisonUnit: UnitWithPrototype | undefined;
+  let skipGarrison = false;
+  if (activeArmy.length <= 3) {
+    const nearbyEnemyCount = getLivingEnemyUnits(state, factionId, difficultyProfile)
+      .filter((entry) => hexDistance(entry.unit.position, homeCity.position) <= 5).length;
+    if (nearbyEnemyCount === 0) {
+      skipGarrison = true;
     }
-    return compareUnitEntries(left, right);
-  })[0];
-  intents[garrisonUnit.unit.id] = buildHomeDefenseIntent(
-    intents[garrisonUnit.unit.id],
-    homeCity,
-    `${coordinatorLabel} coordinator home garrison`,
-  );
+  }
+  if (!skipGarrison) {
+    garrisonUnit = [...activeArmy].sort((left, right) => {
+      const distanceDelta =
+        hexDistance(left.unit.position, homeCity.position) - hexDistance(right.unit.position, homeCity.position);
+      if (distanceDelta !== 0) {
+        return distanceDelta;
+      }
+      return compareUnitEntries(left, right);
+    })[0];
+    intents[garrisonUnit!.unit.id] = buildHomeDefenseIntent(
+      intents[garrisonUnit!.unit.id],
+      homeCity,
+      `${coordinatorLabel} coordinator home garrison`,
+    );
+  }
+
+  const garrisonId = garrisonUnit?.unit.id;
 
   if (!difficultyProfile.adaptiveAi) {
     const targetCity = getNearestEnemyCity(state, factionId, homeCity.position);
     const target = targetCity?.position ?? { q: Math.floor((state.map?.width ?? 20) / 2), r: Math.floor((state.map?.height ?? 20) / 2) };
-    const hunterPool = activeArmy.filter((entry) => entry.unit.id !== garrisonUnit.unit.id);
+    const hunterPool = activeArmy.filter((entry) => entry.unit.id !== garrisonId);
     for (const entry of hunterPool) {
       intents[entry.unit.id] = {
         ...intents[entry.unit.id],
@@ -82,7 +96,7 @@ export function applyDifficultyCoordinator(
       };
     }
     return [
-      `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
+      `${coordinatorLabel}_garrison=${garrisonId ?? 'none'}`,
       `${coordinatorLabel}_coordinator=simple_exploration:hunters=${hunterPool.length}`,
     ];
   }
@@ -91,7 +105,7 @@ export function applyDifficultyCoordinator(
   const supplyRatio = economy && economy.supplyIncome > 0 ? economy.supplyDemand / economy.supplyIncome : 0;
   const idleNearHome = activeArmy.filter(
     (entry) =>
-      entry.unit.id !== garrisonUnit.unit.id
+      entry.unit.id !== garrisonId
       && entry.unit.status === 'ready'
       && hexDistance(entry.unit.position, homeCity.position) <= 3,
   );
@@ -101,7 +115,7 @@ export function applyDifficultyCoordinator(
     || activeArmy.length < difficultyProfile.strategy.coordinatorMinActiveArmy
   ) {
     return [
-      `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
+      `${coordinatorLabel}_garrison=${garrisonId ?? 'none'}`,
       `${coordinatorLabel}_coordinator=standby:supply=${supplyRatio.toFixed(2)},idle=${idleNearHome.length}`,
     ];
   }
@@ -109,7 +123,7 @@ export function applyDifficultyCoordinator(
   let targetCity = getNearestEnemyCity(state, factionId, homeCity.position);
   if (!targetCity) {
     return [
-      `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
+      `${coordinatorLabel}_garrison=${garrisonId ?? 'none'}`,
       `${coordinatorLabel}_coordinator=standby:no_enemy_city`,
     ];
   }
@@ -132,23 +146,28 @@ export function applyDifficultyCoordinator(
     }
   }
 
-  const hunterPool = activeArmy.filter((entry) => entry.unit.id !== garrisonUnit.unit.id);
+  const hunterPool = activeArmy.filter((entry) => entry.unit.id !== garrisonId);
   const enemyUnits = getLivingEnemyUnits(state, factionId, difficultyProfile);
   const isWinning = enemyUnits.length > 0 && activeArmy.length >= enemyUnits.length + 2;
   const isLosing = difficultyProfile.strategy.losingDenialMode && enemyUnits.length >= activeArmy.length + 2;
   const hunterShare = isWinning
     ? difficultyProfile.strategy.advantageHunterShare
     : difficultyProfile.strategy.coordinatorHunterShare;
+  // Priority 1: Dynamic hunter floor scales with army size for small armies
+  const rawHunterFloor = difficultyProfile.strategy.coordinatorHunterFloor;
+  const effectiveHunterFloor = activeArmy.length < 5
+    ? Math.max(1, Math.floor(activeArmy.length * 0.5))
+    : rawHunterFloor;
   const hunterCount = Math.min(
     hunterPool.length,
     Math.max(
-      difficultyProfile.strategy.coordinatorHunterFloor,
+      effectiveHunterFloor,
       Math.ceil(activeArmy.length * hunterShare),
     ),
   );
-  if (hunterCount < difficultyProfile.strategy.coordinatorHunterFloor) {
+  if (hunterCount < effectiveHunterFloor) {
     return [
-      `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
+      `${coordinatorLabel}_garrison=${garrisonId ?? 'none'}`,
       `${coordinatorLabel}_coordinator=standby:hunter_pool=${hunterPool.length}`,
     ];
   }
@@ -422,7 +441,7 @@ export function applyDifficultyCoordinator(
           }
 
           return [
-            `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
+            `${coordinatorLabel}_garrison=${garrisonId ?? 'none'}`,
             `${coordinatorLabel}_multi_axis=triple`,
             `${coordinatorLabel}_stagger=${shouldStaggerMainPush ? 'arming' : 'released'}`,
             `${coordinatorLabel}_harass_target=${harassObjective.targetId}`,
@@ -498,7 +517,7 @@ export function applyDifficultyCoordinator(
           }
 
           return [
-            `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
+            `${coordinatorLabel}_garrison=${garrisonId ?? 'none'}`,
             `${coordinatorLabel}_multi_axis=double`,
             `${coordinatorLabel}_flank_target=${secondTargetCity.id}`,
             `${coordinatorLabel}_coordinator=active:supply=${supplyRatio.toFixed(2)},hunters=${hunterIds.size},defenders=${hunterPool.length - hunterIds.size + 1},mode=${isLosing ? 'denial' : isWinning ? 'advantage' : 'standard'}`,
@@ -553,7 +572,7 @@ export function applyDifficultyCoordinator(
   }
 
   return [
-    `${coordinatorLabel}_garrison=${garrisonUnit.unit.id}`,
+    `${coordinatorLabel}_garrison=${garrisonId ?? 'none'}`,
     `${coordinatorLabel}_multi_axis=single`,
     `${coordinatorLabel}_target=${singleAxisObjective.targetId}`,
     `${coordinatorLabel}_coordinator=active:supply=${supplyRatio.toFixed(2)},hunters=${hunterIds.size},defenders=${hunterPool.length - hunterIds.size + 1},mode=${isLosing ? 'denial' : isWinning ? 'advantage' : 'standard'}`,
