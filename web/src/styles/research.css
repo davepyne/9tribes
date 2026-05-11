@@ -114,7 +114,8 @@
 }
 
 .research-window__tree-pane {
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -156,7 +157,7 @@
 /* ── Domain row ── */
 .research-domain-row {
   display: grid;
-  grid-template-columns: 120px 1fr;
+  grid-template-columns: 130px 1fr;
   gap: 10px;
   align-items: stretch;
   padding: 10px 14px;
@@ -180,6 +181,15 @@
   margin-left: -0.5rem;
 }
 
+.research-domain-row--locked {
+  opacity: 0.5;
+}
+
+.research-domain-row__locked-badge {
+  color: #888;
+  font-size: 0.7rem;
+}
+
 .research-domain-row__label {
   display: flex;
   flex-direction: column;
@@ -188,14 +198,12 @@
 }
 
 .research-domain-row__name {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
 }
 
 .research-domain-row__native-badge {
@@ -622,7 +630,7 @@
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .research-window__body { grid-template-columns: 1fr; }
-  .research-domain-row { grid-template-columns: 96px 1fr; }
+  .research-domain-row { grid-template-columns: 110px 1fr; }
 }
 
 @media (max-width: 600px) {

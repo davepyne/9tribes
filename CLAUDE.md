@@ -65,6 +65,10 @@ python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py diges
 python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py update --root ./
 ```
 
+## Grid System
+
+The map uses a **hex grid** (6-directional, pointy-top axial coordinates) defined in `src/core/grid.ts`. Coordinate type is `TileCoord { q, r }`. Key exports: `getNeighbors` (6 hex neighbors), `hexDistance`, `getHexesInRange`, `getDirectionIndex`, `getOppositeDirection` (offset +3 mod 6). Screen projection: `x = (q-r)*HALF_W`, `y = (q+r)*HALF_H`.
+
 ## Combat Architecture
 
 Both the AI path and the player path converge on a **single shared function**: `applyCombatAction()` in `src/systems/combat-action/apply.ts`. All post-combat mechanics live there exclusively.
@@ -80,6 +84,23 @@ Both the AI path and the player path converge on a **single shared function**: `
 - AI passes `learnChanceScale=2` (double learn-by-kill chance)
 - Player path adds animation delay between preview and apply
 - Player path adds UI feedback (combat log, enemy synergy intel tracking, siege state rendering)
+- Combat now also applies an ecology research bonus (`applyCombatResearchBonus`) — combat against a faction whose native domain you've learned gives +1 XP to that domain's next research node
+
+## Research & Ecology System
+
+Research progresses via two parallel tracks:
+
+1. **Directed research** — faction chooses an active research node, gets base `researchPerTurn` XP (default 1).
+2. **Ecology research** — automatic passive XP each turn based on terrain and proximity. Runs in `applyEcologyResearchPass()` inside `factionTurnEffects.ts`.
+
+Ecology bonuses are computed per learned domain:
+- **Terrain bonus**: units and city territory on affinity terrain generate XP (see `DOMAIN_TERRAIN_AFFINITY` and `TERRAIN_RESEARCH_BONUS` in `factionTurnEffects.ts`). Rarer terrain = more XP per hex. Capped at `MAX_RESEARCH_TERRAIN_BONUS` (5) per domain.
+- **Proximity bonus**: units within hex distance 2 of enemy units whose faction's native domain matches a learned domain get +0.5 XP per contact.
+- **Combat bonus**: each combat action grants +1 XP to the combat target's native domain (if learned). Applied in `applyCombatAction()`.
+
+Key functions in `researchSystem.ts`: `addResearchProgressToNode()` (ungated progress, used by ecology), `getNextResearchNodeForDomain()` (finds next incomplete tier T1→T2→T3). Directed research uses `addResearchProgress()` which requires `activeNodeId`.
+
+UI ecology fields live on `ResearchNodeViewModel` in `web/src/game/types/clientState.ts` and are computed in `web/src/game/view-model/inspectors/researchInspectorViewModel.ts`.
 
 ## Code Conventions
 

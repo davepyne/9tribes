@@ -312,7 +312,22 @@ function applyEcologyResearchPass(
   let currentResearch = research;
   let changed = false;
 
-  for (const domainId of allDomains) {
+  // Sort ecology domains by priority: native > learned synergies > furthest progressed
+  const nativeDomain = faction.nativeDomain ?? '';
+  const sortedDomains = [...allDomains].sort((a, b) => {
+    // 1) Native domain always first
+    if (a === nativeDomain && b !== nativeDomain) return -1;
+    if (b === nativeDomain && a !== nativeDomain) return 1;
+
+    // 2) Among remaining, prefer domains with more existing progress on their next node
+    const aNext = getNextResearchNodeForDomain(a, currentResearch.completedNodes);
+    const bNext = getNextResearchNodeForDomain(b, currentResearch.completedNodes);
+    const aProgress = aNext ? (currentResearch.progressByNodeId[aNext.nodeId] ?? 0) : 0;
+    const bProgress = bNext ? (currentResearch.progressByNodeId[bNext.nodeId] ?? 0) : 0;
+    return bProgress - aProgress;
+  });
+
+  for (const domainId of sortedDomains) {
     const terrain = terrainBonuses.get(domainId) ?? 0;
     const proximity = proximityBonuses.get(domainId) ?? 0;
     const totalBonus = Math.min(terrain + proximity, MAX_RESEARCH_TERRAIN_BONUS);

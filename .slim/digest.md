@@ -749,3 +749,184 @@ No significant changes detected.
 - `web/src/ui/TribesTab.tsx` — 2 dependencies
 - `web/src/ui/TutorialOverlay.tsx` — 1 dependencies
 - `web/src/ui/VictoryOverlay.tsx` — 2 dependencies
+
+---
+
+## Digest — 2026-05-11T12:45:20.309292Z
+
+### New Files
+- `src/game/scenarios/targeted.ts` — 3 exports: UnitPlacement, PlaceEnemyNearCityOptions, placeEnemyNearCity
+- `src/systems/aiProductionScoring.ts` — 25 exports: ProductionScoringContext, isMilitaryPrototype, getSupplyUtilizationRatio, getTargetArmySize, getProductionCostForPrototype, ... (+20 more)
+- `src/systems/aiResearchScoring.ts` — 22 exports: CandidateNode, extractTier, getCandidateNodes, scoreNativePriority, scorePosture, ... (+17 more)
+- `src/systems/simulation/traceReport.ts` — 3 exports: ReportFocus, ReportOptions, generateTraceReport
+- `src/systems/summonSystem.ts` — 3 exports: PriestSummonCheck, canPriestSummon, attemptPriestSummon
+- `src/systems/synergyTypes.ts` — 10 exports: DomainConfig, PairSynergyConfig, EmergentRuleConfig, SynergyEffect, EmergentEffect, ... (+5 more)
+- `src/systems/terrainUtils.ts` — 2 exports: isWaterTerrain, isLandTerrain
+- `tests/helpers/makeUnit.ts` — 1 exports: makeUnit
+- `tests/helpers/registry.ts` — 1 exports: getTestRegistry
+- `tests/helpers/trimState.ts` — 1 exports: trimState
+- `web/src/game/phaser/assets/constants.ts` — 7 exports: TILE_WIDTH, TILE_HEIGHT, TILE_HALF_WIDTH, TILE_HALF_HEIGHT, CY_OFFSET, ... (+2 more)
+- `web/src/game/phaser/assets/fogKeys.ts` — 3 exports: FogRenderState, getFogRenderState, getFogTag
+- `web/src/game/phaser/assets/settlementKeys.ts` — 2 exports: SettlementRenderKind, getSettlementFrame
+- `web/src/game/phaser/assets/terrainKeys.ts` — 7 exports: TERRAIN_FRAMES, initializeFreelandTerrainFrames, TerrainRenderSpec, getRiverOverlayFrameForTile, getTerrainOverlayTagForTile, ... (+2 more)
+- `web/src/game/phaser/assets/unitSpriteKeys.ts` — 4 exports: UNIT_FRAMES, UnitTextureSpec, getUnitTextureSpec, getUnitRearTextureSpec
+- `web/src/game/phaser/scenes/MapSceneCamera.ts` — 3 exports: MapSceneCamera, screenToWorld, worldToScreen
+- `web/src/game/phaser/scenes/MapSceneInput.ts` — 1 exports: MapSceneInput
+- `web/src/game/stateAccess.ts` — 14 exports: getUnit, getFaction, getCity, getPrototype, getResearch, ... (+9 more)
+- `web/src/game/synergy/intelTiers.ts` — 3 exports: ENCOUNTERS_TO_STUDY, IntelTier, intelTier
+- `web/src/game/view-model/worldViewModelSelection.ts` — 2 exports: describePlaySelection, buildResearchChip
+- `web/src/game/view-model/worldViewModelUnitView.ts` — 2 exports: buildUnitView, thisChassisMovementClass
+- `web/src/ui/CityLimitModal.tsx` — 3 exports: useCityLimitModal, useCityLimitDetector, CityLimitModalProvider
+- `web/src/ui/EnemySynergyContactModal.tsx` — 1 exports: EnemySynergyContactModal
+- `web/src/ui/FactionInfoPopup.tsx` — 1 exports: FactionInfoPopup
+- `web/src/ui/FieldReportsPanel.tsx` — 1 exports: FieldReportsPanel
+- `web/src/ui/LoadOverlay.tsx` — 1 exports: LoadOverlay
+- `web/src/ui/SaveOverlay.tsx` — 1 exports: SaveOverlay
+- `web/src/ui/SynergyCard.tsx` — 6 exports: PairSynergyData, EmergentRuleData, SynergyDataBase, TierDescriptions, SynergyCardProps, ... (+1 more)
+- `web/src/ui/SynergyUnlockedModal.tsx` — 3 exports: useSynergyModal, useSynergyUnlockDetector, SynergyUnlockedModalProvider
+- `web/src/ui/inspectors/CityInspectorSection.tsx` — 1 exports: CityInspectorSection
+- `web/src/ui/inspectors/MetaRow.tsx` — 1 exports: MetaRow
+- `web/src/ui/inspectors/UnitInspectorSection.tsx` — 1 exports: UnitInspectorSection
+- `web/src/ui/inspectors/domainFormatters.ts` — 3 exports: formatDomainName, formatNativeDomainName, getDomainDescription
+- `web/src/ui/resolveActiveSynergies.ts` — 3 exports: ResolvedPairSynergy, ResolvedActiveSynergies, resolveActiveSynergies
+
+### Removed Files
+- `POISON_DAMAGE_INVESTIGATION.md` — 1 exports lost: applyPoisonDoT
+- `docs/POISON_DAMAGE_INVESTIGATION.md` — 1 exports lost: applyPoisonDoT
+- `docs/RENDEZVOUS-SPEC.md` — 8 exports lost: UnitStrategicIntent, SquadPhase, SquadState, FactionStrategy, RENDEZVOUS_OFFSET_HEXES, ... (+3 more)
+- `src/core/hex.ts` — 11 exports lost: HEX_DIRECTION_COUNT, axialToCube, cubeToAxial, getNeighbors, getDirectionVector, ... (+6 more)
+- `src/world/map/terrain.ts` — 2 exports lost: TERRAIN_DEFINITIONS, getTerrainDef
+- `vitest.config.test.ts` — 1 exports lost: default
+- `web/src/app/routes/ReplayClient.tsx` — 1 exports lost: ReplayClient
+- `web/src/game/phaser/assets/keys.ts` — 22 exports lost: TILE_WIDTH, TILE_HEIGHT, TILE_HALF_WIDTH, TILE_HALF_HEIGHT, TEXTURES, ... (+17 more)
+- `web/src/ui/CapabilityBar.tsx` — 1 exports lost: CapabilityBar
+- `web/src/ui/EventToast.tsx` — 1 exports lost: EventToast
+- `web/src/ui/EventToastStack.tsx` — 1 exports lost: EventToastStack
+
+### Modified Files
+- `src/core/enums.ts` — -5 exports (ComponentSlotType, Elevation, ModifierSourceType, UnitRole, VisibilityLevel)
+- `src/core/ids.ts` — -9 exports (isChassisId, isCityId, isComponentId, isFactionId, isImprovementId)
+- `src/data/registry/types.ts` — -1 exports (TerrainYieldDef)
+- `src/features/factions/types.ts` — -1 exports (FactionResearch)
+- `src/features/research/types.ts` — -3 exports (QualitativeEffect, ResearchNode, ResearchUnlock)
+- `src/game/createGameState.ts` — -2 exports (ScenarioConfig, createScenarioState)
+- `src/game/scenarios/mvp.ts` — -1 exports (MVP_RESEARCH_CONFIG)
+- `src/game/types.ts` — -1 exports (TurnState)
+- `src/systems/aiProductionStrategy.ts` — -4 exports (getProjectedSupplyMarginAfterBuild, getSupplyMargin, scoreForceProjectionValue, scoreSupplyEfficiency)
+- `src/systems/balanceHarness.ts` — ~6 signatures (collectSeedBalanceMetrics, runBalanceHarness, runPairedDifficultyBalanceHarness, runStratifiedBalanceHarness, runStratifiedPairedDifficultyBalanceHarness)
+- `src/systems/factionIdentitySystem.ts` — ~1 signatures (isWaterTerrain)
+- `src/systems/knowledgeSystem.ts` — ~1 signatures (gainExposure)
+- `src/systems/learnByKillSystem.ts` — +1 exports (CAPABILITY_LEARN_TIERS)
+- `src/systems/productionSystem.ts` — -2 exports (UNIT_COSTS, getUnitCost); ~2 signatures (getPrototypeEconomicProfile, getPrototypeQueueCost)
+- `src/systems/researchSystem.ts` — +2 exports (addResearchProgressToNode, getNextResearchNodeForDomain)
+- `src/systems/signatureAbilitySystem.ts` — -12 exports (applyStrikeFirst, breakStealth, getAbilityDomains, getDomainForTag, getStampedeDistance)
+- `src/systems/simulation/factionTurnEffects.ts` — +5 exports (DOMAIN_TERRAIN_AFFINITY, MAX_RESEARCH_TERRAIN_BONUS, RESEARCH_PROXIMITY_BONUS_PER_CONTACT, TERRAIN_RESEARCH_BONUS, tickSummonState)
+- `src/systems/simulation/traceRecorder.ts` — +6 exports (recordAbilityLearned, recordDomainLearned, recordResearch, recordSynergyPair, recordTripleStack)
+- `src/systems/simulation/traceTypes.ts` — +4 exports (TraceDomainLearnedEvent, TraceResearchEvent, TraceSynergyPairEvent, TraceTripleStackEvent)
+- `src/systems/synergyEffects.ts` — -2 exports (CombatContext, HealingContext); ~2 signatures (CombatResult, applyCombatSynergies)
+- `src/systems/synergyEngine.ts` — -7 exports (ActiveSynergy, ActiveTripleStack, DomainConfig, EmergentEffect, EmergentRuleConfig)
+- `src/types.ts` — -1 exports (Entity)
+- `src/world/map/getTile.ts` — -2 exports (getTileByKey, hasTile)
+- `web/src/app/audio/sfxManager.ts` — +2 exports (playSynergyContactSting, playSynergyUnlockSting)
+- `web/src/game/controller/sessionUtils.ts` — +5 exports (attemptPriestSummon, canPriestSummon, destroyFortAtUnit, getFortDestroyEligibility, hasCaptureAbility)
+- `web/src/game/types/clientState.ts` — +2 exports (EnemySynergyIntel, EnemySynergyIntelMap)
+- `web/src/game/types/worldView.ts` — ~1 signatures (BorderSide)
+- `web/src/ui/BottomCommandBar.tsx` — ~1 signatures (BottomCommandBar)
+- `web/src/ui/CapabilityPip.tsx` — ~1 signatures (CapabilityPip)
+- `web/src/ui/CombatDetailModal.tsx` — ~1 signatures (CombatDetailModal)
+- `web/src/ui/CombatLogPanel.tsx` — ~1 signatures (CombatLogPanel)
+- `web/src/ui/CombatTab.tsx` — ~1 signatures (CombatTab)
+- `web/src/ui/CommandTray.tsx` — ~1 signatures (CommandTray)
+- `web/src/ui/ContextInspector.tsx` — ~1 signatures (ContextInspector)
+- `web/src/ui/ControlsTab.tsx` — ~1 signatures (ControlsTab)
+- `web/src/ui/DebugOverlay.tsx` — ~1 signatures (DebugOverlay)
+- `web/src/ui/DropdownMenu.tsx` — ~1 signatures (DropdownMenu)
+- `web/src/ui/GameMenuBar.tsx` — ~1 signatures (GameMenuBar)
+- `web/src/ui/HelpPanel.tsx` — ~1 signatures (HelpPanel)
+- `web/src/ui/ReportsOverlay.tsx` — ~1 signatures (ReportsOverlay)
+- `web/src/ui/ResearchDetail.tsx` — ~1 signatures (ResearchDetail)
+- `web/src/ui/ResearchNode.tsx` — ~1 signatures (ResearchNode)
+- `web/src/ui/ResearchTab.tsx` — ~1 signatures (ResearchTab)
+- `web/src/ui/ResearchTree.tsx` — ~1 signatures (ResearchTree)
+- `web/src/ui/ResearchWindow.tsx` — ~1 signatures (ResearchWindow)
+- `web/src/ui/RightInspector.tsx` — ~1 signatures (RightInspector)
+- `web/src/ui/SynergyChip.tsx` — ~1 signatures (SynergyChip)
+- `web/src/ui/SynergyEncyclopediaTab.tsx` — ~1 signatures (SynergyEncyclopediaTab)
+- `web/src/ui/TerrainPanel.tsx` — ~1 signatures (TerrainPanel)
+- `web/src/ui/TopHud.tsx` — ~1 signatures (TopHud)
+- `web/src/ui/TribesTab.tsx` — ~1 signatures (TribesTab)
+- `web/src/ui/TurnBanner.tsx` — ~1 signatures (TurnBanner)
+- `web/src/ui/TutorialOverlay.tsx` — ~1 signatures (TutorialOverlay)
+- `web/src/ui/VictoryOverlay.tsx` — ~1 signatures (VictoryOverlay)
+
+### Dependency Changes
+- `src/game/scenarios/targeted.ts` imports: src/game/types.ts (GameState), src/data/registry/types.ts (RulesRegistry), src/types.ts (FactionId, ChassisId, ComponentId), src/features/units/types.ts (Unit), src/design/assemblePrototype.ts (assemblePrototype)
+- `src/systems/aiProductionScoring.ts` imports: src/game/types.ts (GameState), src/data/registry/types.ts (RulesRegistry), src/types.ts (FactionId), src/features/prototypes/types.ts (Prototype), src/systems/factionStrategy.ts (FactionStrategy, ProductionPriority)
+- `src/systems/aiResearchScoring.ts` imports: src/game/types.ts (GameState), src/data/registry/types.ts (RulesRegistry, ResearchNodeDef), src/types.ts (FactionId), src/systems/factionStrategy.ts (FactionStrategy), src/systems/aiPersonality.ts (scoreResearchCandidate)
+- `src/systems/simulation/traceReport.ts` imports: src/game/types.ts (GameState), src/systems/simulation/traceTypes.ts (SimulationTrace, TraceCombatEvent, TraceSiegeEvent), src/systems/historySystem.ts (getBattleCount, getKillCount), src/systems/simulation/victory.ts (getVictoryStatus)
+- `src/systems/summonSystem.ts` imports: src/game/types.ts (GameState, Unit, HexCoord), src/data/registry/types.ts (RulesRegistry), src/types.ts (FactionId, UnitId, PrototypeId), src/features/prototypes/types.ts (Prototype), src/core/enums.ts (VeteranLevel, UnitStatus)
+- `tests/helpers/makeUnit.ts` imports: src/features/units/types.ts (Unit), src/core/ids.ts (createUnitId, createFactionId)
+- `tests/helpers/registry.ts` imports: src/data/loader/loadRulesRegistry.ts (loadRulesRegistry)
+- `tests/helpers/trimState.ts` imports: src/game/types.ts (GameState), src/systems/fogSystem.ts (initializeFogForFaction)
+- `web/src/game/phaser/assets/terrainKeys.ts` imports: web/src/game/phaser/assets/freelandSpec.ts (parseFreecivTagFrameLookup), web/src/game/phaser/assets/constants.ts (TEXTURES, FREELAND_SPECS)
+- `web/src/game/phaser/assets/unitSpriteKeys.ts` imports: web/src/game/phaser/assets/constants.ts (TEXTURES)
+- `web/src/game/phaser/scenes/MapSceneCamera.ts` imports: web/src/game/types/clientState.ts (ClientState), web/src/game/phaser/assets/constants.ts (TILE_HALF_HEIGHT, TILE_HALF_WIDTH)
+- `web/src/game/phaser/scenes/MapSceneInput.ts` imports: web/src/game/controller/GameController.ts (GameController), web/src/game/types/clientState.ts (ClientState), web/src/game/phaser/scenes/MapSceneCamera.ts (screenToWorld)
+- `web/src/game/synergy/intelTiers.ts` imports: web/src/game/types/clientState.ts (EnemySynergyIntel)
+- `web/src/game/view-model/worldViewModelSelection.ts` imports: src/data/registry/types.ts (RulesRegistry), src/game/types.ts (GameState), web/src/game/stateAccess.ts (getFaction, getResearch), web/src/game/view-model/inspectors/cityInspectorViewModel.ts (buildCityInspectorViewModel), web/src/game/types/worldView.ts (WorldViewModel)
+- `web/src/game/view-model/worldViewModelUnitView.ts` imports: src/data/registry/types.ts (RulesRegistry), src/game/types.ts (GameState, Unit), web/src/game/stateAccess.ts (getFaction, getPrototype, getResearch), src/systems/abilitySystem.ts (canUseAmbush, canUseBrace, getTerrainAt), src/systems/capabilityDoctrine.ts (resolveCapabilityDoctrine)
+- `web/src/ui/EnemySynergyContactModal.tsx` imports: web/src/ui/SynergyCard.tsx (SynergyCard, PairSynergyData, EmergentRuleData), web/src/game/types/clientState.ts (EnemySynergyIntelMap), web/src/game/synergy/intelTiers.ts (intelTier), web/src/app/audio/sfxManager.ts (playSynergyContactSting), web/src/data/pair-synergies.json (pairSynergiesData)
+- `web/src/ui/FactionInfoPopup.tsx` imports: web/src/data/faction-info.ts (FactionInfo)
+- `web/src/ui/FieldReportsPanel.tsx` imports: web/src/ui/SynergyCard.tsx (SynergyCard, PairSynergyData, EmergentRuleData), web/src/game/types/clientState.ts (EnemySynergyIntelMap), web/src/game/synergy/intelTiers.ts (intelTier), web/src/data/pair-synergies.json (pairSynergiesData), web/src/data/emergent-rules.json (emergentRulesData)
+- `web/src/ui/LoadOverlay.tsx` imports: web/src/app/savegames.ts (deleteSaveGame, getSaveGame, listSaveGames)
+- `web/src/ui/SaveOverlay.tsx` imports: web/src/app/savegames.ts (findSaveGameByLabel, writeSaveGame, type), web/src/game/controller/GameSession.ts (SessionSaveSnapshot)
+- `web/src/ui/SynergyCard.tsx` imports: web/src/ui/SynergyChip.tsx (domainGlyph, domainColor, domainDisplayName)
+- `web/src/ui/SynergyUnlockedModal.tsx` imports: web/src/data/pair-synergies.json (pairSynergiesData), web/src/data/emergent-rules.json (emergentRulesData), web/src/ui/SynergyCard.tsx (SynergyCard, PairSynergyData, EmergentRuleData), web/src/app/audio/sfxManager.ts (playSynergyUnlockSting)
+- `web/src/ui/inspectors/CityInspectorSection.tsx` imports: web/src/game/types/clientState.ts (CityInspectorViewModel), web/src/ui/inspectors/MetaRow.tsx (MetaRow)
+- `web/src/ui/inspectors/UnitInspectorSection.tsx` imports: web/src/game/types/worldView.ts (UnitView), web/src/game/types/clientState.ts (ClientState, SettlementPreviewViewModel, EnemySynergyIntelMap), web/src/data/faction-info.ts (FactionInfo, getFactionInfo), web/src/ui/inspectors/MetaRow.tsx (MetaRow), web/src/ui/inspectors/domainFormatters.ts (formatNativeDomainName, getDomainDescription)
+- `web/src/ui/inspectors/domainFormatters.ts` imports: web/src/data/ability-domains.json (abilityDomains)
+- `web/src/ui/resolveActiveSynergies.ts` imports: web/src/data/pair-synergies.json (pairSynergiesData), web/src/data/emergent-rules.json (emergentRulesData), web/src/ui/SynergyCard.tsx (PairSynergyData, EmergentRuleData)
+- `src/data/registry/types.ts` — 1 dependencies
+- `src/features/factions/types.ts` — 2 dependencies
+- `src/features/research/types.ts` — 1 dependencies
+- `src/game/createGameState.ts` — 2 dependencies
+- `src/game/scenarios/mvp.ts` — 3 dependencies
+- `src/game/types.ts` — 16 dependencies
+- `src/systems/aiProductionStrategy.ts` — 10 dependencies
+- `src/systems/balanceHarness.ts` — 12 dependencies
+- `src/systems/factionIdentitySystem.ts` — 7 dependencies
+- `src/systems/knowledgeSystem.ts` — 9 dependencies
+- `src/systems/learnByKillSystem.ts` — 7 dependencies
+- `src/systems/productionSystem.ts` — 13 dependencies
+- `src/systems/researchSystem.ts` — 3 dependencies
+- `src/systems/signatureAbilitySystem.ts` — 7 dependencies
+- `src/systems/simulation/factionTurnEffects.ts` — 29 dependencies
+- `src/systems/simulation/traceRecorder.ts` — 3 dependencies
+- `src/systems/simulation/traceTypes.ts` — 2 dependencies
+- `src/world/map/getTile.ts` — 3 dependencies
+- `web/src/app/audio/sfxManager.ts` — 3 dependencies
+- `web/src/game/controller/sessionUtils.ts` — 11 dependencies
+- `web/src/game/types/clientState.ts` — 4 dependencies
+- `web/src/ui/BottomCommandBar.tsx` — 1 dependencies
+- `web/src/ui/CapabilityPip.tsx` — 1 dependencies
+- `web/src/ui/CombatDetailModal.tsx` — 1 dependencies
+- `web/src/ui/CombatLogPanel.tsx` — 2 dependencies
+- `web/src/ui/CombatTab.tsx` — 1 dependencies
+- `web/src/ui/CommandTray.tsx` — 2 dependencies
+- `web/src/ui/ContextInspector.tsx` — 7 dependencies
+- `web/src/ui/GameMenuBar.tsx` — 5 dependencies
+- `web/src/ui/HelpPanel.tsx` — 7 dependencies
+- `web/src/ui/ReportsOverlay.tsx` — 2 dependencies
+- `web/src/ui/ResearchDetail.tsx` — 1 dependencies
+- `web/src/ui/ResearchNode.tsx` — 1 dependencies
+- `web/src/ui/ResearchTab.tsx` — 1 dependencies
+- `web/src/ui/ResearchTree.tsx` — 2 dependencies
+- `web/src/ui/ResearchWindow.tsx` — 3 dependencies
+- `web/src/ui/RightInspector.tsx` — 2 dependencies
+- `web/src/ui/SynergyChip.tsx` — 6 dependencies
+- `web/src/ui/SynergyEncyclopediaTab.tsx` — 5 dependencies
+- `web/src/ui/TerrainPanel.tsx` — 1 dependencies
+- `web/src/ui/TopHud.tsx` — 3 dependencies
+- `web/src/ui/TribesTab.tsx` — 2 dependencies
+- `web/src/ui/TutorialOverlay.tsx` — 1 dependencies
+- `web/src/ui/VictoryOverlay.tsx` — 2 dependencies
