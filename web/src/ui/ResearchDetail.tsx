@@ -53,6 +53,8 @@ export const ResearchDetail = React.memo(function ResearchDetail({
 
   if (node.state === 'active') {
     buttonLabel = 'In Progress';
+  } else if (node.isEcologyActive && node.state !== 'completed') {
+    buttonLabel = 'Auto-Researching';
   } else if (node.state === 'locked' || node.isLocked) {
     buttonLabel = 'Locked';
     buttonHint = node.isLocked
@@ -99,6 +101,40 @@ export const ResearchDetail = React.memo(function ResearchDetail({
           <strong>{researchRate} XP/turn</strong>
         </div>
       </div>
+
+      {node.isEcologyActive && node.ecologyBonus !== null && node.ecologyBonus > 0 ? (
+        <div className="research-detail__section research-detail__section--ecology">
+          <p className="panel-kicker">Ecology & War Progress</p>
+          <div className="meta-row">
+            <span>Auto XP/turn</span>
+            <strong style={{ color: '#4ade80' }}>+{node.ecologyBonus.toFixed(1)}</strong>
+          </div>
+          {node.ecologyEstimatedTurns !== null && node.state !== 'completed' ? (
+            <div className="meta-row">
+              <span>Ecology Est. Turns</span>
+              <strong>~{node.ecologyEstimatedTurns}</strong>
+            </div>
+          ) : null}
+          {node.ecologySources && node.ecologySources.length > 0 ? (
+            <div className="research-detail__source-list">
+              {node.ecologySources.map((source, i) => (
+                <div key={i} className="research-detail__source-item">
+                  <span className="research-detail__source-icon">
+                    {source.type === 'terrain' ? '\u26fc' : source.type === 'proximity' ? '\ud83d\udccd' : '\ud83d\udca5'}
+                  </span>
+                  <span className="research-detail__source-detail">
+                    <strong>{source.detail}</strong>
+                    <span className="research-detail__source-amount">+{source.amount.toFixed(1)}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <div className="research-detail__ecology-hint">
+            Auto-progress advances this domain passively each turn from terrain, proximity, and combat.
+          </div>
+        </div>
+      ) : null}
 
       <div className="research-detail__section">
         <p className="panel-kicker">Requirements</p>
