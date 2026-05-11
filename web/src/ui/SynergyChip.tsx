@@ -452,6 +452,7 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
                     factionColor={factionColor}
                     factionId={activeFaction?.id}
                     tierDescriptions={card.tierDescriptions}
+                    isNativeDomain={card.kind === 'solo' && card.key === `solo-${resolved.nativeDomain}`}
                   />
                 </div>
               ))}

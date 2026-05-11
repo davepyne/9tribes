@@ -50,6 +50,8 @@ type FriendlySynergyCardProps = {
   factionId?: string;
   compact?: boolean;
   tierDescriptions?: TierDescriptions;
+  /** Whether this is the faction's native domain (solo cards only). */
+  isNativeDomain?: boolean;
 };
 
 type FieldReportSynergyCardProps = {
@@ -547,7 +549,7 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
       {kind === 'solo' && isFriendly && tierDescriptions && !compact && (
         <div className="scard__tiers">
           <div className="scard__tier-row scard__tier-row--base">
-            <span className="scard__tier-label">Base</span>
+            <span className="scard__tier-label">{props.isNativeDomain ? 'Native Only' : 'Base'}</span>
             <span className="scard__tier-desc">{mechanics}</span>
           </div>
           {([
