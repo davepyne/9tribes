@@ -5,11 +5,10 @@ import type { PrototypeId } from '../../types.js';
 import type { Prototype } from '../../features/prototypes/types.js';
 import type { VeteranLevel, UnitStatus } from '../../core/enums.js';
 import { createImprovementId, createUnitId } from '../../core/ids.js';
-import { hexToKey, hexDistance, getNeighbors } from '../../core/grid.js';
+import { hexToKey, hexDistance, getNeighbors, getHexesInRange } from '../../core/grid.js';
 import { isHexOccupied } from '../occupancySystem.js';
 import { resolveResearchDoctrine, prototypeHasComponent } from '../capabilityDoctrine.js';
-import { addResearchProgress, startResearch } from '../researchSystem.js';
-import { getCitySiteBonuses } from '../citySiteSystem.js';
+import { addResearchProgress, addResearchProgressToNode, getNextResearchNodeForDomain, startResearch } from '../researchSystem.js';
 import { unlockHybridRecipes } from '../hybridSystem.js';
 import { deriveResourceIncome, getSupplyDeficit, advanceCaptureTimers } from '../economySystem.js';
 import {
@@ -93,6 +92,114 @@ function removeUnitFromFaction(
   return { ...state, factions };
 }
 
+// Domain-to-terrain affinity: which terrain types boost research for each domain
+export const DOMAIN_TERRAIN_AFFINITY: Record<string, readonly string[]> = {
+  venom:            ['jungle'],
+  nature_healing:   ['forest'],
+  fortress:         ['hill', 'mountain'],
+  charge:           ['savannah'],
+  hitrun:           ['plains'],
+  camel_adaptation: ['desert', 'oasis'],
+  tidal_warfare:    ['coast', 'ocean'],
+  river_stealth:    ['river', 'swamp'],
+  slaving:          ['coast', 'ocean'],
+  heavy_hitter:     ['tundra'],
+};
+
+// Per-hex research bonus scales with terrain rarity — rarer terrain gives more per hex
+// Proportional to 1/frequency, rounded to nearest 0.25, with mountain capped at 3.0
+const TERRAIN_RESEARCH_BONUS: Record<string, number> = {
+  plains:    0.5,   // 9.3%
+  savannah:  0.5,   // 12.1%
+  hill:      0.25,  // 18.0%
+  coast:     0.25,  // 18.0%
+  forest:    0.5,   // 8.6%
+  jungle:    1.75,  // 2.5%
+  desert:    0.5,   // 9.3%
+  tundra:    1.0,   // 5.0%
+  river:     1.75,  // 2.7%
+  swamp:     2.0,   // 2.4%
+  mountain:  3.0,   // 0.7% (impassable, only city territory collects)
+  ocean:     0.5,   // 11.3%
+  oasis:     2.0,   // not in base generation, grouped with swamp rarity
+};
+
+export const MAX_RESEARCH_TERRAIN_BONUS = 5;
+
+function computeTerrainResearchBonuses(
+  state: GameState,
+  factionId: FactionId,
+  learnedDomains: readonly string[],
+): Map<string, number> {
+  const result = new Map<string, number>();
+  const faction = state.factions.get(factionId);
+  if (!faction || !state.map) return result;
+
+  for (const domainId of learnedDomains) {
+    const affinityTerrains = DOMAIN_TERRAIN_AFFINITY[domainId];
+    if (!affinityTerrains) continue;
+
+    const affinitySet = new Set(affinityTerrains);
+    let bonus = 0;
+
+    for (const uid of faction.unitIds) {
+      const u = state.units.get(uid as UnitId);
+      if (!u || u.hp <= 0) continue;
+      const tile = state.map.tiles.get(hexToKey(u.position));
+      if (tile && affinitySet.has(tile.terrain)) {
+        bonus += TERRAIN_RESEARCH_BONUS[tile.terrain] ?? 0.5;
+      }
+    }
+
+    for (const cid of faction.cityIds) {
+      const city = state.cities.get(cid as never);
+      if (!city) continue;
+      const radius = city.territoryRadius ?? 2;
+      for (const hex of getHexesInRange(city.position, radius)) {
+        const tile = state.map.tiles.get(hexToKey(hex));
+        if (tile && affinitySet.has(tile.terrain)) {
+          bonus += TERRAIN_RESEARCH_BONUS[tile.terrain] ?? 0.5;
+        }
+      }
+    }
+
+    result.set(domainId, Math.min(bonus, MAX_RESEARCH_TERRAIN_BONUS));
+  }
+  return result;
+}
+
+const RESEARCH_PROXIMITY_BONUS_PER_CONTACT = 0.5;
+
+function computeProximityResearchBonuses(
+  state: GameState,
+  factionId: FactionId,
+  learnedDomains: readonly string[],
+): Map<string, number> {
+  const result = new Map<string, number>();
+  const faction = state.factions.get(factionId);
+  if (!faction) return result;
+
+  const learnedSet = new Set(learnedDomains);
+
+  for (const uid of faction.unitIds) {
+    const fUnit = state.units.get(uid as UnitId);
+    if (!fUnit || fUnit.hp <= 0) continue;
+    for (const [, enemyUnit] of state.units) {
+      if (enemyUnit.factionId === factionId || enemyUnit.hp <= 0) continue;
+      if (hexDistance(fUnit.position, enemyUnit.position) <= 2) {
+        const enemyFaction = state.factions.get(enemyUnit.factionId);
+        if (enemyFaction && learnedSet.has(enemyFaction.nativeDomain)) {
+          result.set(
+            enemyFaction.nativeDomain,
+            (result.get(enemyFaction.nativeDomain) ?? 0) + RESEARCH_PROXIMITY_BONUS_PER_CONTACT,
+          );
+        }
+      }
+    }
+  }
+  return result;
+}
+
 function startOrAdvanceCodification(
   state: GameState,
   factionId: FactionId,
@@ -153,17 +260,9 @@ function startOrAdvanceCodification(
     return state;
   }
 
-  let researchAmount = difficulty
+  const researchAmount = difficulty
     ? getAiDifficultyProfile(difficulty).researchRate
     : currentResearch.researchPerTurn;
-  if (activeDomain?.id === 'camel_adaptation') {
-    for (const city of state.cities.values()) {
-      if (city.factionId === factionId) {
-        const bonuses = getCitySiteBonuses(city, state.map);
-        researchAmount += bonuses.researchBonus;
-      }
-    }
-  }
 
   const updatedResearch = addResearchProgress(
     currentResearch,
@@ -188,6 +287,70 @@ function startOrAdvanceCodification(
   }
 
   return current;
+}
+
+function applyEcologyResearchPass(
+  state: GameState,
+  factionId: FactionId,
+  registry: RulesRegistry,
+  trace?: SimulationTrace,
+): GameState {
+  const faction = state.factions.get(factionId);
+  if (!faction) return state;
+
+  const learnedDomains = faction.learnedDomains;
+  if (learnedDomains.length === 0) return state;
+
+  const terrainBonuses = computeTerrainResearchBonuses(state, factionId, learnedDomains);
+  const proximityBonuses = computeProximityResearchBonuses(state, factionId, learnedDomains);
+
+  const allDomains = new Set([...terrainBonuses.keys(), ...proximityBonuses.keys()]);
+  if (allDomains.size === 0) return state;
+
+  let research = state.research.get(factionId);
+  if (!research) return state;
+  let currentResearch = research;
+  let changed = false;
+
+  for (const domainId of allDomains) {
+    const terrain = terrainBonuses.get(domainId) ?? 0;
+    const proximity = proximityBonuses.get(domainId) ?? 0;
+    const totalBonus = Math.min(terrain + proximity, MAX_RESEARCH_TERRAIN_BONUS);
+    if (totalBonus <= 0) continue;
+
+    const nextNode = getNextResearchNodeForDomain(domainId, currentResearch.completedNodes);
+    if (!nextNode) continue;
+
+    const domain = registry.getAllResearchDomains().find(d => d.id === domainId);
+    const nodeDef = domain?.nodes[nextNode.nodeId];
+    if (!nodeDef) continue;
+
+    const { state: updatedResearch, completed } = addResearchProgressToNode(
+      currentResearch, nextNode.nodeId, nodeDef.xpCost, totalBonus,
+    );
+    currentResearch = updatedResearch;
+    changed = true;
+
+    if (completed) {
+      log(trace, `${faction.name} ecology completed ${nextNode.nodeId} (${domainId} T${nextNode.tier})`);
+      recordResearch(trace, {
+        round: state.round,
+        factionId,
+        phase: 'completed',
+        nodeId: nextNode.nodeId,
+        nodeName: nodeDef.name,
+        domainId,
+      });
+    } else {
+      log(trace, `${faction.name} ecology: +${totalBonus} ${domainId} progress (${currentResearch.progressByNodeId[nextNode.nodeId] ?? 0}/${nodeDef.xpCost})`);
+    }
+  }
+
+  if (!changed) return state;
+
+  const researchMap = new Map(state.research);
+  researchMap.set(factionId, currentResearch);
+  return { ...state, research: researchMap };
 }
 
 function chooseBestChassis(
@@ -539,6 +702,7 @@ export function processFactionPhases(
   current = applyEcologyPressure(current, factionId, registry);
   current = applyForceCompositionPressure(current, factionId, registry);
   current = startOrAdvanceCodification(current, factionId, registry, trace, strategy, difficulty);
+  current = applyEcologyResearchPass(current, factionId, registry, trace);
   current = unlockHybridRecipes(current, factionId, registry);
 
   current = advanceCaptureTimers(current, factionId);

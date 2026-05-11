@@ -116,7 +116,7 @@ export interface AiDifficultyProfile {
 const EASY_PROFILE: AiDifficultyProfile = {
   difficulty: 'easy',
   adaptiveAi: false,
-  researchRate: 4,
+  researchRate: 2,
   production: {
     rushTurns: 0,
     codifiedPivotDuration: 0,
@@ -229,7 +229,7 @@ const EASY_PROFILE: AiDifficultyProfile = {
 const NORMAL_PROFILE: AiDifficultyProfile = {
   difficulty: 'normal',
   adaptiveAi: true,
-  researchRate: 5,
+  researchRate: 2,
   production: {
     rushTurns: 10,
     codifiedPivotDuration: 4,
@@ -342,7 +342,7 @@ const NORMAL_PROFILE: AiDifficultyProfile = {
 const HARD_PROFILE: AiDifficultyProfile = {
   difficulty: 'hard',
   adaptiveAi: true,
-  researchRate: 7,
+  researchRate: 4,
   production: {
     rushTurns: 10,
     codifiedPivotDuration: 4,

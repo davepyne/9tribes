@@ -52,6 +52,17 @@ export const ResearchNode = React.memo(function ResearchNode({ node, selected, o
           <div className="research-node__progress-text">{node.currentProgress}/{node.xpCost}</div>
         </>
       )}
+      {node.isEcologyActive && node.state !== 'completed' && (
+        <div className="research-node__ecology-badge">
+          <span className="research-node__ecology-icon" aria-label="Ecology progress">&#9889;</span>
+          <span className="research-node__ecology-text">+{node.ecologyBonus?.toFixed(1) ?? 0}/turn</span>
+        </div>
+      )}
+      {node.ecologyEstimatedTurns !== null && node.state !== 'completed' && node.state !== 'active' && (
+        <div className="research-node__ecology-turns">
+          ~{node.ecologyEstimatedTurns} turns
+        </div>
+      )}
       {node.state === 'completed' && (
         <div className="research-node__completed-label">Complete</div>
       )}

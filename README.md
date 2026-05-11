@@ -10,14 +10,14 @@
 
 Every faction starts simple — two units, a home biome, and a native combat domain. From there, everything is earned:
 
-- **Units learn from kills.** When a unit kills an enemy, it can absorb the enemy's combat domain. A Jungle Clans spearman that kills a cavalry unit might learn skirmish tactics.
-- **Sacrifice unlocks research.** Units can be sacrificed at a home city to permanently encode learned abilities into faction-wide research.
-- **Terrain shapes doctrine.** The map exerts capability pressure — fighting in jungles pushes factions toward poisoncraft; fighting on plains pushes toward horsemanship.
+- **Units learn from kills.** When a unit kills an enemy, it can absorb the enemy's combat domain. Higher capability levels in a domain increase the learn chance.
+- **Ecology drives research.** All known domains progress simultaneously from terrain presence, enemy proximity, and combat — not just a focused research slot.
+- **Terrain shapes doctrine.** Units and cities on matching terrain generate research for that domain. Rare terrain (swamp, oasis, river) is worth 4× common terrain (plains, savannah).
 - **Identity is emergent.** Two Jungle Clans playthroughs can produce completely different military identities depending on who they fight and where.
 
 ### No tech trees
 
-There are 10 combat domains in the game. Factions don't pick them from a menu — they learn them through combat encounters, sacrifice rituals, and terrain-driven research. A faction that started on the tundra can end up with poison cavalry if they fought the Jungle Clans hard enough.
+There are 10 combat domains in the game. Factions don't pick them from a menu — they learn them through combat encounters, proximity exposure, and sacrifice. Research progresses through three tiers (T1→T2→T3) driven by ecology: terrain presence, enemy proximity, and combat all advance known domains simultaneously. The player's focused research slot contributes only 1 XP/turn — the real progression comes from where your units stand and who they fight. A faction that started on the tundra can end up with poison cavalry if they fought the Jungle Clans hard enough.
 
 ### Pair synergies
 

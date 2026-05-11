@@ -56,7 +56,7 @@ export const helpContent: HelpContent = {
 <h3>Opening Panels</h3>
 <ul>
   <li><strong>Reports</strong> — Click the <em>Reports</em> menu to see faction summaries, supply logistics, combat logs, and AI intents.</li>
-  <li><strong>Research</strong> — Click the <em>Research</em> chip in the top bar (or use Reports → Research Tree) to open the Domain Research panel. Here you spend XP to unlock new abilities.</li>
+  <li><strong>Research</strong> — Click the <em>Research</em> chip in the top bar (or use Reports → Research Tree) to open the Domain Research panel. Choose which domain receives your focused research (1 XP/turn). All other known domains advance automatically from terrain and combat.</li>
   <li><strong>Help</strong> — You're reading it! Click <em>Help → How to Play</em> anytime to return here.</li>
 </ul>
 
@@ -107,48 +107,81 @@ export const helpContent: HelpContent = {
     title: 'Research & Codify',
     body: `
 <h3>The Big Picture</h3>
-<p>You start with your faction's <strong>native domain</strong> — the one ability tree that's always yours (T1 is unlocked automatically). But to unlock the game's most powerful combos, you need <strong>foreign domains</strong>: abilities stolen from other factions. You acquire them through combat learning, city captures, and exposure, and then research them through tiers to unlock synergies and emergent rules.</p>
+<p>You start with your faction's <strong>native domain</strong> — T1 is unlocked automatically. To unlock the game's most powerful combos, you need <strong>foreign domains</strong> from other factions. Technology in 9 Tribes is not a traditional tech tree — <strong>ecology and war drive all progression</strong>. Your base research rate is only 1 XP/turn on your chosen focus, but terrain presence and combat multiply that dramatically across every domain you know simultaneously.</p>
 
 <h3>Learn by Kill</h3>
-<p>When your units destroy an enemy, there's a chance they'll <strong>learn</strong> one of that enemy's faction domains. The chance scales with veterancy: <strong>Green 12%</strong>, <strong>Seasoned 20%</strong>, <strong>Veteran 28%</strong>, <strong>Elite 35%</strong>. Each unit can hold up to <strong>3 learned abilities</strong>. You can't learn your own faction's domains. Killing enemies near their cities also grants a guaranteed domain learn on capture. Veterans are your best students — send them to the front.</p>
+<p>When your units destroy an enemy, there's a chance they'll <strong>learn</strong> one of that enemy's faction domains. The chance scales with veterancy: <strong>Green 12%</strong>, <strong>Seasoned 20%</strong>, <strong>Veteran 28%</strong>, <strong>Elite 35%</strong>. Each unit can hold up to <strong>3 learned abilities</strong>. You can't learn your own faction's domains.</p>
+<p>Your faction's <strong>capability level</strong> in a domain also boosts learn chance. There are three tiers:</p>
+<ul>
+  <li><strong>Tier 1 (cap 10):</strong> +5% learn chance</li>
+  <li><strong>Tier 2 (cap 30):</strong> +10% learn chance</li>
+  <li><strong>Tier 3 (cap 60):</strong> +15% learn chance</li>
+</ul>
+<p>Capabilities build up passively from terrain and combat, so a faction that has fought extensively against venom units becomes better at absorbing venom knowledge from future kills.</p>
 
 <h3>Capture a City, Learn Its Culture</h3>
-<p>You can possess up to <strong>3 cities total</strong>. Capturing an enemy city by moving a unit onto it <strong>razes the city to the ground</strong> — you never take possession. But the unit that took it <strong>learns of their culture</strong>, gaining that faction's domain as a learned ability. This is a reliable way to acquire a foreign domain from a faction you're at war with, especially if their units are avoiding combat.</p>
+<p>Capturing an enemy city by moving a unit onto it <strong>razes the city to the ground</strong> — you never take possession. But the unit that took it <strong>learns of their culture</strong>, gaining that faction's domain as a learned ability. This is a reliable way to acquire a foreign domain from a faction you're at war with, especially if their units are avoiding combat.</p>
 
 <h3>Exposure (Proximity Learning)</h3>
-<p>Your faction learns foreign domains passively through <strong>proximity</strong> to enemy units. When your units are within 2 hexes of enemies, your faction gains 1 exposure point per contact per turn. After accumulating enough exposure (<strong>35</strong> for the first foreign domain, <strong>75</strong> for the second, <strong>140</strong> for the third), that domain is automatically added to your research tree with <strong>T1 already completed</strong>. A faction can hold up to <strong>3 domains total</strong> (native + 2 foreign). This requires no kills or manual return trips — just press units against enemy territory and wait.</p>
+<p>Your faction learns foreign domains passively through <strong>proximity</strong> to enemy units. When your units are within 2 hexes of enemies, your faction gains exposure points per contact per turn. After accumulating enough exposure (<strong>20</strong> for the first foreign domain, <strong>120</strong> for the second, <strong>200</strong> for the third), that domain is automatically added to your research tree with <strong>T1 already completed</strong>. A faction can hold up to <strong>3 domains total</strong> (native + 2 foreign). This requires no kills or manual return trips — just press units against enemy territory and wait.</p>
 
 <h3>Codification</h3>
-<p>Domains enter your research tree through three paths, each with different codification rules:</p>
+<p>Domains enter your research tree through multiple paths, each with different codification rules:</p>
 <ul>
   <li><strong>Exposure (automatic):</strong> When your faction accumulates enough proximity exposure, the domain is <strong>codified immediately</strong> with T1 completed for free. No action required.</li>
   <li><strong>Learn-by-Kill / City Capture (requires sacrifice):</strong> When a unit learns a domain by killing an enemy or capturing their city, the domain stays on that unit only. You must <strong>sacrifice that unit at a friendly city</strong> (not under siege) to codify it at the faction level and unlock T1 research.</li>
 </ul>
-<p>Units can still carry learned abilities for tracking, but only exposure grants instant faction-wide access without sacrifice.</p>
+
+<h3>Ecology-Driven Research</h3>
+<p>This is where technology diverges from a traditional tech tree. <strong>All known domains progress simultaneously every turn</strong>, driven by three ecological sources:</p>
+
+<h4>Terrain Affinity</h4>
+<p>Each domain has specific terrain types where it thrives. Units and city territory on matching terrain generate research progress for that domain:</p>
+<ul>
+  <li><strong>Common terrain</strong> (hill, coast): +0.25 XP per hex</li>
+  <li><strong>Medium terrain</strong> (plains, savannah, forest, desert, ocean): +0.5 XP per hex</li>
+  <li><strong>Uncommon terrain</strong> (tundra): +1.0 XP per hex</li>
+  <li><strong>Rare terrain</strong> (river, jungle): +1.75 XP per hex</li>
+  <li><strong>Ultra-rare terrain</strong> (swamp, oasis): +2.0 XP per hex</li>
+  <li><strong>Mountain</strong>: +3.0 XP per hex (impassable, only city territory collects)</li>
+</ul>
+<p>Each terrain type maps to one domain: jungle → venom, forest → nature healing, hill/mountain → fortress, plains → skirmish pursuit, savannah → charge, desert/oasis → camel adaptation, coast/ocean → tidal warfare and slaving, river/swamp → river stealth, tundra → heavy hitter. A unit standing on a river hex generates 1.75 river_stealth research per turn. Your city territory on matching hexes also contributes. Terrain bonuses are capped at <strong>+5 XP per domain per turn</strong>.</p>
+
+<h4>War Proximity</h4>
+<p>When your units are within 2 hexes of enemy forces, each contact generates <strong>+0.5 XP per turn</strong> toward that enemy faction's native domain (if you've already learned it). This rewards aggressive positioning and border warfare.</p>
+
+<h4>Combat Bonus</h4>
+<p>Every battle — win or lose — grants <strong>+1.0 XP</strong> toward the opponent's native domain (if you've already learned it). Both attacker and defender receive this bonus. Fighting is the most concentrated source of research progress.</p>
+
+<h3>Base Research Rate</h3>
+<p>In addition to ecology, you have a <strong>focused research slot</strong> that contributes 1 XP/turn to whichever domain you choose. This is your only manually directed research — everything else is automatic. AI factions research faster (2–3 XP/turn base) to compensate for lack of human strategic planning.</p>
 
 <h3>The Research Tree — Three Tiers</h3>
-<p>Each codified domain climbs through three tiers at a rate of <strong>4 XP per turn</strong>:</p>
 <ul>
-  <li><strong>T1 — Foundation (free):</strong> Automatic upon codification or exposure learn. The domain becomes available and <strong>pair synergies</strong> activate — if your faction knows both domains at T1, units carrying the right tags gain the paired synergy effect (e.g., Venom + Fortress = Toxic Bulwark).</li>
-  <li><strong>T2 — Mastery (60 XP, ~15 turns):</strong> Enhanced domain effects. Critically, T2 is the threshold for <strong>Emergent Rule</strong> eligibility — domains at T2+ count toward the 3-domain patterns that unlock emergent triple stacks.</li>
-  <li><strong>T3 — Transcendence (100 XP, ~25 turns):</strong> The ultimate domain effect. Each domain has a unique T3 bonus, with an extra-powerful version for your <strong>native</strong> domain. T3 deepens one domain but does not unlock new synergy tiers — pair synergies already work at T1.</li>
+  <li><strong>T1 — Foundation (free):</strong> Automatic upon codification or exposure learn. <strong>Pair synergies</strong> activate — if your faction knows both domains at T1, units carrying the right tags gain the paired synergy effect (e.g., Venom + Fortress = Toxic Bulwark).</li>
+  <li><strong>T2 — Mastery (60 XP):</strong> Enhanced domain effects. T2 is the threshold for <strong>Emergent Rule</strong> eligibility — domains at T2+ count toward the 3-domain patterns that unlock emergent triple stacks.</li>
+  <li><strong>T3 — Transcendence (100 XP):</strong> The ultimate domain effect. Each domain has a unique T3 bonus, with an extra-powerful version for your <strong>native</strong> domain. T3 deepens one domain but does not unlock new synergy tiers — pair synergies already work at T1.</li>
 </ul>
 
 <h3>Pair Synergies (55 total)</h3>
-<p>When your faction knows two different domains (both at T1 or higher), any unit carrying tags from both domains gains a <strong>pair synergy</strong>. For example, a unit with both <em>poison</em> and <em>fortress</em> tags gains <strong>Toxic Bulwark</strong> (poison aura around fortress units) as soon as both domains are in your tree. You don't need to research to T3 for pair synergies — they activate at T1. There are 55 pair synergies covering every two-domain combination. Check the <strong>Synergies</strong> tab to browse them all.</p>
+<p>When your faction knows two different domains (both at T1 or higher), any unit carrying tags from both domains gains a <strong>pair synergy</strong>. For example, a unit with both <em>poison</em> and <em>fortress</em> tags gains <strong>Toxic Bulwark</strong> (poison aura around fortress units) as soon as both domains are in your tree. Pair synergies activate at T1. Check the <strong>Synergies</strong> tab to browse them all.</p>
 
 <h3>Emergent Triple Stacks</h3>
-<p>When your faction reaches <strong>T2 in 3 domains</strong> that match a specific pattern, you unlock a powerful faction-wide bonus called an <strong>Emergent Rule</strong>. These are the ultimate builds — examples include <em>Ghost Army</em> (3 mobility domains = ignore all terrain penalties), <em>Iron Turtle</em> (fortress + heavy + terrain = damage reflection + zone control), and <em>Withering Citadel</em> (venom + fortress + healing = sustained poison fortress). The patterns vary — some require 3 domains from the same category (all mobility), others require 1 from each of 3 categories (terrain + combat + mobility). These are the endgame goals you build toward across the entire match.</p>
+<p>When your faction reaches <strong>T2 in 3 domains</strong> that match a specific pattern, you unlock a powerful faction-wide bonus called an <strong>Emergent Rule</strong>. Examples include <em>Ghost Army</em> (3 mobility domains = ignore all terrain penalties), <em>Iron Turtle</em> (fortress + heavy + terrain = damage reflection + zone control), and <em>Withering Citadel</em> (venom + fortress + healing = sustained poison fortress). These are the endgame goals you build toward across the entire match.</p>
 
 <h3>How It Plays Out — An Example</h3>
-<p>You're playing <strong>Jungle Clans</strong> (native: Venom). You send your Serpent God into Steppe Rider territory and kill one of their units — the Serpent God learns <strong>Skirmish Pursuit</strong> (the Steppe Riders' native domain). To unlock it for your faction, sacrifice the Serpent God at a friendly city — this <strong>codifies</strong> the domain, and Skirmish Pursuit appears in your research tree at T1. Right away, any unit with both <em>poison</em> and <em>skirmish</em> tags gains the <strong>Poisoned Skirmish</strong> pair synergy: after retreating, the unit leaves a poison trap on the hex it vacated. Now you research Skirmish Pursuit to T2, and if you acquire a third domain at T2 matching an emergent pattern, you unlock a game-changing Emergent Rule. <em>That's the loop.</em></p>
+<p>You're playing <strong>Jungle Clans</strong> (native: Venom). You send your Serpent God into Steppe Rider territory and kill one of their units — the Serpent God learns <strong>Skirmish Pursuit</strong> (the Steppe Riders' native domain). To unlock it for your faction, sacrifice the Serpent God at a friendly city — this <strong>codifies</strong> the domain, and Skirmish Pursuit appears in your research tree at T1. Right away, any unit with both <em>poison</em> and <em>skirmish</em> tags gains the <strong>Poisoned Skirmish</strong> pair synergy.</p>
+<p>Now ecology takes over: your units on jungle terrain continue generating venom research passively, while any units on plains terrain advance skirmish pursuit. Engaging Steppe Riders in combat gives +1.0 skirmish research per battle. Within a few dozen turns of fighting on favorable terrain, both domains can reach T2 — and if you acquire a third domain at T2 matching an emergent pattern, you unlock a game-changing Emergent Rule. <em>That's the loop: fight, learn, let the land do the research.</em></p>
 
 <h3>Strategic Tips</h3>
 <ul>
-  <li><strong>Exposure is your steadiest domain acquisition path</strong> — simply having units near enemies accumulates domain exposure automatically, adding foreign domains to your research tree with T1 completed for free.</li>
+  <li><strong>Terrain is your primary research engine.</strong> Position units and expand cities onto hexes that match your known domains — every turn on matching terrain is free research.</li>
+  <li><strong>Rare terrain is worth fighting for.</strong> A single swamp hex generates 4× the venom research of a plains hex. Control rare terrain that matches your domains.</li>
+  <li><strong>Battles accelerate everything.</strong> Every fight grants +1.0 XP to the opponent's domain. Aggressive play produces faster tech than turtling.</li>
+  <li><strong>Exposure is your steadiest acquisition path</strong> — simply having units near enemies accumulates domain exposure automatically, adding foreign domains with T1 completed for free.</li>
   <li><strong>Pair synergies activate at T1</strong> — as soon as both domains are in your tree, units with the right tags get the synergy. You don't need T3 for pairs.</li>
-  <li><strong>Breadth before depth</strong> — T2 in three domains unlocks emergent rules, which are far more impactful than T3 in one domain. Spread your XP early to hit 3 domains at T2.</li>
-  <li><strong>Prioritize domains that synergize with your native domain</strong> — check the Synergies tab to plan which foreign domains will combo best with what you already have.</li>
+  <li><strong>Breadth before depth</strong> — T2 in three domains unlocks emergent rules, which are far more impactful than T3 in one domain. Spread your ecology across domains early.</li>
+  <li><strong>Capabilities snowball.</strong> Higher capability levels in a domain increase learn-by-kill chance, so fighting extensively against a domain makes you better at absorbing it — a virtuous cycle.</li>
 </ul>
 `,
   },

@@ -64,6 +64,12 @@ export const ResearchTree = React.memo(function ResearchTree({ nodes, selectedNo
               <div className="research-domain-row__label">
                 <span className="research-domain-row__name">{domain.name}</span>
                 {isNative && <span className="research-domain-row__native-badge" aria-label="Native">&#9733;</span>}
+                {(() => {
+                  const ecologyCount = [t1, t2, t3].filter((n): n is NonNullable<typeof n> => n != null && n.isEcologyActive).length;
+                  return ecologyCount > 0
+                    ? <span className="research-domain-row__ecology-count" aria-label={`${ecologyCount} nodes with ecology progress`}>&#9889;{ecologyCount}</span>
+                    : null;
+                })()}
               </div>
 
               <div className="research-domain-row__nodes">

@@ -9,6 +9,7 @@ import type { SimulationTrace } from './warEcologySimulation.js';
 import type { RNGState } from '../core/rng.js';
 import { rngNextFloat } from '../core/rng.js';
 import { hexDistance } from '../core/grid.js';
+import { getCapabilityLevel } from './capabilitySystem.js';
 
 const LEARN_CHANCE_BY_VETERAN_LEVEL: Record<string, number> = {
   green: 0.12,
@@ -17,6 +18,13 @@ const LEARN_CHANCE_BY_VETERAN_LEVEL: Record<string, number> = {
   elite: 0.35,
 };
 const MAX_LEARNED_ABILITIES = 3;
+
+// Capability exposure tiers — accumulated domain exposure boosts learn chance
+export const CAPABILITY_LEARN_TIERS = [
+  { min: 10, bonus: 0.05 },
+  { min: 30, bonus: 0.10 },
+  { min: 60, bonus: 0.15 },
+];
 
 export interface LearnFromKillResult {
   unit: Unit;
@@ -95,11 +103,21 @@ export function tryLearnFromKill(
   }
 
   // Calculate learn chance based on veterancy (scaled for AI vs player)
-  const learnChance = calculateLearnChance(attacker.veteranLevel, learnChanceScale);
+  const baseChance = calculateLearnChance(attacker.veteranLevel, learnChanceScale);
+
+  // Capability exposure tier bonus — accumulated domain knowledge boosts absorb chance
+  const attackerFaction = state.factions.get(attacker.factionId);
+  const capLevel = attackerFaction ? getCapabilityLevel(attackerFaction, nativeDomain) : 0;
+  const tierBonus = CAPABILITY_LEARN_TIERS.reduce(
+    (best, tier) => (capLevel >= tier.min ? tier.bonus : best), 0,
+  );
+
+  const learnChance = Math.min(baseChance + tierBonus, 1.0);
   const roll = rngNextFloat(rngState);
 
   if (roll >= learnChance) {
-    log(trace, `${getUnitName(attacker, state)} failed to learn ${nativeDomain} from ${defenderFaction.name} (roll: ${roll.toFixed(2)} vs chance: ${learnChance.toFixed(2)})`);
+    const capInfo = tierBonus > 0 ? ` (+${(tierBonus * 100).toFixed(0)}% from ${nativeDomain} exposure ${capLevel.toFixed(0)})` : '';
+    log(trace, `${getUnitName(attacker, state)} failed to learn ${nativeDomain} from ${defenderFaction.name} (roll: ${roll.toFixed(2)} vs chance: ${learnChance.toFixed(2)}${capInfo})`);
     return { unit: attacker, learned: false };
   }
 

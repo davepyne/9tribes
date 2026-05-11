@@ -505,6 +505,36 @@
 .capability-pip__threshold--t1 { color: #8fd694; }
 .capability-pip__threshold--t2 { color: #f3cf8d; }
 
+/* ── Ecology/auto-progress indicators ── */
+.research-node__ecology-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  color: #4ade80;
+  margin-top: 0.25rem;
+}
+
+.research-node__ecology-icon {
+  font-size: 0.75rem;
+}
+
+.research-node__ecology-turns {
+  font-size: 0.65rem;
+  color: #86efac;
+  margin-top: 0.15rem;
+}
+
+.research-domain-row__ecology-count {
+  font-size: 0.7rem;
+  color: #4ade80;
+  margin-left: 0.25rem;
+}
+
+.research-node--ecology-active .research-node__progress-fill {
+  background: linear-gradient(90deg, #4ade80, #86efac);
+}
+
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .research-window__body { grid-template-columns: 1fr; }

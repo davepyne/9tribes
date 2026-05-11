@@ -24,7 +24,7 @@ export function createResearchState(factionId: FactionId, nativeDomain?: string,
     activeNodeId: null,
     progressByNodeId: {},
     completedNodes,
-    researchPerTurn: researchPerTurn ?? 4,
+    researchPerTurn: researchPerTurn ?? 1,
     recentCodifiedDomainIds: [],
   };
 }
@@ -106,7 +106,7 @@ export function getDomainTier(
     activeNodeId: null,
     progressByNodeId: {},
     completedNodes: completedNodes as ResearchNodeId[],
-    researchPerTurn: 4,
+    researchPerTurn: 1,
   });
 }
 
@@ -219,3 +219,67 @@ export function setResearchRate(
 }
 
 // Base research rate is 8 XP/turn. Bonus calculations removed — use flat rate.
+
+/**
+ * Add progress to a specific research node (not gated by activeNodeId).
+ * Used by the ecology research pass to advance all learned domains simultaneously.
+ * Clears activeNodeId only if the completed node is the active one.
+ */
+export function addResearchProgressToNode(
+  state: ResearchState,
+  nodeId: ResearchNodeId,
+  xpCost: number,
+  amount: number,
+): { state: ResearchState; completed: boolean } {
+  if (state.completedNodes.includes(nodeId)) {
+    return { state, completed: false };
+  }
+
+  const currentProgress = state.progressByNodeId[nodeId] ?? 0;
+  const newProgress = currentProgress + amount;
+
+  if (newProgress >= xpCost) {
+    const clearActive = state.activeNodeId === nodeId;
+    return {
+      state: {
+        ...state,
+        progressByNodeId: {
+          ...state.progressByNodeId,
+          [nodeId]: newProgress,
+        },
+        completedNodes: [...state.completedNodes, nodeId],
+        ...(clearActive ? { activeNodeId: null } : {}),
+      },
+      completed: true,
+    };
+  }
+
+  return {
+    state: {
+      ...state,
+      progressByNodeId: {
+        ...state.progressByNodeId,
+        [nodeId]: newProgress,
+      },
+    },
+    completed: false,
+  };
+}
+
+/**
+ * Find the next uncompleted research node for a domain (T1 → T2 → T3).
+ * Returns null if all tiers are completed.
+ */
+export function getNextResearchNodeForDomain(
+  domainId: string,
+  completedNodes: readonly string[],
+): { nodeId: ResearchNodeId; tier: number } | null {
+  const t1 = `${domainId}_t1` as ResearchNodeId;
+  const t2 = `${domainId}_t2` as ResearchNodeId;
+  const t3 = `${domainId}_t3` as ResearchNodeId;
+
+  if (!completedNodes.includes(t1)) return { nodeId: t1, tier: 1 };
+  if (!completedNodes.includes(t2)) return { nodeId: t2, tier: 2 };
+  if (!completedNodes.includes(t3)) return { nodeId: t3, tier: 3 };
+  return null;
+}

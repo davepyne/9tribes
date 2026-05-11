@@ -6,6 +6,7 @@ import type { FactionId } from '../../types.js';
 import { resolveCapabilityDoctrine } from '../capabilityDoctrine.js';
 import { clearPreparedAbility } from '../abilitySystem.js';
 import { applyCombatSignals } from '../combatSignalSystem.js';
+import { addResearchProgressToNode, getNextResearchNodeForDomain } from '../researchSystem.js';
 import { unlockHybridRecipes } from '../hybridSystem.js';
 import { awardCombatXP } from '../xpSystem.js';
 import { tryPromoteUnit } from '../veterancySystem.js';
@@ -41,6 +42,40 @@ import {
   destroyTransportIfApplicable,
 } from './helpers.js';
 import { maybeAbsorbFaction } from './factionAbsorption.js';
+
+const COMBAT_RESEARCH_BONUS = 1.0;
+
+function applyCombatResearchBonus(
+  state: GameState,
+  learnerFactionId: FactionId,
+  enemyFactionId: FactionId,
+  registry: RulesRegistry,
+): GameState {
+  const learner = state.factions.get(learnerFactionId);
+  const enemy = state.factions.get(enemyFactionId);
+  if (!learner || !enemy) return state;
+
+  const domainId = enemy.nativeDomain;
+  if (!learner.learnedDomains.includes(domainId)) return state;
+
+  const research = state.research.get(learnerFactionId);
+  if (!research) return state;
+
+  const nextNode = getNextResearchNodeForDomain(domainId, research.completedNodes);
+  if (!nextNode) return state;
+
+  const domain = registry.getAllResearchDomains().find(d => d.id === domainId);
+  const nodeDef = domain?.nodes[nextNode.nodeId];
+  if (!nodeDef) return state;
+
+  const { state: updatedResearch } = addResearchProgressToNode(
+    research, nextNode.nodeId, nodeDef.xpCost, COMBAT_RESEARCH_BONUS,
+  );
+
+  const researchMap = new Map(state.research);
+  researchMap.set(learnerFactionId, updatedResearch);
+  return { ...state, research: researchMap };
+}
 
 export function applyCombatAction(
   state: GameState,
@@ -434,6 +469,8 @@ export function applyCombatAction(
   }
 
   current = applyCombatSignals(current, attacker.factionId, preview.result.signals);
+  current = applyCombatResearchBonus(current, attacker.factionId, defender.factionId, registry);
+  current = applyCombatResearchBonus(current, defender.factionId, attacker.factionId, registry);
   current = applyContactTransfer(current, attacker.factionId, defender.factionId, 'contact');
   const absorbResult = maybeAbsorbFaction(current, attacker.factionId as FactionId, defender.factionId as FactionId, registry);
   current = absorbResult.state;

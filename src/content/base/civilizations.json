@@ -110,7 +110,7 @@
     "terrainDependence": "most efficient around hills and choke points",
     "lateGameHybridPotential": "molten engineers and fortress marines",
     "nativeDomain": "fortress",
-    "researchRate": 10,
+    "researchRate": 3,
     "startingLearnedDomains": ["fortification"]
   },
   "coral_people": {

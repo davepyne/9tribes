@@ -1,6 +1,6 @@
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
-import { getNextExposureThreshold, gainExposure } from '../src/systems/knowledgeSystem';
+import { getNextExposureThreshold, gainExposure, MAX_LEARNED_DOMAINS } from '../src/systems/knowledgeSystem';
 import { canSacrifice, codifyDomainsForFaction, performSacrifice } from '../src/systems/sacrificeSystem';
 import { createResearchState, getResearchRate } from '../src/systems/researchSystem';
 import { getVictoryStatus } from '../src/systems/simulation/victory';
@@ -28,13 +28,13 @@ describe('progression pipeline constants', () => {
   });
 
   describe('research speed', () => {
-    it('researchPerTurn is 4 for human players', () => {
+    it('researchPerTurn is 1 for human players', () => {
       const research = createResearchState('hill_clan' as never, 'fortress');
-      expect(research.researchPerTurn).toBe(4);
-      expect(getResearchRate(research)).toBe(4);
+      expect(research.researchPerTurn).toBe(1);
+      expect(getResearchRate(research)).toBe(1);
     });
 
-    it('researchPerTurn is 6 for AI players', () => {
+    it('researchPerTurn uses custom override when provided', () => {
       const research = createResearchState('hill_clan' as never, 'fortress', 6);
       expect(research.researchPerTurn).toBe(6);
       expect(getResearchRate(research)).toBe(6);
@@ -173,6 +173,42 @@ describe('progression pipeline constants', () => {
         ['fortress', 'venom', 'nature_healing'],
       );
       expect(result).not.toBeNull();
+    });
+  });
+
+  describe('max learned domains cap', () => {
+    it('MAX_LEARNED_DOMAINS is 3', () => {
+      expect(MAX_LEARNED_DOMAINS).toBe(3);
+    });
+
+    it('gainExposure silently rejects a 4th domain when at cap', () => {
+      const state = buildMvpScenario(42, { registry });
+      const faction = Array.from(state.factions.values())[0]!;
+      const enemies = Array.from(state.factions.values()).filter(f => f.id !== faction.id);
+
+      // Manually give the faction 3 domains (native + 2 foreign) — at the cap
+      const foreignDomainA = enemies[0]!.nativeDomain;
+      const foreignDomainB = enemies[1]!.nativeDomain;
+      const foreignDomainC = enemies[2]!.nativeDomain;
+
+      const factions = new Map(state.factions);
+      factions.set(faction.id, {
+        ...faction,
+        learnedDomains: [faction.nativeDomain, foreignDomainA, foreignDomainB],
+      });
+      state.factions = factions;
+
+      expect(faction.learnedDomains.length).toBeLessThanOrEqual(MAX_LEARNED_DOMAINS);
+      expect(state.factions.get(faction.id)!.learnedDomains.length).toBe(MAX_LEARNED_DOMAINS);
+
+      // Push a huge amount of exposure for a 4th domain — should be silently ignored
+      const trace = { lines: [] as string[] };
+      const next = gainExposure(state, faction.id, foreignDomainC, 9999, trace, registry);
+
+      expect(next.factions.get(faction.id)!.learnedDomains).toEqual(
+        state.factions.get(faction.id)!.learnedDomains,
+      );
+      expect(next.factions.get(faction.id)!.learnedDomains.length).toBe(MAX_LEARNED_DOMAINS);
     });
   });
 });
