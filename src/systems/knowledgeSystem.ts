@@ -7,7 +7,6 @@ import type { Faction } from '../features/factions/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
 import abilityDomainsData from '../content/base/ability-domains.json' with { type: 'json' };
 import pairSynergiesData from '../content/base/pair-synergies.json' with { type: 'json' };
-import { autoCompleteResearchForDomains } from './sacrificeSystem.js';
 import { recordDomainLearned, recordSynergyPair } from './simulation/traceRecorder.js';
 import type { SimulationTrace } from './simulation/traceTypes.js';
 
@@ -166,18 +165,21 @@ export function gainExposure(
       synergizesWith: synergyPartner ? (DOMAINS[synergyPartner]?.name ?? synergyPartner) : undefined,
     });
 
-    // H-3-4-1: Auto-complete T1 research when exposure learns a domain
-    if (registry) {
-      autoCompletedState = autoCompleteResearchForDomains(state, factionId, [domainId], registry, trace as import('./warEcologySimulation.js').SimulationTrace | undefined);
-    }
+    // Exposure grants domain awareness (learnedDomains) but NOT T1 auto-complete
+    // The domain's T1 must be earned via ecology assimilation at scaled cost
   }
 
   // Update faction state (use autoCompletedState if research was updated)
+  const baseFaction = autoCompletedState.factions.get(factionId) ?? faction;
+  const newAcquisitionMethods = isNowLearned && !wasLearned
+    ? { ...baseFaction.domainAcquisitionMethod, [domainId]: 'exposure' as const }
+    : baseFaction.domainAcquisitionMethod;
   const factions = new Map(autoCompletedState.factions);
   factions.set(factionId, {
-    ...(autoCompletedState.factions.get(factionId) ?? faction),
+    ...baseFaction,
     exposureProgress: newExposureProgress,
     learnedDomains: newLearnedDomains,
+    domainAcquisitionMethod: newAcquisitionMethods,
   });
 
   return {

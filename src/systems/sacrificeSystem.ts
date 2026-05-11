@@ -8,7 +8,6 @@ import type { RulesRegistry } from '../data/registry/types.js';
 import type { SimulationTrace } from './warEcologySimulation.js';
 import type { UnitId, ResearchNodeId } from '../types.js';
 import { hexDistance } from '../core/grid.js';
-import { getDomainProgression } from './domainProgression.js';
 import { getSynergyEngine } from './synergyRuntime.js';
 
 /**
@@ -51,13 +50,13 @@ export function canSacrifice(unit: Unit, faction: Faction, state: GameState): bo
 }
 
 /**
- * Perform the sacrifice: remove the unit and transfer learned abilities to the faction.
- * 
+ * Perform the sacrifice: strip learned abilities and grant synergy eligibility.
+ *
  * Effects:
- * 1. Remove unit from game (units map and faction.unitIds)
- * 2. Add all learned domains to faction.learnedDomains (if not already present)
- * 3. Auto-complete the corresponding research nodes for each domain
- * 4. Trigger synergy engine re-evaluation
+ * 1. Strip learned abilities from the unit (non-destructive)
+ * 2. Grant synergy eligibility for learned domains (pair/triple activation)
+ * 3. Does NOT add domains to learnedDomains or auto-complete T1 research
+ * 4. Evaluate triple stack from synergy-eligible domains
  * 5. Log the sacrifice event
  */
 export function performSacrifice(
@@ -103,10 +102,7 @@ export function performSacrifice(
     const refreshedFaction = current.factions.get(factionId);
     trace.lines.push(`[SACRIFICE] ${getUnitName(unit, state)} sacrificed at ${faction.name} capital`);
     trace.lines.push(`  Learned abilities lost: ${learnedDomains.join(', ')}`);
-    trace.lines.push(`  Faction now knows domains: ${(refreshedFaction?.learnedDomains ?? faction.learnedDomains).join(', ')}`);
-    if (newlyUnlockedDomains.length > 0) {
-      trace.lines.push(`  Recent codified domains: ${newlyUnlockedDomains.join(', ')}`);
-    }
+    trace.lines.push(`  Synergy-eligible domains: ${(refreshedFaction?.synergyEligibleDomains ?? faction.synergyEligibleDomains).join(', ')}`);
     if (refreshedFaction?.activeTripleStack) {
       trace.lines.push(`  Triple synergy activated: ${refreshedFaction.activeTripleStack.name}`);
     }
@@ -127,55 +123,51 @@ export function codifyDomainsForFaction(
     return state;
   }
 
-  const newLearnedDomains = [...faction.learnedDomains];
-  const newlyUnlockedDomains: string[] = [];
+  // Sacrifice grants SYNERGY ELIGIBILITY only — not technology/research
+  // The domain's T1 must still be earned via ecology assimilation at scaled cost
+  const currentSynergyEligible = [...faction.synergyEligibleDomains];
+  const newlySynergyEligible: string[] = [];
   for (const domainId of domainIds) {
-    if (domainId === faction.nativeDomain || newLearnedDomains.includes(domainId)) {
+    if (domainId === faction.nativeDomain || currentSynergyEligible.includes(domainId)) {
       continue;
     }
-    newLearnedDomains.push(domainId);
-    newlyUnlockedDomains.push(domainId);
+    currentSynergyEligible.push(domainId);
+    newlySynergyEligible.push(domainId);
   }
 
-  let current = autoCompleteResearchForDomains(state, factionId, domainIds, registry, trace);
-  const updatedFaction = current.factions.get(factionId);
-  if (!updatedFaction) {
-    return current;
-  }
+  if (newlySynergyEligible.length === 0) return state;
 
-  const refreshedResearch = current.research.get(factionId);
-  const progression = getDomainProgression(
-    { nativeDomain: updatedFaction.nativeDomain, learnedDomains: newLearnedDomains },
-    refreshedResearch,
-  );
+  // Evaluate triple stack from synergy-eligible domains (not learnedDomains)
   const tripleStack = getSynergyEngine().resolveFactionTriple(
-    progression.pairEligibleDomains,
-    progression.emergentEligibleDomains,
+    currentSynergyEligible,
+    currentSynergyEligible,
   );
-  const factions = new Map(current.factions);
+
+  log(trace, `Sacrifice grants synergy eligibility for: ${newlySynergyEligible.join(', ')}`);
+  if (tripleStack) {
+    log(trace, `  Triple synergy activated: ${tripleStack.name}`);
+  }
+
+  const factions = new Map(state.factions);
   factions.set(factionId, {
-    ...updatedFaction,
-    learnedDomains: newLearnedDomains,
-    // Note: sacrifice-granted domains do NOT increment assimilatedDomainCount
-    // Synergy/codification is the "magic shortcut" that bypasses ecology scaling cost
+    ...faction,
+    synergyEligibleDomains: currentSynergyEligible,
     activeTripleStack: tripleStack ?? undefined,
   });
-  current = { ...current, factions };
 
-  if (newlyUnlockedDomains.length > 0) {
-    const currentResearch = current.research.get(factionId);
-    if (currentResearch) {
-      const researchMap = new Map(current.research);
-      researchMap.set(factionId, {
-        ...currentResearch,
-        recentCodifiedDomainIds: newlyUnlockedDomains,
-        recentCodifiedRound: state.round,
-      });
-      current = { ...current, research: researchMap };
-    }
+  // Set recent codified domains so AI strategy can react
+  const research = state.research.get(factionId);
+  if (research && newlySynergyEligible.length > 0) {
+    const researchMap = new Map(state.research);
+    researchMap.set(factionId, {
+      ...research,
+      recentCodifiedDomainIds: newlySynergyEligible,
+      recentCodifiedRound: state.round,
+    });
+    return { ...state, research: researchMap, factions };
   }
 
-  return current;
+  return { ...state, factions };
 }
 
 /**

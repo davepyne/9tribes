@@ -111,9 +111,12 @@ describe('faction identity combat modifiers', () => {
     const state = buildMvpScenario(42);
     const riverPeople = state.factions.get('river_people' as never)!;
 
+    // Stealth only on river and swamp (not coast or ocean)
     expect(isUnitRiverStealthed(riverPeople, 'river')).toBe(true);
     expect(isUnitRiverStealthed(riverPeople, 'swamp')).toBe(true);
     expect(isUnitRiverStealthed(riverPeople, 'plains')).toBe(false);
+    expect(isUnitRiverStealthed(riverPeople, 'coast')).toBe(false);
+    expect(isUnitRiverStealthed(riverPeople, 'ocean')).toBe(false);
   });
 });
 

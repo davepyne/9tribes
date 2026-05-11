@@ -176,7 +176,7 @@ export const UnitInspectorSection = React.memo(function UnitInspectorSection({
                 </div>
               ))}
               <p className="ci-knowledge__hint">
-                Learned domains are codified for your faction automatically and appear in the research tree right away.
+                Return this unit to a friendly city and sacrifice it to grant synergy eligibility for these domains. Technology (T1/T2/T3) must still be earned via ecology research.
               </p>
             </>
           ) : null}
@@ -302,22 +302,34 @@ export const UnitInspectorSection = React.memo(function UnitInspectorSection({
       {mode === 'play' ? (
         <div className="ci-actions">
           {unit.canBrace ? (
-            <button
-              type="button"
-              className="ci-action-btn"
-              onClick={() => onPrepareAbility(unit.id, 'brace')}
-            >
-              Brace
-            </button>
+            <div className="ci-action-group">
+              <button
+                type="button"
+                className="ci-action-btn"
+                onClick={() => onPrepareAbility(unit.id, 'brace')}
+              >
+                Brace
+              </button>
+              <p className="ci-action-hint">
+                Counter-attack bonus when an adjacent enemy attacks you this turn.
+                Requires an enemy already nearby.
+              </p>
+            </div>
           ) : null}
           {unit.canAmbush ? (
-            <button
-              type="button"
-              className="ci-action-btn"
-              onClick={() => onPrepareAbility(unit.id, 'ambush')}
-            >
-              Ambush
-            </button>
+            <div className="ci-action-group">
+              <button
+                type="button"
+                className="ci-action-btn"
+                onClick={() => onPrepareAbility(unit.id, 'ambush')}
+              >
+                Ambush
+              </button>
+              <p className="ci-action-hint">
+                First-strike attack bonus (+15%) when an enemy moves adjacent next turn.
+                Requires forest/hill terrain with no enemies nearby. Stacks with stealth (+50%).
+              </p>
+            </div>
           ) : null}
           {unit.boardableTransportIds?.map((transportId) => (
             <button

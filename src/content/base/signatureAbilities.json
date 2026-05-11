@@ -89,7 +89,7 @@
     "cooldownDuration": 5
   },
   "river_people": {
-    "sneakAttackBonus": 0.10,
+    "sneakAttackBonus": 0.20,
     "summonSneakAttackBonus": 0.30,
     "summon": {
       "chassisId": "alligator_frame",

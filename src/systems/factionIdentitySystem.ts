@@ -4,13 +4,13 @@ import type { Unit } from '../features/units/types.js';
 import type { TerrainDef } from '../data/registry/types.js';
 import { getHexesInRange } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
-import { isWaterTerrain } from './terrainUtils.js';
+import { isWaterTerrain, isRiverStealthTerrain } from './terrainUtils.js';
 
 const POOR_TERRAINS = new Set(['tundra', 'desert', 'hill', 'river', 'coast']);
 const OPEN_GROUND_TERRAINS = new Set(['plains', 'savannah']);
 const CHARGE_MOMENTUM_TERRAINS = new Set(['savannah', 'plains']);
 
-export { isWaterTerrain };
+export { isWaterTerrain, isRiverStealthTerrain };
 
 export function isPoorTerrain(terrainId: string | undefined): boolean {
   return terrainId ? POOR_TERRAINS.has(terrainId) : false;
@@ -270,7 +270,7 @@ export function getEconomySupplyBonus(
 
 export function isUnitRiverStealthed(faction: Faction | undefined, terrainId: string): boolean {
   const passive = faction?.identityProfile.passiveTrait;
-  return passive === 'river_assault' && (isWaterTerrain(terrainId) || terrainId === 'swamp');
+  return passive === 'river_assault' && isRiverStealthTerrain(terrainId);
 }
 
 export function getTerrainPreferenceScore(

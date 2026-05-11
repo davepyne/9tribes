@@ -261,7 +261,10 @@ export function applyCombatAction(
       && preview.details.attackerTerrainId === 'desert';
     const isEmergentTerrainStealth = preview.details.emergentPermanentStealthTerrains.length > 0
       && preview.details.emergentPermanentStealthTerrains.includes(preview.details.attackerTerrainId);
-    if (!isDesertStealth && !isEmergentTerrainStealth) {
+    // River People remain stealthed on river/swamp terrain (terrain-based stealth)
+    const isRiverTerrainStealth = attackerFactionForDoctrine?.identityProfile.passiveTrait === 'river_assault'
+      && (preview.details.attackerTerrainId === 'river' || preview.details.attackerTerrainId === 'swamp');
+    if (!isDesertStealth && !isEmergentTerrainStealth && !isRiverTerrainStealth) {
       nextAttacker = { ...nextAttacker, isStealthed: false, turnsSinceStealthBreak: 1 };
     }
   }

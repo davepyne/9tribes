@@ -3,9 +3,6 @@ import type { FactionId } from '../../types.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import { applyContactTransfer } from '../capabilitySystem.js';
 import { updateCombatRecordOnElimination } from '../historySystem.js';
-import { autoCompleteResearchForDomains } from '../sacrificeSystem.js';
-import { getDomainProgression } from '../domainProgression.js';
-import { getSynergyEngine } from '../synergyRuntime.js';
 import { getFactionCityIds, syncAllFactionSettlementIds } from '../factionOwnershipSystem.js';
 import { destroyVillagesInCityTerritory } from '../villageSystem.js';
 
@@ -49,26 +46,19 @@ export function maybeAbsorbFaction(
     absorbedDomains = newlyLearned;
     const newLearnedDomains = [...victorFaction.learnedDomains, ...newlyLearned];
 
-    // Auto-complete T1 research nodes for the newly learned domains
-    current = autoCompleteResearchForDomains(current, victorFactionId, newlyLearned, registry);
-
-    // Re-evaluate domain progression and triple synergy
+    // Absorption grants domain awareness but NOT T1 auto-complete or synergy eligibility
+    // The domain's T1 must be earned via ecology assimilation at scaled cost
     const updatedFaction = current.factions.get(victorFactionId);
     if (updatedFaction) {
-      const refreshedResearch = current.research.get(victorFactionId);
-      const progression = getDomainProgression(
-        { nativeDomain: updatedFaction.nativeDomain, learnedDomains: newLearnedDomains },
-        refreshedResearch,
-      );
-      const tripleStack = getSynergyEngine().resolveFactionTriple(
-        progression.pairEligibleDomains,
-        progression.emergentEligibleDomains,
-      );
+      const absAcquisitionMethods = { ...updatedFaction.domainAcquisitionMethod };
+      for (const d of newlyLearned) {
+        absAcquisitionMethods[d] = 'absorption';
+      }
       const newFactions = new Map(current.factions);
       newFactions.set(victorFactionId, {
         ...updatedFaction,
         learnedDomains: newLearnedDomains,
-        activeTripleStack: tripleStack ?? undefined,
+        domainAcquisitionMethod: absAcquisitionMethods,
       });
       current = { ...current, factions: newFactions };
 

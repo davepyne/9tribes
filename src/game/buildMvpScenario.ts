@@ -190,6 +190,13 @@ function initializeFaction(
     exposureProgress: {},
     prototypeMastery: {},
     assimilatedDomainCount: 0,
+    domainAcquisitionMethod: Object.fromEntries(
+      Array.from(new Set([
+        factionConfig.nativeDomain,
+        ...(factionConfig.startingLearnedDomains ?? []),
+      ])).map((d) => [d, d === factionConfig.nativeDomain ? 'native' as const : 'sacrifice' as const]),
+    ),
+    synergyEligibleDomains: [factionConfig.nativeDomain],
     homeCityId: cityId,
   };
   state.factions.set(factionId, faction);

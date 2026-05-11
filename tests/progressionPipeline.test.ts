@@ -90,7 +90,9 @@ describe('progression pipeline constants', () => {
       expect(next.units.get(unitId)).toBeDefined();
       expect(next.units.get(unitId)!.learnedAbilities).toEqual([]);
       expect(next.units.get(unitId)!.hp).toBeGreaterThan(0);
-      expect(next.factions.get(faction.id)!.learnedDomains).toContain('fortress');
+      // Sacrifice grants synergy eligibility, NOT learnedDomains
+      expect(next.factions.get(faction.id)!.synergyEligibleDomains).toContain('fortress');
+      expect(next.factions.get(faction.id)!.learnedDomains).not.toContain('fortress');
     });
 
     it('canSacrifice accepts unit at hex distance 1 from home city', () => {
@@ -125,26 +127,31 @@ describe('progression pipeline constants', () => {
       const trace = { lines: [] as string[] };
       const next = gainExposure(state, faction.id, foreignDomain, 35, trace, registry);
 
+      // Exposure grants domain awareness but NOT T1 auto-complete
       expect(next.factions.get(faction.id)!.learnedDomains).toContain(foreignDomain);
-      expect(next.research.get(faction.id)!.completedNodes).toContain(t1NodeId);
-      expect(next.research.get(faction.id)!.completedNodes).not.toContain(`${foreignDomain}_t2`);
+      expect(next.research.get(faction.id)!.completedNodes).not.toContain(t1NodeId);
+      // Domain's T1 must be earned via ecology assimilation at scaled cost
+      expect(next.factions.get(faction.id)!.synergyEligibleDomains).not.toContain(foreignDomain);
     });
   });
 
-  describe('automatic codification', () => {
-    it('codifies a newly learned combat domain immediately without sacrifice', () => {
+  describe('sacrifice grants synergy eligibility only (not technology)', () => {
+    it('codifyDomainsForFaction adds to synergyEligibleDomains but NOT learnedDomains or research', () => {
       const state = buildMvpScenario(42, { registry });
       const faction = Array.from(state.factions.values())[0]!;
       const foreignDomain = Array.from(state.factions.values()).find((entry) => entry.id !== faction.id)!.nativeDomain;
 
       expect(state.factions.get(faction.id)!.learnedDomains).not.toContain(foreignDomain);
+      expect(state.factions.get(faction.id)!.synergyEligibleDomains).not.toContain(foreignDomain);
       expect(state.research.get(faction.id)!.completedNodes).not.toContain(`${foreignDomain}_t1`);
 
       const next = codifyDomainsForFaction(state, faction.id, [foreignDomain], registry);
 
-      expect(next.factions.get(faction.id)!.learnedDomains).toContain(foreignDomain);
-      expect(next.research.get(faction.id)!.completedNodes).toContain(`${foreignDomain}_t1`);
-      expect(next.research.get(faction.id)!.completedNodes).not.toContain(`${foreignDomain}_t2`);
+      // Sacrifice does NOT grant tech/research
+      expect(next.factions.get(faction.id)!.learnedDomains).not.toContain(foreignDomain);
+      expect(next.research.get(faction.id)!.completedNodes).not.toContain(`${foreignDomain}_t1`);
+      // Sacrifice DOES grant synergy eligibility
+      expect(next.factions.get(faction.id)!.synergyEligibleDomains).toContain(foreignDomain);
     });
   });
 

@@ -303,6 +303,8 @@ function buildPlayFactions(state: GameState): FactionView[] {
     economyAngle: faction.identityProfile.economyAngle,
     homeCityId: faction.homeCityId,
     learnedDomains: faction.learnedDomains ?? [],
+    domainAcquisitionMethod: faction.domainAcquisitionMethod ?? {},
+    synergyEligibleDomains: faction.synergyEligibleDomains ?? [],
   }));
 }
 

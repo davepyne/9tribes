@@ -25,11 +25,11 @@ const CONTENT: Partial<Record<TutorialStep, StepContent>> = {
   },
   research: {
     title: 'Check Your Research',
-    body: "Try selecting 'Research' at the top of the screen. You will see your current research progress. After learning enemy research domains (through battle kills or proximity to enemy units), they will appear here as well. 'T3' is the highest research level.",
+    body: "Try selecting 'Research' at the top of the screen. You will see your current research progress. Your native domain starts at T1. Foreign domains appear here after you learn them (via combat kills, city capture, or exposure) — but their T1 must be earned through ecology XP at a scaled cost (20/40/60...). 'T3' is the highest research level.",
   },
   synergies: {
     title: 'Ability Synergies',
-    body: 'On the same top menu, to the far-right should be a small symbol: click on it. It contains "Ability Synergies". Here you will see your own ability, and as you learn others, they will show here. The "Emergent Rules" apply when you research 3 or more foreign domains to T2 — these unlock powerful faction-wide bonuses.',
+    body: 'On the same top menu, to the far-right should be a small symbol: click on it. It contains "Ability Synergies". Here you will see your native ability. Foreign domains only appear here after you sacrifice a unit that learned enemy abilities in combat — sacrifice grants synergy eligibility but zero technology. The "Emergent Rules" activate when you have T2 research AND sacrifice eligibility in 3+ domains matching a pattern — these unlock powerful faction-wide bonuses.',
   },
   combat: {
     title: 'Engaging the Enemy',

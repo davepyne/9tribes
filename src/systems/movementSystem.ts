@@ -282,6 +282,10 @@ export function moveUnit(
   const movesRemaining = (preview.entersZoC || preview.consumesAllMoves) ? 0 : Math.max(0, unit.movesRemaining - preview.totalCost);
 
   // Create new units map with updated unit
+  const targetTerrainId = map.tiles.get(hexToKey(targetHex))?.terrain ?? 'plains';
+  const faction = gameState.factions.get(unit.factionId);
+  const isOnRiverStealthTerrain = faction?.identityProfile.passiveTrait === 'river_assault'
+    && (targetTerrainId === 'river' || targetTerrainId === 'swamp');
   const newUnits = new Map(gameState.units);
   newUnits.set(unitId, {
     ...unit,
@@ -290,6 +294,7 @@ export function moveUnit(
     movesRemaining,
     enteredZoCThisActivation: preview.entersZoC,
     entrenching: false,
+    isStealthed: isOnRiverStealthTerrain,
   });
 
   let newState: GameState = {

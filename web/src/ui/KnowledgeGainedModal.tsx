@@ -248,7 +248,7 @@ function KnowledgeGainedModalInner({ event, onDismiss }: ModalInnerProps) {
 
         {/* Footer instruction */}
         <p className="kgm-instruction">
-          This domain is now unlocked for your faction automatically, including its Tier 1 research node.
+          This unit has learned the domain. To grant <strong>synergy eligibility</strong> for it, return this unit to a friendly city and sacrifice it. The domain's technology (T1/T2/T3) must still be earned via ecology research at a scaled cost.
         </p>
 
         {/* Dismiss button */}

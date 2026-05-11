@@ -100,7 +100,11 @@ export interface Faction {
   exposureProgress: Record<string, number>;  // domainId -> current exposure points
   prototypeMastery: Record<string, number>;  // domainId -> count of prototypes built
   assimilatedDomainCount: number;           // domains learned via ecology assimilation (not sacrifice)
+  domainAcquisitionMethod: Record<string, DomainAcquisitionMethod>;  // how each learned domain was acquired
+  synergyEligibleDomains: string[];        // domains that activate pair/triple synergies (sacrifice + native only)
   // Home city for sacrifice mechanic - the faction's starting city
   homeCityId?: CityId;
 }
+
+export type DomainAcquisitionMethod = 'native' | 'sacrifice' | 'ecology' | 'exposure' | 'absorption';
 

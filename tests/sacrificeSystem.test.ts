@@ -3,7 +3,7 @@ import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { performSacrifice } from '../src/systems/sacrificeSystem';
 
 describe('sacrifice progression', () => {
-  it('does not unlock a faction domain until sacrifice, and sacrifice only completes T1', () => {
+  it('sacrifice grants synergy eligibility only — not technology or research', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry });
     const faction = Array.from(state.factions.values())[0]!;
@@ -21,15 +21,17 @@ describe('sacrifice progression', () => {
     unit.position = { ...homeCity.position };
 
     expect(faction.learnedDomains.includes('fortress')).toBe(false);
+    expect(faction.synergyEligibleDomains.includes('fortress')).toBe(false);
 
     const next = performSacrifice(unitId, faction.id, state, registry);
     const updatedFaction = next.factions.get(faction.id)!;
     const updatedResearch = next.research.get(faction.id)!;
 
-    expect(updatedFaction.learnedDomains.includes('fortress')).toBe(true);
-    expect(updatedResearch.completedNodes.includes('fortress_t1' as never)).toBe(true);
-    expect(updatedResearch.completedNodes.includes('fortress_t2' as never)).toBe(false);
-    expect(updatedResearch.completedNodes.includes('fortress_t3' as never)).toBe(false);
+    // Sacrifice does NOT grant tech/research
+    expect(updatedFaction.learnedDomains.includes('fortress')).toBe(false);
+    expect(updatedResearch.completedNodes.includes('fortress_t1' as never)).toBe(false);
+    // Sacrifice DOES grant synergy eligibility
+    expect(updatedFaction.synergyEligibleDomains.includes('fortress')).toBe(true);
 
     // Non-destructive sacrifice: unit survives with abilities stripped
     const survivingUnit = next.units.get(unitId);

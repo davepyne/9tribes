@@ -4,23 +4,23 @@ import { helpContent } from '../data/help-content';
 const PIPELINE_STEPS = [
   {
     icon: '⚔️',
-    label: 'Learn by Kill',
-    desc: 'Defeat enemies to learn their abilities',
+    label: 'Learn',
+    desc: 'Defeat enemies or capture cities to learn abilities on a unit',
   },
   {
-    icon: '✨',
-    label: 'Codify',
-    desc: 'Faction domains unlock automatically when they are learned',
+    icon: '🌿',
+    label: 'Awareness',
+    desc: 'Domain enters your research list (exposure/ecology/absorption)',
   },
   {
     icon: '📖',
     label: 'Research',
-    desc: 'Spend XP to upgrade the domain through 3 tiers',
+    desc: 'Ecology XP pays scaled T1 cost (20/40/60...), then T2/T3',
   },
   {
-    icon: '⚡',
-    label: 'Synergies',
-    desc: 'Combine domains for powerful combo effects',
+    icon: '🔥',
+    label: 'Sacrifice',
+    desc: 'Sacrifice unit at city — grants synergy eligibility, zero tech',
   },
 ] as const;
 

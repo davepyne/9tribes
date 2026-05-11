@@ -388,6 +388,10 @@ function applyEcologyResearchPass(
           ...updatedFaction,
           learnedDomains: newLearnedDomains,
           assimilatedDomainCount: newAssimilatedCount,
+          domainAcquisitionMethod: {
+            ...updatedFaction.domainAcquisitionMethod,
+            [domainId]: 'ecology',
+          },
         };
 
         log(trace, `${faction.name} has ASSIMILATED ${domainId} through ecological exposure (cost: ${dynamicCost} XP)`);

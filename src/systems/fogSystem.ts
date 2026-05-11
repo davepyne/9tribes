@@ -67,7 +67,22 @@ export function isUnitEffectivelyStealthed(
   unit: Unit
 ): boolean {
   if (unit.hp <= 0) return false;
-  return unit.isStealthed || isUnitCloakedByRiverStealthAura(state, unit);
+
+  // Check persistent stealth flag or aura cloak
+  if (unit.isStealthed || isUnitCloakedByRiverStealthAura(state, unit)) {
+    return true;
+  }
+
+  // Terrain-based auto-stealth for River People (single source of truth)
+  const faction = state.factions.get(unit.factionId);
+  if (faction?.identityProfile.passiveTrait === 'river_assault') {
+    const terrainId = state.map?.tiles.get(hexToKey(unit.position))?.terrain;
+    if (terrainId && (terrainId === 'river' || terrainId === 'swamp')) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function isRevealedByStealthAura(

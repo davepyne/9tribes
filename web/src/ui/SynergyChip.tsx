@@ -334,6 +334,7 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
   const nativeDomain = activeFaction?.nativeDomain ?? '';
   const factionLearnedDomains = activeFaction?.learnedDomains ?? [];
   const factionColor = activeFaction?.color ?? '#d6a34b';
+  const serverSynergyEligible = activeFaction?.synergyEligibleDomains ?? [];
 
   // Use faction's learnedDomains (ability-domain IDs) as the source of truth.
   // These are the IDs that pair-synergies.json and emergent-rules.json understand.
@@ -343,14 +344,25 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
     return [nativeDomain];
   }, [factionLearnedDomains, nativeDomain]);
 
+  // Synergy eligibility comes from the sacrifice system — completely separate from tech
+  // Only native domain + sacrificed domains activate pair/triple combat synergies
+  const synergyEligibleSet = useMemo(
+    () => new Set(serverSynergyEligible),
+    [serverSynergyEligible],
+  );
+
   const pairEligibleDomains = useMemo(
-    () => capabilities.filter((cap) => cap.level >= 3).map((cap) => cap.domainId),
-    [capabilities],
+    () => capabilities
+      .filter((cap) => cap.level >= 3 && synergyEligibleSet.has(cap.domainId))
+      .map((cap) => cap.domainId),
+    [capabilities, synergyEligibleSet],
   );
 
   const emergentEligibleDomains = useMemo(
-    () => capabilities.filter((cap) => cap.level >= 2).map((cap) => cap.domainId),
-    [capabilities],
+    () => capabilities
+      .filter((cap) => cap.level >= 2 && synergyEligibleSet.has(cap.domainId))
+      .map((cap) => cap.domainId),
+    [capabilities, synergyEligibleSet],
   );
 
   const resolved = useMemo(
