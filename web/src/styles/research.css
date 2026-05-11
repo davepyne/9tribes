@@ -172,6 +172,14 @@
     rgba(38, 29, 22, 0.32);
 }
 
+.research-domain-row--ecology {
+  background: rgba(74, 222, 128, 0.03);
+  border-left: 2px solid #4ade80;
+  border-radius: 0.25rem;
+  padding-left: 0.5rem;
+  margin-left: -0.5rem;
+}
+
 .research-domain-row__label {
   display: flex;
   flex-direction: column;

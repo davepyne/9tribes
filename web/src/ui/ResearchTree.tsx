@@ -55,11 +55,12 @@ export const ResearchTree = React.memo(function ResearchTree({ nodes, selectedNo
           if (!t1 && !t2 && !t3) return null;
 
           const isNative = t1?.isNative ?? false;
+          const hasEcology = [t1, t2, t3].some((n) => n != null && n.isEcologyActive);
 
           return (
             <div
               key={domain.id}
-              className={`research-domain-row${isNative ? ' research-domain-row--native' : ''}`}
+              className={`research-domain-row${isNative ? ' research-domain-row--native' : ''}${hasEcology ? ' research-domain-row--ecology' : ''}`}
             >
               <div className="research-domain-row__label">
                 <span className="research-domain-row__name">{domain.name}</span>
