@@ -90,9 +90,9 @@ export interface BuildMvpScenarioOptions {
 }
 
 const MAP_SIZE_DIMENSIONS: Record<NonNullable<BuildMvpScenarioOptions['mapSize']>, { width: number; height: number }> = {
-  small: { width: 40, height: 30 },
-  medium: { width: 50, height: 38 },
-  large: { width: 60, height: 46 },
+  small: { width: 32, height: 24 },
+  medium: { width: 40, height: 30 },
+  large: { width: 48, height: 37 },
 };
 
 function getClimateBandStartSeparation(
