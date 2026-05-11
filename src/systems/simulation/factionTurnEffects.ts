@@ -822,7 +822,6 @@ export function processFactionPhases(
   current = { ...current, cities: citiesMap };
   log(trace, `${faction.name} supply deficit: ${getSupplyDeficit(economy)}`);
   current = applySupplyDeficitPenalties(current, factionId, registry);
-  current = applyEnvironmentalDamage(current, factionId, registry, trace);
 
   const factionAbilities = registry.getSignatureAbility(factionId);
   if (factionAbilities?.summon) {
@@ -947,6 +946,7 @@ export function processFactionPhases(
     unitsMap.set(unitIdStr as UnitId, updatedUnit);
   }
   current = { ...current, units: unitsMap };
+  current = applyEnvironmentalDamage(current, factionId, registry, trace);
 
   // H-1-2-2: Gain exposure from proximity to enemy units
   const exposureFaction = current.factions.get(factionId);

@@ -19,9 +19,9 @@ const FACTIONS = getMvpFactionConfigs();
 const MENU_STEPS: MenuStep[] = ['title', 'mode', 'setup', 'tribe'];
 
 const MAP_SIZE_LABELS: Record<MapSize, string> = {
-  small: '40 x 30',
-  medium: '50 x 38',
-  large: '60 x 46',
+  small: '32 x 24',
+  medium: '40 x 30',
+  large: '48 x 37',
 };
 
 const DIFFICULTY_COPY: Record<DifficultyLevel, string> = {
