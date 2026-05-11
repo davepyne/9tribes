@@ -652,6 +652,14 @@ export function processFactionPhases(
 
   let current = state;
   current = updateFogState(current, factionId);
+
+  // Derive economy before strategy so the coordinator has current-turn supply data
+  current = advanceCaptureTimers(current, factionId);
+  const economy = deriveResourceIncome(current, factionId, registry);
+  const economyMap = new Map(current.economy);
+  economyMap.set(factionId, economy);
+  current = { ...current, economy: economyMap };
+
   const strategy = computeFactionStrategy(current, factionId, registry, difficulty);
   const factionStrategies = new Map(current.factionStrategies);
   factionStrategies.set(factionId, strategy);
@@ -719,13 +727,6 @@ export function processFactionPhases(
   current = startOrAdvanceCodification(current, factionId, registry, trace, strategy, difficulty);
   current = applyEcologyResearchPass(current, factionId, registry, trace);
   current = unlockHybridRecipes(current, factionId, registry);
-
-  current = advanceCaptureTimers(current, factionId);
-
-  const economy = deriveResourceIncome(current, factionId, registry);
-  const economyMap = new Map(current.economy);
-  economyMap.set(factionId, economy);
-  current = { ...current, economy: economyMap };
 
   const citiesMap = new Map(current.cities);
   const factionCityIds = getFactionCityIds(current, factionId);
