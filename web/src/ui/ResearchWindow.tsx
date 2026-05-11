@@ -46,6 +46,10 @@ export const ResearchWindow = React.memo(function ResearchWindow({ state, onStar
     ? Math.round((research.activeNodeProgress / research.activeNodeXpCost) * 100)
     : null;
 
+  const ecologyNodes = research.nodes.filter((n) => n.isEcologyActive);
+  const totalEcologyBonus = ecologyNodes.reduce((sum, n) => sum + (n.ecologyBonus ?? 0), 0);
+  const ecologyDomains = new Set(ecologyNodes.map((n) => n.domain));
+
   return (
     <div className="research-overlay" onClick={onClose}>
       <div className="research-window" onClick={(e) => e.stopPropagation()}>
@@ -67,6 +71,15 @@ export const ResearchWindow = React.memo(function ResearchWindow({ state, onStar
                 </span>
               )}
             </div>
+            {ecologyDomains.size > 0 && (
+              <div className="research-header-stats">
+                <span className="research-header-stat research-header-stat--ecology">
+                  <span className="research-header-ecology-icon">&#9889;</span>
+                  <strong>{ecologyDomains.size} domain{ecologyDomains.size !== 1 ? 's' : ''}</strong> auto-researching
+                  <span className="research-header-stat--detail">+{totalEcologyBonus.toFixed(1)} total XP/turn</span>
+                </span>
+              </div>
+            )}
           </div>
           <button className="research-window__close" onClick={onClose} aria-label="Close">&times;</button>
         </header>

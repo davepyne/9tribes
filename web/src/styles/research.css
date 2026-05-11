@@ -535,6 +535,24 @@
   background: linear-gradient(90deg, #4ade80, #86efac);
 }
 
+/* ── Ecology header summary ── */
+.research-header-stat--ecology {
+  color: #4ade80;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.research-header-ecology-icon {
+  font-size: 0.9rem;
+}
+
+.research-header-stat--detail {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-left: 0.25rem;
+}
+
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .research-window__body { grid-template-columns: 1fr; }
