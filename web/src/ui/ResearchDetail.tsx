@@ -56,9 +56,11 @@ export const ResearchDetail = React.memo(function ResearchDetail({
   } else if (node.isEcologyActive && node.state !== 'completed') {
     buttonLabel = 'Auto-Researching';
   } else if (node.state === 'locked' || node.isLocked) {
-    buttonLabel = 'Locked';
-    buttonHint = node.isLocked
-      ? 'Learn this domain from enemies or exposure to unlock its research track.'
+    buttonLabel = node.isDomainLocked
+      ? 'Domain not learned'
+      : 'Locked';
+    buttonHint = node.isDomainLocked
+      ? 'Learn this domain from terrain, proximity, or combat to research it.'
       : 'Complete prerequisites first';
   } else if (node.state === 'completed') {
     buttonLabel = 'Completed';
@@ -90,28 +92,32 @@ export const ResearchDetail = React.memo(function ResearchDetail({
           <span>Progress</span>
           <strong>{node.currentProgress} / {displayCost} ({progressPct}%)</strong>
         </div>
-        {turnsLabel ? (
-          <div className="meta-row">
-            <span>Estimated Turns</span>
-            <strong>{turnsLabel}</strong>
-          </div>
-        ) : null}
-        <div className="meta-row">
-          <span>Research Rate</span>
-          <strong>{researchRate} XP/turn</strong>
-        </div>
+        {!node.isEcologyActive && (
+          <>
+            {turnsLabel ? (
+              <div className="meta-row">
+                <span>Estimated Turns</span>
+                <strong>{turnsLabel}</strong>
+              </div>
+            ) : null}
+            <div className="meta-row">
+              <span>Directed XP/turn</span>
+              <strong>{researchRate}</strong>
+            </div>
+          </>
+        )}
       </div>
 
       {node.isEcologyActive && node.ecologyBonus !== null && node.ecologyBonus > 0 ? (
         <div className="research-detail__section research-detail__section--ecology">
-          <p className="panel-kicker">Ecology & War Progress</p>
+          <p className="panel-kicker">Passive Progress</p>
           <div className="meta-row">
-            <span>Auto XP/turn</span>
+            <span>Passive XP/turn</span>
             <strong style={{ color: '#4ade80' }}>+{node.ecologyBonus.toFixed(1)}</strong>
           </div>
           {node.ecologyEstimatedTurns !== null && node.state !== 'completed' ? (
             <div className="meta-row">
-              <span>Ecology Est. Turns</span>
+              <span>Est. Turns (passive)</span>
               <strong>~{node.ecologyEstimatedTurns}</strong>
             </div>
           ) : null}
@@ -131,7 +137,33 @@ export const ResearchDetail = React.memo(function ResearchDetail({
             </div>
           ) : null}
           <div className="research-detail__ecology-hint">
-            Auto-progress advances this domain passively each turn from terrain, proximity, and combat.
+            Earned passively from terrain, proximity, and combat — no directed research needed.
+          </div>
+        </div>
+      ) : node.potentialEcologyBonus > 0 ? (
+        <div className="research-detail__section research-detail__section--potential">
+          <p className="panel-kicker">Potential Passive Progress</p>
+          <div className="meta-row">
+            <span>Passive XP/turn (when learned)</span>
+            <strong style={{ color: '#86efac' }}>+{node.potentialEcologyBonus.toFixed(1)}</strong>
+          </div>
+          {node.potentialEcologySources && node.potentialEcologySources.length > 0 ? (
+            <div className="research-detail__source-list">
+              {node.potentialEcologySources.map((source, i) => (
+                <div key={i} className="research-detail__source-item">
+                  <span className="research-detail__source-icon">
+                    {source.type === 'terrain' ? '\u26fc' : source.type === 'proximity' ? '\ud83d\udccd' : '\ud83d\udca5'}
+                  </span>
+                  <span className="research-detail__source-detail">
+                    <strong>{source.detail}</strong>
+                    <span className="research-detail__source-amount">+{source.amount.toFixed(1)}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <div className="research-detail__ecology-hint">
+            This domain earns passive XP from your terrain and proximity — learn it to start researching.
           </div>
         </div>
       ) : null}

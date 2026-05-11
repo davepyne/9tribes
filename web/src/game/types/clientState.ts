@@ -310,9 +310,17 @@ export type ResearchNodeViewModel = {
   }>;
   ecologyEstimatedTurns: number | null;
   isEcologyActive: boolean;
+  // Potential passive bonus for unlocked/locked domains (shows spread)
+  potentialEcologyBonus: number;
+  potentialEcologySources: Array<{
+    type: 'terrain' | 'proximity' | 'combat';
+    amount: number;
+    detail: string;
+  }>;
   domain: string;
   isNative: boolean;
   isLocked: boolean;
+  isDomainLocked: boolean;
 };
 
 export type CapabilityPipViewModel = {

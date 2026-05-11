@@ -97,7 +97,7 @@ function computeEcologyBonusesForDomain(
   domainId: string,
 ): { bonus: number; sources: EcologyBonusSource[] } {
   const faction = getFaction(state, factionId);
-  if (!faction || !state.map || !faction.learnedDomains?.includes(domainId)) {
+  if (!faction || !state.map) {
     return { bonus: 0, sources: [] };
   }
 
@@ -212,30 +212,44 @@ export function buildResearchInspectorViewModel(
       );
 
       let nodeState: ResearchNodeViewState;
-      if (!isUnlocked) nodeState = 'locked';
-      else if (isCompleted) nodeState = 'completed';
-      else if (isActive) nodeState = 'active';
-      else if (!prereqsMet) nodeState = 'locked';
-      else nodeState = 'available';
+      if (!isUnlocked) {
+        nodeState = 'locked';
+      } else if (isCompleted) {
+        nodeState = 'completed';
+      } else if (isActive) {
+        nodeState = 'active';
+      } else if (!prereqsMet) {
+        nodeState = 'locked';
+      } else {
+        nodeState = 'available';
+      }
 
       const estimatedTurns =
         nodeState === 'active' && research.researchPerTurn > 0
           ? Math.ceil(Math.max(0, nodeDef.xpCost - progress) / research.researchPerTurn)
           : null;
 
-      // Ecology/war auto-progress (for unlocked domains that are not the active node)
+      // Ecology/war auto-progress — compute potential bonus for ALL domains
+      // Only actually active if the domain is unlocked
       let ecologyBonus = 0;
       let ecologySources: { type: 'terrain' | 'proximity' | 'combat'; amount: number; detail: string }[] = [];
       let ecologyEstimatedTurns: number | null = null;
       let isEcologyActive = false;
+      let potentialEcologyBonus = 0;
+      let potentialEcologySources: { type: 'terrain' | 'proximity' | 'combat'; amount: number; detail: string }[] = [];
 
-      if (isUnlocked && !isCompleted) {
-        const { bonus, sources } = computeEcologyBonusesForDomain(state, factionId, domainId);
-        if (bonus > 0) {
+      const { bonus, sources } = computeEcologyBonusesForDomain(state, factionId, domainId);
+      if (bonus > 0) {
+        if (isUnlocked && !isCompleted) {
+          // Domain is unlocked and active — this is real passive progress
           ecologyBonus = bonus;
           ecologySources = sources;
           isEcologyActive = true;
           ecologyEstimatedTurns = Math.ceil(Math.max(0, nodeDef.xpCost - progress) / bonus);
+        } else {
+          // Domain is locked — show potential bonus so player sees the spread
+          potentialEcologyBonus = bonus;
+          potentialEcologySources = sources;
         }
       }
 
@@ -258,9 +272,12 @@ export function buildResearchInspectorViewModel(
         ecologySources,
         ecologyEstimatedTurns,
         isEcologyActive,
+        potentialEcologyBonus,
+        potentialEcologySources,
         domain: domainId,
         isNative,
         isLocked: !isUnlocked,
+        isDomainLocked: !isUnlocked,
       });
     }
   }

@@ -28,8 +28,8 @@ export const ResearchWindow = React.memo(function ResearchWindow({ state, onStar
 
     const fallback =
       research.nodes.find((n) => n.state === 'active')
-      ?? research.nodes.find((n) => n.state === 'available' && !n.isLocked)
-      ?? research.nodes.find((n) => !n.isLocked)
+      ?? research.nodes.find((n) => n.state === 'available')
+      ?? research.nodes.find((n) => n.state === 'completed')
       ?? research.nodes[0]
       ?? null;
 
@@ -46,7 +46,7 @@ export const ResearchWindow = React.memo(function ResearchWindow({ state, onStar
     ? Math.round((research.activeNodeProgress / research.activeNodeXpCost) * 100)
     : null;
 
-  const ecologyNodes = research.nodes.filter((n) => n.isEcologyActive);
+   const ecologyNodes = research.nodes.filter((n) => n.isEcologyActive);
   const totalEcologyBonus = ecologyNodes.reduce((sum, n) => sum + (n.ecologyBonus ?? 0), 0);
   const ecologyDomains = new Set(ecologyNodes.map((n) => n.domain));
 
@@ -61,10 +61,10 @@ export const ResearchWindow = React.memo(function ResearchWindow({ state, onStar
             </div>
             <div className="research-header-stats">
               <span className="research-header-stat">
-                <strong>{research.rateBreakdown.total}</strong> XP/turn directed
-                {research.rateBreakdown.ecologyTotal > 0 ? (
+                <strong>{research.rateBreakdown.total}</strong> directed XP/turn
+                {totalEcologyBonus > 0 ? (
                   <span className="research-header-stat--ecology-inline">
-                    +{research.rateBreakdown.ecologyTotal.toFixed(1)} ecology
+                    +{totalEcologyBonus.toFixed(1)} passive from {ecologyDomains.size} domain{ecologyDomains.size !== 1 ? 's' : ''}
                   </span>
                 ) : null}
               </span>
@@ -76,15 +76,6 @@ export const ResearchWindow = React.memo(function ResearchWindow({ state, onStar
                 </span>
               )}
             </div>
-            {ecologyDomains.size > 0 && (
-              <div className="research-header-stats">
-                <span className="research-header-stat research-header-stat--ecology">
-                  <span className="research-header-ecology-icon">&#9889;</span>
-                  <strong>{ecologyDomains.size} domain{ecologyDomains.size !== 1 ? 's' : ''}</strong> ecology-active
-                  <span className="research-header-stat--detail">+{totalEcologyBonus.toFixed(1)} total XP/turn</span>
-                </span>
-              </div>
-            )}
           </div>
           <button className="research-window__close" onClick={onClose} aria-label="Close">&times;</button>
         </header>

@@ -19,6 +19,8 @@ export const ResearchNode = React.memo(function ResearchNode({ node, selected, o
   const progressPct = node.xpCost > 0 ? Math.round((node.currentProgress / node.xpCost) * 100) : 0;
   const summary = node.qualitativeEffect ?? '';
 
+  const isPrereqLocked = node.state === 'locked' && !node.isDomainLocked;
+
   const classes = [
     'research-node',
     `research-node--${node.state}`,
@@ -32,9 +34,9 @@ export const ResearchNode = React.memo(function ResearchNode({ node, selected, o
       className={classes}
       onClick={onSelect}
       role="button"
-      tabIndex={node.isLocked ? -1 : 0}
+      tabIndex={isPrereqLocked ? -1 : 0}
       onKeyDown={(e) => {
-        if (!node.isLocked && (e.key === 'Enter' || e.key === ' ')) {
+        if (!isPrereqLocked && (e.key === 'Enter' || e.key === ' ')) {
           onSelect();
         }
       }}
@@ -58,6 +60,12 @@ export const ResearchNode = React.memo(function ResearchNode({ node, selected, o
           <span className="research-node__ecology-text">+{node.ecologyBonus?.toFixed(1) ?? 0}/turn</span>
         </div>
       )}
+      {node.potentialEcologyBonus > 0 && node.state !== 'completed' && (
+        <div className="research-node__potential-badge">
+          <span className="research-node__potential-icon" aria-label="Potential passive progress">&#9889;</span>
+          <span className="research-node__potential-text">+{node.potentialEcologyBonus.toFixed(1)}/turn</span>
+        </div>
+      )}
       {node.ecologyEstimatedTurns !== null && node.state !== 'completed' && node.state !== 'active' && (
         <div className="research-node__ecology-turns">
           ~{node.ecologyEstimatedTurns} turns
@@ -65,6 +73,9 @@ export const ResearchNode = React.memo(function ResearchNode({ node, selected, o
       )}
       {node.state === 'completed' && (
         <div className="research-node__completed-label">Complete</div>
+      )}
+      {node.isDomainLocked && (
+        <div className="research-node__not-learned-label">Domain not learned</div>
       )}
       {summary && <div className="research-node__effect">{summary}</div>}
     </div>
