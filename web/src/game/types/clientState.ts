@@ -301,6 +301,15 @@ export type ResearchNodeViewModel = {
   }>;
   qualitativeEffect: string | null;
   estimatedTurns: number | null;
+  // Ecology/war auto-research info
+  ecologyBonus: number | null;
+  ecologySources: Array<{
+    type: 'terrain' | 'proximity' | 'combat';
+    amount: number;
+    detail: string;
+  }>;
+  ecologyEstimatedTurns: number | null;
+  isEcologyActive: boolean;
   domain: string;
   isNative: boolean;
   isLocked: boolean;
