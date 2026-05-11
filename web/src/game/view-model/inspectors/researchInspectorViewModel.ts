@@ -16,7 +16,12 @@ import type {
 import HYBRID_RECIPES from '../../../../../src/content/base/hybrid-recipes.json';
 import SIGNATURE_ABILITIES from '../../../../../src/content/base/signatureAbilities.json';
 import CIVILIZATIONS from '../../../../../src/content/base/civilizations.json';
-import { getFaction, getResearch, getResearchProgress, isResearchNodeCompleted } from '../../stateAccess.js';
+import { getFaction, getResearch, getResearchProgress, isResearchNodeCompleted, getUnit, getCity } from '../../stateAccess.js';
+import {
+  DOMAIN_TERRAIN_AFFINITY,
+  MAX_RESEARCH_TERRAIN_BONUS,
+} from '../../../../../src/systems/simulation/factionTurnEffects.js';
+import { getHexesInRange, hexToKey, hexDistance } from '../../../../../src/core/grid.js';
 
 type UnlockEntry = { type: 'component' | 'chassis' | 'improvement' | 'recipe'; id: string; name: string };
 
@@ -78,6 +83,105 @@ function getNativeFactionForDomain(domainId: string): string {
   return '';
 }
 
+const TERRAIN_RESEARCH_BONUS: Record<string, number> = {
+  plains: 0.25, savannah: 0.25, forest: 0.5, hill: 0.5,
+  coast: 0.5, jungle: 0.5, desert: 0.5, tundra: 0.5,
+  river: 1.0, swamp: 1.0, mountain: 1.0, oasis: 1.0, ocean: 1.0,
+};
+const RESEARCH_PROXIMITY_BONUS_PER_CONTACT = 0.5;
+
+interface EcologyBonusSource {
+  type: 'terrain' | 'proximity' | 'combat';
+  amount: number;
+  detail: string;
+}
+
+function computeEcologyBonusesForDomain(
+  state: GameState,
+  factionId: string,
+  domainId: string,
+): { bonus: number; sources: EcologyBonusSource[] } {
+  const faction = getFaction(state, factionId);
+  if (!faction || !state.map || !faction.learnedDomains?.includes(domainId)) {
+    return { bonus: 0, sources: [] };
+  }
+
+  const sources: EcologyBonusSource[] = [];
+  const affinityTerrains = DOMAIN_TERRAIN_AFFINITY?.[domainId];
+
+  // Terrain bonus
+  if (affinityTerrains) {
+    const affinitySet = new Set(affinityTerrains);
+    let terrainBonus = 0;
+    let unitCount = 0;
+
+    for (const uid of faction.unitIds) {
+      const u = getUnit(state, uid);
+      if (!u || u.hp <= 0) continue;
+      const tile = state.map.tiles.get(hexToKey(u.position));
+      if (tile && affinitySet.has(tile.terrain)) {
+        terrainBonus += TERRAIN_RESEARCH_BONUS[tile.terrain] ?? 0.5;
+        unitCount++;
+      }
+    }
+
+    for (const cid of faction.cityIds) {
+      const city = getCity(state, cid);
+      if (!city) continue;
+      const radius = city.territoryRadius ?? 2;
+      for (const hex of getHexesInRange(city.position, radius)) {
+        const tile = state.map.tiles.get(hexToKey(hex));
+        if (tile && affinitySet.has(tile.terrain)) {
+          terrainBonus += TERRAIN_RESEARCH_BONUS[tile.terrain] ?? 0.5;
+        }
+      }
+    }
+
+    terrainBonus = Math.min(terrainBonus, MAX_RESEARCH_TERRAIN_BONUS);
+    if (terrainBonus > 0) {
+      sources.push({
+        type: 'terrain',
+        amount: terrainBonus,
+        detail: `${unitCount} units + city territory on ${affinityTerrains.slice(0, 2).join('/')} terrain`,
+      });
+    }
+  }
+
+  // Proximity bonus
+  let proximityBonus = 0;
+  let contactCount = 0;
+  for (const uid of faction.unitIds) {
+    const fUnit = getUnit(state, uid);
+    if (!fUnit || fUnit.hp <= 0) continue;
+    for (const [eid, enemyUnit] of state.units) {
+      if (enemyUnit.factionId === factionId || enemyUnit.hp <= 0) continue;
+      if (hexDistance(fUnit.position, enemyUnit.position) <= 2) {
+        const enemyFaction = getFaction(state, enemyUnit.factionId);
+        if (enemyFaction && enemyFaction.nativeDomain === domainId) {
+          proximityBonus += RESEARCH_PROXIMITY_BONUS_PER_CONTACT;
+          contactCount++;
+        }
+      }
+    }
+  }
+
+  if (proximityBonus > 0) {
+    proximityBonus = Math.min(proximityBonus, MAX_RESEARCH_TERRAIN_BONUS);
+    sources.push({
+      type: 'proximity',
+      amount: proximityBonus,
+      detail: `${contactCount} enemy contacts within range`,
+    });
+  }
+
+  const totalBonus = Math.min(
+    sources.reduce((sum, s) => sum + s.amount, 0),
+    MAX_RESEARCH_TERRAIN_BONUS,
+  );
+
+  return { bonus: totalBonus, sources };
+}
+
 export function buildResearchInspectorViewModel(
   state: GameState,
   registry: RulesRegistry,
@@ -124,6 +228,22 @@ export function buildResearchInspectorViewModel(
           ? Math.ceil(Math.max(0, nodeDef.xpCost - progress) / research.researchPerTurn)
           : null;
 
+      // Ecology/war auto-progress (for unlocked domains that are not the active node)
+      let ecologyBonus = 0;
+      let ecologySources: { type: 'terrain' | 'proximity' | 'combat'; amount: number; detail: string }[] = [];
+      let ecologyEstimatedTurns: number | null = null;
+      let isEcologyActive = false;
+
+      if (isUnlocked && !isCompleted) {
+        const { bonus, sources } = computeEcologyBonusesForDomain(state, factionId, domainId);
+        if (bonus > 0) {
+          ecologyBonus = bonus;
+          ecologySources = sources;
+          isEcologyActive = true;
+          ecologyEstimatedTurns = Math.ceil(Math.max(0, nodeDef.xpCost - progress) / bonus);
+        }
+      }
+
       nodes.push({
         nodeId: nodeDef.id,
         name: nodeDef.name,
@@ -139,6 +259,10 @@ export function buildResearchInspectorViewModel(
           ? (nodeDef.qualitativeEffect?.nativeDescription ?? nodeDef.qualitativeEffect?.description ?? null)
           : (nodeDef.qualitativeEffect?.description ?? null),
         estimatedTurns,
+        ecologyBonus,
+        ecologySources,
+        ecologyEstimatedTurns,
+        isEcologyActive,
         domain: domainId,
         isNative,
         isLocked: !isUnlocked,
