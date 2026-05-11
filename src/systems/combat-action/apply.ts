@@ -72,6 +72,13 @@ function applyCombatResearchBonus(
     research, nextNode.nodeId, nodeDef.xpCost, COMBAT_RESEARCH_BONUS,
   );
 
+  // Accumulate for UI display (view model reads this to show combat source)
+  const prevCombat = updatedResearch.combatResearchBonusThisTurn ?? {};
+  updatedResearch.combatResearchBonusThisTurn = {
+    ...prevCombat,
+    [domainId]: (prevCombat[domainId] ?? 0) + COMBAT_RESEARCH_BONUS,
+  };
+
   const researchMap = new Map(state.research);
   researchMap.set(learnerFactionId, updatedResearch);
   return { ...state, research: researchMap };

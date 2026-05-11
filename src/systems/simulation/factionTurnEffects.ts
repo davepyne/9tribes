@@ -651,6 +651,16 @@ export function processFactionPhases(
   }
 
   let current = state;
+
+  // Reset per-turn combat research bonus accumulator
+  const research = current.research.get(factionId);
+  if (research?.combatResearchBonusThisTurn) {
+    const updatedResearch = { ...research, combatResearchBonusThisTurn: undefined };
+    const researchMap = new Map(current.research);
+    researchMap.set(factionId, updatedResearch);
+    current = { ...current, research: researchMap };
+  }
+
   current = updateFogState(current, factionId);
 
   // Derive economy before strategy so the coordinator has current-turn supply data

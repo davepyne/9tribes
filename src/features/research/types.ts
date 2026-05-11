@@ -11,4 +11,6 @@ export interface ResearchState {
   researchPerTurn: number;
   recentCodifiedDomainIds?: string[];
   recentCodifiedRound?: number;
+  /** Accumulated combat research bonus per domain this turn (reset each faction turn) */
+  combatResearchBonusThisTurn?: Record<string, number>;
 }

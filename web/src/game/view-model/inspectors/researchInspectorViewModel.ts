@@ -169,6 +169,17 @@ function computeEcologyBonusesForDomain(
     });
   }
 
+  // Combat bonus — read per-turn accumulator from research state
+  const rs = getResearch(state, factionId);
+  const combatThisTurn = rs?.combatResearchBonusThisTurn?.[domainId] ?? 0;
+  if (combatThisTurn > 0) {
+    sources.push({
+      type: 'combat',
+      amount: combatThisTurn,
+      detail: `${combatThisTurn.toFixed(0)} combat action${combatThisTurn > 1 ? 's' : ''} this turn`,
+    });
+  }
+
   const totalBonus = Math.min(
     sources.reduce((sum, s) => sum + s.amount, 0),
     MAX_RESEARCH_TERRAIN_BONUS,
