@@ -7,6 +7,7 @@ import type { RulesRegistry, ResearchNodeDef } from '../../../../../src/data/reg
 import {
   getDomainTier,
 } from '../../../../../src/systems/researchSystem.js';
+import { getForeignT1Cost } from '../../../../../src/systems/knowledgeSystem.js';
 import { getDomainProgression } from '../../../../../src/systems/domainProgression.js';
 import type {
   ResearchInspectorViewModel,
@@ -202,6 +203,7 @@ export function buildResearchInspectorViewModel(
 
   const nativeDomain = faction.nativeDomain ?? '';
   const learnedDomains = faction.learnedDomains ?? [nativeDomain];
+  const assimilatedCount = faction.assimilatedDomainCount ?? 0;
   const allDomains = registry.getAllResearchDomains();
   const progression = getDomainProgression(faction, research);
 
@@ -222,11 +224,17 @@ export function buildResearchInspectorViewModel(
         isResearchNodeCompleted(research, prereqId),
       );
 
+      const isForeignT1 = !isUnlocked && (nodeDef.tier ?? 1) === 1;
+      const foreignT1Cost = isForeignT1 ? getForeignT1Cost(assimilatedCount) : 0;
+
       let nodeState: ResearchNodeViewState;
-      if (!isUnlocked) {
-        nodeState = 'locked';
-      } else if (isCompleted) {
+      if (isCompleted) {
         nodeState = 'completed';
+      } else if (isForeignT1) {
+        // Foreign T1: assimilating via ecology — show as active if progress exists, available otherwise
+        nodeState = progress > 0 ? 'active' : 'available';
+      } else if (!isUnlocked) {
+        nodeState = 'locked';
       } else if (isActive) {
         nodeState = 'active';
       } else if (!prereqsMet) {
@@ -235,13 +243,16 @@ export function buildResearchInspectorViewModel(
         nodeState = 'available';
       }
 
+      const effectiveCost = isForeignT1 ? foreignT1Cost : nodeDef.xpCost;
+
       const estimatedTurns =
-        nodeState === 'active' && research.researchPerTurn > 0
-          ? Math.ceil(Math.max(0, nodeDef.xpCost - progress) / research.researchPerTurn)
+        nodeState === 'active' && research.researchPerTurn > 0 && !isForeignT1
+          ? Math.ceil(Math.max(0, effectiveCost - progress) / research.researchPerTurn)
           : null;
 
-      // Ecology/war auto-progress — compute potential bonus for ALL domains
-      // Only actually active if the domain is unlocked
+      // Ecology/war auto-progress — compute for ALL domains
+      // For foreign T1: ecology XP now counts toward assimilation (real progress)
+      // For foreign T2+/unlearned: still potential-only
       let ecologyBonus = 0;
       let ecologySources: { type: 'terrain' | 'proximity' | 'combat'; amount: number; detail: string }[] = [];
       let ecologyEstimatedTurns: number | null = null;
@@ -251,14 +262,20 @@ export function buildResearchInspectorViewModel(
 
       const { bonus, sources } = computeEcologyBonusesForDomain(state, factionId, domainId);
       if (bonus > 0) {
-        if (isUnlocked && !isCompleted) {
-          // Domain is unlocked and active — this is real passive progress
+        if (isForeignT1) {
+          // Foreign T1: ecology IS real assimilation progress
           ecologyBonus = bonus;
           ecologySources = sources;
           isEcologyActive = true;
-          ecologyEstimatedTurns = Math.ceil(Math.max(0, nodeDef.xpCost - progress) / bonus);
+          ecologyEstimatedTurns = effectiveCost > 0 ? Math.ceil(Math.max(0, effectiveCost - progress) / bonus) : null;
+        } else if (isUnlocked && !isCompleted) {
+          // Learned domain with incomplete node — real passive progress
+          ecologyBonus = bonus;
+          ecologySources = sources;
+          isEcologyActive = true;
+          ecologyEstimatedTurns = Math.ceil(Math.max(0, effectiveCost - progress) / bonus);
         } else {
-          // Domain is locked — show potential bonus so player sees the spread
+          // Locked non-T1 domain — show potential only
           potentialEcologyBonus = bonus;
           potentialEcologySources = sources;
         }
@@ -268,7 +285,7 @@ export function buildResearchInspectorViewModel(
         nodeId: nodeDef.id,
         name: nodeDef.name,
         tier: nodeDef.tier ?? 1,
-        xpCost: nodeDef.xpCost,
+        xpCost: effectiveCost,
         discountedXpCost: null,
         currentProgress: progress,
         state: nodeState,
@@ -287,8 +304,8 @@ export function buildResearchInspectorViewModel(
         potentialEcologySources,
         domain: domainId,
         isNative,
-        isLocked: !isUnlocked,
-        isDomainLocked: !isUnlocked,
+        isLocked: isForeignT1 ? false : !isUnlocked,
+        isDomainLocked: isForeignT1 ? false : !isUnlocked,
       });
     }
   }

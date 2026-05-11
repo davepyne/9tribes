@@ -99,6 +99,7 @@ export interface Faction {
   // Knowledge system tracking (Phase 5)
   exposureProgress: Record<string, number>;  // domainId -> current exposure points
   prototypeMastery: Record<string, number>;  // domainId -> count of prototypes built
+  assimilatedDomainCount: number;           // domains learned via ecology assimilation (not sacrifice)
   // Home city for sacrifice mechanic - the faction's starting city
   homeCityId?: CityId;
 }

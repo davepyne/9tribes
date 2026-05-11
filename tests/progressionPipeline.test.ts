@@ -1,6 +1,6 @@
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
-import { getNextExposureThreshold, gainExposure, MAX_LEARNED_DOMAINS } from '../src/systems/knowledgeSystem';
+import { getNextExposureThreshold, gainExposure, getForeignT1Cost } from '../src/systems/knowledgeSystem';
 import { canSacrifice, codifyDomainsForFaction, performSacrifice } from '../src/systems/sacrificeSystem';
 import { createResearchState, getResearchRate } from '../src/systems/researchSystem';
 import { getVictoryStatus } from '../src/systems/simulation/victory';
@@ -176,17 +176,20 @@ describe('progression pipeline constants', () => {
     });
   });
 
-  describe('max learned domains cap', () => {
-    it('MAX_LEARNED_DOMAINS is 3', () => {
-      expect(MAX_LEARNED_DOMAINS).toBe(3);
+  describe('domain assimilation scaling', () => {
+    it('getForeignT1Cost scales linearly: 20, 40, 60...', () => {
+      expect(getForeignT1Cost(0)).toBe(20);
+      expect(getForeignT1Cost(1)).toBe(40);
+      expect(getForeignT1Cost(2)).toBe(60);
+      expect(getForeignT1Cost(5)).toBe(120);
     });
 
-    it('gainExposure silently rejects a 4th domain when at cap', () => {
+    it('no hard cap on learned domains — gainExposure accepts 4th+ domains', () => {
       const state = buildMvpScenario(42, { registry });
       const faction = Array.from(state.factions.values())[0]!;
       const enemies = Array.from(state.factions.values()).filter(f => f.id !== faction.id);
 
-      // Manually give the faction 3 domains (native + 2 foreign) — at the cap
+      // Give the faction 3 domains (native + 2 foreign)
       const foreignDomainA = enemies[0]!.nativeDomain;
       const foreignDomainB = enemies[1]!.nativeDomain;
       const foreignDomainC = enemies[2]!.nativeDomain;
@@ -195,20 +198,37 @@ describe('progression pipeline constants', () => {
       factions.set(faction.id, {
         ...faction,
         learnedDomains: [faction.nativeDomain, foreignDomainA, foreignDomainB],
+        assimilatedDomainCount: 2,
       });
       state.factions = factions;
 
-      expect(faction.learnedDomains.length).toBeLessThanOrEqual(MAX_LEARNED_DOMAINS);
-      expect(state.factions.get(faction.id)!.learnedDomains.length).toBe(MAX_LEARNED_DOMAINS);
-
-      // Push a huge amount of exposure for a 4th domain — should be silently ignored
+      // Push exposure for a 4th domain — should now succeed (no cap)
       const trace = { lines: [] as string[] };
       const next = gainExposure(state, faction.id, foreignDomainC, 9999, trace, registry);
 
-      expect(next.factions.get(faction.id)!.learnedDomains).toEqual(
-        state.factions.get(faction.id)!.learnedDomains,
-      );
-      expect(next.factions.get(faction.id)!.learnedDomains.length).toBe(MAX_LEARNED_DOMAINS);
+      expect(next.factions.get(faction.id)!.learnedDomains).toContain(foreignDomainC);
+      expect(next.factions.get(faction.id)!.learnedDomains.length).toBe(4);
+    });
+
+    it('exposure-granted domains do not increment assimilatedDomainCount', () => {
+      const state = buildMvpScenario(42, { registry });
+      const faction = Array.from(state.factions.values())[0]!;
+      const enemy = Array.from(state.factions.values()).find(f => f.id !== faction.id)!;
+
+      const factions = new Map(state.factions);
+      factions.set(faction.id, {
+        ...faction,
+        learnedDomains: [faction.nativeDomain],
+        assimilatedDomainCount: 0,
+      });
+      state.factions = factions;
+
+      // Push past threshold for enemy's native domain
+      const trace = { lines: [] as string[] };
+      const next = gainExposure(state, faction.id, enemy.nativeDomain, 9999, trace, registry);
+
+      // Domain is learned but assimilated count stays at 0 (exposure is free discovery)
+      expect(next.factions.get(faction.id)!.assimilatedDomainCount).toBe(0);
     });
   });
 });

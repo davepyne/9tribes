@@ -307,6 +307,20 @@
   border-color: var(--accent);
 }
 
+.ci-action-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ci-action-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-dim, #888);
+}
+
 /* ── Learned Knowledge (ContextInspector) ── */
 .ci-knowledge {
   margin-top: 12px;

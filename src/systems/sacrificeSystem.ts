@@ -156,6 +156,8 @@ export function codifyDomainsForFaction(
   factions.set(factionId, {
     ...updatedFaction,
     learnedDomains: newLearnedDomains,
+    // Note: sacrifice-granted domains do NOT increment assimilatedDomainCount
+    // Synergy/codification is the "magic shortcut" that bypasses ecology scaling cost
     activeTripleStack: tripleStack ?? undefined,
   });
   current = { ...current, factions };

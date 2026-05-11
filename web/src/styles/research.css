@@ -335,6 +335,26 @@
 .research-node--domain-locked:hover { transform: translateY(-1px); border-color: rgba(214, 163, 75, 0.2); }
 .research-node--domain-locked .research-node__progress-fill { background: rgba(214, 163, 75, 0.08); }
 
+/* Foreign T1 actively assimilating via ecology — warm, alive feel */
+.research-node--assimilating {
+  border-color: rgba(100, 180, 120, 0.2);
+  cursor: pointer;
+}
+.research-node--assimilating:hover {
+  transform: translateY(-1px);
+  border-color: rgba(100, 180, 120, 0.35);
+}
+.research-node--assimilating .research-node__progress-fill {
+  background: linear-gradient(90deg, #3d8b4a, #5fb96a);
+}
+.research-node__assimilating-label {
+  font-size: 0.68rem;
+  color: #6bc78a;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .research-node--native { border-color: rgba(214, 163, 75, 0.22); }
 
 .research-node__completed-label {
@@ -415,6 +435,9 @@
 }
 
 .research-detail__bonus-item { color: var(--accent); }
+
+.research-detail__req-item--progress { background: rgba(60, 140, 80, 0.08); }
+.research-detail__req-item--progress strong { color: #6bc78a; }
 
 .research-detail__original-cost {
   margin-right: 5px;

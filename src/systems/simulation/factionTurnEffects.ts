@@ -56,7 +56,7 @@ import { evaluateAndSpawnVillage } from '../villageSystem.js';
 import { isCityEncircled, isEncirclementBroken } from '../territorySystem.js';
 import { applyEcologyPressure, applyForceCompositionPressure } from '../capabilitySystem.js';
 import { getDomainProgression } from '../domainProgression.js';
-import { gainExposure, calculatePrototypeCost, getDomainIdsByTags } from '../knowledgeSystem.js';
+import { gainExposure, calculatePrototypeCost, getDomainIdsByTags, getForeignT1Cost } from '../knowledgeSystem.js';
 import {
   computeFactionStrategy,
 } from '../strategicAi.js';
@@ -129,13 +129,13 @@ export const MAX_RESEARCH_TERRAIN_BONUS = 5;
 function computeTerrainResearchBonuses(
   state: GameState,
   factionId: FactionId,
-  learnedDomains: readonly string[],
+  domainIds: readonly string[],
 ): Map<string, number> {
   const result = new Map<string, number>();
   const faction = state.factions.get(factionId);
   if (!faction || !state.map) return result;
 
-  for (const domainId of learnedDomains) {
+  for (const domainId of domainIds) {
     const affinityTerrains = DOMAIN_TERRAIN_AFFINITY[domainId];
     if (!affinityTerrains) continue;
 
@@ -173,13 +173,10 @@ export const RESEARCH_PROXIMITY_BONUS_PER_CONTACT = 0.5;
 function computeProximityResearchBonuses(
   state: GameState,
   factionId: FactionId,
-  learnedDomains: readonly string[],
 ): Map<string, number> {
   const result = new Map<string, number>();
   const faction = state.factions.get(factionId);
   if (!faction) return result;
-
-  const learnedSet = new Set(learnedDomains);
 
   for (const uid of faction.unitIds) {
     const fUnit = state.units.get(uid as UnitId);
@@ -188,7 +185,7 @@ function computeProximityResearchBonuses(
       if (enemyUnit.factionId === factionId || enemyUnit.hp <= 0) continue;
       if (hexDistance(fUnit.position, enemyUnit.position) <= 2) {
         const enemyFaction = state.factions.get(enemyUnit.factionId);
-        if (enemyFaction && learnedSet.has(enemyFaction.nativeDomain)) {
+        if (enemyFaction) {
           result.set(
             enemyFaction.nativeDomain,
             (result.get(enemyFaction.nativeDomain) ?? 0) + RESEARCH_PROXIMITY_BONUS_PER_CONTACT,
@@ -299,10 +296,12 @@ function applyEcologyResearchPass(
   if (!faction) return state;
 
   const learnedDomains = faction.learnedDomains;
-  if (learnedDomains.length === 0) return state;
+  const assimilatedCount = faction.assimilatedDomainCount ?? 0;
 
-  const terrainBonuses = computeTerrainResearchBonuses(state, factionId, learnedDomains);
-  const proximityBonuses = computeProximityResearchBonuses(state, factionId, learnedDomains);
+  // Compute bonuses for ALL domains (learned + foreign) — cultural assimilation
+  const allDomainIds = registry.getAllResearchDomains().map(d => d.id);
+  const terrainBonuses = computeTerrainResearchBonuses(state, factionId, allDomainIds);
+  const proximityBonuses = computeProximityResearchBonuses(state, factionId);
 
   const allDomains = new Set([...terrainBonuses.keys(), ...proximityBonuses.keys()]);
   if (allDomains.size === 0) return state;
@@ -311,15 +310,20 @@ function applyEcologyResearchPass(
   if (!research) return state;
   let currentResearch = research;
   let changed = false;
+  let updatedFaction = faction;
 
-  // Sort ecology domains by priority: native > learned synergies > furthest progressed
+  // Sort ecology domains by priority: native > learned > foreign with progress
   const nativeDomain = faction.nativeDomain ?? '';
+  const learnedSet = new Set(learnedDomains);
   const sortedDomains = [...allDomains].sort((a, b) => {
-    // 1) Native domain always first
     if (a === nativeDomain && b !== nativeDomain) return -1;
     if (b === nativeDomain && a !== nativeDomain) return 1;
-
-    // 2) Among remaining, prefer domains with more existing progress on their next node
+    // Learned domains before foreign
+    const aLearned = learnedSet.has(a);
+    const bLearned = learnedSet.has(b);
+    if (aLearned && !bLearned) return -1;
+    if (!aLearned && bLearned) return 1;
+    // Then by most progress
     const aNext = getNextResearchNodeForDomain(a, currentResearch.completedNodes);
     const bNext = getNextResearchNodeForDomain(b, currentResearch.completedNodes);
     const aProgress = aNext ? (currentResearch.progressByNodeId[aNext.nodeId] ?? 0) : 0;
@@ -328,36 +332,78 @@ function applyEcologyResearchPass(
   });
 
   for (const domainId of sortedDomains) {
+    const isLearned = learnedSet.has(domainId);
     const terrain = terrainBonuses.get(domainId) ?? 0;
     const proximity = proximityBonuses.get(domainId) ?? 0;
     const totalBonus = Math.min(terrain + proximity, MAX_RESEARCH_TERRAIN_BONUS);
     if (totalBonus <= 0) continue;
 
-    const nextNode = getNextResearchNodeForDomain(domainId, currentResearch.completedNodes);
-    if (!nextNode) continue;
+    if (isLearned) {
+      // Learned domain: apply to next incomplete node (T2 or T3) as before
+      const nextNode = getNextResearchNodeForDomain(domainId, currentResearch.completedNodes);
+      if (!nextNode) continue;
 
-    const domain = registry.getAllResearchDomains().find(d => d.id === domainId);
-    const nodeDef = domain?.nodes[nextNode.nodeId];
-    if (!nodeDef) continue;
+      const domain = registry.getAllResearchDomains().find(d => d.id === domainId);
+      const nodeDef = domain?.nodes[nextNode.nodeId];
+      if (!nodeDef) continue;
 
-    const { state: updatedResearch, completed } = addResearchProgressToNode(
-      currentResearch, nextNode.nodeId, nodeDef.xpCost, totalBonus,
-    );
-    currentResearch = updatedResearch;
-    changed = true;
+      const { state: updatedResearch, completed } = addResearchProgressToNode(
+        currentResearch, nextNode.nodeId, nodeDef.xpCost, totalBonus,
+      );
+      currentResearch = updatedResearch;
+      changed = true;
 
-    if (completed) {
-      log(trace, `${faction.name} ecology completed ${nextNode.nodeId} (${domainId} T${nextNode.tier})`);
-      recordResearch(trace, {
-        round: state.round,
-        factionId,
-        phase: 'completed',
-        nodeId: nextNode.nodeId,
-        nodeName: nodeDef.name,
-        domainId,
-      });
+      if (completed) {
+        log(trace, `${faction.name} ecology completed ${nextNode.nodeId} (${domainId} T${nextNode.tier})`);
+        recordResearch(trace, {
+          round: state.round,
+          factionId,
+          phase: 'completed',
+          nodeId: nextNode.nodeId,
+          nodeName: nodeDef.name,
+          domainId,
+        });
+      } else {
+        log(trace, `${faction.name} ecology: +${totalBonus} ${domainId} progress (${currentResearch.progressByNodeId[nextNode.nodeId] ?? 0}/${nodeDef.xpCost})`);
+      }
     } else {
-      log(trace, `${faction.name} ecology: +${totalBonus} ${domainId} progress (${currentResearch.progressByNodeId[nextNode.nodeId] ?? 0}/${nodeDef.xpCost})`);
+      // Foreign domain: apply ecology XP toward T1 assimilation with scaled cost
+      const t1NodeId = `${domainId}_t1` as import('../../types.js').ResearchNodeId;
+      // Skip if T1 already somehow completed
+      if (currentResearch.completedNodes.includes(t1NodeId)) continue;
+
+      const dynamicCost = getForeignT1Cost(assimilatedCount);
+
+      const { state: updatedResearch, completed } = addResearchProgressToNode(
+        currentResearch, t1NodeId, dynamicCost, totalBonus,
+      );
+      currentResearch = updatedResearch;
+      changed = true;
+
+      if (completed) {
+        // Domain assimilated via ecology! Add to learned domains.
+        const newLearnedDomains = [...learnedDomains, domainId];
+        const newAssimilatedCount = assimilatedCount + 1;
+        updatedFaction = {
+          ...updatedFaction,
+          learnedDomains: newLearnedDomains,
+          assimilatedDomainCount: newAssimilatedCount,
+        };
+
+        log(trace, `${faction.name} has ASSIMILATED ${domainId} through ecological exposure (cost: ${dynamicCost} XP)`);
+
+        const domainReg = registry.getAllResearchDomains().find(d => d.id === domainId);
+        recordResearch(trace, {
+          round: state.round,
+          factionId,
+          phase: 'completed',
+          nodeId: t1NodeId,
+          nodeName: domainReg?.nodes[t1NodeId]?.name ?? domainId,
+          domainId,
+        });
+      } else {
+        log(trace, `${faction.name} ecology: +${totalBonus} ${domainId} T1 assimilation (${(currentResearch.progressByNodeId as Record<string, number>)[t1NodeId] ?? 0}/${dynamicCost})`);
+      }
     }
   }
 
@@ -365,7 +411,12 @@ function applyEcologyResearchPass(
 
   const researchMap = new Map(state.research);
   researchMap.set(factionId, currentResearch);
-  return { ...state, research: researchMap };
+
+  // Update faction if any domains were assimilated this turn
+  const factions = new Map(state.factions);
+  factions.set(factionId, updatedFaction);
+
+  return { ...state, research: researchMap, factions };
 }
 
 function chooseBestChassis(

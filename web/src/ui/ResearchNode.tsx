@@ -19,12 +19,14 @@ export const ResearchNode = React.memo(function ResearchNode({ node, selected, o
   const progressPct = node.xpCost > 0 ? Math.round((node.currentProgress / node.xpCost) * 100) : 0;
   const summary = node.qualitativeEffect ?? '';
 
+  const isForeignAssimilating = !node.isNative && !node.isDomainLocked && node.tier === 1 && node.state !== 'completed';
   const isPrereqLocked = node.state === 'locked' && !node.isDomainLocked;
 
   const classes = [
     'research-node',
     `research-node--${node.state}`,
-    node.isLocked ? 'research-node--domain-locked' : '',
+    node.isLocked && !isForeignAssimilating ? 'research-node--domain-locked' : '',
+    isForeignAssimilating ? 'research-node--assimilating' : '',
     node.isNative ? 'research-node--native' : '',
     selected ? 'research-node--selected' : '',
   ].filter(Boolean).join(' ');
@@ -48,7 +50,7 @@ export const ResearchNode = React.memo(function ResearchNode({ node, selected, o
       <div className="research-node__name">{node.name}</div>
       {node.state !== 'completed' && node.xpCost > 0 && (
         <>
-          <div className={`research-node__progress${node.isEcologyActive && node.state !== 'active' ? ' research-node__progress--ecology' : ''}`}>
+          <div className={`research-node__progress${node.isEcologyActive && node.state !== 'active' ? ' research-node__progress--ecology' : ''}${isForeignAssimilating ? ' research-node__progress--assimilation' : ''}`}>
             <div className="research-node__progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
           <div className="research-node__progress-text">{node.currentProgress}/{node.xpCost}</div>
@@ -74,7 +76,10 @@ export const ResearchNode = React.memo(function ResearchNode({ node, selected, o
       {node.state === 'completed' && (
         <div className="research-node__completed-label">Complete</div>
       )}
-      {node.isDomainLocked && (
+      {isForeignAssimilating && (
+        <div className="research-node__assimilating-label">Assimilating...</div>
+      )}
+      {node.isDomainLocked && !isForeignAssimilating && (
         <div className="research-node__not-learned-label">Domain not learned</div>
       )}
       {summary && <div className="research-node__effect">{summary}</div>}

@@ -48,14 +48,19 @@ export const ResearchDetail = React.memo(function ResearchDetail({
         ? 'Tier 3 grants the native faction-altering version of this domain and activates its pair synergies.'
         : 'Tier 3 grants the shared foreign-domain version of this domain and activates its pair synergies.';
 
+  const isForeignAssimilating = !node.isNative && !node.isDomainLocked && node.tier === 1 && node.state !== 'completed';
+
   let buttonLabel = 'Start Research';
   let buttonHint = '';
 
   if (node.state === 'active') {
-    buttonLabel = 'In Progress';
+    buttonLabel = isForeignAssimilating ? 'Assimilating...' : 'In Progress';
+  } else if (isForeignAssimilating) {
+    buttonLabel = 'Assimilating...';
+    buttonHint = `Your tribe absorbs this domain through terrain affinity and cultural exposure (${node.ecologyBonus?.toFixed(1) ?? 0} XP/turn).`;
   } else if (node.isEcologyActive && node.state !== 'completed') {
     buttonLabel = 'Auto-Researching';
-  } else if (node.state === 'locked' || node.isLocked) {
+  } else if (node.state === 'locked' || (node.isLocked && !isForeignAssimilating)) {
     buttonLabel = node.isDomainLocked
       ? 'Domain not learned'
       : 'Locked';
@@ -171,9 +176,13 @@ export const ResearchDetail = React.memo(function ResearchDetail({
       <div className="research-detail__section">
         <p className="panel-kicker">Requirements</p>
         <div className="research-detail__req-list">
-          <div className={`research-detail__req-item ${!node.isLocked ? 'research-detail__req-item--met' : 'research-detail__req-item--unmet'}`}>
+          <div className={`research-detail__req-item ${isForeignAssimilating ? 'research-detail__req-item--progress' : !node.isLocked ? 'research-detail__req-item--met' : 'research-detail__req-item--unmet'}`}>
             <span>Domain</span>
-            <strong>{node.isLocked ? '\u2717 Locked' : '\u2713 Unlocked'}</strong>
+            {isForeignAssimilating ? (
+              <strong>Assimilating ({node.currentProgress}/{node.xpCost})</strong>
+            ) : (
+              <strong>{node.isLocked ? '\u2717 Locked' : '\u2713 Unlocked'}</strong>
+            )}
           </div>
           {node.prerequisites.length > 0 ? (
             <div className="research-detail__req-item research-detail__req-item--met">

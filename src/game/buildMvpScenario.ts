@@ -189,6 +189,7 @@ function initializeFaction(
     ])),
     exposureProgress: {},
     prototypeMastery: {},
+    assimilatedDomainCount: 0,
     homeCityId: cityId,
   };
   state.factions.set(factionId, faction);

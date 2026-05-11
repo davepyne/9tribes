@@ -5,7 +5,6 @@ import { applyContactTransfer } from '../capabilitySystem.js';
 import { updateCombatRecordOnElimination } from '../historySystem.js';
 import { autoCompleteResearchForDomains } from '../sacrificeSystem.js';
 import { getDomainProgression } from '../domainProgression.js';
-import { MAX_LEARNED_DOMAINS } from '../knowledgeSystem.js';
 import { getSynergyEngine } from '../synergyRuntime.js';
 import { getFactionCityIds, syncAllFactionSettlementIds } from '../factionOwnershipSystem.js';
 import { destroyVillagesInCityTerritory } from '../villageSystem.js';
@@ -33,8 +32,7 @@ export function maybeAbsorbFaction(
   current = updateCombatRecordOnElimination(current, victorFactionId);
 
   // Conqueror learns the defeated tribe's native domain and any learned domains
-  // Respect the MAX_LEARNED_DOMAINS cap (learnedDomains excludes native, so max slots = MAX - 1)
-  const remainingSlots = MAX_LEARNED_DOMAINS - 1 - victorFaction.learnedDomains.length;
+  // No cap — faction absorption is a conquest event, not ecology assimilation
   const domainsToAbsorb = [
     defeatedFaction.nativeDomain,
     ...defeatedFaction.learnedDomains,
@@ -44,7 +42,7 @@ export function maybeAbsorbFaction(
       d !== victorFaction.nativeDomain &&
       !victorFaction.learnedDomains.includes(d) &&
       domainsToAbsorb.indexOf(d) === domainsToAbsorb.lastIndexOf(d),
-  ).slice(0, Math.max(0, remainingSlots));
+  );
 
   let absorbedDomains: string[] = [];
   if (newlyLearned.length > 0) {

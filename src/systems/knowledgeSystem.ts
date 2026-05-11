@@ -22,12 +22,15 @@ type DomainConfig = {
 
 const DOMAINS = abilityDomainsData.domains as Record<string, DomainConfig>;
 
-// Exposure thresholds: how many points needed to learn each successive domain
-// Index 0 = first foreign domain (after native), index 1 = second, index 2 = third
-const EXPOSURE_THRESHOLDS = [20, 120, 200] as const;
+// Exposure thresholds: how many points needed to learn each successive domain via proximity
+// Index 0 = first foreign domain (after native), escalating for each subsequent domain
+const EXPOSURE_THRESHOLDS = [20, 120, 200, 300, 400, 500, 600, 700, 800] as const;
 
-// Maximum number of domains a faction can learn (including native)
-export const MAX_LEARNED_DOMAINS = 3;
+// Scaled XP cost for ecology-assimilated foreign T1 domains
+// 1st foreign domain = 20 XP, 2nd = 40, 3rd = 60, etc.
+export function getForeignT1Cost(assimilatedCount: number): number {
+  return 20 * (assimilatedCount + 1);
+}
 
 // Prototype mastery cost multipliers
 const PROTOTYPE_COST_MODIFIERS: Record<number, number> = {
@@ -105,11 +108,6 @@ export function gainExposure(
 ): GameState {
   const faction = state.factions.get(factionId);
   if (!faction) return state;
-
-  // Silently ignore if faction already knows max domains
-  if (faction.learnedDomains.length >= MAX_LEARNED_DOMAINS) {
-    return state;
-  }
 
   // Silently ignore if domain is native or already learned
   if (!isForeignDomain(faction, domainId)) {
@@ -196,10 +194,6 @@ export function gainExposure(
  * For more complex scenarios, use the gainExposure function which handles the full logic.
  */
 export function checkDomainLearned(faction: Faction): string | null {
-  if (faction.learnedDomains.length >= MAX_LEARNED_DOMAINS) {
-    return null;
-  }
-
   const threshold = getNextExposureThreshold(faction.learnedDomains.length, faction.nativeDomain);
 
   for (const [domainId, exposure] of Object.entries(faction.exposureProgress)) {
