@@ -30,6 +30,9 @@ export const TribesTab = React.memo(function TribesTab() {
           {/* Biome tag */}
           <span className="tribe-card__biome">{tribe.homeBiome}</span>
 
+          {/* AI behavior */}
+          <p className="tribe-card__behavior">{tribe.behavior}</p>
+
           {/* Intro */}
           <p className="tribe-card__intro">{tribe.intro}</p>
 

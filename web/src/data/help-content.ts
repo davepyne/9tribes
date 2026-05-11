@@ -14,6 +14,7 @@ export interface TribeProfile {
   color: string;
   nativeDomain: string;
   homeBiome: string;
+  behavior: string;
   intro: string;
   strengths: string[];
   weaknesses: string[];
@@ -203,6 +204,7 @@ export const helpContent: HelpContent = {
       color: '#2f7d4a',
       nativeDomain: 'venom',
       homeBiome: 'Jungle',
+      behavior: 'Attrition stalker — poisons and ambushes from cover, never fights fair',
       intro: 'The Jungle Clans wage war through attrition. Every unit they field carries poison — a damage-over-time effect that keeps hurting long after the battle ends. Enemies who disengage from a Jungle Clan fight don\'t escape clean; they limp away bleeding, making every follow-up engagement easier than the last. Their Serpent God summon radiates a far stronger poison aura than regular units, turning clustered enemy formations into death zones. Late-game Serpent Priests add stealth and area-of-effect poison to the mix, letting you assassinate key targets from inside enemy lines. Play this faction if you enjoy wearing opponents down until they collapse under accumulated wounds.',
       strengths: [
         'Poison creates compounding pressure. Even exchanges favor you because the enemy keeps taking damage after you disengage — chip away and they eventually crumble.',
@@ -222,6 +224,7 @@ export const helpContent: HelpContent = {
       color: '#5d8f57',
       nativeDomain: 'nature_healing',
       homeBiome: 'Forest',
+      behavior: 'Cautious defender — fortifies, heals, and waits for attackers to overcommit',
       intro: 'The Druid Circle wins wars of exhaustion. Every unit regenerates health each turn, and fighting in forests grants first-strike — meaning you attack before the enemy counters. Their Treefolk summon is the single toughest creature you can put on a battlefield, capable of anchoring a defensive line that grinds attackers into dust. Late-game Druid Wizards bring serious ranged firepower while keeping the healing and nature synergy intact. This faction doesn\'t win flashy battles; it wins by still standing when everyone else has run out of bodies. Play Druid Circle if you love defensive holds that make attackers regret every hex of progress.',
       strengths: [
         'You outlast everyone. Regeneration means your units recover between fights while enemies stay damaged — time is always on your side.',
@@ -241,6 +244,7 @@ export const helpContent: HelpContent = {
       color: '#b98a2f',
       nativeDomain: 'hitrun',
       homeBiome: 'Plains',
+      behavior: 'Aggressive skirmisher — hits fast, retreats, and never stands still',
       intro: 'The Steppe Riders never fight fair — and they don\'t have to. Every unit in their roster can attack and retreat in the same turn, meaning they choose when engagements start and stop. Their starters are faster than equivalent units from any other faction, giving them tempo control from the very first turn. The Warlord summon amplifies nearby cavalry into a blur of steel that strikes and vanishes before defenders can reposition. Mid-game Lancers add cavalry-level speed to skirmish tactics for flanking strikes that hit the exact moment enemies overcommit. Play Steppe Riders if you want to dance circles around opponents who never get a clean shot at you.',
       strengths: [
         'You own the tempo. Attack, retreat, reposition — repeat. The enemy reacts to you; you never react to them.',
@@ -260,6 +264,7 @@ export const helpContent: HelpContent = {
       color: '#7a5b3f',
       nativeDomain: 'fortress',
       homeBiome: 'Hill',
+      behavior: 'Methodical builder — fortifies positions, advances slowly under cover',
       intro: 'The Hill Engineers build the battlefield into a weapon. They begin the game with Fortification already mastered — a free head start no other faction gets. Their fortress-tagged units project a defensive aura to all adjacent allies, meaning clustering your forces makes every single unit tougher. The Siege Golem summon is the hardest-hitting creature you can call onto any field, and late-game Catapults let you pound enemies from outside their retaliation range. This faction doesn\'t chase victories — it builds positions so formidable that enemies break themselves trying to crack them. Play Hill Engineers if you want to make attackers pay for every hex of ground.',
       strengths: [
         'Free Fortification research gives you a structural edge from day one. Your forts are stronger and cheaper than anyone else\'s.',
@@ -280,6 +285,7 @@ export const helpContent: HelpContent = {
       color: '#2a9d8f',
       nativeDomain: 'slaving',
       homeBiome: 'Coast',
+      behavior: 'Opportunistic raider — raids coasts, captures units, snowballs through theft',
       intro: 'The Pirate Lords are the only faction that starts with three units — giving them more board presence than anyone else from moment one. Their defining gimmick is capture: instead of killing enemies, they enslave them and add those units to their own roster. Every raid feeds their economy through the Greedy passive, and they begin the game with Seafaring already researched alongside doubled city wall defenses. Their signature <strong>Galley</strong> summon is a formidable naval warship that anchors their mid-game fleet. Naval units gain bonuses when assaulting from water to land, making coastal cities vulnerable to lightning strikes they can\'t see coming. Play Pirate Lords if you want to snowball through theft — every enemy you defeat makes you stronger.',
       strengths: [
         'Three starting units give you immediate tactical flexibility that no other faction matches — infantry, ranged, and naval coverage from turn one.',
@@ -300,6 +306,7 @@ export const helpContent: HelpContent = {
       color: '#e9c46a',
       nativeDomain: 'camel_adaptation',
       homeBiome: 'Desert',
+      behavior: 'Mobile striker — exploits terrain gaps, swarms in open ground',
       intro: 'The Desert Nomads treat the harshest terrain on the map as home turf. They ignore all movement penalties in desert, striking from angles that other factions physically cannot reach. Their camel units hard-counter horse cavalry — crushing Steppe Riders and Savannah chariots in direct confrontations. When camel units cluster together, they grow stronger through a swarm bonus that rewards keeping your army tight. Late-game Immortals are self-regenerating anchors that refuse to die. Play Desert Nomads if you want to own terrain that everyone else avoids and counter the fastest factions in the game.',
       strengths: [
         'Desert is your highway. Strike from directions enemies thought were impassable — they avoid the sands while you sprint through them.',
@@ -320,6 +327,7 @@ export const helpContent: HelpContent = {
       color: '#d4a373',
       nativeDomain: 'charge',
       homeBiome: 'Savannah',
+      behavior: 'Shock charger — commits fully to devastating frontal assaults',
       intro: 'The Savannah Lions decide battles in a single collision. Their playstyle is pure momentum — commit fully, hit hard, and end the fight before the enemy recovers. Their mid-game War Chariots are the fastest units in existence, able to reposition faster than any opponent can react. Late-game War Elephants smash through fortified positions with stampede knockback and siege-breaker traits that crumble walls other factions spend turns battering down. Charge Momentum amplifies damage when you commit to the attack — the harder you go in, the more it hurts. Play Savannah Lions if you want thunderous, decisive engagements where one good charge ends the battle.',
       strengths: [
         'Opening impact is devastating. Your melee starter hits harder than any other faction\'s — you win initial trades through raw aggression.',
@@ -340,6 +348,7 @@ export const helpContent: HelpContent = {
       color: '#4f86c6',
       nativeDomain: 'river_stealth',
       homeBiome: 'River',
+      behavior: 'Stealth ambusher — strikes from water, vanishes, controls sight lines',
       intro: 'The River People fight from angles the enemy can\'t cover. Waterways become their road network — invisible approach vectors that let forces appear anywhere along a bank without warning. Their River Assault passive tips routine fights in their favor whenever water is nearby, and their stealth capabilities let them ambush enemies who thought they knew where the threat was. The Ancient Alligator summon lurks in river crossings waiting to drag unsuspecting prey underwater. At higher tiers, stealth units can cloak nearby allies for coordinated surprise strikes. Play River People if you want to control sight lines and strike from directions enemies left unguarded.',
       strengths: [
         'Rivers are your highway system. Move forces along water faster than any land route, appearing where defenders aren\'t looking.',
@@ -360,6 +369,7 @@ export const helpContent: HelpContent = {
       color: '#a8dadc',
       nativeDomain: 'heavy_hitter',
       homeBiome: 'Tundra',
+      behavior: 'Patient anchor — claims territory slowly, holds ground through sheer durability',
       intro: 'The Arctic Wardens turn the map\'s worst land into their best asset. While other factions fight over fertile heartland, the Wardens claim frozen wasteland that nobody else wants — and build functioning economies on it. Their heavy units hit harder and last longer than anything else on the field, with the Polar Bear summon ranking among the toughest creatures in existence. Their Heavy Hitter domain shatters fortified positions, reflects damage back at attackers, and eventually ignores armor entirely. This is a slow-burn faction that rewards claiming ignored territory and grinding down opponents through superior durability. Play Arctic Wardens if you want to win the war of attrition that starts on turn one.',
       strengths: [
         'You thrive where others starve. Claim frozen and marginal territory that opponents write off, then build a quiet economic base they never notice growing.',

@@ -357,6 +357,13 @@
   margin-bottom: 10px;
 }
 
+.tribe-card__behavior {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--muted);
+  margin: 0 0 10px 0;
+}
+
 .tribe-card__intro {
   font-size: 13.5px;
   line-height: 1.6;
