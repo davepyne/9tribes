@@ -50,7 +50,7 @@ function getHighestCompletedTier(domainId: string, completedNodes: Set<string>):
 }
 
 export function getDomainProgression(
-  faction: Pick<Faction, 'nativeDomain' | 'learnedDomains'> & { synergyEligibleDomains?: string[]; domainAcquisitionMethod?: Record<string, string> },
+  faction: Pick<Faction, 'nativeDomain' | 'learnedDomains'> & { synergyEligibleDomains?: string[] },
   researchState?: ResearchState,
 ): DomainProgression {
   const learnedDomains = Array.from(new Set(faction.learnedDomains ?? []));
@@ -75,9 +75,6 @@ export function getDomainProgression(
     }
   }
 
-  // Synergy eligibility comes from the sacrifice system (synergyEligibleDomains)
-  // Only native domain + sacrificed domains activate pair/triple combat synergies
-  // Ecology/exposure/absorption give tech access but NO synergies
   const synergyEligible = faction.synergyEligibleDomains ?? [];
 
   return {

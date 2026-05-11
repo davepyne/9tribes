@@ -9,8 +9,8 @@ export interface ResearchState {
   progressByNodeId: Partial<Record<ResearchNodeId, number>>;
   completedNodes: ResearchNodeId[];
   researchPerTurn: number;
-  recentCodifiedDomainIds?: string[];
-  recentCodifiedRound?: number;
+  recentSacrificeDomainIds?: string[];
+  recentSacrificeRound?: number;
   /** Accumulated combat research bonus per domain this turn (reset each faction turn) */
   combatResearchBonusThisTurn?: Record<string, number>;
 }

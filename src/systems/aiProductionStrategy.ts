@@ -130,9 +130,9 @@ export function rankProductionPriorities(
   const researchState = state.research.get(factionId);
   const recentCodifiedDomains =
     difficultyProfile.adaptiveAi
-    && researchState?.recentCodifiedRound !== undefined
-    && state.round - researchState.recentCodifiedRound <= difficultyProfile.production.codifiedPivotDuration
-      ? new Set(researchState.recentCodifiedDomainIds ?? [])
+    && researchState?.recentSacrificeRound !== undefined
+    && state.round - researchState.recentSacrificeRound <= difficultyProfile.production.codifiedPivotDuration
+      ? new Set(researchState.recentSacrificeDomainIds ?? [])
       : undefined;
 
   return availablePrototypes

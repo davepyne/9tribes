@@ -321,6 +321,7 @@ export type ResearchNodeViewModel = {
   isNative: boolean;
   isLocked: boolean;
   isDomainLocked: boolean;
+  isForeignAssimilating: boolean;
 };
 
 export type CapabilityPipViewModel = {

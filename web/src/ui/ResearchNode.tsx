@@ -19,7 +19,7 @@ export const ResearchNode = React.memo(function ResearchNode({ node, selected, o
   const progressPct = node.xpCost > 0 ? Math.round((node.currentProgress / node.xpCost) * 100) : 0;
   const summary = node.qualitativeEffect ?? '';
 
-  const isForeignAssimilating = !node.isNative && !node.isDomainLocked && node.tier === 1 && node.state !== 'completed';
+  const isForeignAssimilating = node.isForeignAssimilating;
   const isPrereqLocked = node.state === 'locked' && !node.isDomainLocked;
 
   const classes = [

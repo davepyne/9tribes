@@ -25,7 +25,7 @@ export function createResearchState(factionId: FactionId, nativeDomain?: string,
     progressByNodeId: {},
     completedNodes,
     researchPerTurn: researchPerTurn ?? 1,
-    recentCodifiedDomainIds: [],
+    recentSacrificeDomainIds: [],
   };
 }
 

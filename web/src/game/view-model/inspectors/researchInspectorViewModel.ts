@@ -306,6 +306,7 @@ export function buildResearchInspectorViewModel(
         isNative,
         isLocked: isForeignT1 ? false : !isUnlocked,
         isDomainLocked: isForeignT1 ? false : !isUnlocked,
+        isForeignAssimilating: isForeignT1 && !isCompleted,
       });
     }
   }

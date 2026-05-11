@@ -6,6 +6,7 @@ import {
   getCombatAttackModifier,
   getCombatDefenseModifier,
   getDesertSwarmBonus,
+  isUnitRiverStealthed,
 } from '../factionIdentitySystem.js';
 import {
   getVeteranDefenseBonus,
@@ -111,7 +112,7 @@ export function previewCombatAction(
   let situationalAttackModifier = getCombatAttackModifier(attackerFaction, attackerTerrain, defenderTerrain);
   let situationalDefenseModifier = getCombatDefenseModifier(defenderFaction, defenderTerrain);
 
-  if ((attackerTerrainId === 'river' || attackerTerrainId === 'swamp') && attackerFaction?.id === 'river_people') {
+  if (isUnitRiverStealthed(attackerFaction, attackerTerrainId)) {
     situationalAttackModifier += registry.getSignatureAbility('river_people')?.sneakAttackBonus ?? 0;
     sneakAttackTriggered = true;
   }

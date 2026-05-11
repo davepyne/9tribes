@@ -7,7 +7,7 @@ import { getDirectionIndex, getNeighbors, hexDistance, hexToKey } from '../core/
 import { isHexOccupied } from './occupancySystem.js';
 import { entersEnemyZoC, getZoCMovementCost } from './zocSystem.js';
 import { applyOpportunityAttacks } from './opportunityAttackSystem.js';
-import { getMovementCostModifier } from './factionIdentitySystem.js';
+import { getMovementCostModifier, isUnitRiverStealthed } from './factionIdentitySystem.js';
 import { isWaterTerrain } from './terrainUtils.js';
 import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import { canUseCharge } from './abilitySystem.js';
@@ -284,8 +284,7 @@ export function moveUnit(
   // Create new units map with updated unit
   const targetTerrainId = map.tiles.get(hexToKey(targetHex))?.terrain ?? 'plains';
   const faction = gameState.factions.get(unit.factionId);
-  const isOnRiverStealthTerrain = faction?.identityProfile.passiveTrait === 'river_assault'
-    && (targetTerrainId === 'river' || targetTerrainId === 'swamp');
+  const isOnRiverStealthTerrain = isUnitRiverStealthed(faction, targetTerrainId);
   const newUnits = new Map(gameState.units);
   newUnits.set(unitId, {
     ...unit,
@@ -294,7 +293,7 @@ export function moveUnit(
     movesRemaining,
     enteredZoCThisActivation: preview.entersZoC,
     entrenching: false,
-    isStealthed: isOnRiverStealthTerrain,
+    isStealthed: isOnRiverStealthTerrain || unit.isStealthed,
   });
 
   let newState: GameState = {

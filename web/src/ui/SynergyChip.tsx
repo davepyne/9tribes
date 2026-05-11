@@ -344,25 +344,18 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
     return [nativeDomain];
   }, [factionLearnedDomains, nativeDomain]);
 
-  // Synergy eligibility comes from the sacrifice system — completely separate from tech
-  // Only native domain + sacrificed domains activate pair/triple combat synergies
-  const synergyEligibleSet = useMemo(
-    () => new Set(serverSynergyEligible),
-    [serverSynergyEligible],
-  );
-
   const pairEligibleDomains = useMemo(
     () => capabilities
-      .filter((cap) => cap.level >= 3 && synergyEligibleSet.has(cap.domainId))
+      .filter((cap) => cap.level >= 3 && serverSynergyEligible.includes(cap.domainId))
       .map((cap) => cap.domainId),
-    [capabilities, synergyEligibleSet],
+    [capabilities, serverSynergyEligible],
   );
 
   const emergentEligibleDomains = useMemo(
     () => capabilities
-      .filter((cap) => cap.level >= 2 && synergyEligibleSet.has(cap.domainId))
+      .filter((cap) => cap.level >= 2 && serverSynergyEligible.includes(cap.domainId))
       .map((cap) => cap.domainId),
-    [capabilities, synergyEligibleSet],
+    [capabilities, serverSynergyEligible],
   );
 
   const resolved = useMemo(

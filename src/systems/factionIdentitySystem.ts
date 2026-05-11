@@ -289,7 +289,7 @@ export function getTerrainPreferenceScore(
   if (passive === 'greedy' && (terrainId === 'coast' || terrainId === 'ocean')) {
     return 2;
   }
-  if (passive === 'river_assault' && (terrainId === 'river' || terrainId === 'swamp')) {
+  if (passive === 'river_assault' && isRiverStealthTerrain(terrainId)) {
     return 1.5;
   }
   if (passive === 'foraging_riders' && OPEN_GROUND_TERRAINS.has(terrainId)) {

@@ -48,7 +48,7 @@ export const ResearchDetail = React.memo(function ResearchDetail({
         ? 'Tier 3 grants the native faction-altering version of this domain and activates its pair synergies.'
         : 'Tier 3 grants the shared foreign-domain version of this domain and activates its pair synergies.';
 
-  const isForeignAssimilating = !node.isNative && !node.isDomainLocked && node.tier === 1 && node.state !== 'completed';
+  const isForeignAssimilating = node.isForeignAssimilating;
 
   let buttonLabel = 'Start Research';
   let buttonHint = '';

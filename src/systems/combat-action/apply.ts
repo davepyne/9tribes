@@ -16,6 +16,7 @@ import { addExhaustion, EXHAUSTION_CONFIG } from '../warExhaustionSystem.js';
 import { applyContactTransfer } from '../capabilitySystem.js';
 import { applyPoisonDoT, enterStealth, findRetreatHex } from '../signatureAbilitySystem.js';
 import { getUnitAtHex } from '../occupancySystem.js';
+import { isUnitRiverStealthed } from '../factionIdentitySystem.js';
 
 import {
   recordBattleFought,
@@ -261,9 +262,7 @@ export function applyCombatAction(
       && preview.details.attackerTerrainId === 'desert';
     const isEmergentTerrainStealth = preview.details.emergentPermanentStealthTerrains.length > 0
       && preview.details.emergentPermanentStealthTerrains.includes(preview.details.attackerTerrainId);
-    // River People remain stealthed on river/swamp terrain (terrain-based stealth)
-    const isRiverTerrainStealth = attackerFactionForDoctrine?.identityProfile.passiveTrait === 'river_assault'
-      && (preview.details.attackerTerrainId === 'river' || preview.details.attackerTerrainId === 'swamp');
+    const isRiverTerrainStealth = isUnitRiverStealthed(attackerFactionForDoctrine, preview.details.attackerTerrainId);
     if (!isDesertStealth && !isEmergentTerrainStealth && !isRiverTerrainStealth) {
       nextAttacker = { ...nextAttacker, isStealthed: false, turnsSinceStealthBreak: 1 };
     }

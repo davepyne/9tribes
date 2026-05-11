@@ -6,7 +6,7 @@ import type { Unit } from '../features/units/types.js';
 import type { Faction, FactionId } from '../game/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
 import type { SimulationTrace } from './warEcologySimulation.js';
-import type { UnitId, ResearchNodeId } from '../types.js';
+import type { UnitId } from '../types.js';
 import { hexDistance } from '../core/grid.js';
 import { getSynergyEngine } from './synergyRuntime.js';
 
@@ -161,8 +161,8 @@ export function codifyDomainsForFaction(
     const researchMap = new Map(state.research);
     researchMap.set(factionId, {
       ...research,
-      recentCodifiedDomainIds: newlySynergyEligible,
-      recentCodifiedRound: state.round,
+      recentSacrificeDomainIds: newlySynergyEligible,
+      recentSacrificeRound: state.round,
     });
     return { ...state, research: researchMap, factions };
   }
@@ -191,63 +191,6 @@ function removeUnit(state: GameState, unitId: UnitId, factionId: FactionId): Gam
   });
 
   return { ...state, units, factions };
-}
-
-/**
- * Auto-complete research nodes for the given domains.
- * For each domain, finds the T1 research node that codifies it and marks it complete.
- * Only T1 nodes can be auto-completed via sacrifice — T2/T3 require research.
- */
-export function autoCompleteResearchForDomains(
-  state: GameState,
-  factionId: FactionId,
-  domainIds: string[],
-  registry: RulesRegistry,
-  trace?: SimulationTrace
-): GameState {
-  const research = state.research.get(factionId);
-  if (!research) {
-    return state;
-  }
-
-  const currentResearch = research;
-  const completedNodesSet = new Set(currentResearch.completedNodes);
-
-  for (const domainId of domainIds) {
-    // Find research nodes that codify this domain (only T1 nodes have codifies)
-    const allDomains = registry.getAllResearchDomains();
-    for (const domain of allDomains) {
-      for (const [nodeId, node] of Object.entries(domain.nodes)) {
-        // Only auto-complete Tier 1 nodes (foundation tier)
-        if ((node.tier ?? 1) !== 1) continue;
-        
-        if (node.codifies?.includes(domainId)) {
-          const researchNodeId = nodeId as ResearchNodeId;
-          // If this node's prerequisites are met, complete it
-          const prerequisitesMet = (node.prerequisites ?? []).every(
-            (prereqId: string) => completedNodesSet.has(prereqId as ResearchNodeId)
-          );
-          
-          if (prerequisitesMet && !completedNodesSet.has(researchNodeId)) {
-            completedNodesSet.add(researchNodeId);
-            log(trace, `  Codified ${node.name} (codifies ${domainId})`);
-          }
-        }
-      }
-    }
-  }
-
-  // Update research state
-  const completedNodes = Array.from(completedNodesSet) as ResearchNodeId[];
-  const researchMap = new Map(state.research);
-  researchMap.set(factionId, {
-    ...currentResearch,
-    completedNodes,
-    // Clear active node if it was completed
-    activeNodeId: completedNodes.includes(currentResearch.activeNodeId as ResearchNodeId) ? null : currentResearch.activeNodeId,
-  });
-
-  return { ...state, research: researchMap };
 }
 
 /**

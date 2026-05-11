@@ -6,6 +6,7 @@ import { hexDistance, getHexesInRange, hexToKey, keyToHex } from '../core/grid.j
 import type { Unit } from '../features/units/types.js';
 import type { Prototype } from '../features/prototypes/types.js';
 import { resolveResearchDoctrine } from './capabilityDoctrine.js';
+import { isUnitRiverStealthed } from './factionIdentitySystem.js';
 
 // --- Types ---
 export type HexVisibility = 'hidden' | 'explored' | 'visible';
@@ -73,13 +74,10 @@ export function isUnitEffectivelyStealthed(
     return true;
   }
 
-  // Terrain-based auto-stealth for River People (single source of truth)
   const faction = state.factions.get(unit.factionId);
-  if (faction?.identityProfile.passiveTrait === 'river_assault') {
-    const terrainId = state.map?.tiles.get(hexToKey(unit.position))?.terrain;
-    if (terrainId && (terrainId === 'river' || terrainId === 'swamp')) {
-      return true;
-    }
+  const terrainId = state.map?.tiles.get(hexToKey(unit.position))?.terrain;
+  if (isUnitRiverStealthed(faction, terrainId ?? '')) {
+    return true;
   }
 
   return false;

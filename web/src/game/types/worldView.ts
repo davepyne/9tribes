@@ -24,7 +24,6 @@ export type FactionView = {
   economyAngle: string;
   homeCityId?: string;
   learnedDomains?: string[];
-  domainAcquisitionMethod?: Record<string, string>;
   synergyEligibleDomains?: string[];
 };
 

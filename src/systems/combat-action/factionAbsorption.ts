@@ -62,14 +62,14 @@ export function maybeAbsorbFaction(
       });
       current = { ...current, factions: newFactions };
 
-      // Set recentCodifiedDomainIds so AI strategy can react
+      // Set recentSacrificeDomainIds so AI strategy can react
       const updatedResearch = current.research.get(victorFactionId);
       if (updatedResearch) {
         const researchMap = new Map(current.research);
         researchMap.set(victorFactionId, {
           ...updatedResearch,
-          recentCodifiedDomainIds: newlyLearned,
-          recentCodifiedRound: current.round,
+          recentSacrificeDomainIds: newlyLearned,
+          recentSacrificeRound: current.round,
         });
         current = { ...current, research: researchMap };
       }

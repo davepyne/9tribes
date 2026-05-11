@@ -1,4 +1,5 @@
 import type { VictoryType } from '../systems/warEcologySimulation.js';
+import type { FactionPosture } from '../systems/factionStrategy.js';
 
 export interface ReplayBundle {
   version: 3;
@@ -232,7 +233,7 @@ export interface ReplayAiIntentEvent {
 export interface ReplayFactionStrategyEvent {
   round: number;
   factionId: string;
-  posture: 'offensive' | 'balanced' | 'defensive' | 'recovery' | 'siege' | 'exploration' | 'last_stand';
+  posture: FactionPosture;
   primaryObjective: string;
   primaryEnemyFactionId?: string;
   primaryCityObjectiveId?: string;
