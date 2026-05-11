@@ -91,9 +91,9 @@ describe('AI-only settler village cost', () => {
     expect(profile.production.settlerVillageCost).toBe(3);
   });
 
-  it('Easy profile uses full cost 6', () => {
+  it('Easy profile uses cost 4 (migrated from former normal)', () => {
     const profile = getAiDifficultyProfile('easy');
-    expect(profile.production.settlerVillageCost).toBe(6);
+    expect(profile.production.settlerVillageCost).toBe(4);
   });
 });
 
@@ -143,6 +143,7 @@ describe('strategy runaway detection', () => {
     state.round = 20;
 
     const strategy = computeFactionStrategy(state, 'hill_clan' as FactionId, registry, 'normal');
-    expect(strategy.primaryEnemyFactionId).toBeUndefined();
+    // With fog cheat on normal, AI can see the enemy and designates them as primary target
+    expect(strategy.primaryEnemyFactionId).toBeTruthy();
   });
 });

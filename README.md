@@ -71,8 +71,8 @@ Each faction can call in a powerful signature unit on cooldown:
 | Warlord | Steppe Riders | 20 | 5 | 3 | Aura buff for cavalry; plains/savannah terrain |
 | Siege Golem | Hill Engineers | 22 | 6 | 5 | Highest raw stats of any summon; siege + fortress |
 | Galley | Pirate Lords | 14 | 3 | 2 | Naval ranged + transport capacity |
-| Ancient Alligator | River People | 15 | 5 | 2 | River/jungle/swamp ambusher |
-| War Elephant | Savannah Lions | 14 | 4 | 2 | Charge + trample; knockback |
+| Ancient Alligator | River People | 15 | 5 | 2 | +80% total stealth attack (9 eff); river/jungle/swamp ambusher |
+| War Elephant | Savannah Lions | 18 | 4 | 3 | Charge + trample; knockback |
 | Polar Bear | Arctic Wardens | 25 | 7 | 3 | Highest HP of any unit in the game |
 
 ## Unit Variety

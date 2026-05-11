@@ -199,7 +199,13 @@ function applyStateModifiers(
     snapshot.reasons.push(`state: threatened_cities=${threatenedCities}`);
   }
 
-  const visibleEnemySkirmishers = getVisibleEnemyUnits(state, factionId).filter(({ unit }) => {
+  const skirmisherCandidates = profile.strategy.strategicFogCheat
+    ? Array.from(state.units.values())
+        .filter((u) => u.hp > 0 && u.factionId !== factionId)
+        .map((u) => ({ unit: u, prototype: state.prototypes.get(u.prototypeId)! }))
+        .filter((e) => Boolean(e.prototype))
+    : getVisibleEnemyUnits(state, factionId);
+  const visibleEnemySkirmishers = skirmisherCandidates.filter(({ unit }) => {
     const prototype = state.prototypes.get(unit.prototypeId);
     if (!prototype) return false;
     return prototype.derivedStats.role === 'mounted'

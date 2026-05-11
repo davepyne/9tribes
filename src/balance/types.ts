@@ -46,6 +46,7 @@ export interface SignatureAbilityOverride {
   tidalAssaultBonus?: number;
   hitAndRun?: boolean;
   sneakAttackBonus?: number;
+  summonSneakAttackBonus?: number;
   desertSwarmThreshold?: number;
   desertSwarmAttackBonus?: number;
   desertSwarmDefenseMultiplier?: number;
@@ -75,7 +76,7 @@ const SCENARIO_OVERRIDE_KEYS = new Set(['roundsToWin', 'mapWidth', 'mapHeight'])
 const SIGNATURE_ABILITY_OVERRIDE_KEYS = new Set([
   'endlessStride', 'stampedeBonus', 'summon',
   'summonDuration', 'cooldownDuration', 'venomDamagePerTurn',
-  'hitAndRun', 'sneakAttackBonus',
+  'hitAndRun', 'sneakAttackBonus', 'summonSneakAttackBonus',
   'desertSwarmThreshold', 'desertSwarmAttackBonus', 'desertSwarmDefenseMultiplier',
   'wallDefenseMultiplier', 'tidalAssaultBonus',
 ]);

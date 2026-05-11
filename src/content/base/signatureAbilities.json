@@ -90,10 +90,11 @@
   },
   "river_people": {
     "sneakAttackBonus": 0.10,
+    "summonSneakAttackBonus": 0.30,
     "summon": {
       "chassisId": "alligator_frame",
       "terrainTypes": ["river", "jungle", "swamp"],
-      "tags": ["beast", "summon", "river"],
+      "tags": ["beast", "summon", "river", "stealth"],
       "name": "Ancient Alligator"
     },
     "summonDuration": 5,

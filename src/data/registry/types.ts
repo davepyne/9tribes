@@ -204,6 +204,7 @@ export interface SignatureAbilityParams {
   hitAndRun?: boolean;
   tidalAssaultBonus?: number;
   sneakAttackBonus?: number;
+  summonSneakAttackBonus?: number;
   greedyBonus?: number;
   villageCaptureDestroys?: boolean;
   villageCaptureCooldownRounds?: number;

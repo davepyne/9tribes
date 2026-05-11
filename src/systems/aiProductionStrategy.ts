@@ -166,7 +166,7 @@ export function rankProductionPriorities(
         recentCodifiedDomains,
         difficultyProfile.production.codifiedPivotScoringBonus,
       );
-      const settlerScore = scoreSettlerExpansionValue(state, factionId, strategy, prototype, difficultyProfile, difficulty);
+      const settlerScore = scoreSettlerExpansionValue(state, factionId, strategy, prototype, difficultyProfile, difficulty, scoringContext.visibleEnemyPressure);
       const baseCost = prototype.productionCost;
       const totalCost = calculatePrototypeCost(baseCost, faction, domains);
       const economic = getPrototypeEconomicProfile(prototype, registry);

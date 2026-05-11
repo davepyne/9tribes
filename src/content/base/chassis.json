@@ -219,7 +219,7 @@
     "movementClass": "beast",
     "supplyCost": 2.5,
     "baseProductionCost": 20,
-    "tags": ["beast", "summon", "river"],
+    "tags": ["beast", "summon", "river", "stealth"],
     "capabilityPressure": {}
   },
   "warlord_frame": {
@@ -339,10 +339,10 @@
     "name": "War Elephant",
     "role": "melee",
     "slotTypes": [],
-    "baseHp": 14,
+    "baseHp": 18,
     "baseMoves": 3,
     "baseAttack": 4,
-    "baseDefense": 2,
+    "baseDefense": 3,
     "movementClass": "beast",
     "supplyCost": 2.5,
     "baseProductionCost": 36,

@@ -116,6 +116,17 @@ export function previewCombatAction(
     sneakAttackTriggered = true;
   }
 
+  // Ancient Alligator: apex ambush predator — bigger bonus when attacking from stealth
+  const summonSneakAbility = registry.getSignatureAbility('river_people');
+  if (
+    summonSneakAbility?.summonSneakAttackBonus
+    && attackerPrototype.chassisId === 'alligator_frame'
+    && attackerWasStealthed
+  ) {
+    situationalAttackModifier += summonSneakAbility.summonSneakAttackBonus;
+    sneakAttackTriggered = true;
+  }
+
   const desertAbility = registry.getSignatureAbility('desert_nomads');
   const desertSwarmConfig = desertAbility
     ? {

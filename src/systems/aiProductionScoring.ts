@@ -271,6 +271,7 @@ export function scoreSettlerExpansionValue(
   prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>,
   difficultyProfile: AiDifficultyProfile,
   difficulty?: DifficultyLevel,
+  visibleEnemyPressureOverride?: number,
 ): number {
   if (!isSettlerPrototype(prototype)) {
     return 0;
@@ -291,7 +292,7 @@ export function scoreSettlerExpansionValue(
   }
   const economy = state.economy.get(factionId) ?? { supplyIncome: 0, supplyDemand: 0 };
   const supplyUtilizationRatio = getSupplyUtilizationRatio(economy);
-  const visibleEnemyPressure = getVisibleEnemyUnits(state, factionId).length;
+  const visibleEnemyPressure = visibleEnemyPressureOverride ?? getVisibleEnemyUnits(state, factionId).length;
   const totalFriendlyUnits = Array.from(state.units.values()).filter(
     (unit) => unit.factionId === factionId && unit.hp > 0,
   ).length;
