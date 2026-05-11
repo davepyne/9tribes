@@ -46,7 +46,7 @@ export const ResearchNode = React.memo(function ResearchNode({ node, selected, o
       <div className="research-node__name">{node.name}</div>
       {node.state !== 'completed' && node.xpCost > 0 && (
         <>
-          <div className="research-node__progress">
+          <div className={`research-node__progress${node.isEcologyActive && node.state !== 'active' ? ' research-node__progress--ecology' : ''}`}>
             <div className="research-node__progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
           <div className="research-node__progress-text">{node.currentProgress}/{node.xpCost}</div>

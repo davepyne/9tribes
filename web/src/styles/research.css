@@ -304,6 +304,10 @@
 .research-node--active { border-color: rgba(232, 168, 48, 0.28); box-shadow: 0 0 14px rgba(232, 168, 48, 0.06); }
 .research-node--active .research-node__progress-fill { background: linear-gradient(90deg, #d4942a, #f0c850); }
 
+.research-node__progress--ecology .research-node__progress-fill {
+  background: linear-gradient(90deg, #4ade80, #86efac);
+}
+
 .research-node--selected { border-color: rgba(214, 163, 75, 0.36); }
 
 .research-node--locked { cursor: default; }
