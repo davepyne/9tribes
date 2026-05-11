@@ -136,16 +136,26 @@ export const helpContent: HelpContent = {
 <p>This is where technology diverges from a traditional tech tree. <strong>All known domains progress simultaneously every turn</strong>, driven by three ecological sources:</p>
 
 <h4>Terrain Affinity</h4>
-<p>Each domain has specific terrain types where it thrives. Units and city territory on matching terrain generate research progress for that domain:</p>
-<ul>
-  <li><strong>Common terrain</strong> (hill, coast): +0.25 XP per hex</li>
-  <li><strong>Medium terrain</strong> (plains, savannah, forest, desert, ocean): +0.5 XP per hex</li>
-  <li><strong>Uncommon terrain</strong> (tundra): +1.0 XP per hex</li>
-  <li><strong>Rare terrain</strong> (river, jungle): +1.75 XP per hex</li>
-  <li><strong>Ultra-rare terrain</strong> (swamp, oasis): +2.0 XP per hex</li>
-  <li><strong>Mountain</strong>: +3.0 XP per hex (impassable, only city territory collects)</li>
-</ul>
-<p>Each terrain type maps to one domain: jungle → venom, forest → nature healing, hill/mountain → fortress, plains → skirmish pursuit, savannah → charge, desert/oasis → camel adaptation, coast/ocean → tidal warfare and slaving, river/swamp → river stealth, tundra → heavy hitter. A unit standing on a river hex generates 1.75 river_stealth research per turn. Your city territory on matching hexes also contributes. Terrain bonuses are capped at <strong>+5 XP per domain per turn</strong>.</p>
+<p>Each domain has specific terrain types where it thrives. Units and city territory on matching terrain generate research progress for that domain. The per-hex bonus scales with how rare that terrain is on the map:</p>
+
+<table>
+  <tr><th>Terrain</th><th>XP/hex</th><th>Domain</th></tr>
+  <tr><td>Hill</td><td>+0.25</td><td>Fortress</td></tr>
+  <tr><td>Coast</td><td>+0.25</td><td>Tidal Warfare, Slaving</td></tr>
+  <tr><td>Plains</td><td>+0.50</td><td>Skirmish Pursuit</td></tr>
+  <tr><td>Savannah</td><td>+0.50</td><td>Charge</td></tr>
+  <tr><td>Forest</td><td>+0.50</td><td>Nature Healing</td></tr>
+  <tr><td>Desert</td><td>+0.50</td><td>Camel Adaptation</td></tr>
+  <tr><td>Ocean</td><td>+0.50</td><td>Tidal Warfare, Slaving</td></tr>
+  <tr><td>Tundra</td><td>+1.00</td><td>Heavy Hitter</td></tr>
+  <tr><td>River</td><td>+1.75</td><td>River Stealth</td></tr>
+  <tr><td>Jungle</td><td>+1.75</td><td>Venom</td></tr>
+  <tr><td>Swamp</td><td>+2.00</td><td>River Stealth</td></tr>
+  <tr><td>Oasis</td><td>+2.00</td><td>Camel Adaptation</td></tr>
+  <tr><td>Mountain</td><td>+3.00</td><td>Fortress (impassable — city territory only)</td></tr>
+</table>
+
+<p>Terrain bonuses are capped at <strong>+5 XP per domain per turn</strong>. Your city territory on matching hexes also contributes — expanding into rare terrain is a powerful research strategy.</p>
 
 <h4>War Proximity</h4>
 <p>When your units are within 2 hexes of enemy forces, each contact generates <strong>+0.5 XP per turn</strong> toward that enemy faction's native domain (if you've already learned it). This rewards aggressive positioning and border warfare.</p>

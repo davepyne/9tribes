@@ -20,6 +20,8 @@ import { getFaction, getResearch, getResearchProgress, isResearchNodeCompleted, 
 import {
   DOMAIN_TERRAIN_AFFINITY,
   MAX_RESEARCH_TERRAIN_BONUS,
+  TERRAIN_RESEARCH_BONUS,
+  RESEARCH_PROXIMITY_BONUS_PER_CONTACT,
 } from '../../../../../src/systems/simulation/factionTurnEffects.js';
 import { getHexesInRange, hexToKey, hexDistance } from '../../../../../src/core/grid.js';
 
@@ -82,13 +84,6 @@ function getNativeFactionForDomain(domainId: string): string {
   }
   return '';
 }
-
-const TERRAIN_RESEARCH_BONUS: Record<string, number> = {
-  plains: 0.25, savannah: 0.25, forest: 0.5, hill: 0.5,
-  coast: 0.5, jungle: 0.5, desert: 0.5, tundra: 0.5,
-  river: 1.0, swamp: 1.0, mountain: 1.0, oasis: 1.0, ocean: 1.0,
-};
-const RESEARCH_PROXIMITY_BONUS_PER_CONTACT = 0.5;
 
 interface EcologyBonusSource {
   type: 'terrain' | 'proximity' | 'combat';

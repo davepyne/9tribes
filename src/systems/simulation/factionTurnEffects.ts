@@ -108,7 +108,7 @@ export const DOMAIN_TERRAIN_AFFINITY: Record<string, readonly string[]> = {
 
 // Per-hex research bonus scales with terrain rarity — rarer terrain gives more per hex
 // Proportional to 1/frequency, rounded to nearest 0.25, with mountain capped at 3.0
-const TERRAIN_RESEARCH_BONUS: Record<string, number> = {
+export const TERRAIN_RESEARCH_BONUS: Record<string, number> = {
   plains:    0.5,   // 9.3%
   savannah:  0.5,   // 12.1%
   hill:      0.25,  // 18.0%
@@ -168,7 +168,7 @@ function computeTerrainResearchBonuses(
   return result;
 }
 
-const RESEARCH_PROXIMITY_BONUS_PER_CONTACT = 0.5;
+export const RESEARCH_PROXIMITY_BONUS_PER_CONTACT = 0.5;
 
 function computeProximityResearchBonuses(
   state: GameState,
