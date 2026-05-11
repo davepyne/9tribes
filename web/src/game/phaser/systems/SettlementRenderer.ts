@@ -49,7 +49,10 @@ export class SettlementRenderer {
       const sprite = this.scene.add.image(point.x, point.y - 6, TEXTURES.cities, getSettlementFrame(city.factionId, 'city'))
         .setOrigin(0.5, 1)
         .setInteractive({ cursor: 'pointer' });
-      sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => callbacks.onCitySelected(city.id, pointer));
+      sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+          if (pointer.event instanceof MouseEvent && pointer.event.button === 2) return;
+          callbacks.onCitySelected(city.id, pointer);
+        });
       this.layer.add(sprite);
 
       const labelY = city.besieged ? point.y - 62 : point.y - 60;
@@ -71,7 +74,10 @@ export class SettlementRenderer {
         .setOrigin(0.5, 1)
         .setScale(0.9)
         .setInteractive({ cursor: 'pointer' });
-      sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => callbacks.onVillageSelected(village.id, pointer));
+      sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+          if (pointer.event instanceof MouseEvent && pointer.event.button === 2) return;
+          callbacks.onVillageSelected(village.id, pointer);
+        });
       this.layer.add(sprite);
     }
   }

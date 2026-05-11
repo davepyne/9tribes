@@ -249,6 +249,9 @@ export const TerrainPanel = React.memo(function TerrainPanel({ terrain, onClose 
             </div>
           )}
 
+          <div className="ti-section ti-section--coord">
+            <span className="ti-coord">({terrain.q}, {terrain.r})</span>
+          </div>
         </div>
       )}
     </aside>

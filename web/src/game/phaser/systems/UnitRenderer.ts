@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { ClientState } from '../../types/clientState';
 import type { WorldViewModel } from '../../types/worldView';
-import { getUnitTextureSpec, getUnitRearTextureSpec } from '../assets/keys';
+import { CY_OFFSET, getUnitTextureSpec, getUnitRearTextureSpec, TILE_HALF_HEIGHT } from '../assets/keys';
 
 type UnitCallbacks = {
   onUnitSelected: (unitId: string, pointer?: Phaser.Input.Pointer) => void;
@@ -37,24 +37,29 @@ export class UnitRenderer {
       const isSelected = state.selected?.type === 'unit' && state.selected.unitId === unit.id;
       const isLastMoved = state.playFeedback?.lastMove?.unitId === unit.id;
 
+      const markerBaseAlpha = unit.canAct ? 0.66 : unit.isActiveFaction ? 0.34 : 0.22;
+      const markerAlpha = isSelected
+        ? 0.6 + 0.4 * Math.sin(this.scene.time.now * 0.005)
+        : markerBaseAlpha;
+      const markerColor = isSelected ? 0xffd84d : tint;
       const marker = this.scene.add.ellipse(
         point.x,
-        point.y - 8,
+        point.y + CY_OFFSET,
         isSelected ? 38 : 34,
         isSelected ? 22 : 18,
-        tint,
-        unit.canAct ? 0.66 : unit.isActiveFaction ? 0.34 : 0.22,
+        markerColor,
+        markerAlpha,
       );
-      if (unit.canAct) {
-        marker.setStrokeStyle(2, 0xf7e7bf, 0.3);
+      if (unit.canAct || isSelected) {
+        marker.setStrokeStyle(2, isSelected ? 0xffd84d : 0xf7e7bf, isSelected ? 0.7 + 0.3 * Math.sin(this.scene.time.now * 0.005) : 0.3);
       }
       this.layer.add(marker);
 
       const isAttackTarget = attackableUnitIds.has(unit.id);
 
-      // Directional rendering based on unit facing (0-7: N, NE, E, SE, S, SW, W, NW)
-      const dir = ((unit.facing % 8) + 8) % 8;
-      const isRearFacing = dir === 0 || dir === 1 || dir === 6 || dir === 7; // N, NE, W, NW
+      // Directional rendering based on unit facing (0-5: N, NE, SE, S, SW, NW)
+      const dir = ((unit.facing % 6) + 6) % 6;
+      const isRearFacing = dir === 0 || dir === 1 || dir === 5; // N, NE, NW
 
       // Select front or rear texture based on facing direction
       let texture: ReturnType<typeof getUnitTextureSpec>;
@@ -74,16 +79,14 @@ export class UnitRenderer {
         .setInteractive({ cursor: unit.canAct || isAttackTarget ? 'pointer' : 'help' });
 
       // Horizontal flip for left-facing directions
-      // Front sprite base: faces right/southeast; Rear sprite base: faces left/northwest
-      if (dir === 1 || dir === 2 || dir === 5) {
-        // NE (rear), E (front), SW (front) — flip horizontally
+      // Front sprite base: faces SE; Rear sprite base: faces NW
+      if (dir === 1 || dir === 4) {
+        // NE (rear), SW (front) — flip horizontally
         sprite.setFlipX(true);
-      } else if (dir === 6) {
-        // West — rear sprite faces left by default; keep it
-        sprite.setFlipX(false);
       }
 
       sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        if (pointer.event instanceof MouseEvent && pointer.event.button === 2) return;
         callbacks.onUnitSelected(unit.id, pointer);
         callbacks.onUnitPointerDown?.(unit.id, pointer);
       });
@@ -91,10 +94,10 @@ export class UnitRenderer {
       sprite.on('pointerover', () => {
         if (isAttackTarget) {
           const color = 0x33cc55;
-          const ring = this.scene.add.ellipse(point.x, point.y - 8, 56, 32, color, 0.08).setStrokeStyle(2, color, 0.6);
+          const ring = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, 56, 32, color, 0.08).setStrokeStyle(2, color, 0.6);
           const check = this.scene.add.graphics();
           check.lineStyle(2.5, color, 1);
-          const cx = point.x, cy = point.y - 24;
+          const cx = point.x, cy = point.y + CY_OFFSET - 16;
           check.lineBetween(cx - 5, cy, cx - 1, cy + 5);
           check.lineBetween(cx - 1, cy + 5, cx + 6, cy - 5);
           attackIndicators.push(ring, check);
@@ -111,21 +114,24 @@ export class UnitRenderer {
       this.layer.add(sprite);
 
       if (isLastMoved) {
-        const movedRing = this.scene.add.ellipse(point.x, point.y - 8, 46, 24, 0xf2d67b, 0.12)
+        const movedRing = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, 46, 24, 0xf2d67b, 0.12)
           .setStrokeStyle(2, 0xf2d67b, 0.95);
         this.layer.add(movedRing);
       }
 
       const hpRatio = unit.maxHp > 0 ? unit.hp / unit.maxHp : 0;
-      const hpTrack = this.scene.add.rectangle(point.x, point.y + 4, 28, 4, 0x261d15, 0.8).setOrigin(0.5, 0.5);
-      const hpFill = this.scene.add.rectangle(point.x - 14, point.y + 4, Math.max(3, 28 * hpRatio), 4, hpRatio < 0.35 ? 0xe05b3f : 0x8fd694, 0.95)
+      const hpY = point.y + CY_OFFSET + 14;
+      const hpW = 28;
+      const hpH = 5;
+      const hpTrack = this.scene.add.rectangle(point.x, hpY, hpW + 2, hpH + 2, 0x000000, 0.85).setOrigin(0.5, 0.5);
+      const hpFill = this.scene.add.rectangle(point.x - hpW / 2, hpY, Math.max(3, hpW * hpRatio), hpH, hpRatio < 0.35 ? 0xe05b3f : 0x8fd694, 0.95)
         .setOrigin(0, 0.5);
       this.layer.add(hpTrack);
       this.layer.add(hpFill);
 
       // Summon countdown timer — show turns remaining for special summoned units
       if (unit.summonTurnsRemaining !== undefined && unit.summonTurnsRemaining > 0) {
-        const countdownText = this.scene.add.text(point.x, point.y - 24, `${unit.summonTurnsRemaining}`, {
+        const countdownText = this.scene.add.text(point.x, point.y + CY_OFFSET - 16, `${unit.summonTurnsRemaining}`, {
           fontSize: '14px',
           fontStyle: 'bold',
           color: unit.summonTurnsRemaining <= 2 ? '#ff4444' : '#ffcc00',
@@ -141,16 +147,16 @@ export class UnitRenderer {
         const pulse = 0.6 + 0.4 * Math.sin(this.scene.time.now * 0.003);
 
         // Outer soft glow — large, pulsing halo
-        const outerGlow = this.scene.add.ellipse(point.x, point.y - 8, 64, 36, 0x00e5ff, 0.12 * pulse);
+        const outerGlow = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, 64, 36, 0x00e5ff, 0.12 * pulse);
         this.layer.add(outerGlow);
 
         // Mid glow — bright core ring with stroke for definition
-        const midGlow = this.scene.add.ellipse(point.x, point.y - 8, 52, 30, 0x00e5ff, 0.22 * pulse)
+        const midGlow = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, 52, 30, 0x00e5ff, 0.22 * pulse)
           .setStrokeStyle(2, 0x00e5ff, 0.5 * pulse);
         this.layer.add(midGlow);
 
         // Inner bright center
-        const innerGlow = this.scene.add.ellipse(point.x, point.y - 8, 40, 22, 0x00e5ff, 0.18 * pulse);
+        const innerGlow = this.scene.add.ellipse(point.x, point.y + CY_OFFSET, 40, 22, 0x00e5ff, 0.18 * pulse);
         this.layer.add(innerGlow);
 
         // Domain pips below HP bar — slightly larger and bolder
@@ -171,7 +177,7 @@ export class UnitRenderer {
       }
 
       if (unit.acted && unit.isActiveFaction) {
-        const spentTag = this.scene.add.text(point.x, point.y - 46, 'Spent', {
+        const spentTag = this.scene.add.text(point.x, point.y + CY_OFFSET - 38, 'Spent', {
           fontFamily: 'Inter, sans-serif',
           fontSize: '10px',
           color: '#f7d7c4',

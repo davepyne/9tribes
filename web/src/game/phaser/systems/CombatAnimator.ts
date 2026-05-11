@@ -558,8 +558,8 @@ export class CombatAnimator {
   }
 
   private cloneSprite(unit: UnitView, x: number, y: number): Phaser.GameObjects.Image {
-    const dir = ((unit.facing % 8) + 8) % 8;
-    const isRearFacing = dir === 0 || dir === 1 || dir === 6 || dir === 7;
+    const dir = ((unit.facing % 6) + 6) % 6;
+    const isRearFacing = dir === 0 || dir === 1 || dir === 5;
 
     let texture: ReturnType<typeof getUnitTextureSpec>;
     if (isRearFacing) {
@@ -576,10 +576,8 @@ export class CombatAnimator {
       .setDisplaySize(texture.displayWidth, texture.displayHeight)
       .setAlpha(unit.acted ? 0.58 : 1);
 
-    if (dir === 1 || dir === 2 || dir === 5) {
+    if (dir === 1 || dir === 4) {
       sprite.setFlipX(true);
-    } else if (dir === 6) {
-      sprite.setFlipX(false);
     }
 
     return sprite;

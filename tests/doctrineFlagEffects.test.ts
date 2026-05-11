@@ -34,6 +34,8 @@ function setupTwoUnits() {
     status: 'ready',
     attacksRemaining: 1,
     movesRemaining: 1,
+    hp: 100,
+    maxHp: 100,
   });
   state.units.set(lionsUnitId, {
     ...state.units.get(lionsUnitId)!,
@@ -41,6 +43,8 @@ function setupTwoUnits() {
     status: 'ready',
     attacksRemaining: 1,
     movesRemaining: 1,
+    hp: 100,
+    maxHp: 100,
   });
 
   // Set terrain

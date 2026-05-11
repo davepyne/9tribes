@@ -234,7 +234,7 @@ describe('generateClimateBandMap', () => {
 
   it('never places tundra in the hot southern desert band', () => {
     const rng = createRNG(56);
-    const { map } = generateClimateBandMap(rng, START_REQUESTS, { width: 32, height: 24, rerollCap: 25 });
+    const { map } = generateClimateBandMap(rng, START_REQUESTS, { width: 32, height: 24, rerollCap: 50 });
     const desertBandStartRow = map.metadata?.climateProfile?.desertBandStartRow ?? map.height;
 
     const invalidTundra = Array.from(map.tiles.values()).filter(

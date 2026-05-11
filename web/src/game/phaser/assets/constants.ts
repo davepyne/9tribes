@@ -2,6 +2,7 @@ export const TILE_WIDTH = 96;
 export const TILE_HEIGHT = 48;
 export const TILE_HALF_WIDTH = TILE_WIDTH / 2;
 export const TILE_HALF_HEIGHT = TILE_HEIGHT / 2;
+export const CY_OFFSET = -TILE_HEIGHT / 2;
 
 export const TEXTURES = {
   grassBase: 'terrain-grass-base',

@@ -1029,6 +1029,20 @@
   border-color: rgba(214, 163, 75, 0.12);
 }
 
+.ti-section--coord {
+  text-align: center;
+  padding: 6px 0 2px;
+  border: none;
+  background: none;
+}
+
+.ti-coord {
+  font-size: 11px;
+  color: rgba(240, 230, 208, 0.35);
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.5px;
+}
+
 .ti-flavor {
   font-size: 12px;
   line-height: 1.55;

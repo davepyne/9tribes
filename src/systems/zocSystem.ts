@@ -249,7 +249,7 @@ export function isRearAttack(
   }
 
   const rearCenter = getOppositeDirection(defender.facing);
-  const rearLeft = (rearCenter + 7) % 8;
-  const rearRight = (rearCenter + 1) % 8;
+  const rearLeft = (rearCenter + 5) % 6;
+  const rearRight = (rearCenter + 1) % 6;
   return attackDirection === rearCenter || attackDirection === rearLeft || attackDirection === rearRight;
 }

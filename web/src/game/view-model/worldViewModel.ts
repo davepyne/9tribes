@@ -52,10 +52,12 @@ type CivilizationPalette = Record<string, {
 
 const CIVILIZATIONS = civilizationsData as CivilizationPalette;
 const BORDER_DIRECTIONS: Array<{ side: BorderSide; dq: number; dr: number }> = [
-  { side: 'north', dq: 0, dr: -1 },
-  { side: 'east', dq: 1, dr: 0 },
-  { side: 'south', dq: 0, dr: 1 },
-  { side: 'west', dq: -1, dr: 0 },
+  { side: 'nw', dq: -1, dr: 0 },
+  { side: 'n',  dq: -1, dr: -1 },
+  { side: 'ne', dq: 0,  dr: -1 },
+  { side: 'se', dq: 1,  dr: 0 },
+  { side: 's',  dq: 1,  dr: 1 },
+  { side: 'sw', dq: 0,  dr: 1 },
 ];
 
 export function buildWorldViewModel(source: PlayWorldSource): WorldViewModel {

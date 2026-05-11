@@ -105,7 +105,7 @@ function getClimateBandStartSeparation(
   }
 
   const areaPerFaction = (width * height) / factionCount;
-  return Math.max(6, Math.min(14, Math.round(Math.sqrt(areaPerFaction) * 0.72)));
+  return Math.max(5, Math.min(12, Math.round(Math.sqrt(areaPerFaction) * 0.58)));
 }
 
 function stampTerrainPatch(
@@ -356,7 +356,7 @@ export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions 
           mapDimensions?.height ?? scenarioConfig.mapHeight,
           factionConfigs.length,
         ),
-        rerollCap: options.rerollCap ?? 10,
+        rerollCap: options.rerollCap ?? 20,
       }
     );
     state.map = generated.map;

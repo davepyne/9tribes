@@ -18,7 +18,7 @@ export interface PathfinderResult {
 
 /**
  * Find the shortest path from a unit's current position to a destination,
- * ignoring movement-point budget. Uses A* with Chebyshev distance heuristic.
+ * ignoring movement-point budget. Uses A* with hex distance heuristic.
  *
  * Returns null if no path exists (unreachable due to impassable terrain or islands).
  */

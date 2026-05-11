@@ -122,7 +122,7 @@ export class MapSceneInput {
       return;
     }
 
-    const coord = screenToWorld(pointer.worldX, pointer.worldY + 8);
+    const coord = screenToWorld(pointer.worldX, pointer.worldY + 24);
     if (!coord) {
       return;
     }

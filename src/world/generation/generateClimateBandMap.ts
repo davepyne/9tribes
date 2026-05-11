@@ -48,8 +48,8 @@ const DEFAULT_OPTIONS: ClimateBandMapOptions = {
   width: 40,
   height: 30,
   mode: 'randomClimateBands',
-  startSeparation: 12,
-  rerollCap: 8,
+  startSeparation: 10,
+  rerollCap: 15,
   allowRepairs: true,
   lakeChance: 0.15,
   riverCountMin: 2,
@@ -496,7 +496,7 @@ function scoreCandidate(
   if (request.factionId === 'frost_wardens') {
     checks.northArctic = position.r <= Math.floor(map.height / 3);
     checks.tundraShare = getNearbyBiomeShare(map, position, 'tundra', 2) >= 0.35;
-    checks.lowAccess = countPassableNeighbors(map, position, 2) <= 24;
+    checks.lowAccess = countPassableNeighbors(map, position, 2) <= 18;
   }
   if (request.factionId === 'coral_people') {
     checks.waterAccess = coastAccess || riverAccess;

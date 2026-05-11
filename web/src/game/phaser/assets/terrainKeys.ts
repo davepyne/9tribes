@@ -98,17 +98,21 @@ export type TerrainRenderSpec = {
 };
 
 type RiverConnectionFlags = {
-  north: boolean;
-  east: boolean;
-  south: boolean;
-  west: boolean;
+  nw: boolean;
+  n: boolean;
+  ne: boolean;
+  se: boolean;
+  s: boolean;
+  sw: boolean;
 };
 
 function encodeRiverConnectionFlags(flags: RiverConnectionFlags): number {
-  return (flags.north ? 8 : 0)
-    + (flags.east ? 4 : 0)
-    + (flags.south ? 2 : 0)
-    + (flags.west ? 1 : 0);
+  return (flags.n ? 32 : 0)
+    + (flags.ne ? 16 : 0)
+    + (flags.se ? 8 : 0)
+    + (flags.s ? 4 : 0)
+    + (flags.sw ? 2 : 0)
+    + (flags.nw ? 1 : 0);
 }
 
 function getConnectionFlags(
@@ -120,10 +124,12 @@ function getConnectionFlags(
   const isConnection = (dq: number, dr: number) => isConnectedTerrain(getTerrainAt(q + dq, r + dr));
 
   return {
-    north: isConnection(0, -1) || isConnection(-1, -1) || isConnection(1, -1),
-    east: isConnection(1, 0),
-    south: isConnection(0, 1) || isConnection(-1, 1) || isConnection(1, 1),
-    west: isConnection(-1, 0),
+    nw: isConnection(-1, 0),
+    n:  isConnection(-1, -1),
+    ne: isConnection(0, -1),
+    se: isConnection(1, 0),
+    s:  isConnection(1, 1),
+    sw: isConnection(0, 1),
   };
 }
 
@@ -150,7 +156,7 @@ export function getTerrainOverlayTagForTile(
 ): string {
   const flags = getConnectionFlags(q, r, getTerrainAt, (candidate) => candidate === terrain);
   const prefix = TERRAIN_OVERLAY_TAG_PREFIXES[terrain];
-  return `${prefix}_n${flags.north ? 1 : 0}e${flags.east ? 1 : 0}s${flags.south ? 1 : 0}w${flags.west ? 1 : 0}`;
+  return `${prefix}_nw${flags.nw ? 1 : 0}n${flags.n ? 1 : 0}ne${flags.ne ? 1 : 0}se${flags.se ? 1 : 0}s${flags.s ? 1 : 0}sw${flags.sw ? 1 : 0}`;
 }
 
 export function getTerrainOverlayFrameForTile(

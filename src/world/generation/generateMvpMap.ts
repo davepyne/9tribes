@@ -3,7 +3,7 @@
 import type { GameMap, TerrainType } from '../map/types.js';
 import type { RNGState } from '../../core/rng.js';
 import { createMap } from '../map/createMap.js';
-import { hexToKey, hexDistance, getNeighbors } from '../../core/grid.js';
+import { hexToKey, hexDistance, getNeighbors, getHexesInRange } from '../../core/grid.js';
 import { rngNextFloat } from '../../core/rng.js';
 
 /**
@@ -90,10 +90,12 @@ function carveJungles(map: GameMap, rng: RNGState): void {
     const centerQ = Math.floor(rngNextFloat(rng) * map.width);
     const centerR = Math.floor(rngNextFloat(rng) * map.height);
     const radius = 1 + Math.floor(rngNextFloat(rng) * 1);
+    const center = { q: centerQ, r: centerR };
 
     for (let q = Math.max(0, centerQ - radius); q <= Math.min(map.width - 1, centerQ + radius); q++) {
       for (let r = Math.max(0, centerR - radius); r <= Math.min(map.height - 1, centerR + radius); r++) {
-        const distance = Math.abs(q - centerQ) + Math.abs(r - centerR);
+        const hex = { q, r };
+        const distance = hexDistance(center, hex);
         if (distance > radius + 1) {
           continue;
         }
@@ -123,10 +125,12 @@ function carveSwamps(map: GameMap, rng: RNGState): void {
     const centerQ = Math.floor(rngNextFloat(rng) * map.width);
     const centerR = Math.floor(rngNextFloat(rng) * map.height);
     const radius = 1 + Math.floor(rngNextFloat(rng) * 1);
+    const center = { q: centerQ, r: centerR };
 
     for (let q = Math.max(0, centerQ - radius); q <= Math.min(map.width - 1, centerQ + radius); q++) {
       for (let r = Math.max(0, centerR - radius); r <= Math.min(map.height - 1, centerR + radius); r++) {
-        const distance = Math.abs(q - centerQ) + Math.abs(r - centerR);
+        const hex = { q, r };
+        const distance = hexDistance(center, hex);
         if (distance > radius + 1) continue;
         const key = hexToKey({ q, r });
         const tile = map.tiles.get(key);
@@ -171,16 +175,13 @@ function ensureTerrainNearStart(
     const tile = map.tiles.get(key);
     if (!tile) continue;
     if (tile.terrain !== 'river' && tile.terrain !== 'coast') {
-      for (let dq = -1; dq <= 1; dq++) {
-        for (let dr = -1; dr <= 1; dr++) {
-          const nq = center.q + dq;
-          const nr = center.r + dr;
-          const nkey = hexToKey({ q: nq, r: nr });
-          const ntile = map.tiles.get(nkey);
-          if (!ntile) continue;
-          if (ntile.terrain === 'river' || ntile.terrain === 'coast' || ntile.terrain === 'ocean') continue;
-          ntile.terrain = terrain;
-        }
+      const nearbyHexes = [center, ...getNeighbors(center)];
+      for (const hex of nearbyHexes) {
+        const nkey = hexToKey(hex);
+        const ntile = map.tiles.get(nkey);
+        if (!ntile) continue;
+        if (ntile.terrain === 'river' || ntile.terrain === 'coast' || ntile.terrain === 'ocean') continue;
+        ntile.terrain = terrain;
       }
       return;
     }
@@ -200,10 +201,12 @@ function carveSavannahs(map: GameMap, rng: RNGState): void {
     const centerQ = Math.floor(rngNextFloat(rng) * map.width);
     const centerR = Math.floor(rngNextFloat(rng) * map.height);
     const radius = 1 + Math.floor(rngNextFloat(rng) * 1);
+    const center = { q: centerQ, r: centerR };
 
     for (let q = Math.max(0, centerQ - radius); q <= Math.min(map.width - 1, centerQ + radius); q++) {
       for (let r = Math.max(0, centerR - radius); r <= Math.min(map.height - 1, centerR + radius); r++) {
-        const distance = Math.abs(q - centerQ) + Math.abs(r - centerR);
+        const hex = { q, r };
+        const distance = hexDistance(center, hex);
         if (distance > radius + 1) continue;
         const key = hexToKey({ q, r });
         const tile = map.tiles.get(key);
@@ -224,10 +227,12 @@ function carveHills(map: GameMap, rng: RNGState): void {
     const centerQ = Math.floor(rngNextFloat(rng) * map.width);
     const centerR = Math.floor(rngNextFloat(rng) * map.height);
     const radius = 2 + Math.floor(rngNextFloat(rng) * 2);
+    const center = { q: centerQ, r: centerR };
 
     for (let q = Math.max(0, centerQ - radius); q <= Math.min(map.width - 1, centerQ + radius); q++) {
       for (let r = Math.max(0, centerR - radius); r <= Math.min(map.height - 1, centerR + radius); r++) {
-        const distance = Math.abs(q - centerQ) + Math.abs(r - centerR);
+        const hex = { q, r };
+        const distance = hexDistance(center, hex);
         if (distance > radius + 1) continue;
         const key = hexToKey({ q, r });
         const tile = map.tiles.get(key);
@@ -252,10 +257,12 @@ function carveMountains(map: GameMap, rng: RNGState): void {
     const centerQ = Math.floor(rngNextFloat(rng) * map.width);
     const centerR = Math.floor(rngNextFloat(rng) * map.height);
     const radius = 1 + Math.floor(rngNextFloat(rng) * 1);
+    const center = { q: centerQ, r: centerR };
 
     for (let q = Math.max(0, centerQ - radius); q <= Math.min(map.width - 1, centerQ + radius); q++) {
       for (let r = Math.max(0, centerR - radius); r <= Math.min(map.height - 1, centerR + radius); r++) {
-        const distance = Math.abs(q - centerQ) + Math.abs(r - centerR);
+        const hex = { q, r };
+        const distance = hexDistance(center, hex);
         if (distance > radius + 1) continue;
         const key = hexToKey({ q, r });
         const tile = map.tiles.get(key);

@@ -12,7 +12,7 @@ import { SelectionRenderer } from '../systems/SelectionRenderer';
 import { SettlementRenderer } from '../systems/SettlementRenderer';
 import { TileLayerRenderer } from '../systems/TileLayerRenderer';
 import { UnitRenderer } from '../systems/UnitRenderer';
-import { MapSceneCamera, worldToScreen } from './MapSceneCamera';
+import { MapSceneCamera, screenToWorld, worldToScreen } from './MapSceneCamera';
 import { MapSceneInput } from './MapSceneInput';
 
 export class MapScene extends Phaser.Scene {
@@ -55,7 +55,8 @@ export class MapScene extends Phaser.Scene {
     this.unitLayer = this.add.container().setDepth(5);
     this.combatOverlayLayer = this.add.container().setDepth(6);
     this.selectionLayer = this.add.container().setDepth(7);
-    this.fogLayer = this.add.container().setDepth(8);
+    this.fogLayer = this.add.container().setDepth(7);
+    this.selectionLayer = this.add.container().setDepth(8);
 
     this.tileRenderer = new TileLayerRenderer(this, this.tileLayer, this.worldToScreenFn);
     this.borderRenderer = new BorderRenderer(this, this.borderLayer, this.worldToScreenFn);
@@ -72,17 +73,21 @@ export class MapScene extends Phaser.Scene {
     this.inputHandler.setup();
 
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      if (!this.dragOrigin || !pointer.isDown) {
-        return;
+      if (pointer.isDown && this.dragOrigin) {
+        const camera = this.cameras.main;
+        camera.scrollX -= (pointer.x - this.dragOrigin.x) / camera.zoom;
+        camera.scrollY -= (pointer.y - this.dragOrigin.y) / camera.zoom;
+        this.dragOrigin = { x: pointer.x, y: pointer.y };
       }
-      const camera = this.cameras.main;
-      camera.scrollX -= (pointer.x - this.dragOrigin.x) / camera.zoom;
-      camera.scrollY -= (pointer.y - this.dragOrigin.y) / camera.zoom;
-      this.dragOrigin = { x: pointer.x, y: pointer.y };
+      this.updateHoverFromPointer(pointer);
     });
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       this.dragOrigin = { x: pointer.x, y: pointer.y };
+    });
+
+    this.input.on('pointerout', () => {
+      this.controller.setHoveredHex(null);
     });
 
     this.unsubscribe = this.controller.subscribe(() => this.renderFromState(this.controller.getState()));
@@ -99,12 +104,20 @@ export class MapScene extends Phaser.Scene {
 
   private readonly worldToScreenFn = (q: number, r: number) => worldToScreen(q, r);
 
+  private updateHoverFromPointer(pointer: Phaser.Input.Pointer) {
+    const coord = screenToWorld(pointer.worldX, pointer.worldY + 24);
+    if (coord) {
+      this.controller.setHoveredHex(`${coord.q},${coord.r}`);
+    } else {
+      this.controller.setHoveredHex(null);
+    }
+  }
+
   private renderFromState(state: ClientState) {
     this.latestState = state;
 
     this.tileRenderer.render(state.world, state, {
       onHexSelected: (q, r, pointer) => this.inputHandler.handleHexClick(state, q, r, pointer),
-      onHexHovered: (key) => this.controller.setHoveredHex(key),
     });
 
     this.borderRenderer.render(state.world);
@@ -123,13 +136,13 @@ export class MapScene extends Phaser.Scene {
       skipUnitIds: this.combatAnimator.getAnimatedUnitIds(),
     });
 
+    this.fogRenderer.render(state.world);
+
     this.selectionRenderer.render(
       state.world,
-      state.selected,
       state.inspectedTerrain ? `${state.inspectedTerrain.q},${state.inspectedTerrain.r}` : null,
       state.hoveredHex ? `${state.hoveredHex.q},${state.hoveredHex.r}` : null,
     );
-    this.fogRenderer.render(state.world);
 
     this.cameraManager.layout(state);
   }

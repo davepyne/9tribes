@@ -7,14 +7,14 @@ import { makeUnit } from './helpers/makeUnit';
 const registry = loadRulesRegistry();
 
 // Layout used throughout:
-//   origin: {q:5, r:5}  target: {q:4, r:5}  (moving west)
+//   origin: {q:5, r:5}  target: {q:4, r:5}  (moving NW)
 //   OA enemy at {q:6, r:5} — adjacent to origin (dist=1) but NOT target (dist=2)
-//   Still-adjacent enemy at {q:5, r:4} — adjacent to both origin AND target (dist=1 each)
+//   Still-adjacent enemy at {q:4, r:4} — adjacent to both origin AND target (dist=1 each)
 
 const ORIGIN = { q: 5, r: 5 };
 const TARGET = { q: 4, r: 5 };
 const OA_ENEMY_POS = { q: 6, r: 5 };     // departs after move
-const STAY_ADJACENT_POS = { q: 5, r: 4 }; // still adjacent after move
+const STAY_ADJACENT_POS = { q: 4, r: 4 }; // still adjacent after move
 
 function makeProto(id: string, role: 'melee' | 'ranged' | 'support' | 'mounted', chassisId = 'infantry_frame', attack = 8, extraComponents: string[] = []) {
   return {

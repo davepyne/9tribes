@@ -1,7 +1,7 @@
 // Signature Ability System - Helper functions for faction-specific abilities
 import type { GameState, Unit, HexCoord } from '../game/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
-import { getNeighbors } from '../core/grid.js';
+import { getNeighbors, hexDistance } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
 import { getTerrainAt } from './abilitySystem.js';
 import { isUnitVisibleTo } from './fogSystem.js';
@@ -122,7 +122,7 @@ export function findRetreatHex(
     let minEnemyDist = Infinity;
     for (const [, enemy] of state.units) {
       if (enemy.factionId !== unit.factionId && enemy.hp > 0 && isUnitVisibleTo(state, unit.factionId, enemy)) {
-        const dist = Math.abs(hex.q - enemy.position.q) + Math.abs(hex.r - enemy.position.r);
+        const dist = hexDistance(hex, enemy.position);
         minEnemyDist = Math.min(minEnemyDist, dist);
       }
     }
@@ -177,7 +177,7 @@ export function applyKnockback(
     if (!tile) continue;
 
     // Score: distance from attacker (further = better)
-    const distFromAttacker = Math.abs(hex.q - attacker.position.q) + Math.abs(hex.r - attacker.position.r);
+    const distFromAttacker = hexDistance(hex, attacker.position);
     let score = distFromAttacker;
 
     // Prefer hex in the direction away from attacker

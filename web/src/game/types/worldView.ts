@@ -114,7 +114,7 @@ export type ImprovementView = {
   visible: boolean;
 };
 
-export type BorderSide = 'north' | 'east' | 'south' | 'west';
+export type BorderSide = 'nw' | 'n' | 'ne' | 'se' | 's' | 'sw';
 
 export type BorderEdgeView = {
   id: string;

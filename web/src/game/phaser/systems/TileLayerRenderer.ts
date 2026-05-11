@@ -12,7 +12,6 @@ import {
 
 type TileCallbacks = {
   onHexSelected: (q: number, r: number, pointer?: Phaser.Input.Pointer) => void;
-  onHexHovered: (key: string | null) => void;
 };
 
 export class TileLayerRenderer {
@@ -64,8 +63,6 @@ export class TileLayerRenderer {
         .setInteractive({ cursor: reachableKeys.has(hex.key) ? 'pointer' : 'help' });
 
       hit.on('pointerdown', (pointer: Phaser.Input.Pointer) => callbacks.onHexSelected(hex.q, hex.r, pointer));
-      hit.on('pointerover', () => callbacks.onHexHovered(hex.key));
-      hit.on('pointerout', () => callbacks.onHexHovered(null));
       this.layer.add(hit);
 
       if (spec.baseTexture) {

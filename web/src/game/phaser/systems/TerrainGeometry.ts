@@ -1,5 +1,5 @@
 /**
- * TerrainGeometry — Freeciv-compatible rect-cell constants.
+ * TerrainGeometry — Hex-compatible rect-cell constants.
  *
  * Pure data, no Phaser dependency. Shared by freelandTilespec (tag resolution)
  * and TerrainCompositor (canvas composition).
@@ -26,6 +26,6 @@ export const RECT_CELLS: Record<RectCorner, {
 export const RECT_CORNER_NEIGHBORS: Record<RectCorner, Array<[number, number]>> = {
   up:    [[-1, 0], [-1, -1], [0, -1]],
   down:  [[1, 0], [1, 1], [0, 1]],
-  right: [[0, -1], [1, -1], [1, 0]],
-  left:  [[0, 1], [-1, 1], [-1, 0]],
+  right: [[0, -1], [1, 0]],
+  left:  [[0, 1], [-1, 0]],
 };
