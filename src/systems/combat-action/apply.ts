@@ -3,6 +3,7 @@ import type { RulesRegistry } from '../../data/registry/types.js';
 import type { Unit } from '../../features/units/types.js';
 import type { GameState } from '../../game/types.js';
 import type { FactionId } from '../../types.js';
+import { rngChance } from '../../core/rng.js';
 import { resolveCapabilityDoctrine } from '../capabilityDoctrine.js';
 import { clearPreparedAbility } from '../abilitySystem.js';
 import { applyCombatSignals } from '../combatSignalSystem.js';
@@ -16,7 +17,7 @@ import { addExhaustion, EXHAUSTION_CONFIG } from '../warExhaustionSystem.js';
 import { applyContactTransfer } from '../capabilitySystem.js';
 import { applyPoisonDoT, enterStealth, findRetreatHex } from '../signatureAbilitySystem.js';
 import { getUnitAtHex } from '../occupancySystem.js';
-import { getPoisonOnAttack, isUnitRiverStealthed } from '../factionIdentitySystem.js';
+import { getGreedyLootOnKill, getPoisonOnAttack, getPursuitMovementOnKill, isUnitRiverStealthed } from '../factionIdentitySystem.js';
 import { isCoverTerrain } from '../terrainUtils.js';
 
 import {
@@ -96,6 +97,10 @@ export function applyCombatAction(
     triggeredEffects: [...preview.triggeredEffects],
     capturedOnKill: false,
     retreatCaptured: false,
+    pressGangCaptured: false,
+    poisonDetonated: false,
+    greedyLootGained: 0,
+    pursuitMovementRestored: 0,
     poisonApplied: false,
     reStealthTriggered: false,
     reflectionDamageApplied: 0,
@@ -429,6 +434,110 @@ export function applyCombatAction(
     );
     current = captureResult.state;
     capturedOnKill = captureResult.captured;
+  }
+
+  // Phase A — Press gang capture (slaving_t1): capture chance on kill vs wounded
+  let pressGangCaptured = false;
+  if (
+    preview.result.defenderDestroyed
+    && !capturedOnKill
+    && attackerDoctrine?.pressGangCaptureEnabled
+    && nextAttacker.hp > 0
+  ) {
+    const pressGangUnit = current.units.get(preview.defenderId);
+    if (pressGangUnit) {
+      const lastCapture = pressGangUnit.history?.slice().reverse().find((h: import('../../features/units/types.js').HistoryEntry) => h.type === 'press_gang_attempt');
+      const cooldownLeft = lastCapture ? current.round - lastCapture.timestamp : 0;
+      if (cooldownLeft < 1 && rngChance(current.rngState, 0.3)) {
+        const captured: Unit = {
+          ...pressGangUnit,
+          factionId: attacker.factionId,
+          hp: Math.max(1, Math.floor(pressGangUnit.maxHp * 0.25)),
+          morale: 40,
+          veteranLevel: 'green' as import('../../core/enums.js').VeteranLevel,
+          status: 'ready' as import('../../core/enums.js').UnitStatus,
+        };
+        const unitsAfterCapture = new Map(current.units);
+        unitsAfterCapture.set(preview.defenderId, captured);
+        const factionsAfterCapture = new Map(current.factions);
+        const attackerFactionAfterCapture = factionsAfterCapture.get(attacker.factionId);
+        if (attackerFactionAfterCapture) {
+          factionsAfterCapture.set(attacker.factionId, {
+            ...attackerFactionAfterCapture,
+            unitIds: [...attackerFactionAfterCapture.unitIds, captured.id],
+          });
+        }
+        current = { ...current, units: unitsAfterCapture, factions: factionsAfterCapture };
+        pressGangCaptured = true;
+        baseResolution.pressGangCaptured = true;
+      }
+    }
+  }
+
+  // Phase A — Greedy loot on kill (Pirate Lords passive)
+  let greedyLootGained = 0;
+  if (preview.result.defenderDestroyed && nextAttacker.hp > 0) {
+    const loot = getGreedyLootOnKill(attackerFaction);
+    if (loot) {
+      const attackerEconomy = current.economy.get(attacker.factionId);
+      if (attackerEconomy) {
+        const updatedEconomy = new Map(current.economy);
+        updatedEconomy.set(attacker.factionId, {
+          ...attackerEconomy,
+          productionPool: attackerEconomy.productionPool + loot.gold,
+          supplyIncome: attackerEconomy.supplyIncome + loot.supplies,
+        });
+        current = { ...current, economy: updatedEconomy };
+        greedyLootGained = loot.gold;
+        baseResolution.greedyLootGained = loot.gold;
+      }
+    }
+  }
+
+  // Phase A — Poison detonate (venom_t3 native): AoE poison on adjacent enemies after kill
+  let poisonDetonated = false;
+  if (preview.result.defenderDestroyed && attackerDoctrine?.nativePoisonDetonateEnabled && nextAttacker.hp > 0) {
+    const detonateUnits = new Map(current.units);
+    let detonateCount = 0;
+    for (const adjHex of getNeighbors(defender.position)) {
+      const adjUnitId = getUnitAtHex(current, adjHex);
+      if (!adjUnitId) continue;
+      const adjUnit = detonateUnits.get(adjUnitId);
+      if (adjUnit && adjUnit.factionId !== attacker.factionId && adjUnit.hp > 0) {
+        detonateUnits.set(adjUnitId, {
+          ...adjUnit,
+          hp: Math.max(0, adjUnit.hp - 3),
+          poisonedBy: attacker.factionId,
+          poisonStacks: (adjUnit.poisonStacks ?? 0) + 2,
+          poisonTurnsRemaining: Math.max(adjUnit.poisonTurnsRemaining ?? 0, 3),
+        });
+        detonateCount++;
+      }
+    }
+    if (detonateCount > 0) {
+      current = { ...current, units: detonateUnits };
+      poisonDetonated = true;
+      baseResolution.poisonDetonated = true;
+    }
+  }
+
+  // Phase A — Pursuit movement (foraging_riders): restore movement after kill
+  let pursuitMovementRestored = 0;
+  if (preview.result.defenderDestroyed && nextAttacker.hp > 0) {
+    const pursuitMoves = getPursuitMovementOnKill(attackerFaction);
+    if (pursuitMoves > 0) {
+      const pursuitUnit = current.units.get(preview.attackerId);
+      if (pursuitUnit && pursuitUnit.hp > 0) {
+        const unitsAfterPursuit = new Map(current.units);
+        unitsAfterPursuit.set(preview.attackerId, {
+          ...pursuitUnit,
+          movesRemaining: pursuitUnit.movesRemaining + pursuitMoves,
+        });
+        current = { ...current, units: unitsAfterPursuit };
+        pursuitMovementRestored = pursuitMoves;
+        baseResolution.pursuitMovementRestored = pursuitMoves;
+      }
+    }
   }
 
   // Melee advance: melee attacker occupies defender's hex on kill (not capture)
@@ -965,6 +1074,18 @@ export function applyCombatAction(
   if (pursuitDamageApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Pursuit', `Skirmisher pressed the advantage for +${pursuitDamageApplied} bonus damage.`, 'aftermath');
   }
+  if (pressGangCaptured) {
+    pushCombatEffect(triggeredEffects, 'Press Gang', 'Killer crew pressed the fallen enemy into service.', 'aftermath');
+  }
+  if (greedyLootGained > 0) {
+    pushCombatEffect(triggeredEffects, 'Greedy Loot', `Pirate Lords salvaged ${greedyLootGained} gold and supplies from the kill.`, 'aftermath');
+  }
+  if (poisonDetonated) {
+    pushCombatEffect(triggeredEffects, 'Poison Detonation', 'Venom erupted on kill, poisoning adjacent enemies.', 'aftermath');
+  }
+  if (pursuitMovementRestored > 0) {
+    pushCombatEffect(triggeredEffects, 'Pursuit', `Foraging riders pushed forward for +${pursuitMovementRestored} movement after the kill.`, 'aftermath');
+  }
   if (emergentSustainHealApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Paladin Sustain', `Attacker recovered ${emergentSustainHealApplied} HP from damage dealt.`, 'aftermath');
   }
@@ -1010,6 +1131,10 @@ export function applyCombatAction(
       triggeredEffects,
       capturedOnKill,
       retreatCaptured,
+      pressGangCaptured: baseResolution.pressGangCaptured,
+      poisonDetonated: baseResolution.poisonDetonated,
+      greedyLootGained: baseResolution.greedyLootGained,
+      pursuitMovementRestored: baseResolution.pursuitMovementRestored,
       poisonApplied,
       reStealthTriggered,
       reflectionDamageApplied,

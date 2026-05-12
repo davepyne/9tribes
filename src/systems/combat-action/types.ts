@@ -126,6 +126,10 @@ export interface CombatActionResolution {
   triggeredEffects: CombatActionEffect[];
   capturedOnKill: boolean;
   retreatCaptured: boolean;
+  pressGangCaptured: boolean;
+  poisonDetonated: boolean;
+  greedyLootGained: number;
+  pursuitMovementRestored: number;
   poisonApplied: boolean;
   reStealthTriggered: boolean;
   reflectionDamageApplied: number;
