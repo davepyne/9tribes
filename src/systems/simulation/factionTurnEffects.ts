@@ -60,8 +60,8 @@ import { gainExposure, calculatePrototypeCost, getDomainIdsByTags, getForeignT1C
 import {
   computeFactionStrategy,
 } from '../strategicAi.js';
-import { getSynergyEngine } from '../synergyRuntime.js';
-import type { SynergyEngine, ActiveTripleStack } from '../synergyEngine.js';
+import { getSynergyEngine, resolveEffectiveSynergies } from '../synergyRuntime.js';
+import type { SynergyEngine, ActiveTripleStack, ActiveDoubleStack, ActiveSynergy } from '../synergyEngine.js';
 import { applyHealingSynergies, type HealingContext } from '../synergyEffects.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { maybeExpirePreparedAbility } from '../unitActivationSystem.js';
@@ -669,11 +669,20 @@ function applyWarlordAura(
   return { ...state, units: unitsMap };
 }
 
-function setFactionTripleStack(state: GameState, factionId: FactionId, triple: ActiveTripleStack | null): GameState {
+function setFactionSynergyFields(
+  state: GameState,
+  factionId: FactionId,
+  fields: { activeTripleStack?: ActiveTripleStack; activeDoubleStack?: ActiveDoubleStack | null; activeNativeSelfPair?: ActiveSynergy | null },
+): GameState {
   const faction = state.factions.get(factionId);
   if (!faction) return state;
   const factions = new Map(state.factions);
-  factions.set(factionId, { ...faction, activeTripleStack: triple ?? undefined });
+  factions.set(factionId, {
+    ...faction,
+    ...(fields.activeTripleStack !== undefined && { activeTripleStack: fields.activeTripleStack }),
+    ...(fields.activeDoubleStack !== undefined && { activeDoubleStack: fields.activeDoubleStack ?? undefined }),
+    ...(fields.activeNativeSelfPair !== undefined && { activeNativeSelfPair: fields.activeNativeSelfPair ?? undefined }),
+  });
   return { ...state, factions };
 }
 
@@ -755,10 +764,15 @@ export function processFactionPhases(
 
   const engine = getSynergyEngine();
   const progression = getDomainProgression(faction, current.research.get(factionId));
-  const tripleStack = engine.resolveFactionTriple(
-    progression.pairEligibleDomains,
-    progression.emergentEligibleDomains,
-  );
+  const pairEligible = progression.pairEligibleDomains;
+  const emergentEligible = progression.emergentEligibleDomains;
+  const nativeT3 = progression.nativeT3Domains.includes(faction.nativeDomain);
+
+  // Resolve native self-pair (independent of foreign domains)
+  const nativeSelfPair = nativeT3 ? engine.resolveNativeSelfPair(faction.nativeDomain) : null;
+
+  // Resolve triple stack first (highest priority)
+  const tripleStack = engine.resolveFactionTriple(pairEligible, emergentEligible);
   if (tripleStack) {
     log(trace, `${faction.name} activates ${tripleStack.name} — ${tripleStack.emergentRule.name} emergent!`);
     recordTripleStack(trace, {
@@ -771,20 +785,19 @@ export function processFactionPhases(
     });
   }
 
+  let tripleResult: ActiveTripleStack | undefined;
+  let doubleResult: ActiveDoubleStack | null | undefined;
   if (tripleStack) {
     const emergent = tripleStack.emergentRule.effect;
     if (emergent.type === 'ghost_army') {
-      // Ghost Army: phase teleport + kill-chain is combat-time, but allies get movement bonus at turn start
       current = applyGhostArmyMovement(current, factionId, emergent.phaseAlliesMovementBonus);
     }
     if (emergent.type === 'juggernaut') {
-      // Juggernaut: per-domain signatures are applied at combat time; flag faction for undying
       current = applyJuggernautBonus(current, factionId);
     }
-    current = setFactionTripleStack(current, factionId, tripleStack);
+    tripleResult = tripleStack;
   } else {
     const prevTriple = faction.activeTripleStack;
-    current = setFactionTripleStack(current, factionId, null);
     if (prevTriple) {
       recordTripleStack(trace, {
         round: current.round,
@@ -795,7 +808,19 @@ export function processFactionPhases(
         emergentRule: prevTriple.emergentRule.name,
       });
     }
+
+    const doubleStack = engine.resolveFactionDouble(faction.nativeDomain, pairEligible);
+    if (doubleStack) {
+      log(trace, `${faction.name} double stack: ${doubleStack.pairs.map(p => p.name).join(', ')} [${doubleStack.domains.join('+')}]`);
+    }
+    doubleResult = doubleStack;
   }
+
+  current = setFactionSynergyFields(current, factionId, {
+    activeTripleStack: tripleResult,
+    activeDoubleStack: doubleResult,
+    activeNativeSelfPair: nativeSelfPair,
+  });
 
   current = applyEcologyPressure(current, factionId, registry);
   current = applyForceCompositionPressure(current, factionId, registry);
@@ -906,8 +931,7 @@ export function processFactionPhases(
 
     const healPrototype = current.prototypes.get(unit.prototypeId);
     const healTags = healPrototype?.tags ?? [];
-    const healEngine = getSynergyEngine();
-    const unitSynergies = healEngine.resolveUnitPairs(healTags);
+    const unitSynergies = resolveEffectiveSynergies(refreshedFaction, healTags);
 
     const healingContext: HealingContext = {
       unitId: unitIdStr as string,
@@ -935,7 +959,7 @@ export function processFactionPhases(
             if (neighborTags.includes('druid') || neighborTags.includes('healing')) {
               const aura = getNatureHealingAura();
               healRate += aura.allyHeal;
-              const neighborSynergies = healEngine.resolveUnitPairs(neighborTags);
+              const neighborSynergies = resolveEffectiveSynergies(refreshedFaction, neighborTags);
               const neighborHealContext: HealingContext = {
                 unitId: neighborUnitId,
                 unitTags: neighborTags,
@@ -961,7 +985,8 @@ export function processFactionPhases(
         if (neighborUnit && neighborUnit.factionId !== factionId && neighborUnit.hp > 0) {
           const neighborProto = current.prototypes.get(neighborUnit.prototypeId);
           const neighborTags = neighborProto?.tags ?? [];
-          const neighborSynergies = healEngine.resolveUnitPairs(neighborTags);
+          const enemyFaction = current.factions.get(neighborUnit.factionId);
+          const neighborSynergies = resolveEffectiveSynergies(enemyFaction, neighborTags);
           for (const syn of neighborSynergies) {
             if (syn.effect.type === 'withering') {
               const reduction = (syn.effect as { healingReduction: number }).healingReduction;

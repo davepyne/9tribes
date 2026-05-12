@@ -52,6 +52,8 @@ type FriendlySynergyCardProps = {
   tierDescriptions?: TierDescriptions;
   /** Whether this is the faction's native domain (solo cards only). */
   isNativeDomain?: boolean;
+  /** When true, card is visually greyed out (subsumed by a higher synergy tier). */
+  inactive?: boolean;
 };
 
 type FieldReportSynergyCardProps = {
@@ -460,6 +462,7 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
     : synergy.effect?.description ?? '';
 
   const obscured = !isFriendly && tier < 2;
+  const inactive = isFriendly && 'inactive' in props ? props.inactive : false;
 
   // Try to resolve a painted JPG; null until/unless one loads successfully.
   const artUrl = useArtUrl(synergy.id, domains, kind, factionId, obscured);
@@ -473,7 +476,7 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
     kind === 'triple' ? 'scard--triple' : '',
     kind === 'solo' ? 'scard--solo' : '',
     `scard--tier${tier}`,
-    '',
+    inactive ? 'scard--inactive' : '',
   ].filter(Boolean).join(' ');
 
   return (

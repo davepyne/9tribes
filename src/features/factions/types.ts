@@ -1,6 +1,6 @@
 // Faction entity types
 import type { FactionId, UnitId, CityId, VillageId, PrototypeId } from '../../types.js';
-import type { ActiveTripleStack } from '../../systems/synergyEngine.js';
+import type { ActiveTripleStack, ActiveDoubleStack, ActiveSynergy } from '../../systems/synergyEngine.js';
 
 export type CapabilitySourceType =
   | 'ecology'
@@ -95,6 +95,8 @@ export interface Faction {
   nativeDomain: string;
   learnedDomains: string[];
   activeTripleStack?: ActiveTripleStack;
+  activeDoubleStack?: ActiveDoubleStack;    // native+foreign cross-pair (1 foreign domain eligible)
+  activeNativeSelfPair?: ActiveSynergy;     // native self-pair, always active when native T3 done
   juggernautActive?: boolean;
   // Knowledge system tracking (Phase 5)
   exposureProgress: Record<string, number>;  // domainId -> current exposure points

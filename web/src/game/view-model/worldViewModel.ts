@@ -312,6 +312,11 @@ function buildPlayFactions(state: GameState): FactionView[] {
     homeCityId: faction.homeCityId,
     learnedDomains: faction.learnedDomains ?? [],
     synergyEligibleDomains: faction.synergyEligibleDomains ?? [],
+    activeNativePairId: faction.activeNativeSelfPair?.pairId,
+    activeDoubleStackPairIds: faction.activeDoubleStack?.pairs.map(p => p.pairId),
+    hasActiveTriple: faction.activeTripleStack != null,
+    activeTriplePairIds: faction.activeTripleStack?.pairs.map(p => p.pairId),
+    activeTripleEmergentRuleId: faction.activeTripleStack?.emergentRule?.id,
   }));
 }
 

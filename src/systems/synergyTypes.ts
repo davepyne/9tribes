@@ -138,6 +138,11 @@ export interface ActiveSynergy {
   effect: SynergyEffect;
 }
 
+export interface ActiveDoubleStack {
+  domains: [string, string];  // [nativeDomain, foreignDomain]
+  pairs: ActiveSynergy[];     // cross-pair(s) only (no self-pairs)
+}
+
 export interface ActiveTripleStack {
   domains: [string, string, string];
   pairs: ActiveSynergy[];

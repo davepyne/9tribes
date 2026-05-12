@@ -15,7 +15,7 @@ import {
   type HealingContext,
 } from './synergyEffects.js';
 import { getNatureHealingAura } from './signatureAbilitySystem.js';
-import { getSynergyEngine } from './synergyRuntime.js';
+import { resolveEffectiveSynergies } from './synergyRuntime.js';
 
 const HEALING_CONFIG = {
   OWNED_TERRITORY: 0.10,
@@ -170,8 +170,7 @@ export function applyHealingForFaction(
     // Synergy healing effects
     const prototype = gameState.prototypes.get(unit.prototypeId);
     const tags = prototype?.tags ?? [];
-    const engine = getSynergyEngine();
-    const unitSynergies = engine.resolveUnitPairs(tags);
+    const unitSynergies = resolveEffectiveSynergies(faction, tags);
 
     const healingContext: HealingContext = {
       unitId: unitIdStr,
@@ -200,7 +199,7 @@ export function applyHealingForFaction(
         const neighborTags = neighborProto?.tags ?? [];
         const aura = getNatureHealingAura();
         healRate += aura.allyHeal;
-        const neighborSynergies = engine.resolveUnitPairs(neighborTags);
+        const neighborSynergies = resolveEffectiveSynergies(faction, neighborTags);
         const neighborHealContext: HealingContext = {
           unitId: auraSource.id,
           unitTags: neighborTags,
@@ -230,7 +229,8 @@ export function applyHealingForFaction(
         if (neighborUnit && neighborUnit.factionId !== factionId && neighborUnit.hp > 0) {
           const neighborProto = gameState.prototypes.get(neighborUnit.prototypeId);
           const neighborTags = neighborProto?.tags ?? [];
-          const neighborSynergies = engine.resolveUnitPairs(neighborTags);
+          const enemyFaction = gameState.factions.get(neighborUnit.factionId);
+          const neighborSynergies = resolveEffectiveSynergies(enemyFaction, neighborTags);
           for (const syn of neighborSynergies) {
             if (syn.effect.type === 'withering') {
               const reduction = (syn.effect as { healingReduction: number }).healingReduction;

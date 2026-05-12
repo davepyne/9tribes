@@ -7,6 +7,7 @@ import type {
   SynergyEffect,
   EmergentEffect,
   ActiveSynergy,
+  ActiveDoubleStack,
   ActiveTripleStack,
 } from './synergyTypes.js';
 
@@ -17,6 +18,7 @@ export type {
   SynergyEffect,
   EmergentEffect,
   ActiveSynergy,
+  ActiveDoubleStack,
   ActiveTripleStack,
 };
 
@@ -141,6 +143,53 @@ export class SynergyEngine {
       }
     }
     return active;
+  }
+
+  // Resolve the native domain's self-pair (e.g., nature_healing+nature_healing).
+  // Returns null if no self-pair exists for the given domain.
+  resolveNativeSelfPair(nativeDomain: string): ActiveSynergy | null {
+    for (const synergy of this.pairSynergies) {
+      if (synergy.domains[0] === nativeDomain && synergy.domains[1] === nativeDomain) {
+        return {
+          pairId: synergy.id,
+          name: synergy.name,
+          domains: synergy.domains as [string, string],
+          effect: synergy.effect,
+        };
+      }
+    }
+    return null;
+  }
+
+  // Resolve the faction double stack: native domain + exactly 1 foreign domain.
+  // Returns only the cross-pair(s) — no self-pairs included.
+  resolveFactionDouble(
+    nativeDomain: string,
+    pairEligibleDomains: string[],
+  ): ActiveDoubleStack | null {
+    const foreignDomains = pairEligibleDomains.filter(d => d !== nativeDomain);
+    if (foreignDomains.length !== 1) return null;
+    const foreignDomain = foreignDomains[0];
+
+    // Find cross-pairs (one domain is native, other is foreign)
+    const crossPairs: ActiveSynergy[] = [];
+    for (const synergy of this.pairSynergies) {
+      const [d1, d2] = synergy.domains;
+      if (
+        (d1 === nativeDomain && d2 === foreignDomain) ||
+        (d1 === foreignDomain && d2 === nativeDomain)
+      ) {
+        crossPairs.push({
+          pairId: synergy.id,
+          name: synergy.name,
+          domains: synergy.domains as [string, string],
+          effect: synergy.effect,
+        });
+      }
+    }
+
+    if (crossPairs.length === 0) return null;
+    return { domains: [nativeDomain, foreignDomain], pairs: crossPairs };
   }
 
   // Resolve the faction triple stack using tier-qualified domain sets.

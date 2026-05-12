@@ -25,6 +25,11 @@ export type FactionView = {
   homeCityId?: string;
   learnedDomains?: string[];
   synergyEligibleDomains?: string[];
+  activeNativePairId?: string;
+  activeDoubleStackPairIds?: string[];
+  hasActiveTriple?: boolean;
+  activeTriplePairIds?: string[];
+  activeTripleEmergentRuleId?: string;
 };
 
 export type UnitStatusView = 'ready' | 'fortified' | 'spent' | 'inactive';

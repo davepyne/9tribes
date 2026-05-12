@@ -9,6 +9,7 @@ import type { SimulationTrace } from './warEcologySimulation.js';
 import type { UnitId } from '../types.js';
 import { hexDistance } from '../core/grid.js';
 import { getSynergyEngine } from './synergyRuntime.js';
+import { getDomainProgression } from './domainProgression.js';
 
 /**
  * Check if a unit can be sacrificed at the home city.
@@ -137,22 +138,33 @@ export function codifyDomainsForFaction(
 
   if (newlySynergyEligible.length === 0) return state;
 
-  // Evaluate triple stack from synergy-eligible domains (not learnedDomains)
-  const tripleStack = getSynergyEngine().resolveFactionTriple(
-    currentSynergyEligible,
-    currentSynergyEligible,
-  );
+  // Build updated faction with new synergy-eligible domains
+  const updatedFaction = { ...faction, synergyEligibleDomains: currentSynergyEligible };
+
+  // Evaluate all synergy states using research progression (same as turn processor)
+  const engine = getSynergyEngine();
+  const progression = getDomainProgression(updatedFaction, state.research.get(factionId));
+  const pairEligible = progression.pairEligibleDomains;
+  const emergentEligible = progression.emergentEligibleDomains;
+  const nativeT3 = progression.nativeT3Domains.includes(faction.nativeDomain);
+
+  const nativeSelfPair = nativeT3 ? engine.resolveNativeSelfPair(faction.nativeDomain) : null;
+  const tripleStack = engine.resolveFactionTriple(pairEligible, emergentEligible);
+  const doubleStack = tripleStack ? null : engine.resolveFactionDouble(faction.nativeDomain, pairEligible);
 
   log(trace, `Sacrifice grants synergy eligibility for: ${newlySynergyEligible.join(', ')}`);
   if (tripleStack) {
     log(trace, `  Triple synergy activated: ${tripleStack.name}`);
+  } else if (doubleStack) {
+    log(trace, `  Double stack activated: ${doubleStack.pairs.map(p => p.name).join(', ')}`);
   }
 
   const factions = new Map(state.factions);
   factions.set(factionId, {
-    ...faction,
-    synergyEligibleDomains: currentSynergyEligible,
+    ...updatedFaction,
     activeTripleStack: tripleStack ?? undefined,
+    activeDoubleStack: doubleStack ?? undefined,
+    activeNativeSelfPair: nativeSelfPair ?? undefined,
   });
 
   // Set recent codified domains so AI strategy can react

@@ -5,6 +5,7 @@ import emergentRulesData from '../data/emergent-rules.json';
 import { SynergyCard } from './SynergyCard';
 import type { PairSynergyData, EmergentRuleData } from './SynergyCard';
 import { playSynergyUnlockSting } from '../app/audio/sfxManager';
+import type { BackendSynergyState } from './resolveActiveSynergies';
 
 // ── Types ──
 
@@ -15,18 +16,12 @@ type PairSynergy = {
   description: string;
 };
 
-type EmergentRule = {
-  id: string;
-  name: string;
-  condition: string;
-  domainSets: Record<string, string[]>;
-  effect: { description: string };
-};
-
 type SynergyUnlockEvent = {
   synergies: Array<{ id: string; name: string; domains: string[]; description: string }>;
   tripleStack: { id: string; name: string; description: string } | null;
 };
+
+type FactionSynergyState = BackendSynergyState & { id: string };
 
 // ── Typed data ──
 
@@ -43,8 +38,6 @@ const PAIR_SYNERGIES_FULL: PairSynergyData[] = (pairSynergiesData as { pairSyner
 
 const EMERGENT_RULES_FULL: EmergentRuleData[] = (emergentRulesData as unknown as { rules: EmergentRuleData[] }).rules;
 
-const EMERGENT_RULES: EmergentRule[] = (emergentRulesData as unknown as { rules: EmergentRule[] }).rules;
-
 // ── Helpers ──
 
 function formatDomainName(domainId: string): string {
@@ -52,50 +45,6 @@ function formatDomainName(domainId: string): string {
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
-}
-
-function newlyActivePairSynergies(
-  prevDomains: string[],
-  currDomains: string[],
-): PairSynergy[] {
-  if (currDomains.length < 2) return [];
-
-  const addedDomains = currDomains.filter((d) => !prevDomains.includes(d));
-  if (addedDomains.length === 0) return [];
-
-  const matches: PairSynergy[] = [];
-  for (const synergy of PAIR_SYNERGIES) {
-    const hadAll = synergy.domains.every((d) => prevDomains.includes(d));
-    const hasAll = synergy.domains.every((d) => currDomains.includes(d));
-    if (!hadAll && hasAll) {
-      matches.push(synergy);
-    }
-  }
-  return matches;
-}
-
-function checkTripleStackActivation(
-  prevDomains: string[],
-  currDomains: string[],
-): { id: string; name: string; description: string } | null {
-  for (const rule of EMERGENT_RULES) {
-    if (!rule.domainSets) continue;
-
-    const categories = Object.keys(rule.domainSets);
-    if (categories.length < 3) continue;
-
-    const prevMet = categories.filter((cat) =>
-      rule.domainSets[cat]?.some((d) => prevDomains.includes(d)),
-    ).length;
-    const currMet = categories.filter((cat) =>
-      rule.domainSets[cat]?.some((d) => currDomains.includes(d)),
-    ).length;
-
-    if (prevMet < categories.length && currMet >= categories.length) {
-      return { id: rule.id, name: rule.name, description: rule.effect.description };
-    }
-  }
-  return null;
 }
 
 // ── Context ──
@@ -115,11 +64,11 @@ export function useSynergyModal() {
 // ── Detection Hook ──
 
 export function useSynergyUnlockDetector(
-  factions: Array<{ id: string; learnedDomains?: string[] }>,
+  factions: FactionSynergyState[],
   playerFactionId: string | null,
   onDetect: (event: SynergyUnlockEvent) => void,
 ) {
-  const prevRef = useRef<string[] | null>(null);
+  const prevRef = useRef<FactionSynergyState | null>(null);
 
   useEffect(() => {
     if (!playerFactionId) return;
@@ -127,19 +76,59 @@ export function useSynergyUnlockDetector(
     const player = factions.find((f) => f.id === playerFactionId);
     if (!player) return;
 
-    const current = player.learnedDomains ?? [];
-    const previous = prevRef.current;
+    const prev = prevRef.current;
+    prevRef.current = player;
 
-    if (previous !== null && current !== previous) {
-      const synergies = newlyActivePairSynergies(previous, current);
-      const tripleStack = checkTripleStackActivation(previous, current);
+    if (!prev) return;
 
-      if (synergies.length > 0 || tripleStack) {
-        onDetect({ synergies, tripleStack });
+    const allPairs = PAIR_SYNERGIES;
+    const allRules = EMERGENT_RULES_FULL;
+
+    // Detect native self-pair unlock
+    if (!prev.activeNativePairId && player.activeNativePairId) {
+      const pair = allPairs.find((p) => p.id === player.activeNativePairId);
+      if (pair) {
+        onDetect({
+          synergies: [{ id: pair.id, name: pair.name, domains: pair.domains, description: pair.description }],
+          tripleStack: null,
+        });
+        return;
       }
     }
 
-    prevRef.current = current;
+    // Detect double stack unlock (new pair IDs appeared)
+    const prevDouble = new Set(prev.activeDoubleStackPairIds ?? []);
+    const currDouble = player.activeDoubleStackPairIds ?? [];
+    const newDoubleIds = currDouble.filter((id) => !prevDouble.has(id));
+    if (newDoubleIds.length > 0 && !player.hasActiveTriple) {
+      const synergies: SynergyUnlockEvent['synergies'] = [];
+      for (const id of newDoubleIds) {
+        const pair = allPairs.find((p) => p.id === id);
+        if (pair) synergies.push({ id: pair.id, name: pair.name, domains: pair.domains, description: pair.description });
+      }
+      if (synergies.length > 0) {
+        onDetect({ synergies, tripleStack: null });
+        return;
+      }
+    }
+
+    // Detect triple stack unlock
+    if (!prev.hasActiveTriple && player.hasActiveTriple && player.activeTripleEmergentRuleId) {
+      const rule = allRules.find((r) => r.id === player.activeTripleEmergentRuleId);
+      if (rule) {
+        // Include all triple pair cards as synergies
+        const pairIds = player.activeTriplePairIds ?? [];
+        const synergies: SynergyUnlockEvent['synergies'] = [];
+        for (const id of pairIds) {
+          const pair = allPairs.find((p) => p.id === id);
+          if (pair) synergies.push({ id: pair.id, name: pair.name, domains: pair.domains, description: pair.description });
+        }
+        onDetect({
+          synergies,
+          tripleStack: { id: rule.id, name: rule.name, description: rule.effect.description },
+        });
+      }
+    }
   }, [factions, playerFactionId, onDetect]);
 }
 

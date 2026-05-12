@@ -26,7 +26,7 @@ import { isUnitEffectivelyStealthed } from '../fogSystem.js';
 import {
   calculateSynergyAttackBonus,
   calculateSynergyDefenseBonus,
-  getSynergyEngine,
+  resolveEffectiveSynergies,
 } from '../synergyRuntime.js';
 import { isCoverTerrain } from '../terrainUtils.js';
 
@@ -272,13 +272,8 @@ export function previewCombatAction(
   const forestFirstStrike = attackerDoctrine?.forestAmbushEnabled === true && attackerTerrain?.id === 'forest';
 
   const resolveSynergies = (unit: Unit, prototype: typeof attackerPrototype, faction: typeof attackerFaction, enemyUnit: Unit, enemyPrototype: typeof defenderPrototype) => {
-    const engine = getSynergyEngine();
+    const synergies = resolveEffectiveSynergies(faction, prototype.tags ?? []);
     const triple = faction?.activeTripleStack ?? null;
-    const synergies = triple
-      ? triple.pairs
-      : prototype.tags
-        ? engine.resolveUnitPairs(prototype.tags)
-        : [];
 
     const context: CombatContext = {
       attackerId: unit.id,

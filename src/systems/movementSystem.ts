@@ -13,39 +13,12 @@ import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import { canUseCharge } from './abilitySystem.js';
 import { pruneDeadUnits } from './combatActionSystem.js';
 import { destroyVillage } from './villageSystem.js';
-import { getSynergyEngine } from './synergyRuntime.js';
+import { resolveEffectiveSynergies } from './synergyRuntime.js';
+import type { Faction } from '../features/factions/types.js';
 
-function getSwarmSpeedBonus(tags: string[]): number {
-  const engine = getSynergyEngine();
-  const synergies = engine.resolveUnitPairs(tags);
-  for (const syn of synergies) {
-    if (syn.effect.type === 'swarm_speed') {
-      return (syn.effect as { speedBonus: number }).speedBonus;
-    }
-  }
-  return 0;
-}
-
-function getCoastalNomadSpeedBonus(tags: string[]): number {
-  const engine = getSynergyEngine();
-  const synergies = engine.resolveUnitPairs(tags);
-  for (const syn of synergies) {
-    if (syn.effect.type === 'coastal_nomad') {
-      return (syn.effect as { speedBonus: number }).speedBonus;
-    }
-  }
-  return 0;
-}
-
-function getTerrainSlaveSpeedBonus(tags: string[]): number {
-  const engine = getSynergyEngine();
-  const synergies = engine.resolveUnitPairs(tags);
-  for (const syn of synergies) {
-    if (syn.effect.type === 'terrain_slave') {
-      return (syn.effect as { speedBonus: number }).speedBonus;
-    }
-  }
-  return 0;
+function getSpeedBonus(faction: Faction | undefined, tags: string[], effectType: string): number {
+  const syn = resolveEffectiveSynergies(faction, tags).find(s => s.effect.type === effectType);
+  return syn ? (syn.effect as { speedBonus: number }).speedBonus : 0;
 }
 
 export interface MovementPreview {
@@ -147,20 +120,18 @@ export function previewMove(
     totalCost = 1;
   }
 
-  // Swarm speed synergy: reduce movement cost
-  const swarmBonus = getSwarmSpeedBonus(prototypeTags);
+  // Synergy speed bonuses
+  const swarmBonus = getSpeedBonus(faction, prototypeTags, 'swarm_speed');
   if (swarmBonus > 0) {
     totalCost -= swarmBonus;
   }
 
-  // Coastal Nomad synergy: speed bonus on coast/river
-  const coastalNomadBonus = getCoastalNomadSpeedBonus(prototypeTags);
+  const coastalNomadBonus = getSpeedBonus(faction, prototypeTags, 'coastal_nomad');
   if (coastalNomadBonus > 0 && isWaterTerrain(targetTerrainId)) {
     totalCost -= coastalNomadBonus;
   }
 
-  // Terrain Slave synergy: speed bonus on all terrain
-  const terrainSlaveBonus = getTerrainSlaveSpeedBonus(prototypeTags);
+  const terrainSlaveBonus = getSpeedBonus(faction, prototypeTags, 'terrain_slave');
   if (terrainSlaveBonus > 0) {
     totalCost -= terrainSlaveBonus;
   }

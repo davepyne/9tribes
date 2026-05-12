@@ -1043,6 +1043,24 @@
   text-shadow: 0 0 4px rgba(0,0,0,0.2);
 }
 
+/* Inactive card: greyed out when subsumed by a higher synergy tier */
+.scard--inactive {
+  opacity: 0.45;
+  filter: saturate(0.2) brightness(0.8);
+}
+.scard--inactive .scard__foil {
+  display: none;
+}
+.scard--inactive .scard__art {
+  filter: grayscale(0.8);
+}
+.scard--inactive .scard__badge {
+  opacity: 0.6;
+}
+.scard--inactive .scard__name {
+  opacity: 0.6;
+}
+
 .scard__name {
   font-family: 'Cinzel', 'Palatino', 'Georgia', serif;
   font-size: 13px;

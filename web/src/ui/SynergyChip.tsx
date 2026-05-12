@@ -373,9 +373,18 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
 
   const hasContent = resolved.foreignDomains.length > 0 || resolved.activePairs.length > 0;
 
-  // Build all cards for the hand
+  const activeNativePairId = activeFaction?.activeNativePairId;
+  const activeDoubleStackPairIds = activeFaction?.activeDoubleStackPairIds ?? [];
+  const hasActiveTriple = activeFaction?.hasActiveTriple ?? false;
+  const activeTriplePairIds = activeFaction?.activeTriplePairIds ?? [];
+  const activeTripleEmergentRuleId = activeFaction?.activeTripleEmergentRuleId;
+
+  // Build all cards for the hand using backend state
   const handCards = useMemo(() => {
-    const cards: Array<{ key: string; kind: 'solo' | 'pair' | 'triple'; synergy: any; tierDescriptions?: TierDescriptions }> = [];
+    const cards: Array<{ key: string; kind: 'solo' | 'pair' | 'triple'; synergy: any; tierDescriptions?: TierDescriptions; inactive?: boolean }> = [];
+    const allPairs = pairSynergiesData.pairSynergies as PairSynergy[];
+    const allRules = emergentRulesData.rules as EmergentRule[];
+
     for (const d of resolved.allDomains) {
       cards.push({
         key: `solo-${d}`,
@@ -384,14 +393,45 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
         tierDescriptions: buildTierDescriptions(d, capabilities),
       });
     }
-    for (const { pair, domains } of resolved.activePairs) {
-      cards.push({ key: `pair-${pair.id}`, kind: 'pair', synergy: pair });
+
+    if (hasActiveTriple) {
+      // Triple stack: show all pairs from triple + emergent rule card
+      const nativeId = activeNativePairId;
+      for (const pairId of activeTriplePairIds) {
+        const pairData = allPairs.find((p) => p.id === pairId);
+        if (!pairData) continue;
+        const isNative = pairId === nativeId;
+        cards.push({
+          key: `pair-${pairId}`,
+          kind: 'pair',
+          synergy: pairData,
+          inactive: !isNative,
+        });
+      }
+      if (activeTripleEmergentRuleId) {
+        const ruleData = allRules.find((r) => r.id === activeTripleEmergentRuleId);
+        if (ruleData) {
+          cards.push({ key: `triple-${ruleData.id}`, kind: 'triple', synergy: ruleData });
+        }
+      }
+    } else {
+      // No triple: show native self-pair + double stack pairs
+      if (activeNativePairId) {
+        const pairData = allPairs.find((p) => p.id === activeNativePairId);
+        if (pairData) {
+          cards.push({ key: `pair-${activeNativePairId}`, kind: 'pair', synergy: pairData });
+        }
+      }
+      for (const pairId of activeDoubleStackPairIds) {
+        const pairData = allPairs.find((p) => p.id === pairId);
+        if (pairData) {
+          cards.push({ key: `pair-${pairId}`, kind: 'pair', synergy: pairData });
+        }
+      }
     }
-    if (resolved.activeTriple) {
-      cards.push({ key: `triple-${resolved.activeTriple.id}`, kind: 'triple', synergy: resolved.activeTriple });
-    }
+
     return cards;
-  }, [resolved, capabilities]);
+  }, [resolved.allDomains, capabilities, hasActiveTriple, activeTriplePairIds, activeTripleEmergentRuleId, activeNativePairId, activeDoubleStackPairIds]);
 
   return (
     <div className="syn-chip-wrap" onClick={handleClick}>
@@ -458,6 +498,7 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
                     factionId={activeFaction?.id}
                     tierDescriptions={card.tierDescriptions}
                     isNativeDomain={card.kind === 'solo' && card.key === `solo-${resolved.nativeDomain}`}
+                    inactive={card.inactive}
                   />
                 </div>
               ))}

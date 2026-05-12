@@ -5,7 +5,7 @@ import { FactionInfoPopup } from './FactionInfoPopup';
 import { MetaRow } from './inspectors/MetaRow';
 import { UnitInspectorSection } from './inspectors/UnitInspectorSection';
 import { CityInspectorSection } from './inspectors/CityInspectorSection';
-import { resolveActiveSynergies } from './resolveActiveSynergies';
+import { resolveActiveSynergiesFromBackend, type BackendSynergyState } from './resolveActiveSynergies';
 
 type ContextInspectorProps = {
   state: ClientState;
@@ -66,11 +66,10 @@ export const ContextInspector = React.memo(function ContextInspector({ state, is
 
   const selectedUnitSynergies = useMemo(() => {
     if (!selectedUnit || !selectedUnit.isActiveFaction) return null;
-    const capabilities = state.research?.capabilities ?? [];
-    const pairEligible = capabilities.filter((c) => c.level >= 3).map((c) => c.domainId);
-    const emergentEligible = capabilities.filter((c) => c.level >= 2).map((c) => c.domainId);
-    return resolveActiveSynergies(pairEligible, emergentEligible);
-  }, [selectedUnit, state.research?.capabilities]);
+    const faction = state.world.factions.find((f) => f.id === selectedUnit.factionId);
+    if (!faction) return null;
+    return resolveActiveSynergiesFromBackend(faction as BackendSynergyState);
+  }, [selectedUnit, state.world.factions]);
 
   // Only render full panel when explicitly open
   if (!isOpen || !selection) {
