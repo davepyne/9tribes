@@ -930,3 +930,28 @@ No significant changes detected.
 - `web/src/ui/TribesTab.tsx` — 2 dependencies
 - `web/src/ui/TutorialOverlay.tsx` — 1 dependencies
 - `web/src/ui/VictoryOverlay.tsx` — 2 dependencies
+
+---
+
+## Digest — 2026-05-12T02:44:04.676941Z
+
+### Modified Files
+- `src/features/factions/types.ts` — +1 exports (DomainAcquisitionMethod)
+- `src/systems/aiProductionScoring.ts` — ~1 signatures (scoreSettlerExpansionValue)
+- `src/systems/capabilityDoctrine.ts` — +1 exports (clearDoctrineCache); ~1 signatures (resolveResearchDoctrine)
+- `src/systems/combatSystem.ts` — +1 exports (ResolveCombatOptions); ~1 signatures (resolveCombat)
+- `src/systems/domainProgression.ts` — ~1 signatures (getDomainProgression)
+- `src/systems/factionIdentitySystem.ts` — +1 exports (isRiverStealthTerrain); ~1 signatures (isWaterTerrain)
+- `src/systems/knowledgeSystem.ts` — +2 exports (getForeignT1Cost, isDomainRestricted); -1 exports (MAX_LEARNED_DOMAINS)
+- `src/systems/sacrificeSystem.ts` — -1 exports (autoCompleteResearchForDomains)
+- `src/systems/terrainUtils.ts` — +3 exports (COVER_TERRAINS, isCoverTerrain, isRiverStealthTerrain)
+
+### Dependency Changes
+- `src/features/factions/types.ts` — 2 dependencies
+- `src/systems/aiProductionScoring.ts` — 10 dependencies
+- `src/systems/capabilityDoctrine.ts` — 6 dependencies
+- `src/systems/combatSystem.ts` — 9 dependencies
+- `src/systems/domainProgression.ts` — 2 dependencies
+- `src/systems/factionIdentitySystem.ts` — 7 dependencies
+- `src/systems/knowledgeSystem.ts` — 8 dependencies
+- `src/systems/sacrificeSystem.ts` — 7 dependencies

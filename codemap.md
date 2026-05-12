@@ -64,25 +64,25 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 
 - INPUT: GameState, victorFactionId, defeatedFactionId, RulesRegistry
 - OUTPUT: {state: GameState, absorbedDomains: string[]}
-- SIDE EFFECTS: Returns new GameState. Transfers contact, combat records, domains (capped MAX_LEARNED_DOMAINS), auto-completes T1 research, re-evaluates domain progression/triple. Razes defeated faction's cities and destroys their villages (does NOT transfer ownership).
-- INVARIANTS: Only fires when defeated faction has zero living units. Duplicate domains filtered, native domain excluded. Defeated faction's cities are deleted from the map; their villages are destroyed via destroyVillagesInCityTerritory.
+- SIDE EFFECTS: Returns new GameState. Transfers contact, combat records, domains (NO cap — conquest event, not ecology). Grants domain awareness only: adds to learnedDomains + sets domainAcquisitionMethod='absorption'. No T1 auto-complete or synergy eligibility. Razes defeated faction's cities and destroys their villages (does NOT transfer ownership).
+- INVARIANTS: Only fires when defeated faction has zero living units. Duplicate domains filtered, native domain excluded, restricted domains excluded via `isDomainRestricted()` from knowledgeSystem. Defeated faction's cities are deleted from the map; their villages are destroyed via destroyVillagesInCityTerritory. Sets recentSacrificeDomainIds on victor's research state for AI strategy.
 - CALLERS: combat-action/apply.ts
 
 ## Sacrifice System (`src/systems/sacrificeSystem.ts`)
 
 - INPUT: unit, faction, state, RulesRegistry, optional SimulationTrace
-- OUTPUT: canSacrifice → boolean; performSacrifice → GameState; autoCompleteResearchForDomains → GameState
-- SIDE EFFECTS: Returns new GameState. Non-destructive: strips unit's learnedAbilities (keeps unit alive). Adds learned domains to faction, auto-completes T1 research, re-evaluates triple synergy.
-- INVARIANTS: Sacrifice range = hexDistance(unit, homeCity) <= 1. Home city must not be besieged. Unit must have learnedAbilities. MAX_LEARNED_DOMAINS cap on faction domains (enforced upstream by knowledgeSystem). SynergyEngine accessed via synergyRuntime singleton.
-- CALLERS: unit-activation/activateUnit.ts (canSacrifice, performSacrifice), GameSession.ts (performSacrifice), factionAbsorption.ts (autoCompleteResearchForDomains), knowledgeSystem.ts (autoCompleteResearchForDomains)
+- OUTPUT: canSacrifice → boolean; performSacrifice → GameState; codifyDomainsForFaction → GameState
+- SIDE EFFECTS: Returns new GameState. Non-destructive: strips unit's learnedAbilities (keeps unit alive). Grants synergy eligibility only — does NOT add to learnedDomains or auto-complete T1 research. Evaluates triple synergy from synergyEligibleDomains. Sets recentSacrificeDomainIds/recentSacrificeRound on faction research state for AI strategy.
+- INVARIANTS: Sacrifice range = hexDistance(unit, homeCity) <= 1. Home city must not be besieged. Home city must belong to faction. Unit must have learnedAbilities (length > 0). No MAX_LEARNED_DOMAINS cap enforced here. SynergyEngine accessed via synergyRuntime singleton.
+- CALLERS: unit-activation/activateUnit.ts (canSacrifice, performSacrifice), GameSession.ts (performSacrifice)
 
 ## Knowledge System (`src/systems/knowledgeSystem.ts`)
 
 - INPUT: GameState, FactionId, domainId, amount, optional trace + registry
-- OUTPUT: gainExposure → GameState; getNextExposureThreshold → number; isForeignDomain → boolean; checkDomainLearned → string|null
-- SIDE EFFECTS: Returns new GameState. Accumulates exposure progress, learns domains on threshold crossing, auto-completes T1 research if registry provided.
-- INVARIANTS: EXPOSURE_THRESHOLDS = [20, 120, 200]. MAX_LEARNED_DOMAINS = 3 (including native). Early return if at cap or domain is native/already-learned. Threshold index = foreign domain count.
-- CALLERS: factionTurnEffects.ts, balanceHarness.ts, factionAbsorption.ts, productionSystem.ts, aiProductionStrategy.ts, aiProductionScoring.ts, strategicAi.ts, sessionUtils.ts
+- OUTPUT: gainExposure → GameState; getNextExposureThreshold → number; isForeignDomain → boolean; checkDomainLearned → string|null; isDomainRestricted → boolean; getForeignT1Cost → number; getPrototypeCostModifier → number; incrementPrototypeMastery → GameState; getExposedDomains → string[]; getExposureDetails → {current, threshold, progress}|null; isUnlockPrototype → boolean; calculatePrototypeCost → number; getDomainIdByTag → string|null; getDomainIdsByTags → string[]
+- SIDE EFFECTS: Returns new GameState. Accumulates exposure progress, learns domains on threshold crossing. Grants domain awareness (adds to learnedDomains) but NOT T1 auto-complete — T1 must be earned via ecology assimilation at scaled cost (getForeignT1Cost = 20 * (assimilatedCount + 1)). Sets domainAcquisitionMethod='exposure'.
+- INVARIANTS: EXPOSURE_THRESHOLDS = [20, 120, 200, 300, 400, 500, 600, 700, 800] (9 tiers). No hard MAX_LEARNED_DOMAINS cap. RESTRICTED_DOMAINS derived from ability-domains.json `restrictedToNative` flag — exposure silently skipped for restricted domains. Early return if domain is native/already-learned/restricted. Threshold index = foreign domain count. Prototype mastery: 0 builds=2.0x, 1=1.5x, 2=1.2x, 3+=1.0x. isUnlockPrototype gates mastery modifier to hybrid recipe prototypes only.
+- CALLERS: factionTurnEffects.ts, factionAbsorption.ts (isDomainRestricted), productionSystem.ts, aiProductionStrategy.ts, aiProductionScoring.ts, strategicAi.ts, sessionUtils.ts, capabilityDoctrine.ts (getForeignT1Cost)
 
 ## Learn-by-Kill System (`src/systems/learnByKillSystem.ts`)
 

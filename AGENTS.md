@@ -59,10 +59,10 @@ When to use which:
 
 To refresh after code changes:
 ```bash
-python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py changes --root ./
-python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py extract --root ./ --changed-only
-python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py digest --root ./ --output .slim/digest.md
-python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py update --root ./
+python3 ~/.hermes/skills/cartography/scripts/cartographer.py changes --root ./
+python3 ~/.hermes/skills/cartography/scripts/cartographer.py extract --root ./ --changed-only
+python3 ~/.hermes/skills/cartography/scripts/cartographer.py digest --root ./ --output .slim/digest.md
+python3 ~/.hermes/skills/cartography/scripts/cartographer.py update --root ./
 ```
 
 ## Grid System
