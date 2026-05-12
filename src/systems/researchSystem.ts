@@ -14,10 +14,9 @@ import {
  * Native domain T1 is auto-completed.
  */
 export function createResearchState(factionId: FactionId, nativeDomain?: string, researchPerTurn?: number): ResearchState {
-  const completedNodes: ResearchNodeId[] = [];
-  if (nativeDomain) {
-    completedNodes.push(`${nativeDomain}_t1` as ResearchNodeId);
-  }
+  const completedNodes: ResearchNodeId[] = nativeDomain
+    ? [`${nativeDomain}_t1` as ResearchNodeId]
+    : [];
 
   return {
     factionId,

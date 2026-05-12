@@ -9,9 +9,6 @@ import {
   isUnitRiverStealthed,
 } from '../factionIdentitySystem.js';
 import {
-  getVeteranDefenseBonus,
-  getVeteranMoraleBonus,
-  getVeteranStatBonus,
   resolveCombat,
   type CombatResult,
 } from '../combatSystem.js';
@@ -309,37 +306,33 @@ export function previewCombatAction(
     defender.position,
     registry.getSignatureAbility('coral_people')?.wallDefenseMultiplier ?? 2,
   );
-  const result = resolveCombat(
+  const result = resolveCombat({
     attacker,
     defender,
     attackerPrototype,
     defenderPrototype,
-    getVeteranStatBonus(registry, attacker.veteranLevel),
-    getVeteranDefenseBonus(registry, defender.veteranLevel),
+    registry,
+    rngState: state.rngState,
     attackerTerrain,
     defenderTerrain,
-    improvementDefenseBonus + wallDefenseBonus,
-    getVeteranMoraleBonus(registry, defender.veteranLevel),
-    registry,
+    defenderImprovementBonus: improvementDefenseBonus + wallDefenseBonus,
     flankingBonus,
-    situationalAttackModifier + chargeAttackBonus,
+    situationalAttackModifier: situationalAttackModifier + chargeAttackBonus,
     situationalDefenseModifier,
-    state.rngState,
     rearAttackBonus,
     braceDefenseBonus,
     ambushAttackBonus,
-    (rearAttackBonus > 0 ? 18 : 0) + (attacker.preparedAbility === 'ambush' ? 10 : 0),
+    bonusDefenderMoraleLoss: (rearAttackBonus > 0 ? 18 : 0) + (attacker.preparedAbility === 'ambush' ? 10 : 0),
     retaliationDamageMultiplier,
-    0,
-    isChargeAttack,
-    attackerWasStealthed,
-    attackerSynergyResult.chargeShield,
-    defenderSynergyResult.antiDisplacement || defenderDoctrine?.armorPenetrationEnabled === true || attackerDoctrine?.heavyTranscendenceEnabled === true,
-    attackerSynergyResult.stealthChargeMultiplier,
-    attackerSynergyResult.sandstormAccuracyDebuff,
+    isCharge: isChargeAttack,
+    isStealthed: attackerWasStealthed,
+    chargeShield: attackerSynergyResult.chargeShield,
+    antiDisplacement: defenderSynergyResult.antiDisplacement || defenderDoctrine?.armorPenetrationEnabled === true || attackerDoctrine?.chargeTranscendenceEnabled === true,
+    stealthChargeMultiplier: attackerSynergyResult.stealthChargeMultiplier,
+    accuracyDebuff: attackerSynergyResult.sandstormAccuracyDebuff,
     forestFirstStrike,
-    (attackerDoctrine?.heavyTranscendenceEnabled ? 1.0 : attackerDoctrine?.armorPenetrationEnabled ? 0.5 : 0) + attackerSynergyResult.armorPiercing,
-  );
+    armorPenetration: (attackerDoctrine?.chargeTranscendenceEnabled ? 1.0 : attackerDoctrine?.armorPenetrationEnabled ? 0.5 : 0) + attackerSynergyResult.armorPiercing,
+  });
 
   let totalKnockbackDistance = result.defenderKnockedBack ? result.knockbackDistance : 0;
   if (result.defenderKnockedBack && attackerDoctrine?.elephantStampede2Enabled) {

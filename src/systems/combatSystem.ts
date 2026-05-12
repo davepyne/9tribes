@@ -118,38 +118,71 @@ function isRangedAttack(prototype: Prototype, registry: RulesRegistry): boolean 
   return weaponTags.includes('ranged');
 }
 
+export interface ResolveCombatOptions {
+  attacker: Unit;
+  defender: Unit;
+  attackerPrototype: Prototype;
+  defenderPrototype: Prototype;
+  registry: RulesRegistry;
+  rngState: RNGState;
+
+  attackerTerrain: TerrainDef | undefined;
+  defenderTerrain: TerrainDef | undefined;
+
+  defenderImprovementBonus: number;
+  flankingBonus?: number;
+  rearAttackBonus?: number;
+
+  situationalAttackModifier?: number;
+  situationalDefenseModifier?: number;
+
+  braceDefenseBonus?: number;
+  ambushAttackBonus?: number;
+  bonusDefenderMoraleLoss?: number;
+
+  retaliationDamageMultiplier?: number;
+  stealthChargeMultiplier?: number;
+
+  accuracyDebuff?: number;
+
+  isCharge?: boolean;
+  isStealthed?: boolean;
+  chargeShield?: boolean;
+  antiDisplacement?: boolean;
+  forestFirstStrike?: boolean;
+
+  armorPenetration?: number;
+}
+
 // Execute a combat round between two units
-export function resolveCombat(
-  attacker: Unit,
-  defender: Unit,
-  attackerPrototype: Prototype,
-  defenderPrototype: Prototype,
-  attackerVeteranBonus: number,
-  defenderVeteranBonus: number,
-  attackerTerrain: TerrainDef | undefined,
-  defenderTerrain: TerrainDef | undefined,
-  defenderImprovementBonus: number,
-  defenderVeteranMoraleBonus: number,
-  registry: RulesRegistry,
-  flankingBonus: number = 0,
-  situationalAttackModifier: number = 0,
-  situationalDefenseModifier: number = 0,
-  rngState: RNGState,
-  rearAttackBonus: number = 0,
-  braceDefenseBonus: number = 0,
-  ambushAttackBonus: number = 0,
-  bonusDefenderMoraleLoss: number = 0,
-  retaliationDamageMultiplier: number = 1,
-  hiddenAttackBonus: number = 0,
-  isCharge: boolean = false,
-  isStealthed: boolean = false,
-  chargeShield: boolean = false,
-  antiDisplacement: boolean = false,
-  stealthChargeMultiplier: number = 0,
-  accuracyDebuff: number = 0,
-  forestFirstStrike: boolean = false,
-  armorPenetration: number = 0,
-): CombatResult {
+export function resolveCombat(options: ResolveCombatOptions): CombatResult {
+  const {
+    attacker, defender, attackerPrototype, defenderPrototype,
+    registry, rngState,
+    attackerTerrain, defenderTerrain,
+    defenderImprovementBonus,
+  } = options;
+
+  const attackerVeteranBonus = getVeteranStatBonus(registry, attacker.veteranLevel);
+  const defenderVeteranBonus = getVeteranDefenseBonus(registry, defender.veteranLevel);
+  const defenderVeteranMoraleBonus = getVeteranMoraleBonus(registry, defender.veteranLevel);
+
+  const flankingBonus = options.flankingBonus ?? 0;
+  const situationalAttackModifier = options.situationalAttackModifier ?? 0;
+  const situationalDefenseModifier = options.situationalDefenseModifier ?? 0;
+  const rearAttackBonus = options.rearAttackBonus ?? 0;
+  const braceDefenseBonus = options.braceDefenseBonus ?? 0;
+  const ambushAttackBonus = options.ambushAttackBonus ?? 0;
+  const bonusDefenderMoraleLoss = options.bonusDefenderMoraleLoss ?? 0;
+  const retaliationDamageMultiplier = options.retaliationDamageMultiplier ?? 1;
+  const stealthChargeMultiplier = options.stealthChargeMultiplier ?? 0;
+  const accuracyDebuff = options.accuracyDebuff ?? 0;
+  const isCharge = options.isCharge ?? false;
+  const isStealthed = options.isStealthed ?? false;
+  const chargeShield = options.chargeShield ?? false;
+  const antiDisplacement = options.antiDisplacement ?? false;
+  const forestFirstStrike = options.forestFirstStrike ?? false;
+  const armorPenetration = options.armorPenetration ?? 0;
   // 1. Calculate base stats
   const attackerAttack = calculateAttack(attacker, attackerPrototype, attackerVeteranBonus);
   const defenderDefense = calculateDefense(
@@ -173,14 +206,14 @@ export function resolveCombat(
   //    Role, weapon, and other situational bonuses remain additive.
   const stealthAmbushBonus = isStealthed ? 0.50 : 0;
   const desperateMultiplier = attacker.routed ? MORALE_CONFIG.DESPERATE_ATTACK_PENALTY : 1;
-  const baseMultiplier = desperateMultiplier + roleMod + weaponMod + situationalAttackModifier + ambushAttackBonus + hiddenAttackBonus + stealthAmbushBonus + stealthChargeMultiplier;
+  const baseMultiplier = desperateMultiplier + roleMod + weaponMod + situationalAttackModifier + ambushAttackBonus + stealthAmbushBonus + stealthChargeMultiplier;
   const positionalMultiplier = (1 + flankingBonus) * (1 + rearAttackBonus);
   const attackStrength = Math.round(
     attackerAttack * baseMultiplier * positionalMultiplier
   );
   const defenseStrength = Math.round(defenderDefense * (1 + braceDefenseBonus) * (1 - accuracyDebuff) * (1 - armorPenetration));
 
-  // 6. Calculate defender damage (attacker hits defender first)
+  // 5. Calculate defender damage (attacker hits defender first)
   // charge_shield: if attacker has charge shield, defender takes 0 damage from first hit
   const defenderBaseDamage = chargeShield ? 0 : calculateDamage(attackStrength, defenseStrength, 3);
   const defenderVariance = applyDamageVariance(rngState, defenderBaseDamage, 3);
@@ -190,11 +223,8 @@ export function resolveCombat(
   const defenderNewHp = defender.hp - defenderDamage;
   const defenderDestroyed = defenderNewHp <= 0;
 
-  // 8. Ranged attacks take no retaliation
-  const attackerIsRanged = isRangedAttack(attackerPrototype, registry);
-  if (attackerIsRanged) {
-    // ranged attacks take no retaliation
-  }
+  // 6. Ranged attacks take no retaliation
+  const attackerIsRanged = attackerPrototype.derivedStats.role === 'ranged' || attackerWeaponTags.includes('ranged');
   let attackerDamage = 0;
   let retaliationVarianceMultiplier = 1;
 
@@ -215,7 +245,7 @@ export function resolveCombat(
     retaliationVarianceMultiplier = retaliationVariance.multiplier;
   }
 
-  // 8b. Determine knockback (elephant stampede)
+  // 7. Determine knockback (elephant stampede)
   const attackerHasElephantTag = attackerPrototype.tags?.includes('elephant') ?? false;
   const defenderKnockedBack = isCharge && attackerHasElephantTag && !antiDisplacement;
   const knockbackDistance = defenderKnockedBack ? 1 : 0;
@@ -250,16 +280,13 @@ export function resolveCombat(
   // 9b. Cavalry flee: mounted units route at 25% HP (can run away faster)
   // Elephants flee at 25% HP — stubborn war animals but not invincible
   const attackerMovementClass = registry.getChassis(attackerPrototype.chassisId)?.movementClass ?? 'infantry';
-  const defenderIsElephant = defenderPrototype.tags?.includes('elephant') ?? false;
-  const attackerIsElephant = attackerPrototype.tags?.includes('elephant') ?? false;
-  const defenderElephantFleeThreshold = defenderIsElephant ? 0.25 : 0.25;
-  const attackerElephantFleeThreshold = attackerIsElephant ? 0.25 : 0.25;
   const defenderIsSummoned = defenderPrototype.tags?.includes('summon') ?? false;
   const attackerIsSummoned = attackerPrototype.tags?.includes('summon') ?? false;
+  const fleeThreshold = 0.25;
   const defenderFled = !defenderDestroyed && !defenderRouted && !defenderIsSummoned
-    && (defenderMovementClass === 'cavalry' || defenderMovementClass === 'camel' || defenderMovementClass === 'beast') && defenderNewHp <= defender.maxHp * defenderElephantFleeThreshold;
+    && (defenderMovementClass === 'cavalry' || defenderMovementClass === 'camel' || defenderMovementClass === 'beast') && defenderNewHp <= defender.maxHp * fleeThreshold;
   const attackerFled = !attackerDestroyed && !attackerRouted && !attackerIsSummoned
-    && (attackerMovementClass === 'cavalry' || attackerMovementClass === 'camel' || attackerMovementClass === 'beast') && attackerNewHp <= attacker.maxHp * attackerElephantFleeThreshold;
+    && (attackerMovementClass === 'cavalry' || attackerMovementClass === 'camel' || attackerMovementClass === 'beast') && attackerNewHp <= attacker.maxHp * fleeThreshold;
 
   // 10. Collect combat signals for capability feedback
   const signals = collectCombatSignals(
@@ -289,7 +316,7 @@ export function resolveCombat(
     rearAttackBonus,
     braceDefenseBonus,
     ambushAttackBonus,
-    hiddenAttackBonus,
+    hiddenAttackBonus: 0,
     situationalAttackModifier,
     situationalDefenseModifier,
     baseMultiplier,

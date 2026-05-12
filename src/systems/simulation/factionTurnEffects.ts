@@ -1178,13 +1178,5 @@ export function processFactionPhases(
     }
   }
 
-  const currentFaction = current.factions.get(factionId);
-  if (currentFaction) {
-    for (const [otherFactionId, otherFaction] of current.factions) {
-      if (otherFactionId === factionId) continue;
-      if (otherFaction.unitIds.length === 0) continue;
-    }
-  }
-
   return current;
 }

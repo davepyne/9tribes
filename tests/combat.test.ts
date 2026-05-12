@@ -166,19 +166,17 @@ describe('combat resolution', () => {
     const rangedProto = state.prototypes.get(rangedUnit.prototypeId)!;
     const meleeProto = state.prototypes.get(meleeUnit.prototypeId)!;
 
-    const result = resolveCombat(
-      rangedUnit, meleeUnit,
-      rangedProto, meleeProto,
-      0, 0,
-      registry.getTerrain('plains'),
-      registry.getTerrain('plains'),
-      0, 0,
+    const result = resolveCombat({
+      attacker: rangedUnit,
+      defender: meleeUnit,
+      attackerPrototype: rangedProto,
+      defenderPrototype: meleeProto,
+      attackerTerrain: registry.getTerrain('plains'),
+      defenderTerrain: registry.getTerrain('plains'),
+      defenderImprovementBonus: 0,
       registry,
-      0,
-      0,
-      0,
-      makeCombatRng()
-    );
+      rngState: makeCombatRng(),
+    });
 
     // Ranged attacker takes 0 retaliation damage
     expect(result.attackerDamage).toBe(0);
@@ -193,19 +191,17 @@ describe('combat resolution', () => {
     const spearProto = state.prototypes.get(spearUnit.prototypeId)!;
     const cavalryProto = state.prototypes.get(cavalryUnit.prototypeId)!;
 
-    const result = resolveCombat(
-      spearUnit, cavalryUnit,
-      spearProto, cavalryProto,
-      0, 0,
-      registry.getTerrain('plains'),
-      registry.getTerrain('plains'),
-      0, 0,
+    const result = resolveCombat({
+      attacker: spearUnit,
+      defender: cavalryUnit,
+      attackerPrototype: spearProto,
+      defenderPrototype: cavalryProto,
+      attackerTerrain: registry.getTerrain('plains'),
+      defenderTerrain: registry.getTerrain('plains'),
+      defenderImprovementBonus: 0,
       registry,
-      0,
-      0,
-      0,
-      makeCombatRng()
-    );
+      rngState: makeCombatRng(),
+    });
 
     expect(result.weaponModifier).toBe(0);
   });
@@ -216,19 +212,17 @@ describe('combat resolution', () => {
     const cavalryUnit = state.units.get(steppeFaction.unitIds[0])!;
     const cavalryProto = state.prototypes.get(cavalryUnit.prototypeId)!;
 
-    const result = resolveCombat(
-      cavalryUnit, cavalryUnit,
-      cavalryProto, cavalryProto,
-      0, 0,
-      registry.getTerrain('plains'),
-      registry.getTerrain('plains'),
-      0, 0,
+    const result = resolveCombat({
+      attacker: cavalryUnit,
+      defender: cavalryUnit,
+      attackerPrototype: cavalryProto,
+      defenderPrototype: cavalryProto,
+      attackerTerrain: registry.getTerrain('plains'),
+      defenderTerrain: registry.getTerrain('plains'),
+      defenderImprovementBonus: 0,
       registry,
-      0,
-      0,
-      0,
-      makeCombatRng()
-    );
+      rngState: makeCombatRng(),
+    });
 
     expect(result.weaponModifier).toBe(0);
   });
@@ -260,19 +254,17 @@ describe('combat resolution', () => {
     };
     const defenderProto = state.prototypes.get(defenderUnit.prototypeId)!;
 
-    const result = resolveCombat(
-      attackerUnit, defenderUnit,
-      cavalrySpearProto, defenderProto,
-      0, 0,
-      registry.getTerrain('plains'),
-      registry.getTerrain('plains'),
-      0, 0,
+    const result = resolveCombat({
+      attacker: attackerUnit,
+      defender: defenderUnit,
+      attackerPrototype: cavalrySpearProto,
+      defenderPrototype: defenderProto,
+      attackerTerrain: registry.getTerrain('plains'),
+      defenderTerrain: registry.getTerrain('plains'),
+      defenderImprovementBonus: 0,
       registry,
-      0,
-      0,
-      0,
-      makeCombatRng()
-    );
+      rngState: makeCombatRng(),
+    });
 
     expect(result.attackerDamage).toBeGreaterThan(0);
   });
@@ -286,19 +278,16 @@ describe('combat resolution', () => {
     const attackerProto = state.prototypes.get(attacker.prototypeId)!;
     const defenderProto = state.prototypes.get(defender.prototypeId)!;
 
-    const result = resolveCombat(
+    const result = resolveCombat({
       attacker, defender,
-      attackerProto, defenderProto,
-      0, 0,
-      registry.getTerrain('plains'),
-      registry.getTerrain('plains'),
-      0, 0,
+      attackerPrototype: attackerProto,
+      defenderPrototype: defenderProto,
+      attackerTerrain: registry.getTerrain('plains'),
+      defenderTerrain: registry.getTerrain('plains'),
+      defenderImprovementBonus: 0,
       registry,
-      0,
-      0,
-      0,
-      makeCombatRng()
-    );
+      rngState: makeCombatRng(),
+    });
 
     // Result should include role and weapon modifiers
     expect(typeof result.roleModifier).toBe('number');
@@ -315,33 +304,29 @@ describe('combat resolution', () => {
     const defenderProto = state.prototypes.get(defender.prototypeId)!;
 
     // Combat on plains vs forest
-    const plainsResult = resolveCombat(
-      attacker, defender,
-      attackerProto, defenderProto,
-      0, 0,
-      registry.getTerrain('plains'),
-      registry.getTerrain('plains'),
-      0, 0,
+    const plainsResult = resolveCombat({
+      attacker,
+      defender,
+      attackerPrototype: attackerProto,
+      defenderPrototype: defenderProto,
+      attackerTerrain: registry.getTerrain('plains'),
+      defenderTerrain: registry.getTerrain('plains'),
+      defenderImprovementBonus: 0,
       registry,
-      0,
-      0,
-      0,
-      makeCombatRng()
-    );
+      rngState: makeCombatRng(),
+    });
 
-    const forestResult = resolveCombat(
-      attacker, defender,
-      attackerProto, defenderProto,
-      0, 0,
-      registry.getTerrain('plains'),
-      registry.getTerrain('forest'),
-      0, 0,
+    const forestResult = resolveCombat({
+      attacker,
+      defender,
+      attackerPrototype: attackerProto,
+      defenderPrototype: defenderProto,
+      attackerTerrain: registry.getTerrain('plains'),
+      defenderTerrain: registry.getTerrain('forest'),
+      defenderImprovementBonus: 0,
       registry,
-      0,
-      0,
-      0,
-      makeCombatRng()
-    );
+      rngState: makeCombatRng(),
+    });
 
     // Defender in forest should take less damage
     expect(forestResult.defenderDamage).toBeLessThanOrEqual(plainsResult.defenderDamage);
@@ -354,41 +339,33 @@ describe('combat resolution', () => {
     const attackerProto = state.prototypes.get(attacker.prototypeId)!;
     const defenderProto = state.prototypes.get(defender.prototypeId)!;
 
-    const rearResult = resolveCombat(
-      { ...attacker, position: { q: 5, r: 5 } },
-      { ...defender, position: { q: 6, r: 5 }, facing: 3, routed: false },
-      attackerProto,
-      defenderProto,
-      0, 0,
-      registry.getTerrain('plains'),
-      registry.getTerrain('plains'),
-      0, 0,
+    const rearResult = resolveCombat({
+      attacker: { ...attacker, position: { q: 5, r: 5 } },
+      defender: { ...defender, position: { q: 6, r: 5 }, facing: 3, routed: false },
+      attackerPrototype: attackerProto,
+      defenderPrototype: defenderProto,
+      attackerTerrain: registry.getTerrain('plains'),
+      defenderTerrain: registry.getTerrain('plains'),
+      defenderImprovementBonus: 0,
       registry,
-      0,
-      0,
-      0,
-      createRNG(500),
-      0.2,
-      0,
-      0,
-      6
-    );
+      rngState: createRNG(500),
+      rearAttackBonus: 0.2,
+      braceDefenseBonus: 0,
+      ambushAttackBonus: 0,
+      bonusDefenderMoraleLoss: 6,
+    });
 
-    const frontResult = resolveCombat(
-      { ...attacker, position: { q: 5, r: 5 } },
-      { ...defender, position: { q: 6, r: 5 }, facing: 0, routed: false },
-      attackerProto,
-      defenderProto,
-      0, 0,
-      registry.getTerrain('plains'),
-      registry.getTerrain('plains'),
-      0, 0,
+    const frontResult = resolveCombat({
+      attacker: { ...attacker, position: { q: 5, r: 5 } },
+      defender: { ...defender, position: { q: 6, r: 5 }, facing: 0, routed: false },
+      attackerPrototype: attackerProto,
+      defenderPrototype: defenderProto,
+      attackerTerrain: registry.getTerrain('plains'),
+      defenderTerrain: registry.getTerrain('plains'),
+      defenderImprovementBonus: 0,
       registry,
-      0,
-      0,
-      0,
-      createRNG(500)
-    );
+      rngState: createRNG(500),
+    });
 
     expect(rearResult.rearAttackBonus).toBe(0.2);
     expect(rearResult.defenderMoraleLoss).toBeGreaterThan(frontResult.defenderMoraleLoss);
@@ -401,32 +378,28 @@ describe('combat resolution', () => {
     const attackerProto = state.prototypes.get(attacker.prototypeId)!;
     const defenderProto = state.prototypes.get(defender.prototypeId)!;
 
-    const first = resolveCombat(
-      attacker, defender,
-      attackerProto, defenderProto,
-      0, 0,
-      registry.getTerrain('plains'),
-      registry.getTerrain('plains'),
-      0, 0,
+    const first = resolveCombat({
+      attacker,
+      defender,
+      attackerPrototype: attackerProto,
+      defenderPrototype: defenderProto,
+      attackerTerrain: registry.getTerrain('plains'),
+      defenderTerrain: registry.getTerrain('plains'),
+      defenderImprovementBonus: 0,
       registry,
-      0,
-      0,
-      0,
-      createRNG(777)
-    );
-    const second = resolveCombat(
-      attacker, defender,
-      attackerProto, defenderProto,
-      0, 0,
-      registry.getTerrain('plains'),
-      registry.getTerrain('plains'),
-      0, 0,
+      rngState: createRNG(777),
+    });
+    const second = resolveCombat({
+      attacker,
+      defender,
+      attackerPrototype: attackerProto,
+      defenderPrototype: defenderProto,
+      attackerTerrain: registry.getTerrain('plains'),
+      defenderTerrain: registry.getTerrain('plains'),
+      defenderImprovementBonus: 0,
       registry,
-      0,
-      0,
-      0,
-      createRNG(777)
-    );
+      rngState: createRNG(777),
+    });
 
     expect(first.damageVarianceMultiplier).toBeGreaterThanOrEqual(0.9);
     expect(first.damageVarianceMultiplier).toBeLessThanOrEqual(1.1);
@@ -463,19 +436,17 @@ describe('morale system', () => {
     const attackerProto = state.prototypes.get(attacker.prototypeId)!;
     const defenderProto = state.prototypes.get(defender.prototypeId)!;
 
-    const result = resolveCombat(
-      attacker, defender,
-      attackerProto, defenderProto,
-      0, 0,
-      registry.getTerrain('plains'),
-      registry.getTerrain('plains'),
-      0, 0,
+    const result = resolveCombat({
+      attacker,
+      defender,
+      attackerPrototype: attackerProto,
+      defenderPrototype: defenderProto,
+      attackerTerrain: registry.getTerrain('plains'),
+      defenderTerrain: registry.getTerrain('plains'),
+      defenderImprovementBonus: 0,
       registry,
-      0,
-      0,
-      0,
-      makeCombatRng()
-    );
+      rngState: makeCombatRng(),
+    });
 
     expect(result.attackerMoraleLoss).toBeGreaterThanOrEqual(0);
     expect(result.defenderMoraleLoss).toBeGreaterThanOrEqual(0);
