@@ -94,6 +94,12 @@ export class TileLayerRenderer {
         }
         this.layer.add(overlay);
       }
+
+      if (spec.iconTexture) {
+        const icon = this.scene.add.image(point.x, point.y, spec.iconTexture)
+          .setOrigin(0.5, 1);
+        this.layer.add(icon);
+      }
     }
   }
 }

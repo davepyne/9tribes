@@ -114,6 +114,12 @@ const FLAVOR: Record<string, Record<string, string>> = {
     druid_circle: 'Coastal forest margins give you stealth approach to shore defenses.',
     _default: 'Coastal hexes allow naval access and amphibious landings.',
   },
+  fish: {
+    coral_people: 'Rich fishing grounds. Your fleets rule these waters, and the bounty feeds your settlements.',
+    river_people: 'Teeming waters near the shore. Your galleys can harvest these grounds safely.',
+    desert_nomads: 'An unexpected bounty on the coast. Your traders know how to exploit any resource.',
+    _default: 'Abundant fishing grounds along the coast. Naval units move freely here and nearby settlements grow faster.',
+  },
   river: {
     river_people: 'River corridors are your veins. Your galleys move freely here. Every river is a highway.',
     coral_people: 'Inland waterways extend your coastal reach. Treat rivers like narrow ocean lanes.',

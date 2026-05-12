@@ -33,6 +33,7 @@ import type {
 } from '../types/worldView';
 import { resolveCapabilityDoctrine } from '../../../../src/systems/capabilityDoctrine.js';
 import { getResearch, getFaction } from '../stateAccess.js';
+import { isUnitEmbarked } from '../../../../src/systems/transportSystem.js';
 
 type PlayWorldSource = {
   kind: 'play';
@@ -41,6 +42,7 @@ type PlayWorldSource = {
   playerFactionId: string | null;
   reachableHexes: ReachableHexView[];
   attackHexes: AttackTargetView[];
+  disembarkHexes: ReachableHexView[];
   pathPreview: PathPreviewNodeView[];
   queuedPath: PathPreviewNodeView[];
   lastMove: { unitId: string; destination: HexCoord } | null;
@@ -151,9 +153,11 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       hexes,
     },
     factions,
-    units: Array.from(state.units.values()).filter((unit) => unit.hp > 0).map((unit) =>
-      buildUnitView(unit, state, source.registry, hexVisibility, moveCounts.get(unit.id) ?? 0, attackCounts.get(unit.id) ?? 0, unitsByPosition, source.playerFactionId),
-    ),
+    units: Array.from(state.units.values())
+      .filter((unit) => unit.hp > 0 && !isUnitEmbarked(unit.id, state.transportMap))
+      .map((unit) =>
+        buildUnitView(unit, state, source.registry, hexVisibility, moveCounts.get(unit.id) ?? 0, attackCounts.get(unit.id) ?? 0, unitsByPosition, source.playerFactionId),
+      ),
     cities: Array.from(state.cities.values()).map((city) => ({
       id: city.id,
       name: city.name,
@@ -198,6 +202,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       borders: buildBorderEdges(hexes, factions),
       reachableHexes: source.reachableHexes,
       attackHexes: source.attackHexes,
+      disembarkHexes: source.disembarkHexes,
       pathPreview: source.pathPreview,
       queuedPath: source.queuedPath,
       lastMove: source.lastMove,
@@ -391,6 +396,7 @@ function getAttackableEnemies(state: GameState, unit: Unit) {
   return Array.from(state.units.values()).filter((candidate) =>
     candidate.hp > 0
     && candidate.factionId !== unit.factionId
+    && !isUnitEmbarked(candidate.id, state.transportMap)
     && hexDistance(unit.position, candidate.position) <= attackRange
   );
 }

@@ -1,6 +1,6 @@
 // Healing system — applies per-turn unit healing based on location, faction, and synergies
 import type { GameState } from '../game/types.js';
-import type { UnitId, FactionId } from '../types.js';
+import type { UnitId, FactionId, PrototypeId } from '../types.js';
 import type { Unit } from '../features/units/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
 import { hexDistance, hexToKey, getNeighbors } from '../core/grid.js';
@@ -9,6 +9,7 @@ import { getHexOwner } from './territorySystem.js';
 import { getUnitAtHex } from './occupancySystem.js';
 import { recoverMorale } from './moraleSystem.js';
 import { resolveCapabilityDoctrine } from './capabilityDoctrine.js';
+import { isWaterTerrain } from './terrainUtils.js';
 import {
   applyHealingSynergies,
   type HealingContext,
@@ -27,11 +28,32 @@ function getTerrainAt(state: GameState, pos: { q: number; r: number }): string {
   return state.map?.tiles.get(hexToKey(pos))?.terrain ?? 'plains';
 }
 
+function isNavalUnit(state: GameState, prototypeId: PrototypeId, registry: RulesRegistry): boolean {
+  const proto = state.prototypes.get(prototypeId);
+  if (!proto) return false;
+  const chassis = registry.getChassis(proto.chassisId);
+  return chassis?.movementClass === 'naval';
+}
+
+function isInControlledWater(
+  state: GameState,
+  pos: { q: number; r: number },
+  factionId: FactionId,
+): boolean {
+  const terrainId = state.map?.tiles.get(hexToKey(pos))?.terrain;
+  if (!isWaterTerrain(terrainId)) return false;
+  for (const hex of getNeighbors(pos)) {
+    if (getHexOwner(hex, state) === factionId) return true;
+  }
+  return false;
+}
+
 /** Determine base heal amount per turn based on unit location */
 function getHealRate(
-  unit: { position: { q: number; r: number }; maxHp: number },
+  unit: { position: { q: number; r: number }; maxHp: number; prototypeId: PrototypeId },
   state: GameState,
   factionId: FactionId,
+  registry: RulesRegistry,
 ): number {
   const faction = state.factions.get(factionId);
   const terrainId = getTerrainAt(state, unit.position);
@@ -61,6 +83,11 @@ function getHealRate(
   // Owned territory
   const hexOwner = getHexOwner(unit.position, state);
   if (hexOwner === factionId) {
+    return Math.floor(unit.maxHp * HEALING_CONFIG.OWNED_TERRITORY) + getHealingBonus(faction, terrainId);
+  }
+
+  // Naval units heal at territory rate in controlled coastal waters
+  if (isNavalUnit(state, unit.prototypeId, registry) && isInControlledWater(state, unit.position, factionId)) {
     return Math.floor(unit.maxHp * HEALING_CONFIG.OWNED_TERRITORY) + getHealingBonus(faction, terrainId);
   }
 
@@ -122,7 +149,7 @@ function hasFriendlyNatureHealingAura(
 export function applyHealingForFaction(
   gameState: GameState,
   factionId: FactionId,
-  _registry: RulesRegistry,
+  registry: RulesRegistry,
 ): GameState {
   const faction = gameState.factions.get(factionId);
   if (!faction) return gameState;
@@ -137,7 +164,7 @@ export function applyHealingForFaction(
 
     // Base heal rate from location
     const terrainId = getTerrainAt(gameState, unit.position);
-    let healRate = getHealRate(unit, gameState, factionId);
+    let healRate = getHealRate(unit, gameState, factionId, registry);
     healRate += doctrine.natureHealingRegenBonus;
 
     // Synergy healing effects

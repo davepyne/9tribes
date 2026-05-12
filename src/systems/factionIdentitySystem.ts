@@ -43,7 +43,7 @@ export function getMovementCostModifier(
     return -2;
   }
 
-  if (passive === 'greedy' && (targetTerrainId === 'coast' || targetTerrainId === 'ocean')) {
+  if (passive === 'greedy' && (targetTerrainId === 'coast' || targetTerrainId === 'ocean' || targetTerrainId === 'fish')) {
     return -1;
   }
 
@@ -97,7 +97,7 @@ export function getCombatAttackModifier(
     return 0.1;
   }
 
-  if (passive === 'greedy' && (attackerTerrainId === 'coast' || attackerTerrainId === 'ocean')) {
+  if (passive === 'greedy' && (attackerTerrainId === 'coast' || attackerTerrainId === 'ocean' || attackerTerrainId === 'fish')) {
     return 0.15;
   }
 
@@ -167,8 +167,8 @@ export function getCombatDefenseModifier(
   }
 
   if (passive === 'greedy') {
-    if (terrainId === 'coast' || terrainId === 'ocean') return 0.15;
-    return 0.05; // pirate grit ΓÇö always a little tougher
+    if (terrainId === 'coast' || terrainId === 'ocean' || terrainId === 'fish') return 0.15;
+    return 0.05; // pirate grit — always a little tougher
   }
 
   return 0;
@@ -184,7 +184,7 @@ export function getEconomyProductionBonus(
     return 0.10;
   }
 
-  if (passive === 'greedy' && (terrainId === 'coast' || terrainId === 'ocean')) {
+  if (passive === 'greedy' && (terrainId === 'coast' || terrainId === 'ocean' || terrainId === 'fish')) {
     return 0.10;
   }
 
@@ -261,7 +261,7 @@ export function getEconomySupplyBonus(
     return 0.05;
   }
 
-  if (passive === 'greedy' && (terrainId === 'coast' || terrainId === 'ocean')) {
+  if (passive === 'greedy' && (terrainId === 'coast' || terrainId === 'ocean' || terrainId === 'fish')) {
     return 0.10;
   }
 
@@ -286,7 +286,7 @@ export function getTerrainPreferenceScore(
   }
 
   const passive = faction.identityProfile.passiveTrait;
-  if (passive === 'greedy' && (terrainId === 'coast' || terrainId === 'ocean')) {
+  if (passive === 'greedy' && (terrainId === 'coast' || terrainId === 'ocean' || terrainId === 'fish')) {
     return 2;
   }
   if (passive === 'river_assault' && isRiverStealthTerrain(terrainId)) {

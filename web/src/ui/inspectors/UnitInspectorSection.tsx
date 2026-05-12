@@ -23,6 +23,7 @@ type UnitInspectorSectionProps = {
   onPrepareAbility: (unitId: string, ability: 'brace' | 'ambush') => void;
   onBoardTransport: (unitId: string, transportId: string) => void;
   onDisembarkUnit: (unitId: string, transportId: string, destination: { q: number; r: number }) => void;
+  onSetTargetingMode: (mode: 'move' | 'attack' | 'disembark') => void;
   onFactionPopup: (info: FactionInfo) => void;
   onDomainPopup: (popup: { domainId: string; name: string; description: string }) => void;
 };
@@ -38,6 +39,7 @@ export const UnitInspectorSection = React.memo(function UnitInspectorSection({
   onPrepareAbility,
   onBoardTransport,
   onDisembarkUnit,
+  onSetTargetingMode,
   onFactionPopup,
   onDomainPopup,
 }: UnitInspectorSectionProps) {
@@ -341,6 +343,15 @@ export const UnitInspectorSection = React.memo(function UnitInspectorSection({
               Board
             </button>
           ))}
+          {unit.embarkedUnitIds && unit.embarkedValidDisembarkHexes && unit.embarkedValidDisembarkHexes.length > 0 ? (
+            <button
+              type="button"
+              className="ci-action-btn"
+              onClick={() => onSetTargetingMode('disembark')}
+            >
+              {unit.embarkedUnitIds.length > 1 ? `Disembark (${unit.embarkedUnitIds.length})` : 'Disembark'}
+            </button>
+          ) : null}
           {unit.transportId && unit.validDisembarkHexes?.map((hex) => (
             <button
               key={`${hex.q},${hex.r}`}

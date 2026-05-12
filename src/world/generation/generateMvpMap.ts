@@ -44,6 +44,7 @@ export function generateMvpMap(
   ensureCoastNearStart(map, { q: 34, r: 15 }, 2);
 
   carveOceanBorder(map);
+  carveFish(map, rng);
 
   return map;
 }
@@ -365,6 +366,18 @@ function carveOceanBorder(map: GameMap): void {
         if (tile) {
           tile.terrain = 'ocean';
         }
+      }
+    }
+  }
+}
+
+const FISH_CHANCE = 0.05;
+
+function carveFish(map: GameMap, rng: RNGState): void {
+  for (const tile of map.tiles.values()) {
+    if (tile.terrain === 'coast' || tile.terrain === 'ocean') {
+      if (rngNextFloat(rng) < FISH_CHANCE) {
+        tile.terrain = 'fish';
       }
     }
   }

@@ -90,7 +90,7 @@ export function previewMove(
   const prototypeTags = prototype?.tags ?? [];
   const targetTerrainId = tile.terrain;
   const isTargetWater = isWaterTerrain(targetTerrainId);
-  const isDeepWater = targetTerrainId === 'coast' || targetTerrainId === 'ocean';
+  const isDeepWater = targetTerrainId === 'coast' || targetTerrainId === 'ocean' || targetTerrainId === 'fish';
 
   // Deep water (ocean/coast): only naval units can traverse; river is crossable by land units
   if (isDeepWater && !isNavalUnit) {
@@ -155,7 +155,7 @@ export function previewMove(
 
   // Coastal Nomad synergy: speed bonus on coast/river
   const coastalNomadBonus = getCoastalNomadSpeedBonus(prototypeTags);
-  if (coastalNomadBonus > 0 && (targetTerrainId === 'coast' || targetTerrainId === 'river')) {
+  if (coastalNomadBonus > 0 && (targetTerrainId === 'coast' || targetTerrainId === 'river' || targetTerrainId === 'fish')) {
     totalCost -= coastalNomadBonus;
   }
 
@@ -177,7 +177,7 @@ export function previewMove(
   if (targetTerrainId === 'river' && doctrine.riverCrossingEnabled) {
     totalCost = Math.min(totalCost, 1);
   }
-  if ((targetTerrainId === 'coast' || targetTerrainId === 'river') && doctrine.amphibiousMovementEnabled) {
+  if ((targetTerrainId === 'coast' || targetTerrainId === 'river' || targetTerrainId === 'fish') && doctrine.amphibiousMovementEnabled) {
     totalCost = Math.min(totalCost, 1);
   }
   if ((targetTerrainId === 'desert' || targetTerrainId === 'tundra') && doctrine.heatResistanceEnabled) {

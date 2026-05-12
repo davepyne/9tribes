@@ -15,6 +15,7 @@ export type TerrainType =
   | 'tundra'
   | 'savannah'
   | 'coast'
+  | 'fish'
   | 'river'
   | 'swamp'
   | 'mountain'

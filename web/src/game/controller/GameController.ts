@@ -7,6 +7,7 @@ import { buildTerrainInspectorViewModel } from '../view-model/inspectors/terrain
 import { getVictoryStatus, getAliveFactions, isFactionEliminated } from '../../../../src/systems/warEcologySimulation.js';
 import { findPath } from '../../../../src/systems/pathfinder.js';
 import { getUnit, getFaction, hasUnit, asUnitId, asFactionId } from '../stateAccess.js';
+import { getValidDisembarkHexes, isTransportUnit } from '../../../../src/systems/transportSystem.js';
 
 type Listener = () => void;
 
@@ -24,7 +25,7 @@ export class GameController {
   private combatPendingListener: ((pending: PendingCombat) => void) | null = null;
   private selected: ClientSelection = null;
   private focusedUnitId: string | null = null;
-  private targetingMode: 'move' | 'attack' = 'move';
+  private targetingMode: 'move' | 'attack' | 'disembark' = 'move';
   private hoveredKey: string | null = null;
   private zoom = 1.1;
   private productionPopupCityId: string | null = null;
@@ -253,6 +254,15 @@ export class GameController {
     const activeUnitId = this.focusedUnitId ?? selectedUnitId;
     const legalMoves = activeUnitId ? session.getLegalMoves(activeUnitId) : [];
     const attackTargets = activeUnitId ? session.getAttackTargets(activeUnitId) : [];
+    const disembarkHexes = (() => {
+      if (!activeUnitId) return [];
+      const unit = getUnit(sessionState, activeUnitId);
+      if (!unit) return [];
+      const proto = sessionState.prototypes.get(unit.prototypeId);
+      if (!proto || !isTransportUnit(proto, session.getRegistry())) return [];
+      return getValidDisembarkHexes(sessionState, unit.id, session.getRegistry(), sessionState.transportMap)
+        .map((hex) => ({ key: `${hex.q},${hex.r}`, q: hex.q, r: hex.r }));
+    })();
     const hoveredMove = this.hoveredKey && this.targetingMode === 'move'
       ? legalMoves.find((entry) => entry.key === this.hoveredKey) ?? null
       : null;
@@ -296,6 +306,7 @@ export class GameController {
       playerFactionId,
       reachableHexes: this.targetingMode === 'move' ? legalMoves : [],
       attackHexes: this.targetingMode === 'attack' ? attackTargets : [],
+      disembarkHexes: this.targetingMode === 'disembark' ? disembarkHexes : [],
       pathPreview,
       queuedPath: queuedPathDisplay,
       lastMove: feedback.lastMove,
@@ -316,6 +327,7 @@ export class GameController {
         targetingMode: this.targetingMode,
         legalMoves,
         attackTargets,
+        disembarkHexes: this.targetingMode === 'disembark' ? disembarkHexes : [],
         pathPreview,
         canEndTurn: Boolean(sessionState.activeFactionId),
         interactionHint: describePlayHint(world, activeUnitId, this.targetingMode, legalMoves.length, attackTargets.length),
@@ -485,7 +497,7 @@ function buildPathPreview(
 function describePlayHint(
   world: ClientState['world'],
   selectedUnitId: string | null,
-  targetingMode: 'move' | 'attack',
+  targetingMode: 'move' | 'attack' | 'disembark',
   legalMoveCount: number,
   attackTargetCount: number,
 ) {
@@ -500,6 +512,10 @@ function describePlayHint(
 
   if (!unit.isActiveFaction) {
     return 'Only the active faction can receive movement orders.';
+  }
+
+  if (targetingMode === 'disembark') {
+    return 'Disembark mode. Click a highlighted hex to land one unit. Press Esc to cancel.';
   }
 
   if (targetingMode === 'attack') {

@@ -7,8 +7,10 @@ import { getFactionCityIds } from './factionOwnershipSystem.js';
 
 const FRESH_WATER_TERRAINS = new Set<TerrainType>(['river']);
 const OASIS_TERRAINS = new Set<TerrainType>(['oasis']);
+const FISH_TERRAINS = new Set<TerrainType>(['fish']);
 const WOODLAND_TERRAINS = new Set<TerrainType>(['forest', 'jungle']);
 const OPEN_LAND_TERRAINS = new Set<TerrainType>(['plains', 'savannah']);
+const COASTLIKE_TERRAINS = new Set<TerrainType>(['coast', 'river', 'fish']);
 
 export const CITY_SITE_PRODUCTION_BONUS = 0.5;
 export const CITY_SITE_SUPPLY_BONUS = 0.5;
@@ -25,6 +27,7 @@ export const EMPTY_CITY_SITE_BONUSES: CitySiteBonuses = {
   traits: [
     { key: 'fresh_water', label: 'Fresh Water', effect: '+Village growth: 1 every 3 turns (was 1 every 4)', active: false, count: 0 },
     { key: 'oasis', label: 'Oasis', effect: '+Village growth: 1 every 3 turns, +2 camel research', active: false, count: 0 },
+    { key: 'fish', label: 'Fish', effect: '+Village growth: 1 every 3 turns, +2 naval research', active: false, count: 0 },
     { key: 'woodland', label: 'Woodland', effect: '+0.5 production', active: false, count: 0 },
     { key: 'open_land', label: 'Open Land', effect: '+0.5 supply', active: false, count: 0 },
   ],
@@ -41,19 +44,21 @@ export function evaluateCitySiteBonuses(
 
   const freshWaterCount = countTerrainsInRange(map, position, territoryRadius, FRESH_WATER_TERRAINS);
   const oasisCount = countTerrainsInRange(map, position, territoryRadius, OASIS_TERRAINS);
+  const fishCount = countTerrainsInRange(map, position, territoryRadius, FISH_TERRAINS);
   const woodlandCount = countTerrainsInRange(map, position, territoryRadius, WOODLAND_TERRAINS);
   const openLandCount = countTerrainsInRange(map, position, territoryRadius, OPEN_LAND_TERRAINS);
 
   const hasRiver = freshWaterCount > 0;
   const hasOasis = oasisCount > 0;
-  const hasWaterBonus = hasRiver || hasOasis;
+  const hasFish = fishCount > 0;
+  const hasWaterBonus = hasRiver || hasOasis || hasFish;
 
   const traits: CitySiteTrait[] = [
     {
       key: 'fresh_water',
       label: 'Fresh Water',
       effect: '+Village growth: 1 every 3 turns (was 1 every 4)',
-      active: hasRiver && !hasOasis,
+      active: hasRiver && !hasOasis && !hasFish,
       count: freshWaterCount,
     },
     {
@@ -62,6 +67,13 @@ export function evaluateCitySiteBonuses(
       effect: '+Village growth: 1 every 3 turns, +2 camel research',
       active: hasOasis,
       count: oasisCount,
+    },
+    {
+      key: 'fish',
+      label: 'Fish',
+      effect: '+Village growth: 1 every 3 turns, +2 naval research',
+      active: hasFish,
+      count: fishCount,
     },
     {
       key: 'woodland',
@@ -83,7 +95,7 @@ export function evaluateCitySiteBonuses(
     productionBonus: woodlandCount > 0 ? CITY_SITE_PRODUCTION_BONUS : 0,
     supplyBonus: openLandCount > 0 ? CITY_SITE_SUPPLY_BONUS : 0,
     villageCooldownReduction: hasWaterBonus ? CITY_SITE_VILLAGE_COOLDOWN_REDUCTION : 0,
-    researchBonus: hasOasis ? CITY_SITE_RESEARCH_BONUS : 0,
+    researchBonus: (hasOasis || hasFish) ? CITY_SITE_RESEARCH_BONUS : 0,
     traits,
   };
 }
@@ -199,8 +211,8 @@ export function findBestCitySiteForFaction(
   for (const [key, tile] of map.tiles) {
     const hex = keyToHex(key);
 
-    // Skip impassable terrain
-    if (tile.terrain === 'mountain' || tile.terrain === 'ocean') {
+    // Skip impassable terrain and naval-only tiles
+    if (tile.terrain === 'mountain' || tile.terrain === 'ocean' || tile.terrain === 'fish') {
       continue;
     }
 
@@ -263,8 +275,8 @@ export function findBestCitySiteForFaction(
       }
     }
 
-    // Prefer coast/river tiles slightly
-    if (tile.terrain === 'coast' || tile.terrain === 'river') {
+    // Prefer coast/river/fish-adjacent tiles slightly
+    if (COASTLIKE_TERRAINS.has(tile.terrain)) {
       score += 3;
     }
 

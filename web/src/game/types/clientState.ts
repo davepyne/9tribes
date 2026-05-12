@@ -189,9 +189,10 @@ export type DebugViewModel = {
 
 export type ClientActionState = {
   selectedUnitId: string | null;
-  targetingMode: 'move' | 'attack';
+  targetingMode: 'move' | 'attack' | 'disembark';
   legalMoves: ReachableHexView[];
   attackTargets: AttackTargetView[];
+  disembarkHexes: ReachableHexView[];
   pathPreview: PathPreviewNodeView[];
   canEndTurn: boolean;
   interactionHint: string | null;
@@ -431,7 +432,7 @@ export type GameAction =
   | { type: 'cancel_city_production'; cityId: string }
   | { type: 'remove_from_queue'; cityId: string; queueIndex: number }
   | { type: 'reorder_queue'; cityId: string; fromIndex: number; toIndex: number }
-  | { type: 'set_targeting_mode'; mode: 'move' | 'attack' }
+  | { type: 'set_targeting_mode'; mode: 'move' | 'attack' | 'disembark' }
   | { type: 'move_unit'; unitId: string; destination: HexCoord }
   | { type: 'attack_unit'; attackerId: string; defenderId: string }
   | { type: 'prepare_ability'; unitId: string; ability: 'brace' | 'ambush' }

@@ -81,7 +81,9 @@ export function getUnitTransport(
 }
 
 /**
- * Check if a hex is a valid land hex for disembarking
+ * Check if a hex is a valid disembark hex.
+ * Land units can beach-land on coast tiles as well as regular land terrain.
+ * Open ocean and fish grounds remain invalid.
  */
 function isValidDisembarkHex(
   state: GameState,
@@ -90,12 +92,10 @@ function isValidDisembarkHex(
   if (!state.map) return false;
   const tile = state.map.tiles.get(hexToKey(hex));
   if (!tile) return false;
-  
+
   const terrain = tile.terrain;
-  // Must be land terrain (not coast, river, ocean)
-  if (!isLandTerrain(terrain)) return false;
-  
-  // Terrain must be passable
+  // Reject open ocean and fish grounds; coast counts as beach landing, all land is fine
+  if (terrain === 'ocean' || terrain === 'fish') return false;
   return true;
 }
 

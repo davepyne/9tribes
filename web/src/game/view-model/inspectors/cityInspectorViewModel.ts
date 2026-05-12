@@ -20,6 +20,7 @@ import {
   getPrototypeCostType,
   getPrototypeQueueCost,
   SETTLER_VILLAGE_COST,
+  getNavalSpawnDisabledReason,
 } from '../../../../../src/systems/productionSystem.js';
 import { calculatePrototypeCost, getDomainIdsByTags, getPrototypeCostModifier, isUnlockPrototype } from '../../../../../src/systems/knowledgeSystem.js';
 import { getUnitSupplyCost } from '../../../../../src/systems/productionSystem.js';
@@ -167,13 +168,16 @@ export function buildCityInspectorViewModel(state: GameState, cityId: string, re
           }
         }
         const villageCount = faction?.villageIds.length ?? 0;
+        const navalBlockedReason = getNavalSpawnDisabledReason(state, city.position, registry, prototype);
         const disabledReason = !canManageProduction
           ? city.besieged
             ? 'Cannot change production while besieged.'
             : 'Only the active friendly city can change production.'
           : costType === 'villages' && !canPaySettlerVillageCost(state, city.factionId, SETTLER_VILLAGE_COST)
             ? `Requires ${SETTLER_VILLAGE_COST} villages (${villageCount} available).`
-            : undefined;
+            : navalBlockedReason
+              ? navalBlockedReason
+              : undefined;
         return {
           prototypeId: prototype.id,
           name: prototype.name,

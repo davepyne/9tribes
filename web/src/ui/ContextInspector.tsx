@@ -16,7 +16,7 @@ type ContextInspectorProps = {
   onCancelCityProduction: (cityId: string) => void;
   onRemoveFromQueue: (cityId: string, queueIndex: number) => void;
   onReorderQueue: (cityId: string, fromIndex: number, toIndex: number) => void;
-  onSetTargetingMode: (mode: 'move' | 'attack') => void;
+  onSetTargetingMode: (mode: 'move' | 'attack' | 'disembark') => void;
   onPrepareAbility: (unitId: string, ability: 'brace' | 'ambush') => void;
   onBoardTransport: (unitId: string, transportId: string) => void;
   onDisembarkUnit: (unitId: string, transportId: string, destination: { q: number; r: number }) => void;
@@ -141,6 +141,7 @@ export const ContextInspector = React.memo(function ContextInspector({ state, is
               onPrepareAbility={onPrepareAbility}
               onBoardTransport={onBoardTransport}
               onDisembarkUnit={onDisembarkUnit}
+              onSetTargetingMode={onSetTargetingMode}
               onFactionPopup={(info) => setFactionPopup(info)}
               onDomainPopup={(popup) => setDomainPopup(popup)}
             />
@@ -161,6 +162,7 @@ export const ContextInspector = React.memo(function ContextInspector({ state, is
               onPrepareAbility={onPrepareAbility}
               onBoardTransport={onBoardTransport}
               onDisembarkUnit={onDisembarkUnit}
+              onSetTargetingMode={onSetTargetingMode}
               onFactionPopup={(info) => setFactionPopup(info)}
               onDomainPopup={(popup) => setDomainPopup(popup)}
             />

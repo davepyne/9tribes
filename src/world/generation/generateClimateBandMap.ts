@@ -637,13 +637,14 @@ function validateGeneratedMap(
 
 function coastIsCoherent(map: GameMap): boolean {
   const visited = new Set<string>();
+  const COASTLIKE_TERRAINS = new Set<TerrainType>(['coast', 'fish']);
 
   for (const tile of map.tiles.values()) {
-    if (tile.terrain !== 'coast') continue;
+    if (!COASTLIKE_TERRAINS.has(tile.terrain)) continue;
     const key = hexToKey(tile.position);
     if (visited.has(key)) continue;
 
-    const cluster = collectTerrainCluster(map, tile.position, new Set(['coast']));
+    const cluster = collectTerrainCluster(map, tile.position, COASTLIKE_TERRAINS);
     for (const clusterKey of cluster) {
       visited.add(clusterKey);
     }

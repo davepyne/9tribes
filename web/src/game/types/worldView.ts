@@ -71,6 +71,8 @@ export type UnitView = {
   transportId?: string | null;
   boardableTransportIds?: string[];
   validDisembarkHexes?: HexCoord[];
+  embarkedUnitIds?: string[];
+  embarkedValidDisembarkHexes?: HexCoord[];
   supplyCost?: number;
   isPrototype?: boolean;
   summonTurnsRemaining?: number;
@@ -167,6 +169,7 @@ export type WorldViewModel = {
     borders: BorderEdgeView[];
     reachableHexes: ReachableHexView[];
     attackHexes: AttackTargetView[];
+    disembarkHexes: ReachableHexView[];
     pathPreview: PathPreviewNodeView[];
     queuedPath: PathPreviewNodeView[];
     lastMove:

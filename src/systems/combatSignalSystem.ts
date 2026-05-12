@@ -58,7 +58,7 @@ export function collectCombatSignals(
   if (attackerTerrainId === 'plains' || defenderTerrainId === 'plains') {
     signals.add('plains_combat');
   }
-  if (attackerTerrainId === 'river' || defenderTerrainId === 'river' || attackerTerrainId === 'coast' || defenderTerrainId === 'coast') {
+  if (attackerTerrainId === 'river' || defenderTerrainId === 'river' || attackerTerrainId === 'coast' || defenderTerrainId === 'coast' || attackerTerrainId === 'fish' || defenderTerrainId === 'fish') {
     signals.add('river_combat');
   }
 

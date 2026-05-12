@@ -17,6 +17,7 @@ export const TEXTURES = {
   oceanBase: 'terrain-ocean-base',
   riverOverlay: 'terrain-river-overlay',
   oasisOverlay: 'terrain-oasis-overlay',
+  fishOverlay: 'terrain-fish-overlay',
   cities: 'settlements-cities',
   units: 'units-sheet',
   fog: 'fog-sheet',

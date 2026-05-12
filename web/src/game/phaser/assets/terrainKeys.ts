@@ -94,6 +94,7 @@ export type TerrainRenderSpec = {
   overlayFrame?: number;
   overlayTint?: number;
   overlayAlpha?: number;
+  iconTexture?: string;
   fallbackColor: number;
 };
 
@@ -259,6 +260,17 @@ export function getTerrainRenderSpec(terrain: string): TerrainRenderSpec {
         baseFrame: resolvedTerrainFrames.desertBase,
         overlayTexture: TEXTURES.oasisOverlay,
         fallbackColor: 0xd8c07a,
+      };
+    case 'fish':
+      return {
+        baseTexture: TEXTURES.grassBase,
+        baseFrame: resolvedTerrainFrames.grassBase,
+        overlayTexture: TEXTURES.oceanBase,
+        overlayFrame: TERRAIN_FRAMES.oceanBase,
+        overlayTint: 0x8ecae6,
+        overlayAlpha: 0.72,
+        iconTexture: TEXTURES.fishOverlay,
+        fallbackColor: 0x79adc7,
       };
     default:
       return {

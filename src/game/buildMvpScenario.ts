@@ -46,8 +46,8 @@ function isValidSpawnTerrain(
   const isNavalUnit = chassis?.movementClass === 'naval';
   const isAmphibious = tags?.includes('amphibious') ?? false;
   const tid = tile.terrain;
-  const isDeepWater = tid === 'coast' || tid === 'ocean';
-  const isWater = tid === 'coast' || tid === 'river' || tid === 'ocean';
+  const isDeepWater = tid === 'coast' || tid === 'ocean' || tid === 'fish';
+  const isWater = tid === 'coast' || tid === 'river' || tid === 'ocean' || tid === 'fish';
 
   if (isDeepWater && !isNavalUnit) return false;
   if (isNavalUnit && !isWater && !isAmphibious) return false;

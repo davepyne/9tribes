@@ -80,7 +80,7 @@ export class MapSceneInput {
       return;
     }
 
-    if (state.actions.targetingMode === 'attack') {
+    if (state.actions.targetingMode === 'attack' || state.actions.targetingMode === 'disembark') {
       this.controller.dispatch({ type: 'set_targeting_mode', mode: 'move' });
       return;
     }
@@ -130,6 +130,24 @@ export class MapSceneInput {
     const key = `${coord.q},${coord.r}`;
     const selectedUnitId = state.actions.selectedUnitId;
     const clickedUnit = state.world.units.find((u) => u.q === coord.q && u.r === coord.r);
+
+    // Disembark targeting mode: click valid hex to land one embarked unit
+    if (selectedUnitId && state.actions.targetingMode === 'disembark') {
+      const selectedUnit = state.world.units.find((u) => u.id === selectedUnitId);
+      if (
+        selectedUnit?.embarkedUnitIds?.length &&
+        state.actions.disembarkHexes.some((hex) => hex.key === key)
+      ) {
+        this.controller.dispatch({
+          type: 'disembark_unit',
+          unitId: selectedUnit.embarkedUnitIds[0],
+          transportId: selectedUnitId,
+          destination: { q: coord.q, r: coord.r },
+        });
+        this.controller.dispatch({ type: 'set_targeting_mode', mode: 'move' });
+      }
+      return;
+    }
 
     if (clickedUnit && !clickedUnit.isActiveFaction && selectedUnitId) {
       const attackTarget = state.actions.attackTargets.find((t) => t.unitId === clickedUnit.id);

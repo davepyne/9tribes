@@ -7,7 +7,7 @@ import { isUnitEffectivelyStealthed } from '../../../../src/systems/fogSystem.js
 import { isUnlockPrototype } from '../../../../src/systems/knowledgeSystem.js';
 import { getUnitSupplyCost } from '../../../../src/systems/productionSystem.js';
 import { canPriestSummon } from '../../../../src/systems/summonSystem.js';
-import { canBoardTransport, getUnitTransport, getValidDisembarkHexes } from '../../../../src/systems/transportSystem.js';
+import { canBoardTransport, getUnitTransport, getValidDisembarkHexes, getEmbarkedUnits, isTransportUnit } from '../../../../src/systems/transportSystem.js';
 import { getSpriteKeyForUnit, inferChassisId } from './spriteKeys.js';
 import { hexToKey, getNeighbors } from '../../../../src/core/grid.js';
 
@@ -142,6 +142,16 @@ export function buildUnitView(
     transportId: unitTransport?.transportId ?? null,
     boardableTransportIds: boardableTransportIds.length > 0 ? boardableTransportIds : undefined,
     validDisembarkHexes: validDisembarkHexes.length > 0 ? validDisembarkHexes : undefined,
+    ...(() => {
+      if (!prototype || !isTransportUnit(prototype, registry)) return {};
+      const embarked = getEmbarkedUnits(unit.id, state.transportMap);
+      if (embarked.length === 0) return {};
+      const validDisembark = getValidDisembarkHexes(state, unit.id, registry, state.transportMap);
+      return {
+        embarkedUnitIds: embarked,
+        embarkedValidDisembarkHexes: validDisembark.length > 0 ? validDisembark : undefined,
+      };
+    })(),
     supplyCost: prototype ? getUnitSupplyCost(prototype, registry) : 1,
     isPrototype: prototype ? isUnlockPrototype(prototype) : false,
     summonTurnsRemaining: (() => {

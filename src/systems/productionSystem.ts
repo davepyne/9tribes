@@ -9,7 +9,7 @@ import type { Unit } from '../features/units/types.js';
 import type { HistoryEntry } from '../features/units/types.js';
 import type { Prototype } from '../features/prototypes/types.js';
 import { createUnitId } from '../core/ids.js';
-import { getNeighbors, hexDistance, hexToKey } from '../core/grid.js';
+import { getNeighbors, hexDistance, hexToKey, getHexesInRange } from '../core/grid.js';
 import { recordUnitCreated } from './historySystem.js';
 import { isHexOccupied } from './occupancySystem.js';
 import { getDomainIdsByTags, incrementPrototypeMastery } from './knowledgeSystem.js';
@@ -309,6 +309,37 @@ export function canSpawnAt(
 }
 
 /**
+ * For naval prototypes: returns a disabled reason if the city has no water hex
+ * in its territory where the ship can spawn. Returns null if spawn is possible
+ * or if the prototype is not naval.
+ */
+export function getNavalSpawnDisabledReason(
+  state: GameState,
+  cityPosition: { q: number; r: number },
+  registry: RulesRegistry,
+  prototype: Pick<Prototype, 'chassisId' | 'tags'>,
+): string | null {
+  const chassis = registry.getChassis(prototype.chassisId);
+  if (!chassis || chassis.movementClass !== 'naval') return null;
+
+  // If a valid spawn hex already exists, no problem
+  if (findSpawnHex(state, cityPosition, registry, prototype) !== null) return null;
+
+  // Check if any water hex exists anywhere in city territory (radius 2)
+  const territoryHexes = getHexesInRange(cityPosition, 2);
+  for (const hex of territoryHexes) {
+    const tile = state.map?.tiles.get(hexToKey(hex));
+    if (!tile) continue;
+    const tid = tile.terrain;
+    if (tid === 'coast' || tid === 'ocean' || tid === 'fish' || tid === 'river') {
+      if (!isHexOccupied(state, hex)) return null;
+    }
+  }
+
+  return 'No water hex available in territory to launch this vessel.';
+}
+
+/**
  * Find an empty adjacent hex to spawn a unit.
  */
 function findSpawnHex(
@@ -334,8 +365,8 @@ function findSpawnHex(
       const isNavalUnit = chassis?.movementClass === 'naval';
       const isAmphibious = prototype?.tags?.includes('amphibious') ?? false;
       const tid = tile.terrain;
-      const isWater = tid === 'coast' || tid === 'river' || tid === 'ocean';
-      const isDeepWater = tid === 'coast' || tid === 'ocean';
+      const isWater = tid === 'coast' || tid === 'river' || tid === 'ocean' || tid === 'fish';
+      const isDeepWater = tid === 'coast' || tid === 'ocean' || tid === 'fish';
       if (isDeepWater && !isNavalUnit) continue;
       if (isNavalUnit && !isWater && !isAmphibious) continue;
     }

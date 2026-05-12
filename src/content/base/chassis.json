@@ -68,7 +68,8 @@
     "movementClass": "naval",
     "supplyCost": 1.25,
     "baseProductionCost": 30,
-    "tags": ["naval"],
+    "tags": ["naval", "transport"],
+    "transportCapacity": 3,
     "tier": "mid",
     "minLearnedDomains": 2,
     "capabilityPressure": {
@@ -287,7 +288,8 @@
     "movementClass": "naval",
     "supplyCost": 1.5,
     "baseProductionCost": 32,
-    "tags": ["naval", "ranged", "skirmish"],
+    "tags": ["naval", "ranged", "skirmish", "transport"],
+    "transportCapacity": 3,
     "tier": "mid",
     "minLearnedDomains": 2,
     "capabilityPressure": {

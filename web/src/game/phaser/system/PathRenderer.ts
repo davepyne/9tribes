@@ -25,6 +25,13 @@ export class PathRenderer {
       this.layer.add(ring);
     }
 
+    for (const hex of world.overlays.disembarkHexes ?? []) {
+      const point = this.worldToScreen(hex.q, hex.r);
+      const ring = this.scene.add.ellipse(point.x, point.y - 8, 62, 28, 0x3a8fd6, 0.26)
+        .setStrokeStyle(3, 0x9ec8f7, 0.95);
+      this.layer.add(ring);
+    }
+
     if (world.overlays.lastMove) {
       const point = this.worldToScreen(world.overlays.lastMove.destination.q, world.overlays.lastMove.destination.r);
       const marker = this.scene.add.ellipse(point.x, point.y - 8, 68, 32, 0xf2d67b, 0.08)
