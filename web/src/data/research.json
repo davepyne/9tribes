@@ -443,7 +443,6 @@
         "unlocks": [],
         "qualitativeEffect": {
           "type": "auto_capture",
-          "description": "Wounded enemies below 25% HP are auto-captured",
           "nativeDescription": "Wounded enemies below 50% HP are auto-captured",
           "effect": { "autoCaptureThreshold": 0.25 }
         }
