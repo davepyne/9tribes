@@ -411,3 +411,15 @@ export function getPoisonOnAttack(faction: Faction | undefined, attackerTerrainI
   }
   return null;
 }
+
+/** charge_momentum passive (Savannah Lions): +15% damage when moved >= 2 hexes */
+export function getChargeMomentumBonus(faction: Faction | undefined, unit: Unit): number {
+  if (faction?.identityProfile.passiveTrait !== 'charge_momentum') return 0;
+  const hexesMoved = unit.maxMoves - unit.movesRemaining;
+  return hexesMoved >= 2 ? 0.15 : 0;
+}
+
+/** cold_hardened_growth passive (Arctic Wardens): +10% defense */
+export function getColdHardenedDefense(faction: Faction | undefined): number {
+  return faction?.identityProfile.passiveTrait === 'cold_hardened_growth' ? 0.1 : 0;
+}
