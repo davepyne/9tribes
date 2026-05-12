@@ -206,8 +206,12 @@ export function previewCombatAction(
 
   const retaliationDamageMultiplier = braceTriggered && isChargeAttack ? 1.1 : 1;
 
-  if (defender.hillDugIn) {
-    situationalDefenseModifier += 0.2;
+  // Hill engineering dig-in: each stack = +5% defense, cap 3 stacks = +15%
+  // Backward compat: hillDugIn boolean treated as 1 stack
+  const defenderDigInStacks = defender.digInStacks ?? (defender.hillDugIn ? 1 : 0);
+  const digInDefenseBonus = Math.min(defenderDigInStacks, 3) * 0.05;
+  if (digInDefenseBonus > 0) {
+    situationalDefenseModifier += digInDefenseBonus;
   }
   if (attackerDoctrine?.greedyCaptureEnabled && defender.hp < defender.maxHp * 0.5) {
     situationalAttackModifier += 0.15;

@@ -1189,5 +1189,31 @@ export function processFactionPhases(
     }
   }
 
+  // Hill engineering dig-in: stationary hill_clan units accumulate defense stacks
+  if (faction.identityProfile?.passiveTrait === 'hill_engineering') {
+    const hillUnits = new Map(current.units);
+    for (const unitIdStr of faction.unitIds) {
+      const unit = hillUnits.get(unitIdStr as UnitId);
+      if (!unit || unit.hp <= 0 || getTerrainAt(state, unit.position) !== 'hill') continue;
+      if (unit.movesRemaining === unit.maxMoves) {
+        // Stationary — increment stacks (cap 3)
+        const newStacks = Math.min((unit.digInStacks ?? 0) + 1, 3);
+        hillUnits.set(unitIdStr as UnitId, {
+          ...unit,
+          digInStacks: newStacks,
+          hillDugIn: newStacks > 0,
+        });
+      } else {
+        // Moved — reset stacks
+        hillUnits.set(unitIdStr as UnitId, {
+          ...unit,
+          digInStacks: 0,
+          hillDugIn: false,
+        });
+      }
+    }
+    current = { ...current, units: hillUnits };
+  }
+
   return current;
 }
