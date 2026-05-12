@@ -446,9 +446,7 @@ export function applyCombatAction(
   ) {
     const pressGangUnit = current.units.get(preview.defenderId);
     if (pressGangUnit) {
-      const lastCapture = pressGangUnit.history?.slice().reverse().find((h: import('../../features/units/types.js').HistoryEntry) => h.type === 'press_gang_attempt');
-      const cooldownLeft = lastCapture ? current.round - lastCapture.timestamp : 0;
-      if (cooldownLeft < 1 && rngChance(current.rngState, 0.3)) {
+      if (rngChance(current.rngState, 0.3)) {
         const captured: Unit = {
           ...pressGangUnit,
           factionId: attacker.factionId,

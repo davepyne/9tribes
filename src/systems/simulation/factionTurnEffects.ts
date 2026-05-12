@@ -1194,7 +1194,7 @@ export function processFactionPhases(
     const hillUnits = new Map(current.units);
     for (const unitIdStr of faction.unitIds) {
       const unit = hillUnits.get(unitIdStr as UnitId);
-      if (!unit || unit.hp <= 0 || getTerrainAt(state, unit.position) !== 'hill') continue;
+      if (!unit || unit.hp <= 0 || getTerrainAt(current, unit.position) !== 'hill') continue;
       if (unit.movesRemaining === unit.maxMoves) {
         // Stationary — increment stacks (cap 3)
         const newStacks = Math.min((unit.digInStacks ?? 0) + 1, 3);
