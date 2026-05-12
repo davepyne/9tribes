@@ -72,6 +72,8 @@ import type { FactionStrategy } from '../factionStrategy.js';
 import type { SimulationTrace } from './traceTypes.js';
 import { log, recordFactionStrategy, recordSiegeEvent, recordResearch, recordTripleStack } from './traceRecorder.js';
 import { getTerrainAt, occupiesFriendlySettlement, applyEnvironmentalDamage, getHealRate } from './environmentalEffects.js';
+import { isWetlandTerrain } from '../terrainUtils.js';
+import { isPassiveWetlandStealth, getForagingRidersExhaustionBonus } from '../factionIdentitySystem.js';
 
 function removeUnitFromFaction(
   state: GameState,
@@ -998,6 +1000,14 @@ export function processFactionPhases(
       stealthUpdatedUnit = enterStealth(stealthUpdatedUnit, protoTags);
     }
 
+    // Wetland stealth: river_stealth_t1 doctrine or river_assault passive
+    if (!stealthUpdatedUnit.isStealthed && (doctrine.wetlandStealthEnabled || isPassiveWetlandStealth(faction))) {
+      const unitTerrain = getTerrainAt(current, unit.position);
+      if (isWetlandTerrain(unitTerrain)) {
+        stealthUpdatedUnit = { ...stealthUpdatedUnit, isStealthed: true };
+      }
+    }
+
     const updatedUnit = maybeExpirePreparedAbility(stealthUpdatedUnit, current.round, current);
 
     checkRally(updatedUnit);
@@ -1154,10 +1164,11 @@ export function processFactionPhases(
     const weResearch = current.research.get(factionId);
     const weDoctrine = resolveResearchDoctrine(weResearch, faction);
     const marchingStaminaBonus = weDoctrine.marchingStaminaEnabled ? 1 : 0;
+    const foragingRidersBonus = getForagingRidersExhaustionBonus(faction);
     const decayedWE = applyDecay(tickedWE, {
       noLossTurns: tickedWE.turnsWithoutLoss,
       territoryClear: false,
-      marchingStaminaBonus,
+      marchingStaminaBonus: marchingStaminaBonus + foragingRidersBonus,
     });
     const weMap = new Map(current.warExhaustion);
     weMap.set(factionId, decayedWE);

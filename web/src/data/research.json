@@ -44,8 +44,11 @@
         "qualitativeEffect": {
           "type": "poison_bonus",
           "description": "Poison-tagged units deal +50% poison damage",
-          "nativeDescription": "All units apply poison on hit",
-          "effect": { "poisonDamageMultiplier": 0.5 }
+          "nativeDescription": "On kill, poison detonates: adjacent enemies take 3 poison damage and gain 2 poison stacks",
+          "effect": {
+            "poisonDamageMultiplier": 0.5,
+            "nativePoisonDetonateOnKill": { "damage": 3, "stacks": 2, "radius": 1 }
+          }
         }
       }
     }
@@ -164,9 +167,9 @@
         "unlocks": [],
         "codifies": ["hitrun"],
         "qualitativeEffect": {
-          "type": "marching_stamina",
-          "description": "Reduces war exhaustion by 1 per turn",
-          "effect": { "exhaustionReduction": 1 }
+          "type": "skirmish_step",
+          "description": "Units that move before attacking deal +10% damage on that attack",
+          "effect": { "moveThenAttackBonus": 0.10 }
         }
       },
       "hitrun_t2": {
@@ -364,9 +367,9 @@
         "unlocks": [],
         "codifies": ["river_stealth"],
         "qualitativeEffect": {
-          "type": "forest_movement",
-          "description": "+1 movement in rough terrain",
-          "effect": { "roughTerrainMovementBonus": 1 }
+          "type": "wetland_stealth",
+          "description": "Units ending their turn on river, coast, or swamp hexes enter stealth",
+          "effect": { "stealthOnWetlandEndOfTurn": true }
         }
       },
       "river_stealth_t2": {
@@ -414,9 +417,9 @@
         "unlocks": [],
         "codifies": ["slaving"],
         "qualitativeEffect": {
-          "type": "greedy_capture",
-          "description": "+15% damage vs wounded enemies (<50% HP)",
-          "effect": { "damageBonusVsWounded": 0.15 }
+          "type": "press_gang",
+          "description": "+15% damage vs wounded enemies (<50% HP); 5% chance to capture instead of kill when target falls below 25% HP",
+          "effect": { "damageBonusVsWounded": 0.15, "captureOnKillChance": 0.05 }
         }
       },
       "slaving_t2": {
