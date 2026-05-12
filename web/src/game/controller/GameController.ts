@@ -261,7 +261,14 @@ export class GameController {
       const proto = sessionState.prototypes.get(unit.prototypeId);
       if (!proto || !isTransportUnit(proto, session.getRegistry())) return [];
       return getValidDisembarkHexes(sessionState, unit.id, session.getRegistry(), sessionState.transportMap)
-        .map((hex) => ({ key: `${hex.q},${hex.r}`, q: hex.q, r: hex.r }));
+        .map((hex) => ({
+          key: `${hex.q},${hex.r}`,
+          q: hex.q,
+          r: hex.r,
+          cost: 1,
+          movesRemainingAfterMove: 0,
+          path: [{ q: hex.q, r: hex.r }],
+        }));
     })();
     const hoveredMove = this.hoveredKey && this.targetingMode === 'move'
       ? legalMoves.find((entry) => entry.key === this.hoveredKey) ?? null
