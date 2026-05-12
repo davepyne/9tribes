@@ -223,6 +223,14 @@ export function previewCombatAction(
     situationalAttackModifier += 0.1;
     skirmishStepTriggered = true;
   }
+  let chargeMomentumTriggered = false;
+  if (attackerFaction?.identityProfile.passiveTrait === 'charge_momentum') {
+    const hexesMoved = attacker.maxMoves - attacker.movesRemaining;
+    if (hexesMoved >= 2) {
+      situationalAttackModifier += 0.15;
+      chargeMomentumTriggered = true;
+    }
+  }
   if (defenderDoctrine?.shieldWallEnabled) {
     const defenderIsInfantry = defenderPrototype.derivedStats.role === 'melee'
       && !(defenderPrototype.tags?.includes('cavalry') || defenderPrototype.tags?.includes('elephant'));
@@ -250,6 +258,11 @@ export function previewCombatAction(
   }
   if (defenderDoctrine?.undyingEnabled && defender.hp < defender.maxHp * 0.2) {
     situationalDefenseModifier += 0.5;
+  }
+  let coldHardenedTriggered = false;
+  if (defenderFaction?.identityProfile.passiveTrait === 'cold_hardened_growth') {
+    situationalDefenseModifier += 0.1;
+    coldHardenedTriggered = true;
   }
 
   const forestFirstStrike = attackerDoctrine?.forestAmbushEnabled === true && attackerTerrain?.id === 'forest';
@@ -385,6 +398,12 @@ export function previewCombatAction(
   }
   if (skirmishStepTriggered) {
     pushCombatEffect(triggeredEffects, 'Skirmish Step', 'Moved before attacking for 10% bonus damage.', 'ability');
+  }
+  if (chargeMomentumTriggered) {
+    pushCombatEffect(triggeredEffects, 'Charge Momentum', 'Long charge added 15% bonus damage.', 'ability');
+  }
+  if (coldHardenedTriggered) {
+    pushCombatEffect(triggeredEffects, 'Cold Hardened', 'Arctic defender hardened stance for 10% defense.', 'ability');
   }
   if (result.roleModifier !== 0) {
     const sign = result.roleModifier > 0 ? '+' : '';
