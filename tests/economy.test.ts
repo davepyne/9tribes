@@ -29,7 +29,7 @@ describe('terrain yields', () => {
   });
 
   it('has terrain yields defined for all current terrain types', () => {
-    expect(registry.getAllTerrainYields().length).toBe(12);
+    expect(registry.getAllTerrainYields().length).toBe(13);
   });
 });
 

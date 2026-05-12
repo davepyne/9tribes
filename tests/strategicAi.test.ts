@@ -94,7 +94,7 @@ describe('strategic AI', () => {
   });
 
   it('retargets the hard flank toward the newly exposed alternate city', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry, mapSize: 'large' });
     trimState(state, ['hill_clan', 'steppe_clan', 'coral_people']);
     const hillId = 'hill_clan' as never;
     const hillFaction = state.factions.get(hillId)!;

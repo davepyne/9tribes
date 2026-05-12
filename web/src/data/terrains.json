@@ -111,6 +111,19 @@
       "navigation": 1
     }
   },
+  "fish": {
+    "id": "fish",
+    "name": "Fish",
+    "movementCost": 1,
+    "defenseModifier": 0.1,
+    "passable": true,
+    "navalOnly": true,
+    "ecologyTags": ["fish", "coast", "seafaring"],
+    "capabilityPressure": {
+      "seafaring": 2,
+      "navigation": 1
+    }
+  },
   "river": {
     "id": "river",
     "name": "River",

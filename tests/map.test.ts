@@ -135,7 +135,7 @@ describe('generateMvpMap', () => {
   it('All tiles have valid terrain types', () => {
     const rng = createRNG(42);
     const map = generateMvpMap(rng, 10, 10);
-    const validTypes = ['plains', 'forest', 'jungle', 'hill', 'desert', 'tundra', 'savannah', 'coast', 'river', 'swamp', 'mountain', 'ocean'];
+    const validTypes = ['plains', 'forest', 'jungle', 'hill', 'desert', 'tundra', 'savannah', 'coast', 'river', 'swamp', 'mountain', 'ocean', 'fish'];
     
     for (const tile of map.tiles.values()) {
       expect(validTypes).toContain(tile.terrain);

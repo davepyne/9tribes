@@ -25,7 +25,7 @@ describe('computeRendezvousHex', () => {
   });
 
   it('places rendezvous approximately RENDEZVOUS_OFFSET_HEXES from objective', () => {
-    const state = buildMvpScenario(42);
+    const state = buildMvpScenario(42, { mapSize: 'large' });
     const objectiveHex: HexCoord = { q: 20, r: 10 };
     const friendlyAnchor: HexCoord = { q: 5, r: 10 };
 
@@ -37,7 +37,7 @@ describe('computeRendezvousHex', () => {
   });
 
   it('prefers defensible terrain when available', () => {
-    const state = buildMvpScenario(42);
+    const state = buildMvpScenario(42, { mapSize: 'large' });
 
     const objectiveHex: HexCoord = { q: 20, r: 10 };
     const friendlyAnchor: HexCoord = { q: 10, r: 10 };
@@ -86,7 +86,7 @@ describe('computeRendezvousHex', () => {
   });
 
   it('favors candidates with more nearby friendly units', () => {
-    const state = buildMvpScenario(42);
+    const state = buildMvpScenario(42, { mapSize: 'large' });
 
     const objectiveHex: HexCoord = { q: 20, r: 10 };
     const friendlyAnchor: HexCoord = { q: 10, r: 10 };
