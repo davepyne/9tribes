@@ -105,9 +105,12 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
     const ownerFactionId = getHexOwner(tile.position, state) ?? null;
     const ownerFaction = ownerFactionId ? state.factions.get(ownerFactionId) : null;
     const visibility = hexVisibility.get(key) ?? 'hidden';
-    const effectiveTerrain = tile.terrain === 'oasis' && visibility !== 'visible' && visibility !== 'explored'
-      ? 'desert'
-      : tile.terrain;
+    let effectiveTerrain = tile.terrain;
+    if (effectiveTerrain === 'oasis' && visibility !== 'visible' && visibility !== 'explored') {
+      effectiveTerrain = 'desert';
+    } else if (effectiveTerrain === 'fish' && visibility !== 'visible' && visibility !== 'explored') {
+      effectiveTerrain = 'ocean';
+    }
     return {
       key,
       q: tile.position.q,
