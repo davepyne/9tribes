@@ -6,6 +6,7 @@ import type { GameState } from '../game/types.js';
 import type { TerrainDef } from '../data/registry/types.js';
 import type { FactionId } from '../types.js';
 import { addCapabilityProgress } from './capabilitySystem.js';
+import { isWaterTerrain } from './terrainUtils.js';
 
 export interface CombatSignalMapping {
   signal: string;
@@ -58,7 +59,7 @@ export function collectCombatSignals(
   if (attackerTerrainId === 'plains' || defenderTerrainId === 'plains') {
     signals.add('plains_combat');
   }
-  if (attackerTerrainId === 'river' || defenderTerrainId === 'river' || attackerTerrainId === 'coast' || defenderTerrainId === 'coast' || attackerTerrainId === 'fish' || defenderTerrainId === 'fish') {
+  if (isWaterTerrain(attackerTerrainId) || isWaterTerrain(defenderTerrainId)) {
     signals.add('river_combat');
   }
 

@@ -9,7 +9,7 @@ import { applyKnockback } from '../signatureAbilitySystem.js';
 import { destroyTransport, isTransportUnit } from '../transportSystem.js';
 import { hasCaptureAbility } from '../captureSystem.js';
 
-export const WATER_TERRAIN = new Set(['coast', 'river', 'ocean']);
+export const WATER_TERRAIN = new Set(['coast', 'river', 'ocean', 'fish']);
 
 export function getImprovementBonus(state: GameState, position: { q: number; r: number }, factionId?: string) {
   for (const improvement of state.improvements.values()) {

@@ -80,14 +80,10 @@ function getHealRate(
     }
   }
 
-  // Owned territory
+  // Owned territory or controlled coastal waters (for naval units)
   const hexOwner = getHexOwner(unit.position, state);
-  if (hexOwner === factionId) {
-    return Math.floor(unit.maxHp * HEALING_CONFIG.OWNED_TERRITORY) + getHealingBonus(faction, terrainId);
-  }
-
-  // Naval units heal at territory rate in controlled coastal waters
-  if (isNavalUnit(state, unit.prototypeId, registry) && isInControlledWater(state, unit.position, factionId)) {
+  const inControlledWater = isNavalUnit(state, unit.prototypeId, registry) && isInControlledWater(state, unit.position, factionId);
+  if (hexOwner === factionId || inControlledWater) {
     return Math.floor(unit.maxHp * HEALING_CONFIG.OWNED_TERRITORY) + getHealingBonus(faction, terrainId);
   }
 

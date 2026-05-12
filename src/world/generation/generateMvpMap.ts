@@ -371,11 +371,11 @@ function carveOceanBorder(map: GameMap): void {
   }
 }
 
-const FISH_CHANCE = 0.05;
+const FISH_CHANCE = 0.20;
 
 function carveFish(map: GameMap, rng: RNGState): void {
   for (const tile of map.tiles.values()) {
-    if (tile.terrain === 'coast' || tile.terrain === 'ocean') {
+    if (tile.terrain === 'coast') {
       if (rngNextFloat(rng) < FISH_CHANCE) {
         tile.terrain = 'fish';
       }

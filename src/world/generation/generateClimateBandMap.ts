@@ -56,7 +56,7 @@ const DEFAULT_OPTIONS: ClimateBandMapOptions = {
   riverCountMax: 3,
 };
 
-const WATER_TERRAINS = new Set<TerrainType>(['coast', 'river', 'ocean']);
+const WATER_TERRAINS = new Set<TerrainType>(['coast', 'river', 'ocean', 'fish']);
 const CLUSTER_BIOMES = new Set<TerrainType>(['jungle', 'hill']);
 
 export function generateClimateBandMap(

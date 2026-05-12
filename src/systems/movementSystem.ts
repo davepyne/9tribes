@@ -8,7 +8,7 @@ import { isHexOccupied } from './occupancySystem.js';
 import { entersEnemyZoC, getZoCMovementCost } from './zocSystem.js';
 import { applyOpportunityAttacks } from './opportunityAttackSystem.js';
 import { getMovementCostModifier, isUnitRiverStealthed } from './factionIdentitySystem.js';
-import { isWaterTerrain, isCoverTerrain } from './terrainUtils.js';
+import { isWaterTerrain, isDeepWaterTerrain, isCoverTerrain } from './terrainUtils.js';
 import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import { canUseCharge } from './abilitySystem.js';
 import { pruneDeadUnits } from './combatActionSystem.js';
@@ -90,7 +90,7 @@ export function previewMove(
   const prototypeTags = prototype?.tags ?? [];
   const targetTerrainId = tile.terrain;
   const isTargetWater = isWaterTerrain(targetTerrainId);
-  const isDeepWater = targetTerrainId === 'coast' || targetTerrainId === 'ocean' || targetTerrainId === 'fish';
+  const isDeepWater = isDeepWaterTerrain(targetTerrainId);
 
   // Deep water (ocean/coast): only naval units can traverse; river is crossable by land units
   if (isDeepWater && !isNavalUnit) {
@@ -155,7 +155,7 @@ export function previewMove(
 
   // Coastal Nomad synergy: speed bonus on coast/river
   const coastalNomadBonus = getCoastalNomadSpeedBonus(prototypeTags);
-  if (coastalNomadBonus > 0 && (targetTerrainId === 'coast' || targetTerrainId === 'river' || targetTerrainId === 'fish')) {
+  if (coastalNomadBonus > 0 && isWaterTerrain(targetTerrainId)) {
     totalCost -= coastalNomadBonus;
   }
 
@@ -177,7 +177,7 @@ export function previewMove(
   if (targetTerrainId === 'river' && doctrine.riverCrossingEnabled) {
     totalCost = Math.min(totalCost, 1);
   }
-  if ((targetTerrainId === 'coast' || targetTerrainId === 'river' || targetTerrainId === 'fish') && doctrine.amphibiousMovementEnabled) {
+  if (isWaterTerrain(targetTerrainId) && doctrine.amphibiousMovementEnabled) {
     totalCost = Math.min(totalCost, 1);
   }
   if ((targetTerrainId === 'desert' || targetTerrainId === 'tundra') && doctrine.heatResistanceEnabled) {

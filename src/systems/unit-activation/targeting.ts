@@ -6,6 +6,7 @@ import type { GameState } from '../../game/types.js';
 import type { FactionId, HexCoord, UnitId } from '../../types.js';
 import { isUnitRiverStealthed } from '../factionIdentitySystem.js';
 import { isUnitEffectivelyStealthed } from '../fogSystem.js';
+import { isDeepWaterTerrain } from '../terrainUtils.js';
 import { getUnitIntent } from '../strategicAi.js';
 import { scoreAttackCandidate, scoreStrategicTarget } from '../aiTactics.js';
 
@@ -99,7 +100,7 @@ export function findBestTargetChoice(
         const attackerFaction = state.factions.get(friendlyFactionId);
         if (attackerFaction?.identityProfile.passiveTrait === 'greedy') {
           const targetTerrain = state.map?.tiles.get(hexToKey(unit.position))?.terrain ?? '';
-          if (targetTerrain === 'coast' || targetTerrain === 'river' || targetTerrain === 'ocean') {
+          if (isDeepWaterTerrain(targetTerrain)) {
             extraScore += 3;
           }
         }
@@ -237,7 +238,7 @@ export function findBestRangedTarget(
         const attackerFaction = state.factions.get(friendlyFactionId);
         if (attackerFaction?.identityProfile.passiveTrait === 'greedy') {
           const tTerrain = state.map?.tiles.get(hexToKey(unit.position))?.terrain ?? '';
-          if (tTerrain === 'coast' || tTerrain === 'river' || tTerrain === 'ocean') {
+          if (isDeepWaterTerrain(tTerrain)) {
             extraScore += 3;
           }
         }

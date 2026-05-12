@@ -1,9 +1,14 @@
 const WATER_TERRAINS = new Set(['coast', 'river', 'ocean', 'fish']);
+const DEEP_WATER_TERRAINS = new Set(['coast', 'ocean', 'fish']);
 const RIVER_STEALTH_TERRAINS = new Set(['river', 'swamp']);
 const WETLAND_TERRAINS = new Set(['river', 'coast', 'swamp']);
 
 export function isWaterTerrain(terrainId: string | undefined): boolean {
   return terrainId ? WATER_TERRAINS.has(terrainId) : false;
+}
+
+export function isDeepWaterTerrain(terrainId: string | undefined): boolean {
+  return terrainId ? DEEP_WATER_TERRAINS.has(terrainId) : false;
 }
 
 export function isLandTerrain(terrainId: string | undefined): boolean {

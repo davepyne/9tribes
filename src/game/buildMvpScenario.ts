@@ -8,6 +8,7 @@ import { loadRulesRegistry } from '../data/loader/loadRulesRegistry.js';
 import { assemblePrototype } from '../design/assemblePrototype.js';
 import { createFactionId, createUnitId, createCityId, createImprovementId, createPrototypeId } from '../core/ids.js';
 import { createCombatRecord } from '../features/factions/types.js';
+import { isWaterTerrain, isDeepWaterTerrain } from '../systems/terrainUtils.js';
 import { createWarExhaustion } from '../systems/warExhaustionSystem.js';
 import type { CityId, ChassisId, ComponentId, PrototypeId } from '../types.js';
 import type { Faction } from '../game/types.js';
@@ -46,8 +47,8 @@ function isValidSpawnTerrain(
   const isNavalUnit = chassis?.movementClass === 'naval';
   const isAmphibious = tags?.includes('amphibious') ?? false;
   const tid = tile.terrain;
-  const isDeepWater = tid === 'coast' || tid === 'ocean' || tid === 'fish';
-  const isWater = tid === 'coast' || tid === 'river' || tid === 'ocean' || tid === 'fish';
+  const isDeepWater = isDeepWaterTerrain(tid);
+  const isWater = isWaterTerrain(tid);
 
   if (isDeepWater && !isNavalUnit) return false;
   if (isNavalUnit && !isWater && !isAmphibious) return false;

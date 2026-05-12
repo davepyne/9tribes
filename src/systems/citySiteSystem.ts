@@ -211,7 +211,7 @@ export function findBestCitySiteForFaction(
   for (const [key, tile] of map.tiles) {
     const hex = keyToHex(key);
 
-    // Skip impassable terrain and naval-only tiles
+    // Skip impassable terrain
     if (tile.terrain === 'mountain' || tile.terrain === 'ocean' || tile.terrain === 'fish') {
       continue;
     }
@@ -275,7 +275,7 @@ export function findBestCitySiteForFaction(
       }
     }
 
-    // Prefer coast/river/fish-adjacent tiles slightly
+    // Prefer coastlike tiles slightly
     if (COASTLIKE_TERRAINS.has(tile.terrain)) {
       score += 3;
     }

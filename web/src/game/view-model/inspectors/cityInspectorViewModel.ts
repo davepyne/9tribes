@@ -169,15 +169,16 @@ export function buildCityInspectorViewModel(state: GameState, cityId: string, re
         }
         const villageCount = faction?.villageIds.length ?? 0;
         const navalBlockedReason = getNavalSpawnDisabledReason(state, city.position, registry, prototype);
-        const disabledReason = !canManageProduction
-          ? city.besieged
+        let disabledReason: string | undefined;
+        if (!canManageProduction) {
+          disabledReason = city.besieged
             ? 'Cannot change production while besieged.'
-            : 'Only the active friendly city can change production.'
-          : costType === 'villages' && !canPaySettlerVillageCost(state, city.factionId, SETTLER_VILLAGE_COST)
-            ? `Requires ${SETTLER_VILLAGE_COST} villages (${villageCount} available).`
-            : navalBlockedReason
-              ? navalBlockedReason
-              : undefined;
+            : 'Only the active friendly city can change production.';
+        } else if (costType === 'villages' && !canPaySettlerVillageCost(state, city.factionId, SETTLER_VILLAGE_COST)) {
+          disabledReason = `Requires ${SETTLER_VILLAGE_COST} villages (${villageCount} available).`;
+        } else if (navalBlockedReason) {
+          disabledReason = navalBlockedReason;
+        }
         return {
           prototypeId: prototype.id,
           name: prototype.name,

@@ -12,6 +12,7 @@ import { createUnitId } from '../core/ids.js';
 import { getNeighbors, hexDistance, hexToKey, getHexesInRange } from '../core/grid.js';
 import { recordUnitCreated } from './historySystem.js';
 import { isHexOccupied } from './occupancySystem.js';
+import { isWaterTerrain, isDeepWaterTerrain } from './terrainUtils.js';
 import { getDomainIdsByTags, incrementPrototypeMastery } from './knowledgeSystem.js';
 import { getDomainProgression, meetsLearnedDomainRequirement } from './domainProgression.js';
 import { destroyVillage } from './villageSystem.js';
@@ -322,16 +323,14 @@ export function getNavalSpawnDisabledReason(
   const chassis = registry.getChassis(prototype.chassisId);
   if (!chassis || chassis.movementClass !== 'naval') return null;
 
-  // If a valid spawn hex already exists, no problem
   if (findSpawnHex(state, cityPosition, registry, prototype) !== null) return null;
 
-  // Check if any water hex exists anywhere in city territory (radius 2)
   const territoryHexes = getHexesInRange(cityPosition, 2);
   for (const hex of territoryHexes) {
     const tile = state.map?.tiles.get(hexToKey(hex));
     if (!tile) continue;
     const tid = tile.terrain;
-    if (tid === 'coast' || tid === 'ocean' || tid === 'fish' || tid === 'river') {
+    if (isWaterTerrain(tid)) {
       if (!isHexOccupied(state, hex)) return null;
     }
   }
@@ -359,14 +358,13 @@ function findSpawnHex(
     const terrainDef = registry.getTerrain(tile.terrain);
     if (terrainDef && terrainDef.passable === false) continue;
 
-    // Filter by unit terrain compatibility (mirrors movementSystem.ts:76-94)
     if (prototype) {
       const chassis = registry.getChassis(prototype.chassisId);
       const isNavalUnit = chassis?.movementClass === 'naval';
       const isAmphibious = prototype?.tags?.includes('amphibious') ?? false;
       const tid = tile.terrain;
-      const isWater = tid === 'coast' || tid === 'river' || tid === 'ocean' || tid === 'fish';
-      const isDeepWater = tid === 'coast' || tid === 'ocean' || tid === 'fish';
+      const isWater = isWaterTerrain(tid);
+      const isDeepWater = isDeepWaterTerrain(tid);
       if (isDeepWater && !isNavalUnit) continue;
       if (isNavalUnit && !isWater && !isAmphibious) continue;
     }

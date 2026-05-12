@@ -4,13 +4,14 @@ import type { Unit } from '../features/units/types.js';
 import type { TerrainDef } from '../data/registry/types.js';
 import { getHexesInRange } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
-import { isWaterTerrain, isRiverStealthTerrain, isWetlandTerrain } from './terrainUtils.js';
+import { isWaterTerrain, isDeepWaterTerrain, isRiverStealthTerrain, isWetlandTerrain } from './terrainUtils.js';
 
+const GREEDY_BONUS_TERRAINS = new Set(['coast', 'ocean', 'fish']);
 const POOR_TERRAINS = new Set(['tundra', 'desert', 'hill', 'river', 'coast']);
 const OPEN_GROUND_TERRAINS = new Set(['plains', 'savannah']);
 const CHARGE_MOMENTUM_TERRAINS = new Set(['savannah', 'plains']);
 
-export { isWaterTerrain, isRiverStealthTerrain };
+export { isWaterTerrain, isDeepWaterTerrain, isRiverStealthTerrain };
 
 export function isPoorTerrain(terrainId: string | undefined): boolean {
   return terrainId ? POOR_TERRAINS.has(terrainId) : false;
@@ -43,7 +44,7 @@ export function getMovementCostModifier(
     return -2;
   }
 
-  if (passive === 'greedy' && (targetTerrainId === 'coast' || targetTerrainId === 'ocean' || targetTerrainId === 'fish')) {
+  if (passive === 'greedy' && GREEDY_BONUS_TERRAINS.has(targetTerrainId)) {
     return -1;
   }
 
@@ -97,7 +98,7 @@ export function getCombatAttackModifier(
     return 0.1;
   }
 
-  if (passive === 'greedy' && (attackerTerrainId === 'coast' || attackerTerrainId === 'ocean' || attackerTerrainId === 'fish')) {
+  if (passive === 'greedy' && GREEDY_BONUS_TERRAINS.has(attackerTerrainId)) {
     return 0.15;
   }
 
@@ -167,7 +168,7 @@ export function getCombatDefenseModifier(
   }
 
   if (passive === 'greedy') {
-    if (terrainId === 'coast' || terrainId === 'ocean' || terrainId === 'fish') return 0.15;
+    if (GREEDY_BONUS_TERRAINS.has(terrainId)) return 0.15;
     return 0.05; // pirate grit — always a little tougher
   }
 
@@ -184,7 +185,7 @@ export function getEconomyProductionBonus(
     return 0.10;
   }
 
-  if (passive === 'greedy' && (terrainId === 'coast' || terrainId === 'ocean' || terrainId === 'fish')) {
+  if (passive === 'greedy' && GREEDY_BONUS_TERRAINS.has(terrainId)) {
     return 0.10;
   }
 
@@ -261,7 +262,7 @@ export function getEconomySupplyBonus(
     return 0.05;
   }
 
-  if (passive === 'greedy' && (terrainId === 'coast' || terrainId === 'ocean' || terrainId === 'fish')) {
+  if (passive === 'greedy' && GREEDY_BONUS_TERRAINS.has(terrainId)) {
     return 0.10;
   }
 
@@ -286,7 +287,7 @@ export function getTerrainPreferenceScore(
   }
 
   const passive = faction.identityProfile.passiveTrait;
-  if (passive === 'greedy' && (terrainId === 'coast' || terrainId === 'ocean' || terrainId === 'fish')) {
+  if (passive === 'greedy' && GREEDY_BONUS_TERRAINS.has(terrainId)) {
     return 2;
   }
   if (passive === 'river_assault' && isRiverStealthTerrain(terrainId)) {
