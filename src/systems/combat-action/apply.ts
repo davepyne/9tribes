@@ -232,6 +232,7 @@ export function applyCombatAction(
     morale: Math.max(0, attacker.morale - preview.result.attackerMoraleLoss),
     routed: preview.result.attackerRouted || preview.result.attackerFled,
     hillDugIn: false,
+    digInStacks: 0,
     attacksRemaining: 0,
     movesRemaining: 0,
     activatedThisRound: true,
@@ -243,6 +244,7 @@ export function applyCombatAction(
     morale: Math.max(0, defender.morale - preview.result.defenderMoraleLoss),
     routed: preview.result.defenderRouted || preview.result.defenderFled,
     hillDugIn: false,
+    digInStacks: 0,
     status: preview.result.defenderDestroyed ? 'spent' : defender.status,
   };
 
@@ -444,13 +446,14 @@ export function applyCombatAction(
     && attackerDoctrine?.pressGangCaptureEnabled
     && nextAttacker.hp > 0
   ) {
-    const pressGangUnit = current.units.get(preview.defenderId);
-    if (pressGangUnit) {
+    // Use original `defender` (captured at function entry) because the defender
+    // was already deleted from current.units when defenderDestroyed is true.
+    if (defender) {
       if (rngChance(current.rngState, 0.3)) {
         const captured: Unit = {
-          ...pressGangUnit,
+          ...defender,
           factionId: attacker.factionId,
-          hp: Math.max(1, Math.floor(pressGangUnit.maxHp * 0.25)),
+          hp: Math.max(1, Math.floor(defender.maxHp * 0.25)),
           morale: 40,
           veteranLevel: 'green' as import('../../core/enums.js').VeteranLevel,
           status: 'ready' as import('../../core/enums.js').UnitStatus,
@@ -482,8 +485,7 @@ export function applyCombatAction(
         const updatedEconomy = new Map(current.economy);
         updatedEconomy.set(attacker.factionId, {
           ...attackerEconomy,
-          productionPool: attackerEconomy.productionPool + loot.gold,
-          supplyIncome: attackerEconomy.supplyIncome + loot.supplies,
+          productionPool: attackerEconomy.productionPool + loot.gold + loot.supplies,
         });
         current = { ...current, economy: updatedEconomy };
         greedyLootGained = loot.gold;
@@ -1082,7 +1084,7 @@ export function applyCombatAction(
     pushCombatEffect(triggeredEffects, 'Poison Detonation', 'Venom erupted on kill, poisoning adjacent enemies.', 'aftermath');
   }
   if (pursuitMovementRestored > 0) {
-    pushCombatEffect(triggeredEffects, 'Pursuit', `Foraging riders pushed forward for +${pursuitMovementRestored} movement after the kill.`, 'aftermath');
+    pushCombatEffect(triggeredEffects, 'Pursuit Movement', `Foraging riders pushed forward for +${pursuitMovementRestored} movement after the kill.`, 'aftermath');
   }
   if (emergentSustainHealApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Paladin Sustain', `Attacker recovered ${emergentSustainHealApplied} HP from damage dealt.`, 'aftermath');

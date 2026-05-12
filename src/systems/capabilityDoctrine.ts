@@ -162,7 +162,7 @@ export function resolveResearchDoctrine(
     forestAmbushEnabled: hasNode('nature_healing_t1'),
     shieldWallEnabled: hasNode('fortress_t1'),
     riverCrossingEnabled: hasNode('tidal_warfare_t1'),
-    marchingStaminaEnabled: hasNode('hitrun_t1'),
+    marchingStaminaEnabled: false, // retired: hitrun_t1 reflavored to skirmish_step
     venomousStrikesEnabled: hasNode('venom_t1'),
     poisonPersistenceEnabled: hasNode('venom_t1') && nativeDomain === 'venom',
     forcedMarchEnabled: hasNode('charge_t1'),
@@ -186,7 +186,7 @@ export function resolveResearchDoctrine(
 
     // Additional qualitative effects
     heatResistanceEnabled: hasNode('camel_adaptation_t1'),
-    roughTerrainMovementEnabled: hasNode('river_stealth_t1'),
+    roughTerrainMovementEnabled: false, // retired: river_stealth_t1 reflavored to wetland_stealth
     greedyCaptureEnabled: hasNode('slaving_t1'),
     antiFortificationEnabled: hasNode('heavy_hitter_t1'),
     permanentStealthEnabled: hasNode('camel_adaptation_t2'),

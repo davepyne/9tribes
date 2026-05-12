@@ -70,16 +70,18 @@ describe('terrain defense modifiers', () => {
 });
 
 describe('faction identity combat modifiers', () => {
-  it('charge_momentum applies on savannah but not plains', () => {
+  it('charge_momentum is no longer terrain-gated (handled in preview.ts)', () => {
     const state = buildMvpScenario(42);
     const savannah = state.factions.get('savannah_lions' as never)!;
 
+    // getCombatAttackModifier no longer handles charge_momentum;
+    // it's now movement-gated in preview.ts instead
     expect(
       getCombatAttackModifier(savannah, registry.getTerrain('plains'), registry.getTerrain('plains'))
-    ).toBe(0.15);
+    ).toBe(0);
     expect(
       getCombatAttackModifier(savannah, registry.getTerrain('savannah'), registry.getTerrain('plains'))
-    ).toBe(0.15);
+    ).toBe(0);
   });
 
   it('healing_druids gain a forest defense modifier', () => {

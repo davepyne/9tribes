@@ -91,9 +91,7 @@ export function getCombatAttackModifier(
   const attackerTerrainId = attackerTerrain?.id ?? '';
   const defenderTerrainId = defenderTerrain?.id ?? '';
 
-  if (passive === 'charge_momentum' && CHARGE_MOMENTUM_TERRAINS.has(attackerTerrainId)) {
-    return 0.15;
-  }
+  // charge_momentum attack bonus is now handled in preview.ts (movement-gated, not terrain-gated)
 
   if (passive === 'river_assault' && isWaterTerrain(attackerTerrainId)) {
     return 0.1;
@@ -149,9 +147,7 @@ export function getCombatDefenseModifier(
     return terrainId === 'forest' ? 0.1 : 0.05;
   }
 
-  if (passive === 'cold_hardened_growth' && terrainId === 'tundra') {
-    return 0.1;
-  }
+  // cold_hardened_growth defense bonus is now handled in preview.ts (unconditional)
 
   if (passive === 'jungle_stalkers' && terrainId === 'jungle') {
     return 0.35;
@@ -381,14 +377,6 @@ export function isPassiveWetlandStealth(faction: Faction | undefined): boolean {
   return faction?.identityProfile.passiveTrait === 'river_assault';
 }
 
-/** river_assault passive: +1 movement in rough terrain */
-export function getRoughTerrainMovementBonus(faction: Faction | undefined, targetTerrainId: string): number {
-  if (faction?.identityProfile.passiveTrait === 'river_assault' && ROUGH_MOVEMENT_TERRAINS.has(targetTerrainId)) {
-    return -1;
-  }
-  return 0;
-}
-
 /** foraging_riders passive: war exhaustion decays 1 extra per turn */
 export function getForagingRidersExhaustionBonus(faction: Faction | undefined): number {
   return faction?.identityProfile.passiveTrait === 'foraging_riders' ? 1 : 0;
@@ -412,14 +400,4 @@ export function getPoisonOnAttack(faction: Faction | undefined, attackerTerrainI
   return null;
 }
 
-/** charge_momentum passive (Savannah Lions): +15% damage when moved >= 2 hexes */
-export function getChargeMomentumBonus(faction: Faction | undefined, unit: Unit): number {
-  if (faction?.identityProfile.passiveTrait !== 'charge_momentum') return 0;
-  const hexesMoved = unit.maxMoves - unit.movesRemaining;
-  return hexesMoved >= 2 ? 0.15 : 0;
-}
 
-/** cold_hardened_growth passive (Arctic Wardens): +10% defense */
-export function getColdHardenedDefense(faction: Faction | undefined): number {
-  return faction?.identityProfile.passiveTrait === 'cold_hardened_growth' ? 0.1 : 0;
-}
