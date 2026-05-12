@@ -4,9 +4,11 @@ import { previewCombatAction } from '../src/systems/combat-action/preview';
 import { applyCombatAction } from '../src/systems/combatActionSystem';
 import { applyEnvironmentalDamage } from '../src/systems/simulation/environmentalEffects';
 import { createResearchState } from '../src/systems/researchSystem';
-import { resolveResearchDoctrine } from '../src/systems/capabilityDoctrine';
+import { resolveResearchDoctrine, clearDoctrineCache } from '../src/systems/capabilityDoctrine';
 import { hexToKey } from '../src/core/grid';
 import type { GameState } from '../src/game/types';
+
+beforeEach(() => clearDoctrineCache());
 
 const registry = loadRulesRegistry();
 
@@ -63,10 +65,9 @@ function addResearchNodes(state: GameState, factionId: string, nodes: string[]) 
     research = createResearchState(factionId as never);
     state.research.set(factionId as never, research);
   }
-  for (const node of nodes) {
-    if (!research.completedNodes.includes(node as never)) {
-      research.completedNodes.push(node as never);
-    }
+  const newNodes = nodes.filter(n => !research!.completedNodes.includes(n as never));
+  if (newNodes.length > 0) {
+    research.completedNodes = [...research.completedNodes, ...newNodes as never[]];
   }
 }
 

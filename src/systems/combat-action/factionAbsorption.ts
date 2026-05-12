@@ -5,6 +5,7 @@ import { applyContactTransfer } from '../capabilitySystem.js';
 import { updateCombatRecordOnElimination } from '../historySystem.js';
 import { getFactionCityIds, syncAllFactionSettlementIds } from '../factionOwnershipSystem.js';
 import { destroyVillagesInCityTerritory } from '../villageSystem.js';
+import { isDomainRestricted } from '../knowledgeSystem.js';
 
 export function maybeAbsorbFaction(
   state: GameState,
@@ -39,7 +40,7 @@ export function maybeAbsorbFaction(
       d !== victorFaction.nativeDomain &&
       !victorFaction.learnedDomains.includes(d) &&
       domainsToAbsorb.indexOf(d) === domainsToAbsorb.lastIndexOf(d),
-  );
+  ).filter(d => !isDomainRestricted(d));
 
   let absorbedDomains: string[] = [];
   if (newlyLearned.length > 0) {

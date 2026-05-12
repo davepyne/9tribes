@@ -31,6 +31,7 @@ import {
   calculateSynergyDefenseBonus,
   getSynergyEngine,
 } from '../synergyRuntime.js';
+import { isCoverTerrain } from '../terrainUtils.js';
 
 import type {
   CombatActionEffect,
@@ -242,7 +243,7 @@ export function previewCombatAction(
   ) {
     situationalDefenseModifier += 0.3;
   }
-  if (defenderDoctrine?.roughTerrainDefenseEnabled && ['forest', 'jungle', 'hill', 'swamp'].includes(defenderTerrain?.id ?? '')) {
+  if (defenderDoctrine?.roughTerrainDefenseEnabled && isCoverTerrain(defenderTerrain?.id)) {
     situationalDefenseModifier += 0.2;
   }
   if (defenderDoctrine?.undyingEnabled && defender.hp < defender.maxHp * 0.2) {
@@ -295,6 +296,13 @@ export function previewCombatAction(
     situationalAttackModifier += 0.25;
   }
 
+  // Tidal Warfare T2 — Tidal Surge: +15% attack on coast/river terrain
+  if (attackerDoctrine?.amphibiousAssaultEnabled) {
+    if (attackerTerrainId === 'coast' || attackerTerrainId === 'river') {
+      situationalAttackModifier += 0.15;
+    }
+  }
+
   const improvementDefenseBonus = getImprovementBonus(state, defender.position, defender.factionId);
   const wallDefenseBonus = getWallDefenseBonus(
     state,
@@ -326,15 +334,15 @@ export function previewCombatAction(
     isChargeAttack,
     attackerWasStealthed,
     attackerSynergyResult.chargeShield,
-    defenderSynergyResult.antiDisplacement || defenderDoctrine?.armorPenetrationEnabled === true,
+    defenderSynergyResult.antiDisplacement || defenderDoctrine?.armorPenetrationEnabled === true || attackerDoctrine?.heavyTranscendenceEnabled === true,
     attackerSynergyResult.stealthChargeMultiplier,
     attackerSynergyResult.sandstormAccuracyDebuff,
     forestFirstStrike,
-    attackerDoctrine?.armorPenetrationEnabled ? 0.5 : 0 + attackerSynergyResult.armorPiercing,
+    (attackerDoctrine?.heavyTranscendenceEnabled ? 1.0 : attackerDoctrine?.armorPenetrationEnabled ? 0.5 : 0) + attackerSynergyResult.armorPiercing,
   );
 
   let totalKnockbackDistance = result.defenderKnockedBack ? result.knockbackDistance : 0;
-  if (result.defenderKnockedBack && attackerDoctrine?.elephantStampede2Enabled && attackerPrototype.tags?.includes('elephant')) {
+  if (result.defenderKnockedBack && attackerDoctrine?.elephantStampede2Enabled) {
     totalKnockbackDistance = 2;
   }
   totalKnockbackDistance += attackerSynergyResult.knockbackDistance;

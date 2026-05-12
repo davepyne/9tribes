@@ -104,6 +104,7 @@
       "id": "slaving",
       "name": "Slaving",
       "nativeFaction": "coral_people",
+      "restrictedToNative": true,
       "tags": ["capture", "slave"],
       "baseEffect": {
         "type": "on_capture",

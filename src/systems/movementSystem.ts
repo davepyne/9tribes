@@ -8,7 +8,7 @@ import { isHexOccupied } from './occupancySystem.js';
 import { entersEnemyZoC, getZoCMovementCost } from './zocSystem.js';
 import { applyOpportunityAttacks } from './opportunityAttackSystem.js';
 import { getMovementCostModifier, isUnitRiverStealthed } from './factionIdentitySystem.js';
-import { isWaterTerrain } from './terrainUtils.js';
+import { isWaterTerrain, isCoverTerrain } from './terrainUtils.js';
 import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import { canUseCharge } from './abilitySystem.js';
 import { pruneDeadUnits } from './combatActionSystem.js';
@@ -168,6 +168,11 @@ export function previewMove(
   // Doctrine-based movement bonuses
   const isCavalry = chassis?.movementClass === 'cavalry';
 
+  // Nomadic Transcendence: all terrain costs 1 — skip expensive synergy lookups
+  if (doctrine.nomadicTranscendenceEnabled) {
+    totalCost = Math.min(totalCost, 1);
+  }
+
   // River crossing (tidal_warfare Tier 1): river costs 1 instead of 2
   if (targetTerrainId === 'river' && doctrine.riverCrossingEnabled) {
     totalCost = Math.min(totalCost, 1);
@@ -175,18 +180,14 @@ export function previewMove(
   if ((targetTerrainId === 'coast' || targetTerrainId === 'river') && doctrine.amphibiousMovementEnabled) {
     totalCost = Math.min(totalCost, 1);
   }
-  if (targetTerrainId === 'desert' && doctrine.heatResistanceEnabled) {
+  if ((targetTerrainId === 'desert' || targetTerrainId === 'tundra') && doctrine.heatResistanceEnabled) {
     totalCost = Math.min(totalCost, 1);
   }
   // E4 — Raid Camp emergent: allied units ignore desert movement penalty
   if (targetTerrainId === 'desert' && faction?.activeTripleStack?.emergentRule.effect.type === 'raid_camp') {
     totalCost = Math.min(totalCost, 1);
   }
-  // Winter campaign (camel_adaptation Tier 2): no tundra movement penalty
-  if (targetTerrainId === 'tundra' && doctrine.winterCampaignEnabled) {
-    totalCost = Math.min(totalCost, 1);
-  }
-  if (doctrine.roughTerrainMovementEnabled && ['forest', 'jungle', 'hill', 'swamp'].includes(targetTerrainId)) {
+  if (doctrine.roughTerrainMovementEnabled && isCoverTerrain(targetTerrainId)) {
     totalCost = Math.max(1, totalCost - 1);
   }
   if (canChargeThroughTerrain) {

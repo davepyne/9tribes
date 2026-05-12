@@ -56,7 +56,7 @@ import { evaluateAndSpawnVillage } from '../villageSystem.js';
 import { isCityEncircled, isEncirclementBroken } from '../territorySystem.js';
 import { applyEcologyPressure, applyForceCompositionPressure } from '../capabilitySystem.js';
 import { getDomainProgression } from '../domainProgression.js';
-import { gainExposure, calculatePrototypeCost, getDomainIdsByTags, getForeignT1Cost } from '../knowledgeSystem.js';
+import { gainExposure, calculatePrototypeCost, getDomainIdsByTags, getForeignT1Cost, isDomainRestricted } from '../knowledgeSystem.js';
 import {
   computeFactionStrategy,
 } from '../strategicAi.js';
@@ -368,6 +368,10 @@ function applyEcologyResearchPass(
       }
     } else {
       // Foreign domain: apply ecology XP toward T1 assimilation with scaled cost
+      // Skip restricted domains (can only be acquired natively)
+      if (isDomainRestricted(domainId)) {
+        continue;
+      }
       const t1NodeId = `${domainId}_t1` as import('../../types.js').ResearchNodeId;
       // Skip if T1 already somehow completed
       if (currentResearch.completedNodes.includes(t1NodeId)) continue;

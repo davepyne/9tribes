@@ -16,3 +16,10 @@ export function isLandTerrain(terrainId: string | undefined): boolean {
 export function isRiverStealthTerrain(terrainId: string | undefined): boolean {
   return terrainId ? RIVER_STEALTH_TERRAINS.has(terrainId) : false;
 }
+
+/** Terrain that provides cover for doctrine effects (rough terrain movement, stealth recharge, defense bonus). */
+export const COVER_TERRAINS = new Set(['forest', 'jungle', 'hill', 'swamp']);
+
+export function isCoverTerrain(terrainId: string | undefined): boolean {
+  return terrainId ? COVER_TERRAINS.has(terrainId) : false;
+}

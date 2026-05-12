@@ -17,6 +17,7 @@ import { applyContactTransfer } from '../capabilitySystem.js';
 import { applyPoisonDoT, enterStealth, findRetreatHex } from '../signatureAbilitySystem.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { isUnitRiverStealthed } from '../factionIdentitySystem.js';
+import { isCoverTerrain } from '../terrainUtils.js';
 
 import {
   recordBattleFought,
@@ -259,7 +260,7 @@ export function applyCombatAction(
 
   if (preview.attackerWasStealthed && attacker.isStealthed && nextAttacker.hp > 0) {
     const isDesertStealth = attackerDoctrine?.permanentStealthEnabled === true
-      && preview.details.attackerTerrainId === 'desert';
+      && (preview.details.attackerTerrainId === 'desert' || preview.details.attackerTerrainId === 'tundra');
     const isEmergentTerrainStealth = preview.details.emergentPermanentStealthTerrains.length > 0
       && preview.details.emergentPermanentStealthTerrains.includes(preview.details.attackerTerrainId);
     const isRiverTerrainStealth = isUnitRiverStealthed(attackerFactionForDoctrine, preview.details.attackerTerrainId);
@@ -383,11 +384,13 @@ export function applyCombatAction(
   const attackerTerrainId = current.map?.tiles.get(hexToKey(attacker.position))?.terrain ?? '';
   const isGreedyCoastal = attackerFaction?.identityProfile.passiveTrait === 'greedy'
     && WATER_TERRAIN.has(attackerTerrainId);
-  const autoCaptureAbility = attackerDoctrine?.autoCaptureEnabled && defender.hp <= defender.maxHp * 0.25
+  const autoCaptureThreshold = attackerDoctrine?.slaverTranscendenceEnabled ? 0.5
+    : attackerDoctrine?.autoCaptureEnabled ? 0.25 : 0;
+  const autoCaptureAbility = autoCaptureThreshold > 0 && defender.hp <= defender.maxHp * autoCaptureThreshold
     ? {
         greedyCaptureChance: 1,
         greedyCaptureCooldown: 0,
-        greedyCaptureHpFraction: 0.25,
+        greedyCaptureHpFraction: autoCaptureThreshold,
       }
     : null;
   // E3/E4 — emergent capture bonus from Slave Empire (+0.20) and Desert Raider (+0.30 in desert)
@@ -519,7 +522,7 @@ export function applyCombatAction(
 
   const hitAndRunEligible =
     attackerDoctrine?.universalHitAndRunEnabled
-    || (attackerDoctrine?.hitAndRunEnabled && attackerPrototype.tags?.includes('cavalry') && attackerPrototype.tags?.includes('skirmish'));
+    || (attackerDoctrine?.hitAndRunEnabled && preview.result.defenderDestroyed);
   if (hitAndRunEligible) {
     const retreatingAttacker = current.units.get(preview.attackerId);
     if (retreatingAttacker && retreatingAttacker.hp > 0) {
@@ -565,7 +568,8 @@ export function applyCombatAction(
   updatedDefender = current.units.get(preview.defenderId);
 
   const canInflictPoison = (attackerPrototype.tags?.includes('poison') ?? false)
-    || (attackerDoctrine?.toxicBulwarkEnabled === true);
+    || (attackerDoctrine?.toxicBulwarkEnabled === true)
+    || (attackerDoctrine?.venomousStrikesEnabled === true);
   let poisonApplied = false;
   if (!preview.result.defenderDestroyed && preview.result.defenderDamage > 0 && canInflictPoison && updatedDefender) {
     updatedDefender = applyPoisonDoT(
@@ -591,7 +595,7 @@ export function applyCombatAction(
   }
 
   let contaminatedHexApplied = false;
-  if (preview.result.defenderDestroyed && attackerDoctrine?.contaminateTerrainEnabled && canInflictPoison) {
+  if (preview.result.defenderDestroyed && attackerDoctrine?.contaminateTerrainEnabled) {
     const contaminatedHexes = new Set(current.contaminatedHexes);
     contaminatedHexes.add(hexToKey(defender.position));
     current = { ...current, contaminatedHexes };
@@ -655,7 +659,7 @@ export function applyCombatAction(
     updatedAttacker
     && (
       preview.details.attackerSynergyEffects.includes('stealth_recharge')
-      || (attackerDoctrine?.stealthRechargeEnabled && attackerPrototype.tags?.includes('stealth'))
+      || (attackerDoctrine?.stealthRechargeEnabled && isCoverTerrain(preview.details.attackerTerrainId))
     )
   ) {
     const hasAdjacentEnemy = getNeighbors(updatedAttacker.position).some((hex) => {

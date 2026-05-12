@@ -88,6 +88,6 @@ describe('capability doctrine thresholds', () => {
       learnedDomains: ['heavy_hitter'],
     } as never);
     expect(nativeHeavy.undyingEnabled).toBe(false);
-    expect(nativeHeavy.armorPenetrationEnabled).toBe(true);
+    expect(nativeHeavy.heavyTranscendenceEnabled).toBe(true);
   });
 });

@@ -15,11 +15,21 @@ type DomainConfig = {
   id: string;
   name: string;
   nativeFaction: string;
+  restrictedToNative?: boolean;
   tags: string[];
   baseEffect: unknown;
 };
 
 const DOMAINS = abilityDomainsData.domains as Record<string, DomainConfig>;
+
+// Domains restricted to their native faction only — derived from ability-domains.json
+const RESTRICTED_DOMAINS = new Set(
+  Object.values(DOMAINS).filter(d => d.restrictedToNative).map(d => d.id),
+);
+
+export function isDomainRestricted(domainId: string): boolean {
+  return RESTRICTED_DOMAINS.has(domainId);
+}
 
 // Exposure thresholds: how many points needed to learn each successive domain via proximity
 // Index 0 = first foreign domain (after native), escalating for each subsequent domain
@@ -110,6 +120,11 @@ export function gainExposure(
 
   // Silently ignore if domain is native or already learned
   if (!isForeignDomain(faction, domainId)) {
+    return state;
+  }
+
+  // Skip restricted domains (can only be acquired natively)
+  if (isDomainRestricted(domainId)) {
     return state;
   }
 

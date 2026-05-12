@@ -5,7 +5,7 @@
     "nodes": {
       "venom_t1": {
         "id": "venom_t1",
-        "name": "Venom Foundation",
+        "name": "Venomous Strikes",
         "domain": "venom",
         "tier": 1,
         "xpCost": 0,
@@ -13,9 +13,10 @@
         "unlocks": [],
         "codifies": ["venom"],
         "qualitativeEffect": {
-          "type": "poison_persistence",
-          "description": "Poison applies +1 extra stack on hit",
-          "effect": { "poisonExtraStack": 1 }
+          "type": "venomous_strikes",
+          "description": "All attacks apply 1 poison stack on hit",
+          "nativeDescription": "All attacks apply 1 poison stack on hit; poison stacks never expire",
+          "effect": { "poisonOnAllAttacks": true }
         }
       },
       "venom_t2": {
@@ -28,7 +29,7 @@
         "unlocks": [],
         "qualitativeEffect": {
           "type": "contaminate_terrain",
-          "description": "Killing a poisoned enemy contaminates their hex for 1 dmg/turn",
+          "description": "Killing any enemy contaminates their hex for 1 dmg/turn",
           "effect": { "contaminateOnKill": true }
         }
       },
@@ -113,8 +114,8 @@
         "unlocks": [],
         "codifies": ["charge"],
         "qualitativeEffect": {
-          "type": "forced_march",
-          "description": "No cooldown on first charge of each battle",
+          "type": "battle_momentum",
+          "description": "First attack each combat deals +15% damage",
           "effect": { "firstChargeNoCooldown": true }
         }
       },
@@ -127,9 +128,9 @@
         "prerequisites": ["charge_t1"],
         "unlocks": [],
         "qualitativeEffect": {
-          "type": "stampede2",
-          "description": "Elephant charges knock back 2 hexes",
-          "effect": { "elephantKnockback": 2 }
+          "type": "stampede",
+          "description": "Charges knock enemies back 2 hexes",
+          "effect": { "chargeKnockback": 2 }
         }
       },
       "charge_t3": {
@@ -177,9 +178,9 @@
         "prerequisites": ["hitrun_t1"],
         "unlocks": [],
         "qualitativeEffect": {
-          "type": "hitrun",
-          "description": "Cavalry can attack then retreat in same turn",
-          "effect": { "cavalryRetreatAfterAttack": true }
+          "type": "kill_retreat",
+          "description": "After killing an enemy, the attacker can retreat 1 hex",
+          "effect": { "retreatAfterKill": true }
         }
       },
       "hitrun_t3": {
@@ -263,8 +264,8 @@
         "unlocks": [],
         "codifies": ["camel_adaptation"],
         "qualitativeEffect": {
-          "type": "heat_resistance",
-          "description": "Units suffer no movement penalty in desert",
+          "type": "endurance",
+          "description": "Units suffer no movement penalty in desert or tundra",
           "effect": { "ignoreDesertMovementPenalty": true }
         }
       },
@@ -277,9 +278,9 @@
         "prerequisites": ["camel_adaptation_t1"],
         "unlocks": [],
         "qualitativeEffect": {
-          "type": "permanent_stealth_terrain",
-          "description": "Permanent stealth in desert, no tundra movement penalty",
-          "effect": { "permanentStealthInDesert": true, "tundraMovementFree": true }
+          "type": "terrain_veil",
+          "description": "Permanent stealth in desert and tundra terrain",
+          "effect": { "permanentStealthInHarshTerrain": true }
         }
       },
       "camel_adaptation_t3": {
@@ -293,6 +294,7 @@
         "qualitativeEffect": {
           "type": "rough_terrain_defense",
           "description": "Units in rough terrain gain +20% defense",
+          "nativeDescription": "All terrain costs 1 movement for all units",
           "effect": { "roughTerrainDefenseBonus": 0.2 }
         }
       }
@@ -326,9 +328,9 @@
         "prerequisites": ["tidal_warfare_t1"],
         "unlocks": [],
         "qualitativeEffect": {
-          "type": "amphibious_assault",
-          "description": "Naval units can attack coastal hexes directly",
-          "effect": { "navalCoastalAssault": true }
+          "type": "tidal_surge",
+          "description": "Naval units can attack coastal hexes; all units gain +15% attack on coast and river terrain",
+          "effect": { "navalCoastalAssault": true, "tidalSurgeAttackBonus": 0.15 }
         }
       },
       "tidal_warfare_t3": {
@@ -376,9 +378,9 @@
         "prerequisites": ["river_stealth_t1"],
         "unlocks": [],
         "qualitativeEffect": {
-          "type": "stealth_recharge",
-          "description": "Re-enter stealth after attacking",
-          "effect": { "stealthRecharge": true }
+          "type": "terrain_stealth",
+          "description": "After attacking from rough terrain, the attacker re-enters stealth",
+          "effect": { "stealthInRoughTerrain": true }
         }
       },
       "river_stealth_t3": {
@@ -442,6 +444,7 @@
         "qualitativeEffect": {
           "type": "auto_capture",
           "description": "Wounded enemies below 25% HP are auto-captured",
+          "nativeDescription": "Wounded enemies below 50% HP are auto-captured",
           "effect": { "autoCaptureThreshold": 0.25 }
         }
       }
@@ -491,6 +494,7 @@
         "qualitativeEffect": {
           "type": "armor_penetration",
           "description": "Ignore 50% armor, units cannot be displaced",
+          "nativeDescription": "All attacks ignore 100% armor; units cannot be displaced",
           "effect": { "armorPenetration": 0.5, "cannotBeDisplaced": true }
         }
       }
