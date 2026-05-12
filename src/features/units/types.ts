@@ -48,6 +48,7 @@ export interface Unit {
   isStealthed: boolean;
   turnsSinceStealthBreak: number;
   hillDugIn?: boolean;
+  digInStacks?: number;  // Hill engineering: stacks from stationary turns (cap 3, each = +5% defense)
   entrenching?: boolean;  // Turn 1 of 2-turn dig-in process
   frozen?: boolean;
   frostbiteStacks?: number;

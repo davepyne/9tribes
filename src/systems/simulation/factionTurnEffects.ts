@@ -72,6 +72,8 @@ import type { FactionStrategy } from '../factionStrategy.js';
 import type { SimulationTrace } from './traceTypes.js';
 import { log, recordFactionStrategy, recordSiegeEvent, recordResearch, recordTripleStack } from './traceRecorder.js';
 import { getTerrainAt, occupiesFriendlySettlement, applyEnvironmentalDamage, getHealRate } from './environmentalEffects.js';
+import { isWetlandTerrain } from '../terrainUtils.js';
+import { isPassiveWetlandStealth, getForagingRidersExhaustionBonus } from '../factionIdentitySystem.js';
 
 function removeUnitFromFaction(
   state: GameState,
@@ -998,6 +1000,14 @@ export function processFactionPhases(
       stealthUpdatedUnit = enterStealth(stealthUpdatedUnit, protoTags);
     }
 
+    // Wetland stealth: river_stealth_t1 doctrine or river_assault passive
+    if (!stealthUpdatedUnit.isStealthed && (doctrine.wetlandStealthEnabled || isPassiveWetlandStealth(faction))) {
+      const unitTerrain = getTerrainAt(current, unit.position);
+      if (isWetlandTerrain(unitTerrain)) {
+        stealthUpdatedUnit = { ...stealthUpdatedUnit, isStealthed: true };
+      }
+    }
+
     const updatedUnit = maybeExpirePreparedAbility(stealthUpdatedUnit, current.round, current);
 
     checkRally(updatedUnit);
@@ -1154,10 +1164,11 @@ export function processFactionPhases(
     const weResearch = current.research.get(factionId);
     const weDoctrine = resolveResearchDoctrine(weResearch, faction);
     const marchingStaminaBonus = weDoctrine.marchingStaminaEnabled ? 1 : 0;
+    const foragingRidersBonus = getForagingRidersExhaustionBonus(faction);
     const decayedWE = applyDecay(tickedWE, {
       noLossTurns: tickedWE.turnsWithoutLoss,
       territoryClear: false,
-      marchingStaminaBonus,
+      marchingStaminaBonus: marchingStaminaBonus + foragingRidersBonus,
     });
     const weMap = new Map(current.warExhaustion);
     weMap.set(factionId, decayedWE);
@@ -1176,6 +1187,32 @@ export function processFactionPhases(
       }
       current = { ...current, units: unitsWithWE };
     }
+  }
+
+  // Hill engineering dig-in: stationary hill_clan units accumulate defense stacks
+  if (faction.identityProfile?.passiveTrait === 'hill_engineering') {
+    const hillUnits = new Map(current.units);
+    for (const unitIdStr of faction.unitIds) {
+      const unit = hillUnits.get(unitIdStr as UnitId);
+      if (!unit || unit.hp <= 0 || getTerrainAt(current, unit.position) !== 'hill') continue;
+      if (unit.movesRemaining === unit.maxMoves) {
+        // Stationary — increment stacks (cap 3)
+        const newStacks = Math.min((unit.digInStacks ?? 0) + 1, 3);
+        hillUnits.set(unitIdStr as UnitId, {
+          ...unit,
+          digInStacks: newStacks,
+          hillDugIn: newStacks > 0,
+        });
+      } else {
+        // Moved — reset stacks
+        hillUnits.set(unitIdStr as UnitId, {
+          ...unit,
+          digInStacks: 0,
+          hillDugIn: false,
+        });
+      }
+    }
+    current = { ...current, units: hillUnits };
   }
 
   return current;

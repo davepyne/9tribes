@@ -206,8 +206,12 @@ export function previewCombatAction(
 
   const retaliationDamageMultiplier = braceTriggered && isChargeAttack ? 1.1 : 1;
 
-  if (defender.hillDugIn) {
-    situationalDefenseModifier += 0.2;
+  // Hill engineering dig-in: each stack = +5% defense, cap 3 stacks = +15%
+  // Backward compat: hillDugIn boolean treated as 1 stack
+  const defenderDigInStacks = defender.digInStacks ?? (defender.hillDugIn ? 1 : 0);
+  const digInDefenseBonus = Math.min(defenderDigInStacks, 3) * 0.05;
+  if (digInDefenseBonus > 0) {
+    situationalDefenseModifier += digInDefenseBonus;
   }
   if (attackerDoctrine?.greedyCaptureEnabled && defender.hp < defender.maxHp * 0.5) {
     situationalAttackModifier += 0.15;
@@ -217,6 +221,19 @@ export function previewCombatAction(
   }
   if (attackerDoctrine?.chargeRoutedBonusEnabled && isChargeAttack && defender.routed) {
     situationalAttackModifier += 0.5;
+  }
+  let skirmishStepTriggered = false;
+  if (attackerDoctrine?.skirmishStepEnabled && attacker.movesRemaining < attacker.maxMoves) {
+    situationalAttackModifier += 0.1;
+    skirmishStepTriggered = true;
+  }
+  let chargeMomentumTriggered = false;
+  if (attackerFaction?.identityProfile.passiveTrait === 'charge_momentum') {
+    const hexesMoved = attacker.maxMoves - attacker.movesRemaining;
+    if (hexesMoved >= 2) {
+      situationalAttackModifier += 0.15;
+      chargeMomentumTriggered = true;
+    }
   }
   if (defenderDoctrine?.shieldWallEnabled) {
     const defenderIsInfantry = defenderPrototype.derivedStats.role === 'melee'
@@ -245,6 +262,11 @@ export function previewCombatAction(
   }
   if (defenderDoctrine?.undyingEnabled && defender.hp < defender.maxHp * 0.2) {
     situationalDefenseModifier += 0.5;
+  }
+  let coldHardenedTriggered = false;
+  if (defenderFaction?.identityProfile.passiveTrait === 'cold_hardened_growth') {
+    situationalDefenseModifier += 0.1;
+    coldHardenedTriggered = true;
   }
 
   const forestFirstStrike = attackerDoctrine?.forestAmbushEnabled === true && attackerTerrain?.id === 'forest';
@@ -377,6 +399,15 @@ export function previewCombatAction(
   }
   if (stampedeTriggered) {
     pushCombatEffect(triggeredEffects, 'Stampede', 'Elephant momentum stacked extra charge damage.', 'ability');
+  }
+  if (skirmishStepTriggered) {
+    pushCombatEffect(triggeredEffects, 'Skirmish Step', 'Moved before attacking for 10% bonus damage.', 'ability');
+  }
+  if (chargeMomentumTriggered) {
+    pushCombatEffect(triggeredEffects, 'Charge Momentum', 'Long charge added 15% bonus damage.', 'ability');
+  }
+  if (coldHardenedTriggered) {
+    pushCombatEffect(triggeredEffects, 'Cold Hardened', 'Arctic defender hardened stance for 10% defense.', 'ability');
   }
   if (result.roleModifier !== 0) {
     const sign = result.roleModifier > 0 ? '+' : '';

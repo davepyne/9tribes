@@ -4,7 +4,7 @@ import type { Unit } from '../features/units/types.js';
 import type { TerrainDef } from '../data/registry/types.js';
 import { getHexesInRange } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
-import { isWaterTerrain, isRiverStealthTerrain } from './terrainUtils.js';
+import { isWaterTerrain, isRiverStealthTerrain, isWetlandTerrain } from './terrainUtils.js';
 
 const POOR_TERRAINS = new Set(['tundra', 'desert', 'hill', 'river', 'coast']);
 const OPEN_GROUND_TERRAINS = new Set(['plains', 'savannah']);
@@ -72,6 +72,10 @@ export function getMovementCostModifier(
   }
 
   if (passive === 'hill_engineering' && targetTerrainId === 'hill') {
+    return -1;
+  }
+
+  if (passive === 'river_assault' && ROUGH_MOVEMENT_TERRAINS.has(targetTerrainId)) {
     return -1;
   }
 
@@ -365,4 +369,57 @@ export function getDesertSwarmBonus(
     return { attackBonus: config.attackBonus, defenseMultiplier: config.defenseMultiplier };
   }
   return { attackBonus: 0, defenseMultiplier: 1.0 };
+}
+
+// Phase 2 — Tribe Identity passives
+
+const ROUGH_MOVEMENT_TERRAINS = new Set(['forest', 'jungle', 'hill', 'tundra', 'desert', 'swamp']);
+const JUNGLE_STALKER_POISON_TERRAINS = new Set(['jungle', 'forest', 'swamp']);
+
+/** river_assault passive: wetland stealth without needing river_stealth_t1 */
+export function isPassiveWetlandStealth(faction: Faction | undefined): boolean {
+  return faction?.identityProfile.passiveTrait === 'river_assault';
+}
+
+/** river_assault passive: +1 movement in rough terrain */
+export function getRoughTerrainMovementBonus(faction: Faction | undefined, targetTerrainId: string): number {
+  if (faction?.identityProfile.passiveTrait === 'river_assault' && ROUGH_MOVEMENT_TERRAINS.has(targetTerrainId)) {
+    return -1;
+  }
+  return 0;
+}
+
+/** foraging_riders passive: war exhaustion decays 1 extra per turn */
+export function getForagingRidersExhaustionBonus(faction: Faction | undefined): number {
+  return faction?.identityProfile.passiveTrait === 'foraging_riders' ? 1 : 0;
+}
+
+/** foraging_riders passive: +1 movement back after kill */
+export function getPursuitMovementOnKill(faction: Faction | undefined): number {
+  return faction?.identityProfile.passiveTrait === 'foraging_riders' ? 1 : 0;
+}
+
+/** greedy passive: loot on kill */
+export function getGreedyLootOnKill(faction: Faction | undefined): { gold: number; supplies: number } | null {
+  return faction?.identityProfile.passiveTrait === 'greedy' ? { gold: 2, supplies: 1 } : null;
+}
+
+/** jungle_stalkers passive: poison stacks on attack in jungle/forest/swamp */
+export function getPoisonOnAttack(faction: Faction | undefined, attackerTerrainId: string): { stacks: number } | null {
+  if (faction?.identityProfile.passiveTrait === 'jungle_stalkers' && JUNGLE_STALKER_POISON_TERRAINS.has(attackerTerrainId)) {
+    return { stacks: 1 };
+  }
+  return null;
+}
+
+/** charge_momentum passive (Savannah Lions): +15% damage when moved >= 2 hexes */
+export function getChargeMomentumBonus(faction: Faction | undefined, unit: Unit): number {
+  if (faction?.identityProfile.passiveTrait !== 'charge_momentum') return 0;
+  const hexesMoved = unit.maxMoves - unit.movesRemaining;
+  return hexesMoved >= 2 ? 0.15 : 0;
+}
+
+/** cold_hardened_growth passive (Arctic Wardens): +10% defense */
+export function getColdHardenedDefense(faction: Faction | undefined): number {
+  return faction?.identityProfile.passiveTrait === 'cold_hardened_growth' ? 0.1 : 0;
 }

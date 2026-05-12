@@ -48,6 +48,12 @@ export interface ResearchDoctrine {
   damageReflectionEnabled: boolean;  // heavy_hitter_t2 - reflect 25% damage back to attackers
   hitAndRunEnabled: boolean;         // hitrun_t2 - cavalry can attack then retreat in same turn
 
+  // Phase 2 — Tribe Identity flags
+  wetlandStealthEnabled: boolean;    // river_stealth_t1 - stealth on wetland end-of-turn
+  skirmishStepEnabled: boolean;      // hitrun_t1 - move then attack bonus
+  pressGangCaptureEnabled: boolean;  // slaving_t1 - capture chance on kill vs wounded
+  nativePoisonDetonateEnabled: boolean; // venom_t3 native - poison detonation on kill
+
   // T3 upgrades
   poisonBonusEnabled: boolean;       // foreign venom_t3 - poison-tagged units deal +50% poison damage
   fortressAuraUpgradeEnabled: boolean; // foreign fortress_t3 - fortress aura grants +25% defense
@@ -188,6 +194,12 @@ export function resolveResearchDoctrine(
     captureRetreatEnabled: hasNode('slaving_t2'),
     damageReflectionEnabled: hasNode('heavy_hitter_t2'),
     hitAndRunEnabled: hasNode('hitrun_t2'),
+
+    // Phase 2 — Tribe Identity flags
+    wetlandStealthEnabled: hasNode('river_stealth_t1'),
+    skirmishStepEnabled: hasNode('hitrun_t1'),
+    pressGangCaptureEnabled: hasNode('slaving_t1'),
+    nativePoisonDetonateEnabled: hasNativeT3('venom'),
 
     // T3 upgrades
     poisonBonusEnabled: hasForeignT3('venom'),
