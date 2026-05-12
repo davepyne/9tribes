@@ -41,6 +41,16 @@ export function getForeignT1Cost(assimilatedCount: number): number {
   return 20 * (assimilatedCount + 1);
 }
 
+// Domain research cost multiplier: each non-native domain costs 33% more per slot
+// Native domain = 1.0x, 1st non-native = 1.33x, 2nd = 1.66x, 3rd = 1.99x, etc.
+// Position is derived from learnedDomains array (native always at index 0)
+export function getDomainCostMultiplier(faction: Faction, domainId: string): number {
+  if (domainId === faction.nativeDomain) return 1.0;
+  const index = faction.learnedDomains.indexOf(domainId);
+  const effectiveIndex = index >= 0 ? index : faction.learnedDomains.length;
+  return 1 + (effectiveIndex * 0.33);
+}
+
 // Prototype mastery cost multipliers
 const PROTOTYPE_COST_MODIFIERS: Record<number, number> = {
   0: 2.0,  // First build - cultural shock

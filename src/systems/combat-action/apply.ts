@@ -1,3 +1,4 @@
+import { getDomainCostMultiplier } from '../knowledgeSystem.js';
 import { getNeighbors, hexDistance, hexToKey } from '../../core/grid.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { Unit } from '../../features/units/types.js';
@@ -71,8 +72,10 @@ function applyCombatResearchBonus(
   const nodeDef = domain?.nodes[nextNode.nodeId];
   if (!nodeDef) return state;
 
+  const domainCost = Math.ceil(nodeDef.xpCost * getDomainCostMultiplier(learner, domainId));
+
   const { state: updatedResearch } = addResearchProgressToNode(
-    research, nextNode.nodeId, nodeDef.xpCost, COMBAT_RESEARCH_BONUS,
+    research, nextNode.nodeId, domainCost, COMBAT_RESEARCH_BONUS,
   );
 
   // Accumulate for UI display (view model reads this to show combat source)
