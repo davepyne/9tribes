@@ -218,6 +218,11 @@ export function previewCombatAction(
   if (attackerDoctrine?.chargeRoutedBonusEnabled && isChargeAttack && defender.routed) {
     situationalAttackModifier += 0.5;
   }
+  let skirmishStepTriggered = false;
+  if (attackerDoctrine?.skirmishStepEnabled && attacker.movesRemaining < attacker.maxMoves) {
+    situationalAttackModifier += 0.1;
+    skirmishStepTriggered = true;
+  }
   if (defenderDoctrine?.shieldWallEnabled) {
     const defenderIsInfantry = defenderPrototype.derivedStats.role === 'melee'
       && !(defenderPrototype.tags?.includes('cavalry') || defenderPrototype.tags?.includes('elephant'));
@@ -377,6 +382,9 @@ export function previewCombatAction(
   }
   if (stampedeTriggered) {
     pushCombatEffect(triggeredEffects, 'Stampede', 'Elephant momentum stacked extra charge damage.', 'ability');
+  }
+  if (skirmishStepTriggered) {
+    pushCombatEffect(triggeredEffects, 'Skirmish Step', 'Moved before attacking for 10% bonus damage.', 'ability');
   }
   if (result.roleModifier !== 0) {
     const sign = result.roleModifier > 0 ? '+' : '';
