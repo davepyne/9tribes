@@ -118,7 +118,7 @@ export function domainBenefit(domainId: string): string {
 }
 
 function buildTierDescriptions(domainId: string, capabilities: CapabilityPipViewModel[]): TierDescriptions {
-  const nodes = (researchData as Record<string, { nodes: Record<string, { qualitativeEffect?: { description: string } }> }>)[domainId]?.nodes;
+  const nodes = (researchData as Record<string, { nodes: Record<string, { qualitativeEffect?: { description?: string } }> }>)[domainId]?.nodes;
   const cap = capabilities.find((c) => c.domainId === domainId);
   return {
     t1: nodes?.[`${domainId}_t1`]?.qualitativeEffect?.description ?? '',

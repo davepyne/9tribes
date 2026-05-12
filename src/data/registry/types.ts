@@ -94,7 +94,7 @@ export interface ResearchNodeDef {
   codifies?: string[];
   qualitativeEffect?: {
     type: string;
-    description: string;
+    description?: string;
     nativeDescription?: string;
     effect: Record<string, unknown>;
   };

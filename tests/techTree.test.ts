@@ -305,11 +305,11 @@ describe('Runtime Wiring via buildMvpScenario', () => {
       );
     });
 
-    it("Pirate Lords learnedDomains includes slaving + seafaring", () => {
+    it("Pirate Lords learnedDomains includes slaving + tidal_warfare", () => {
       const state = buildSingleTribeScenario('coral_people');
       const faction = Array.from(state.factions.values())[0]!;
       expect(faction.learnedDomains).toContain('slaving');
-      expect(faction.learnedDomains).toContain('seafaring');
+      expect(faction.learnedDomains).toContain('tidal_warfare');
       expect(faction.learnedDomains.length).toBe(2);
     });
 
