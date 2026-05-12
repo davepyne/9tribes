@@ -16,7 +16,7 @@ import { addExhaustion, EXHAUSTION_CONFIG } from '../warExhaustionSystem.js';
 import { applyContactTransfer } from '../capabilitySystem.js';
 import { applyPoisonDoT, enterStealth, findRetreatHex } from '../signatureAbilitySystem.js';
 import { getUnitAtHex } from '../occupancySystem.js';
-import { isUnitRiverStealthed } from '../factionIdentitySystem.js';
+import { getPoisonOnAttack, isUnitRiverStealthed } from '../factionIdentitySystem.js';
 import { isCoverTerrain } from '../terrainUtils.js';
 
 import {
@@ -591,6 +591,20 @@ export function applyCombatAction(
       updatedDefender = { ...updatedDefender, poisonedBy: attacker.factionId } as Unit;
       current = writeUnitToState(current, updatedDefender);
       poisonApplied = true;
+    }
+  }
+
+  // Jungle Stalkers passive: extra poison stacks in native terrain (stacks with venom_t1)
+  if (!preview.result.defenderDestroyed) {
+    const junglePoison = getPoisonOnAttack(attackerFaction, attackerTerrainId);
+    if (junglePoison && junglePoison.stacks > 0) {
+      updatedDefender = current.units.get(preview.defenderId);
+      if (updatedDefender && updatedDefender.hp > 0) {
+        updatedDefender = applyPoisonDoT(updatedDefender, junglePoison.stacks, 1, 3);
+        updatedDefender = { ...updatedDefender, poisonedBy: attacker.factionId } as Unit;
+        current = writeUnitToState(current, updatedDefender);
+        poisonApplied = true;
+      }
     }
   }
 
