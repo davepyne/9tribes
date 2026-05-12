@@ -111,7 +111,7 @@
     "lateGameHybridPotential": "molten engineers and fortress marines",
     "nativeDomain": "fortress",
     "researchRate": 10,
-    "startingLearnedDomains": ["fortification"]
+    "startingLearnedDomains": ["heavy_hitter"]
   },
   "coral_people": {
     "id": "coral_people",
@@ -141,7 +141,7 @@
     "terrainDependence": "dominant on coast and ocean, weak deep inland",
     "lateGameHybridPotential": "galley transports and captured slave armies",
     "nativeDomain": "slaving",
-    "startingLearnedDomains": ["seafaring"]
+    "startingLearnedDomains": ["tidal_warfare"]
   },
   "desert_nomads": {
     "id": "desert_nomads",

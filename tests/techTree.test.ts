@@ -185,16 +185,16 @@ describe('Tribe-to-Domain Mapping', () => {
     const hillEngineers = factionConfigs.find((c) => c.id === 'hill_clan');
     expect(hillEngineers).toBeDefined();
     expect(hillEngineers!.startingLearnedDomains).toBeDefined();
-    expect(hillEngineers!.startingLearnedDomains).toContain('fortification');
+    expect(hillEngineers!.startingLearnedDomains).toContain('heavy_hitter');
 
     const pirateLords = factionConfigs.find((c) => c.id === 'coral_people');
     expect(pirateLords).toBeDefined();
     expect(pirateLords!.startingLearnedDomains).toBeDefined();
-    expect(pirateLords!.startingLearnedDomains).toContain('seafaring');
+    expect(pirateLords!.startingLearnedDomains).toContain('tidal_warfare');
 
-    // Verify these are NOT research domains (capability-only domains)
-    expect(registry.getResearchDomain('fortification')).toBeUndefined();
-    expect(registry.getResearchDomain('seafaring')).toBeUndefined();
+    // Verify these are real research domains
+    expect(registry.getResearchDomain('heavy_hitter')).toBeDefined();
+    expect(registry.getResearchDomain('tidal_warfare')).toBeDefined();
   });
 
   it('all research domains have an entry in ability-domains.json', () => {
@@ -263,36 +263,28 @@ describe('Runtime Wiring via buildMvpScenario', () => {
   });
 
   describe('startingLearnedDomains behavior', () => {
-    it("Hill Engineers learn fortification domain but no fortification research nodes exist", () => {
+    it("Hill Engineers learn heavy_hitter domain as a starting learned domain", () => {
       const state = buildSingleTribeScenario('hill_clan');
       const faction = Array.from(state.factions.values())[0]!;
       const research = state.research.get(faction.id);
 
-      // fortification should be in learnedDomains
-      expect(faction.learnedDomains).toContain('fortification');
+      // heavy_hitter should be in learnedDomains
+      expect(faction.learnedDomains).toContain('heavy_hitter');
 
-      // Verify no fortification research domain exists
-      expect(registry.getResearchDomain('fortification')).toBeUndefined();
-
-      // getDomainTier should return 0 for fortification (no research nodes)
-      const tier = getDomainTier(faction, 'fortification', research?.completedNodes.map(String) ?? []);
-      expect(tier).toBe(0);
+      // heavy_hitter is a real research domain
+      expect(registry.getResearchDomain('heavy_hitter')).toBeDefined();
     });
 
-    it("Pirate Lords learn seafaring domain but no seafaring research nodes exist", () => {
+    it("Pirate Lords learn tidal_warfare domain as a starting learned domain", () => {
       const state = buildSingleTribeScenario('coral_people');
       const faction = Array.from(state.factions.values())[0]!;
       const research = state.research.get(faction.id);
 
-      // seafaring should be in learnedDomains
-      expect(faction.learnedDomains).toContain('seafaring');
+      // tidal_warfare should be in learnedDomains
+      expect(faction.learnedDomains).toContain('tidal_warfare');
 
-      // Verify no seafaring research domain exists
-      expect(registry.getResearchDomain('seafaring')).toBeUndefined();
-
-      // getDomainTier should return 0 for seafaring (no research nodes)
-      const tier = getDomainTier(faction, 'seafaring', research?.completedNodes.map(String) ?? []);
-      expect(tier).toBe(0);
+      // tidal_warfare is a real research domain
+      expect(registry.getResearchDomain('tidal_warfare')).toBeDefined();
     });
   });
 
