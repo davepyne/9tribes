@@ -8,8 +8,7 @@ import { clearPreparedAbility } from '../abilitySystem.js';
 import { applyKnockback } from '../signatureAbilitySystem.js';
 import { destroyTransport, isTransportUnit } from '../transportSystem.js';
 import { hasCaptureAbility } from '../captureSystem.js';
-
-export const WATER_TERRAIN = new Set(['coast', 'river', 'ocean', 'fish']);
+import { isWaterTerrain } from '../terrainUtils.js';
 
 export function getImprovementBonus(state: GameState, position: { q: number; r: number }, factionId?: string) {
   for (const improvement of state.improvements.values()) {
@@ -80,7 +79,7 @@ export function canAttackTarget(state: GameState, registry: RulesRegistry, attac
   }
 
   const defenderTerrain = state.map?.tiles.get(hexToKey(defender.position))?.terrain ?? '';
-  return WATER_TERRAIN.has(defenderTerrain);
+  return isWaterTerrain(defenderTerrain);
 }
 
 export function rotateUnitToward(unit: Unit, target: HexCoord): Unit {

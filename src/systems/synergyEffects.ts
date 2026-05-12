@@ -10,6 +10,7 @@ import type {
   HealingContext,
   EmergentRuleConfig,
 } from './synergyTypes.js';
+import { isWaterTerrain } from './terrainUtils.js';
 
 export type {
   CombatContext,
@@ -361,7 +362,7 @@ const synergyEffectHandlers = new Map<string, EffectHandler>([
 
   ['naval_capture', (effect, context, result) => {
     const e = effect as { coastalCaptureBonus: number };
-    if (context.terrain === 'water' || context.terrain === 'river') {
+    if (isWaterTerrain(context.terrain)) {
       result.navalCaptureBonus = e.coastalCaptureBonus;
       result.additionalEffects.push('naval_capture');
     }
@@ -416,7 +417,7 @@ const synergyEffectHandlers = new Map<string, EffectHandler>([
 
   ['coastal_nomad', (effect, context, result) => {
     const e = effect as { defenseBonus: number; speedBonus: number };
-    if (context.terrain === 'coast' || context.terrain === 'water') {
+    if (isWaterTerrain(context.terrain)) {
       result.coastalNomadDefense = e.defenseBonus;
       result.coastalNomadSpeed = e.speedBonus;
       result.defense += e.defenseBonus;
@@ -426,7 +427,7 @@ const synergyEffectHandlers = new Map<string, EffectHandler>([
 
   ['heavy_naval', (effect, context, result) => {
     const e = effect as { ramDamage: number };
-    if (context.terrain === 'water' || context.terrain === 'coast') {
+    if (isWaterTerrain(context.terrain)) {
       result.heavyNavalRamDamage = e.ramDamage;
       result.additionalEffects.push('heavy_naval');
     }

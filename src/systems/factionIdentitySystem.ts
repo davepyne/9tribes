@@ -6,7 +6,7 @@ import { getHexesInRange } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
 import { isWaterTerrain, isDeepWaterTerrain, isRiverStealthTerrain, isWetlandTerrain } from './terrainUtils.js';
 
-const GREEDY_BONUS_TERRAINS = new Set(['coast', 'ocean', 'fish']);
+
 const POOR_TERRAINS = new Set(['tundra', 'desert', 'hill', 'river', 'coast']);
 const OPEN_GROUND_TERRAINS = new Set(['plains', 'savannah']);
 const CHARGE_MOMENTUM_TERRAINS = new Set(['savannah', 'plains']);
@@ -44,7 +44,7 @@ export function getMovementCostModifier(
     return -2;
   }
 
-  if (passive === 'greedy' && GREEDY_BONUS_TERRAINS.has(targetTerrainId)) {
+  if (passive === 'greedy' && isDeepWaterTerrain(targetTerrainId)) {
     return -1;
   }
 
@@ -98,7 +98,7 @@ export function getCombatAttackModifier(
     return 0.1;
   }
 
-  if (passive === 'greedy' && GREEDY_BONUS_TERRAINS.has(attackerTerrainId)) {
+  if (passive === 'greedy' && isDeepWaterTerrain(attackerTerrainId)) {
     return 0.15;
   }
 
@@ -168,7 +168,7 @@ export function getCombatDefenseModifier(
   }
 
   if (passive === 'greedy') {
-    if (GREEDY_BONUS_TERRAINS.has(terrainId)) return 0.15;
+    if (isDeepWaterTerrain(terrainId)) return 0.15;
     return 0.05; // pirate grit — always a little tougher
   }
 
@@ -185,7 +185,7 @@ export function getEconomyProductionBonus(
     return 0.10;
   }
 
-  if (passive === 'greedy' && GREEDY_BONUS_TERRAINS.has(terrainId)) {
+  if (passive === 'greedy' && isDeepWaterTerrain(terrainId)) {
     return 0.10;
   }
 
@@ -262,7 +262,7 @@ export function getEconomySupplyBonus(
     return 0.05;
   }
 
-  if (passive === 'greedy' && GREEDY_BONUS_TERRAINS.has(terrainId)) {
+  if (passive === 'greedy' && isDeepWaterTerrain(terrainId)) {
     return 0.10;
   }
 
@@ -287,7 +287,7 @@ export function getTerrainPreferenceScore(
   }
 
   const passive = faction.identityProfile.passiveTrait;
-  if (passive === 'greedy' && GREEDY_BONUS_TERRAINS.has(terrainId)) {
+  if (passive === 'greedy' && isDeepWaterTerrain(terrainId)) {
     return 2;
   }
   if (passive === 'river_assault' && isRiverStealthTerrain(terrainId)) {

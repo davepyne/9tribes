@@ -51,6 +51,10 @@ export function getDomainCostMultiplier(faction: Faction, domainId: string): num
   return 1 + (effectiveIndex * 0.33);
 }
 
+export function getEffectiveXpCost(faction: Faction, domainId: string, baseXpCost: number): number {
+  return Math.ceil(baseXpCost * getDomainCostMultiplier(faction, domainId));
+}
+
 // Prototype mastery cost multipliers
 const PROTOTYPE_COST_MODIFIERS: Record<number, number> = {
   0: 2.0,  // First build - cultural shock

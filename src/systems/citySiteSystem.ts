@@ -4,6 +4,7 @@ import type { City, GameState } from '../game/types.js';
 import type { FactionId, HexCoord } from '../types.js';
 import type { GameMap, TerrainType } from '../world/map/types.js';
 import { getFactionCityIds } from './factionOwnershipSystem.js';
+import { isDeepWaterTerrain } from './terrainUtils.js';
 
 const FRESH_WATER_TERRAINS = new Set<TerrainType>(['river']);
 const OASIS_TERRAINS = new Set<TerrainType>(['oasis']);
@@ -212,7 +213,7 @@ export function findBestCitySiteForFaction(
     const hex = keyToHex(key);
 
     // Skip impassable terrain
-    if (tile.terrain === 'mountain' || tile.terrain === 'ocean' || tile.terrain === 'fish') {
+    if (tile.terrain === 'mountain' || isDeepWaterTerrain(tile.terrain)) {
       continue;
     }
 

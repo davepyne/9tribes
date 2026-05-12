@@ -36,7 +36,7 @@ import type {
   CombatActionPreviewDetails,
 } from './types.js';
 import { formatPercent, humanizeCombatEffect, pushCombatEffect } from './labeling.js';
-import { WATER_TERRAIN, getImprovementBonus, canAttackTarget, createCombatActionPreviewRecord } from './helpers.js';
+import { getImprovementBonus, canAttackTarget, createCombatActionPreviewRecord } from './helpers.js';
 
 export function previewCombatAction(
   state: GameState,

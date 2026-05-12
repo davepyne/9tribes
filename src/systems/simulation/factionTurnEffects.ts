@@ -56,7 +56,7 @@ import { evaluateAndSpawnVillage } from '../villageSystem.js';
 import { isCityEncircled, isEncirclementBroken } from '../territorySystem.js';
 import { applyEcologyPressure, applyForceCompositionPressure } from '../capabilitySystem.js';
 import { getDomainProgression } from '../domainProgression.js';
-import { gainExposure, calculatePrototypeCost, getDomainIdsByTags, getForeignT1Cost, getDomainCostMultiplier, isDomainRestricted } from '../knowledgeSystem.js';
+import { gainExposure, calculatePrototypeCost, getDomainIdsByTags, getForeignT1Cost, getEffectiveXpCost, isDomainRestricted } from '../knowledgeSystem.js';
 import {
   computeFactionStrategy,
 } from '../strategicAi.js';
@@ -263,7 +263,7 @@ function startOrAdvanceCodification(
     ? getAiDifficultyProfile(difficulty).researchRate
     : currentResearch.researchPerTurn;
 
-  const domainCost = Math.ceil(activeNode.xpCost * getDomainCostMultiplier(faction, activeDomain?.id ?? ''));
+  const domainCost = getEffectiveXpCost(faction, activeDomain?.id ?? '', activeNode.xpCost);
 
   const updatedResearch = addResearchProgress(
     currentResearch,
@@ -351,7 +351,7 @@ function applyEcologyResearchPass(
       const nodeDef = domain?.nodes[nextNode.nodeId];
       if (!nodeDef) continue;
 
-      const domainCost = Math.ceil(nodeDef.xpCost * getDomainCostMultiplier(faction, domainId));
+      const domainCost = getEffectiveXpCost(faction, domainId, nodeDef.xpCost);
 
       const { state: updatedResearch, completed } = addResearchProgressToNode(
         currentResearch, nextNode.nodeId, domainCost, totalBonus,
@@ -382,9 +382,7 @@ function applyEcologyResearchPass(
       // Skip if T1 already somehow completed
       if (currentResearch.completedNodes.includes(t1NodeId)) continue;
 
-      const dynamicCost = Math.ceil(
-        getForeignT1Cost(assimilatedCount) * getDomainCostMultiplier(faction, domainId),
-      );
+      const dynamicCost = getEffectiveXpCost(faction, domainId, getForeignT1Cost(assimilatedCount));
 
       const { state: updatedResearch, completed } = addResearchProgressToNode(
         currentResearch, t1NodeId, dynamicCost, totalBonus,

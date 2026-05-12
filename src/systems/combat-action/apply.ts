@@ -1,4 +1,5 @@
-import { getDomainCostMultiplier } from '../knowledgeSystem.js';
+import { getEffectiveXpCost } from '../knowledgeSystem.js';
+import { isWaterTerrain } from '../terrainUtils.js';
 import { getNeighbors, hexDistance, hexToKey } from '../../core/grid.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { Unit } from '../../features/units/types.js';
@@ -37,7 +38,6 @@ import type {
 } from './types.js';
 import { pushCombatEffect } from './labeling.js';
 import {
-  WATER_TERRAIN,
   pruneDeadUnits,
   removeDeadUnitsFromFactions,
   rotateUnitToward,
@@ -72,7 +72,7 @@ function applyCombatResearchBonus(
   const nodeDef = domain?.nodes[nextNode.nodeId];
   if (!nodeDef) return state;
 
-  const domainCost = Math.ceil(nodeDef.xpCost * getDomainCostMultiplier(learner, domainId));
+  const domainCost = getEffectiveXpCost(learner, domainId, nodeDef.xpCost);
 
   const { state: updatedResearch } = addResearchProgressToNode(
     research, nextNode.nodeId, domainCost, COMBAT_RESEARCH_BONUS,
@@ -170,7 +170,7 @@ export function applyCombatAction(
   const attackerChassis = registry.getChassis(attackerPrototype.chassisId);
   const isNavalAttacker = attackerChassis?.movementClass === 'naval';
   const defenderTerrainId = state.map?.tiles.get(hexToKey(defender.position))?.terrain ?? '';
-  const isDefenderOnWater = WATER_TERRAIN.has(defenderTerrainId);
+  const isDefenderOnWater = isWaterTerrain(defenderTerrainId);
 
   if (isNavalAttacker && !isDefenderOnWater && hasCaptureAbility(attackerPrototype, registry)) {
     const captureParams = getCaptureParams(attackerPrototype, registry);
@@ -393,7 +393,7 @@ export function applyCombatAction(
   }
   const attackerTerrainId = current.map?.tiles.get(hexToKey(attacker.position))?.terrain ?? '';
   const isGreedyCoastal = attackerFaction?.identityProfile.passiveTrait === 'greedy'
-    && WATER_TERRAIN.has(attackerTerrainId);
+    && isWaterTerrain(attackerTerrainId);
   const autoCaptureThreshold = attackerDoctrine?.slaverTranscendenceEnabled ? 0.5
     : attackerDoctrine?.autoCaptureEnabled ? 0.25 : 0;
   const autoCaptureAbility = autoCaptureThreshold > 0 && defender.hp <= defender.maxHp * autoCaptureThreshold
@@ -409,7 +409,7 @@ export function applyCombatAction(
   // Phase 3B — synergy capture bonuses
   let synergyCaptureBonus = 0;
   if (preview.details.isChargeAttack) synergyCaptureBonus += preview.details.chargeCaptureChance;
-  if (WATER_TERRAIN.has(attackerTerrainId)) synergyCaptureBonus += preview.details.navalCaptureBonus;
+  if (isWaterTerrain(attackerTerrainId)) synergyCaptureBonus += preview.details.navalCaptureBonus;
   if (preview.attackerWasStealthed) synergyCaptureBonus += preview.details.stealthCaptureBonus;
   baseResolution.synergyCaptureBonus = synergyCaptureBonus;
   const totalCaptureBonus = emergentCaptureBonus + synergyCaptureBonus;

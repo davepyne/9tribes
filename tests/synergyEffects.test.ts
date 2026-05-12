@@ -184,8 +184,8 @@ describe('Phase 3B capture synergy effects', () => {
   describe('naval_capture (S13)', () => {
     const synergy = makeSynergy({ type: 'naval_capture', coastalCaptureBonus: 0.30 });
 
-    it('sets naval capture bonus on water terrain', () => {
-      const ctx = makeContext({ terrain: 'water' });
+    it('sets naval capture bonus on coast terrain', () => {
+      const ctx = makeContext({ terrain: 'coast' });
       const result = applyCombatSynergies(ctx, [synergy], null);
       expect(result.navalCaptureBonus).toBe(0.30);
       expect(result.additionalEffects).toContain('naval_capture');
@@ -337,8 +337,8 @@ describe('Phase 3C lower-value synergy effects', () => {
       expect(result.additionalEffects).toContain('coastal_nomad');
     });
 
-    it('grants defense and speed on water terrain', () => {
-      const ctx = makeContext({ terrain: 'water' });
+    it('grants defense and speed on coast terrain', () => {
+      const ctx = makeContext({ terrain: 'coast' });
       const result = applyCombatSynergies(ctx, [synergy], null);
       expect(result.coastalNomadDefense).toBe(0.25);
     });
@@ -354,8 +354,8 @@ describe('Phase 3C lower-value synergy effects', () => {
   describe('heavy_naval (S14)', () => {
     const synergy = makeSynergy({ type: 'heavy_naval', ramDamage: 2 });
 
-    it('applies ram damage on water terrain', () => {
-      const ctx = makeContext({ terrain: 'water' });
+    it('applies ram damage on coast terrain', () => {
+      const ctx = makeContext({ terrain: 'coast' });
       const result = applyCombatSynergies(ctx, [synergy], null);
       expect(result.heavyNavalRamDamage).toBe(2);
       expect(result.additionalEffects).toContain('heavy_naval');
