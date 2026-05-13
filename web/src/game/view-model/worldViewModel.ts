@@ -73,8 +73,9 @@ export function buildHudViewModel(
   world: WorldViewModel,
   registry?: RulesRegistry,
   liveCombatEvents?: ReplayCombatEvent[],
+  playerFactionId?: string | null,
 ): HudViewModel {
-  return buildPlayHudViewModel(source, selected, hoveredKey, world, registry, liveCombatEvents);
+  return buildPlayHudViewModel(source, selected, hoveredKey, world, registry, liveCombatEvents, playerFactionId);
 }
 
 export function buildDebugViewModel(
@@ -224,6 +225,7 @@ function buildPlayHudViewModel(
   world: WorldViewModel,
   registry?: RulesRegistry,
   liveCombatEvents?: ReplayCombatEvent[],
+  playerFactionId?: string | null,
 ): HudViewModel {
   const activeFaction = state.activeFactionId ? state.factions.get(state.activeFactionId) : null;
   const selectionInfo = describePlaySelection(state, selected, hoveredKey, world, registry);
@@ -248,7 +250,7 @@ function buildPlayHudViewModel(
       signatureUnit: faction.identityProfile.signatureUnit,
     })),
     recentCombat: (liveCombatEvents ?? []).filter(
-      (e) => e.attackerFactionId === state.activeFactionId || e.defenderFactionId === state.activeFactionId,
+      (e) => e.attackerFactionId === playerFactionId || e.defenderFactionId === playerFactionId,
     ),
     researchChip: registry
       ? buildResearchChip(state, registry)

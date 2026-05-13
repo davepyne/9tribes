@@ -328,7 +328,7 @@ export class GameController {
       hoveredHex: this.hoveredKey ? keyToCoord(this.hoveredKey) : null,
       camera: { zoom: this.zoom },
       world,
-      hud: buildHudViewModel(sessionState, this.selected, this.hoveredKey, world, session.getRegistry(), feedback.liveCombatEvents),
+      hud: buildHudViewModel(sessionState, this.selected, this.hoveredKey, world, session.getRegistry(), feedback.liveCombatEvents, playerFactionId),
       actions: {
         selectedUnitId: activeUnitId,
         targetingMode: this.targetingMode,
