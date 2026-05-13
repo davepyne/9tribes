@@ -761,6 +761,11 @@ export class GameSession {
     this.feedback.aiProcessing = true;
     const result = this.runAiChunk();
     if (!result.done) {
+      // If we paused waiting for the combat queue to drain, don't busy-loop.
+      // The controller will call resumeAiProcessing() once the queue is empty.
+      if (this._pendingCombat !== null || this._aiCombatQueue.length > 0) {
+        return;
+      }
       setTimeout(() => this.continueAiUntilHumanTurn(), 0);
     } else {
       this.feedback.aiProcessing = false;
@@ -768,9 +773,34 @@ export class GameSession {
     }
   }
 
+  /**
+   * Called by the controller after an AI combat is applied and the queue is
+   * empty, to resume the AI simulation that was paused by runAiChunk.
+   */
+  resumeAiProcessing(): void {
+    if (!this.feedback.aiProcessing) return;
+    if (this._pendingCombat !== null || this._aiCombatQueue.length > 0) return;
+    if (!this.state.activeFactionId || this.isHumanControlledFaction(this.state.activeFactionId)) {
+      // AI already finished; nothing to resume.
+      this.feedback.aiProcessing = false;
+      this.onAiComplete?.();
+      return;
+    }
+    this.continueAiUntilHumanTurn();
+  }
+
   private runAiChunk(): { done: boolean } {
     let safety = 0;
     while (this.state.activeFactionId && !this.isHumanControlledFaction(this.state.activeFactionId)) {
+      // If a combat is animating or queued, pause AI simulation so its
+      // result is applied before we read state for the next activation.
+      // Without this, the AI queues many previews against stale state and
+      // advanceTurn can fire before the queue drains — making R12 attacks
+      // resolve during R13 with stale positions and round numbers.
+      if (this._pendingCombat !== null || this._aiCombatQueue.length > 0) {
+        return { done: false };
+      }
+
       if (safety >= 32) {
         this.record('turn', 'AI turn loop stopped early due to safety guard.');
         this.feedback.aiProcessing = false;
@@ -778,7 +808,7 @@ export class GameSession {
       }
 
       if (!this.processAiTurnChunk(this.state.activeFactionId)) {
-        return { done: false }; // combat pending, will resume via setTimeout
+        return { done: false }; // combat pending, will resume when queue drains
       }
       safety += 1;
     }
