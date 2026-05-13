@@ -449,7 +449,7 @@ For each starting unit, stats are notated as: **ATK / DEF / HP** — **Moves** �
 - **Duration:** 5 turns
 - **Cooldown:** 5 turns
 - **Special:** Beast summon; **5 moves** (unmatched mobility), range 3, transport capacity 4 units
-- **Summon access:** Priest tag on Slaver hybrid (mid-tier, minLearnedDomains 2)
+- **Summon access:** Priest tag on Slaver hybrid (mid-tier, minLearnedDomains 3 — raised from 2 to slow priest spam)
 
 ### Summary
 

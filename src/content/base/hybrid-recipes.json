@@ -201,7 +201,7 @@
       "musket"
     ],
     "tier": "mid",
-    "minLearnedDomains": 2,
+    "minLearnedDomains": 3,
     "tags": [
       "heavy_infantry",
       "capture",
@@ -220,7 +220,7 @@
       "simple_armor"
     ],
     "tier": "late",
-    "minLearnedDomains": 3,
+    "minLearnedDomains": 4,
     "tags": [
       "naval",
       "ranged",
