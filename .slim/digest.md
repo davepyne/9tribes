@@ -955,3 +955,16 @@ No significant changes detected.
 - `src/systems/factionIdentitySystem.ts` — 7 dependencies
 - `src/systems/knowledgeSystem.ts` — 8 dependencies
 - `src/systems/sacrificeSystem.ts` — 7 dependencies
+
+---
+
+## Digest — 2026-05-13T02:56:46.732679Z
+
+### Modified Files
+- `src/systems/factionIdentitySystem.ts` — +6 exports (getForagingRidersExhaustionBonus, getGreedyLootOnKill, getPoisonOnAttack, getPursuitMovementOnKill, isDeepWaterTerrain); ~2 signatures (isRiverStealthTerrain, isWaterTerrain)
+- `src/systems/knowledgeSystem.ts` — +2 exports (getDomainCostMultiplier, getEffectiveXpCost)
+- `src/systems/terrainUtils.ts` — +2 exports (isDeepWaterTerrain, isWetlandTerrain)
+
+### Dependency Changes
+- `src/systems/factionIdentitySystem.ts` — 11 dependencies
+- `src/systems/knowledgeSystem.ts` — 13 dependencies

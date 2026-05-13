@@ -24,14 +24,14 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 
 - INPUT: GameState, FactionId, RulesRegistry, optional SimulationTrace + AiDifficultyProfile
 - OUTPUT: GameState (new, immutable)
-- SIDE EFFECTS: Orchestrates entire AI faction turn: fog update, strategy compute, triple-synergy resolve, ecology pressure, force composition pressure, codification/research (base 4 XP/turn, modified by difficulty profile: easy=4, normal=5, hard=7), hybrid recipe unlock, capture timer advancement, economy, production, environmental damage, summon tick, warlord aura, unit healing/refresh (including stealth cooldown and prepared ability expiry), exposure from proximity (seenEnemyDomains loop), village spawn, siege management, war exhaustion
+- SIDE EFFECTS: Orchestrates entire AI faction turn: fog update, strategy compute, triple-synergy resolve, ecology pressure, force composition pressure, codification/research (base 4 XP/turn, modified by difficulty profile: easy=4, normal=5, hard=7), ecology research pass (applyEcologyResearchPass: terrain bonus via DOMAIN_TERRAIN_AFFINITY/TERRAIN_RESEARCH_BONUS capped at MAX_RESEARCH_TERRAIN_BONUS=5, proximity bonus RESEARCH_PROXIMITY_BONUS_PER_CONTACT=0.5 within hex distance 2, combat bonus +1 XP to target native domain), hybrid recipe unlock, capture timer advancement, economy, production, environmental damage, summon tick (tickSummonState: summoned→expires→cooldown→re-summon), warlord aura, unit healing/refresh (including stealth cooldown and prepared ability expiry), exposure from proximity (seenEnemyDomains loop), village spawn, siege management, war exhaustion
 - INVARIANTS: Must be called once per faction per round. Triple-stack resolved before production/healing. Exposure thresholds [20,120,200] for successive foreign domains. Warlord aura radius-3, +10 morale, cavalry/mounted only. Summon cycle: summoned→expires→cooldown→re-summon. Dead units skipped in loop.
 - CALLERS: warEcologySimulation.ts
 
 ## Simulation — Trace Recorder (`src/systems/simulation/traceRecorder.ts`)
 
 - INPUT: SimulationTrace (mutable ref), game state, typed event objects
-- OUTPUT: createSimulationTrace → SimulationTrace; all others void
+- OUTPUT: createSimulationTrace → SimulationTrace; recordAbilityLearned/recordDomainLearned/recordResearch/recordSynergyPair/recordTripleStack → void; all others void
 - SIDE EFFECTS: All functions mutate the trace object (push to arrays). maybeRecordEndSnapshot is idempotent.
 - INVARIANTS: log appends to both trace.lines and trace.events. Event recorders guard with optional chaining.
 - CALLERS: warEcologySimulation.ts, simulation/factionTurnEffects.ts, simulation/environmentalEffects.ts
@@ -79,8 +79,8 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 ## Knowledge System (`src/systems/knowledgeSystem.ts`)
 
 - INPUT: GameState, FactionId, domainId, amount, optional trace + registry
-- OUTPUT: gainExposure → GameState; getNextExposureThreshold → number; isForeignDomain → boolean; checkDomainLearned → string|null; isDomainRestricted → boolean; getForeignT1Cost → number; getPrototypeCostModifier → number; incrementPrototypeMastery → GameState; getExposedDomains → string[]; getExposureDetails → {current, threshold, progress}|null; isUnlockPrototype → boolean; calculatePrototypeCost → number; getDomainIdByTag → string|null; getDomainIdsByTags → string[]
-- SIDE EFFECTS: Returns new GameState. Accumulates exposure progress, learns domains on threshold crossing. Grants domain awareness (adds to learnedDomains) but NOT T1 auto-complete — T1 must be earned via ecology assimilation at scaled cost (getForeignT1Cost = 20 * (assimilatedCount + 1)). Sets domainAcquisitionMethod='exposure'.
+- OUTPUT: gainExposure → GameState; getNextExposureThreshold → number; isForeignDomain → boolean; checkDomainLearned → string|null; isDomainRestricted → boolean; getForeignT1Cost → number; getDomainCostMultiplier → number; getEffectiveXpCost → number; getPrototypeCostModifier → number; incrementPrototypeMastery → GameState; getExposedDomains → string[]; getExposureDetails → {current, threshold, progress}|null; isUnlockPrototype → boolean; calculatePrototypeCost → number; getDomainIdByTag → string|null; getDomainIdsByTags → string[]
+- SIDE EFFECTS: Returns new GameState. Accumulates exposure progress, learns domains on threshold crossing. Grants domain awareness (adds to learnedDomains) but NOT T1 auto-complete — T1 must be earned via ecology assimilation at scaled cost (getForeignT1Cost = 20 * (assimilatedCount + 1)). Sets domainAcquisitionMethod='exposure'. getDomainCostMultiplier returns native=1.0x, foreign scaled by mastery. getEffectiveXpCost applies cost multiplier to base cost.
 - INVARIANTS: EXPOSURE_THRESHOLDS = [20, 120, 200, 300, 400, 500, 600, 700, 800] (9 tiers). No hard MAX_LEARNED_DOMAINS cap. RESTRICTED_DOMAINS derived from ability-domains.json `restrictedToNative` flag — exposure silently skipped for restricted domains. Early return if domain is native/already-learned/restricted. Threshold index = foreign domain count. Prototype mastery: 0 builds=2.0x, 1=1.5x, 2=1.2x, 3+=1.0x. isUnlockPrototype gates mastery modifier to hybrid recipe prototypes only.
 - CALLERS: factionTurnEffects.ts, factionAbsorption.ts (isDomainRestricted), productionSystem.ts, aiProductionStrategy.ts, aiProductionScoring.ts, strategicAi.ts, sessionUtils.ts, capabilityDoctrine.ts (getForeignT1Cost)
 
@@ -112,9 +112,65 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 
 - INPUT: pair-eligible domain IDs, emergent-eligible domain IDs, unit tags
 - OUTPUT: resolveFactionTriple → ActiveTripleStack|null; resolveUnitPairs → ActiveSynergy[]; getDomainSynergyScore → number
-- SIDE EFFECTS: None (pure computation).
+- SIDE EFFECTS: None (pure computation). Types (DomainConfig, PairSynergyConfig, EmergentRuleConfig, ActiveSynergy, ActiveTripleStack, CombatContext, SynergyCombatResult, HealingContext) moved to synergyTypes.ts.
 - INVARIANTS: Triple-stack gate requires emergentEligibleDomains.length >= 3. Emergent rules match by domain-category conditions (terrain+combat+mobility, healing+defensive+offensive, etc). Pair synergies require both domains at T1 (pairEligibleDomains sourced from t1Domains in domainProgression).
 - CALLERS: synergyRuntime.ts, factionTurnEffects.ts (type imports), aiResearchScoring.ts, learnLoopCoordinator.ts
+
+## Synergy Effects (`src/systems/synergyEffects.ts`)
+
+- INPUT: CombatContext (attacker/defender prototypes, roles, synergies), ActiveSynergy[], ActiveTripleStack|null
+- OUTPUT: applyCombatSynergies → SynergyCombatResult; applyHealingSynergies → number (bonus heal amount)
+- SIDE EFFECTS: None (pure). Dispatches to handler registry, mutates a fresh SynergyCombatResult object.
+- INVARIANTS: ~45 pair synergy handlers via synergyEffectHandlers Map. 14 emergent triple-stack rules (paladin, terrain_lord, permanent_stealth, standing_stone, ghost_army, juggernaut, slave_empire, raid_camp, poison_shadow, iron_turtle, many_faced). Stealth attack: damage *= 1.5 when context.isStealthAttack + stealth tag. Healing: stealth_healing resets to base, extended_healing/oasis/slave_heavy_regen stack additively.
+- CALLERS: combat-action/preview.ts, combat-action/apply.ts, factionTurnEffects.ts
+
+## Synergy Runtime (`src/systems/synergyRuntime.ts`)
+
+- INPUT: Faction (synergyEligibleDomains, pairEligibleDomains), unit tags
+- OUTPUT: getSynergyEngine → SynergyEngine (singleton); resolveEffectiveSynergies → ActiveSynergy[]; calculateSynergyAttackBonus/DefenseBonus → number
+- SIDE EFFECTS: getSynergyEngine lazy-loads singleton from JSON files (pair-synergies, emergent-rules, ability-domains).
+- INVARIANTS: Resolution priority: triple stack > faction native self-pair/double stack > unit tag-based. Attack bonus: multiplierStackValue - 1 (floored at 0). Defense bonus: dugInDefense + auraOverlapDefense.
+- CALLERS: combat-action/preview.ts, combat-action/apply.ts
+
+## Faction Identity System (`src/systems/factionIdentitySystem.ts`)
+
+- INPUT: Faction, terrainId/terrainDef, Unit, GameState (for desert swarm)
+- OUTPUT: getHealingBonus/MovementCostModifier/CombatAttackModifier/CombatDefenseModifier/EconomyProductionBonus/EconomySupplyBonus/PursuitMovement/GreedyLoot/PoisonOnAttack → number|object; isUnitRiverStealthed/isPassiveWetlandStealth/isPoorTerrain → boolean; getTerrainPreferenceScore/DesertSwarmBonus → number/object; DesertSwarmConfig interface
+- SIDE EFFECTS: None (pure lookups). Re-exports isWaterTerrain, isDeepWaterTerrain, isRiverStealthTerrain from terrainUtils.
+- INVARIANTS: 9 passive traits: river_assault, greedy, foraging_riders, healing_druids, jungle_stalkers, cold_hardened_growth, charge_momentum, hill_engineering, desert_logistics. Attack bonuses 0.10–0.25, defense 0.05–0.35, movement -1 to -2. Greedy loot: {gold:2, supplies:1}. Foraging riders: +1 exhaustion decay, +1 pursuit. Desert swarm: threshold=3 units, +1 attack, 1.10x defense. Rough terrains: forest/jungle/hill/tundra/desert. Open ground: plains/savannah. Jungle stalker poison: jungle/forest/swamp.
+- CALLERS: combat-action/apply.ts, movementSystem.ts, economySystem.ts, healingSystem.ts, targeting.ts, strategicAi.ts, factionTurnEffects.ts, fogSystem.ts
+
+## Research System (`src/systems/researchSystem.ts`)
+
+- INPUT: ResearchState, nodeId, xpCost, amount, faction
+- OUTPUT: createResearchState → ResearchState; startResearch/addResearchProgress/advanceResearch/isNodeCompleted/isResearching/setResearchRate → ResearchState|boolean; addResearchProgressToNode → {state, completed}; getNextResearchNodeForDomain → {nodeId, tier}|null; isDomainUnlocked/getDomainTier/getResearchProgress/getResearchRate → number|boolean
+- SIDE EFFECTS: Pure/immutable — all return new ResearchState via spread copies. addResearchProgressToNode returns {state, completed} tuple.
+- INVARIANTS: Native domain T1 auto-completed on faction creation. Node IDs: {domain}_t{tier} (venom_t2). Tiers T1→T2→T3. startResearch enforces domain unlocked + prerequisites met + not completed. addResearchProgress requires activeNodeId set; addResearchProgressToNode bypasses activeNodeId (used by ecology). Completion: newProgress >= xpCost.
+- CALLERS: factionTurnEffects.ts (ecology + directed), buildMvpScenario.ts, combat-action/apply.ts
+
+## Transport System (`src/systems/transportSystem.ts`)
+
+- INPUT: GameState, UnitId, transportId, RulesRegistry, TransportMap, HexCoord
+- OUTPUT: isTransportUnit/canBoardTransport/canDisembark/isUnitEmbarked → boolean; boardTransport/disembarkUnit/destroyTransport → {state, transportMap}; getTransportCapacity/getEmbarkedCount/getEmbarkedUnits/getUnitTransport/updateEmbarkedPositions/getValidDisembarkHexes → various
+- SIDE EFFECTS: Returns new state/maps. destroyTransport removes ALL embarked units from state.units and faction unitIds. TransportMap managed OUTSIDE GameState (per AGENTS.md convention).
+- INVARIANTS: Transport: tags includes 'transport' + transportCapacity > 0. Boarding: both 'ready', same faction, hexDistance=1, has capacity. Disembark: transport 'ready', target hexDistance=1, not 'ocean'/'fish', hex unoccupied. Disembark consumes moves (both land unit and transport set movesRemaining=0). Transport destruction cascades to embarked units.
+- CALLERS: unit-activation/activateUnit.ts, combat-action/helpers.ts, GameSession.ts, strategic-ai/assignments.ts, worldViewModel.ts
+
+## Combat Signal System (`src/systems/combatSignalSystem.ts`)
+
+- INPUT: attacker/defender terrain, attacker role/weaponTags/tags, defender movementClass
+- OUTPUT: collectCombatSignals → Set<string>; applyCombatSignals → GameState; CombatSignalMapping interface
+- SIDE EFFECTS: applyCombatSignals chains addCapabilityProgress calls, returning new GameState each iteration.
+- INVARIANTS: 13 signal-to-capability mappings: forest→woodcraft(1.5)+stealth(0.5), hill→hill_fighting(1.5)+fortification(0.5), plains→charge(1.0), water→navigation(1.5)+seafaring(0.5), mounted→charge(2.0), ranged→woodcraft(1.0), spear+cavalry→formation_warfare(2.0), shock→formation_warfare(1.5), poison→poisoncraft(1.5), ambush→stealth(2.0). Ambush signal: forest terrain + ranged attacker role.
+- CALLERS: combat-action/apply.ts, combatSystem.ts
+
+## City Site System (`src/systems/citySiteSystem.ts`)
+
+- INPUT: GameMap, HexCoord, City, GameState, FactionId
+- OUTPUT: evaluateCitySiteBonuses/getCitySiteBonuses/createCitySiteBonuses → CitySiteBonuses; getSettlementOccupancyBlocker → 'city'|'village'|'improvement'|null; getFactionVillageCooldownReduction → number; findBestCitySiteForFaction → HexCoord|null
+- SIDE EFFECTS: Pure/immutable. findBestCitySiteForFaction is read-only scan.
+- INVARIANTS: Territory radius=2. Traits: fresh_water (river), oasis, fish, woodland (forest/jungle +0.5 production), open_land (plains/savannah +0.5 supply). Water bonus: villageCooldownReduction=1. Oasis/fish: researchBonus=2. Min spacing: 3 hexes from cities, 2 from villages. findBestCitySite: max 20 hexes from settler, friendly city sweet spot 4–8 hexes.
+- CALLERS: economySystem.ts, villageSystem.ts, activateUnit.ts, GameSession.ts, terrainInspectorViewModel.ts, strategic-ai/assignments.ts
 
 ## Combat Action — Helpers (`src/systems/combat-action/helpers.ts`)
 
