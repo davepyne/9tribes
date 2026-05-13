@@ -16,15 +16,8 @@ import type {
 } from '../../types/clientState';
 import HYBRID_RECIPES from '../../../../../src/content/base/hybrid-recipes.json';
 import SIGNATURE_ABILITIES from '../../../../../src/content/base/signatureAbilities.json';
-import CIVILIZATIONS from '../../../../../src/content/base/civilizations.json';
-import { getFaction, getResearch, getResearchProgress, isResearchNodeCompleted, getUnit, getCity } from '../../stateAccess.js';
-import {
-  DOMAIN_TERRAIN_AFFINITY,
-  MAX_RESEARCH_TERRAIN_BONUS,
-  TERRAIN_RESEARCH_BONUS,
-  RESEARCH_PROXIMITY_BONUS_PER_CONTACT,
-} from '../../../../../src/systems/simulation/factionTurnEffects.js';
-import { getHexesInRange, hexToKey, hexDistance } from '../../../../../src/core/grid.js';
+import ABILITY_DOMAINS from '../../../../../src/content/base/ability-domains.json';
+import { getFaction, getResearch, getResearchProgress, isResearchNodeCompleted } from '../../stateAccess.js';
 
 type UnlockEntry = { type: 'component' | 'chassis' | 'improvement' | 'recipe'; id: string; name: string };
 
@@ -78,115 +71,8 @@ function getUnitUnlocksForNode(
 }
 
 function getNativeFactionForDomain(domainId: string): string {
-  for (const civ of Object.values(CIVILIZATIONS) as { id: string; nativeDomain: string }[]) {
-    if (civ.nativeDomain === domainId) {
-      return civ.id;
-    }
-  }
-  return '';
-}
-
-interface EcologyBonusSource {
-  type: 'terrain' | 'proximity' | 'combat';
-  amount: number;
-  detail: string;
-}
-
-function computeEcologyBonusesForDomain(
-  state: GameState,
-  factionId: string,
-  domainId: string,
-): { bonus: number; sources: EcologyBonusSource[] } {
-  const faction = getFaction(state, factionId);
-  if (!faction || !state.map) {
-    return { bonus: 0, sources: [] };
-  }
-
-  const sources: EcologyBonusSource[] = [];
-  const affinityTerrains = DOMAIN_TERRAIN_AFFINITY?.[domainId];
-
-  // Terrain bonus
-  if (affinityTerrains) {
-    const affinitySet = new Set(affinityTerrains);
-    let terrainBonus = 0;
-    let unitCount = 0;
-
-    for (const uid of faction.unitIds) {
-      const u = getUnit(state, uid);
-      if (!u || u.hp <= 0) continue;
-      const tile = state.map.tiles.get(hexToKey(u.position));
-      if (tile && affinitySet.has(tile.terrain)) {
-        terrainBonus += TERRAIN_RESEARCH_BONUS[tile.terrain] ?? 0.5;
-        unitCount++;
-      }
-    }
-
-    for (const cid of faction.cityIds) {
-      const city = getCity(state, cid);
-      if (!city) continue;
-      const radius = city.territoryRadius ?? 2;
-      for (const hex of getHexesInRange(city.position, radius)) {
-        const tile = state.map.tiles.get(hexToKey(hex));
-        if (tile && affinitySet.has(tile.terrain)) {
-          terrainBonus += TERRAIN_RESEARCH_BONUS[tile.terrain] ?? 0.5;
-        }
-      }
-    }
-
-    terrainBonus = Math.min(terrainBonus, MAX_RESEARCH_TERRAIN_BONUS);
-    if (terrainBonus > 0) {
-      sources.push({
-        type: 'terrain',
-        amount: terrainBonus,
-        detail: `${unitCount} units + city territory on ${affinityTerrains.slice(0, 2).join('/')} terrain`,
-      });
-    }
-  }
-
-  // Proximity bonus
-  let proximityBonus = 0;
-  let contactCount = 0;
-  for (const uid of faction.unitIds) {
-    const fUnit = getUnit(state, uid);
-    if (!fUnit || fUnit.hp <= 0) continue;
-    for (const [eid, enemyUnit] of state.units) {
-      if (enemyUnit.factionId === factionId || enemyUnit.hp <= 0) continue;
-      if (hexDistance(fUnit.position, enemyUnit.position) <= 2) {
-        const enemyFaction = getFaction(state, enemyUnit.factionId);
-        if (enemyFaction && enemyFaction.nativeDomain === domainId) {
-          proximityBonus += RESEARCH_PROXIMITY_BONUS_PER_CONTACT;
-          contactCount++;
-        }
-      }
-    }
-  }
-
-  if (proximityBonus > 0) {
-    proximityBonus = Math.min(proximityBonus, MAX_RESEARCH_TERRAIN_BONUS);
-    sources.push({
-      type: 'proximity',
-      amount: proximityBonus,
-      detail: `${contactCount} enemy contacts within range`,
-    });
-  }
-
-  // Combat bonus — read per-turn accumulator from research state
-  const rs = getResearch(state, factionId);
-  const combatThisTurn = rs?.combatResearchBonusThisTurn?.[domainId] ?? 0;
-  if (combatThisTurn > 0) {
-    sources.push({
-      type: 'combat',
-      amount: combatThisTurn,
-      detail: `${combatThisTurn.toFixed(0)} combat action${combatThisTurn > 1 ? 's' : ''} this turn`,
-    });
-  }
-
-  const totalBonus = Math.min(
-    sources.reduce((sum, s) => sum + s.amount, 0),
-    MAX_RESEARCH_TERRAIN_BONUS,
-  );
-
-  return { bonus: totalBonus, sources };
+  const domain = (ABILITY_DOMAINS.domains as Record<string, { nativeFaction?: string }>)[domainId];
+  return domain?.nativeFaction ?? '';
 }
 
 export function buildResearchInspectorViewModel(
@@ -250,9 +136,9 @@ export function buildResearchInspectorViewModel(
           ? Math.ceil(Math.max(0, effectiveCost - progress) / research.researchPerTurn)
           : null;
 
-      // Ecology/war auto-progress — compute for ALL domains
-      // For foreign T1: ecology XP now counts toward assimilation (real progress)
-      // For foreign T2+/unlearned: still potential-only
+      // Ecology/war auto-progress — read from backend-computed state
+      // The backend stores ecology bonuses per domain during the turn loop,
+      // including breakdown by source (terrain, proximity, combat).
       let ecologyBonus = 0;
       let ecologySources: { type: 'terrain' | 'proximity' | 'combat'; amount: number; detail: string }[] = [];
       let ecologyEstimatedTurns: number | null = null;
@@ -260,24 +146,26 @@ export function buildResearchInspectorViewModel(
       let potentialEcologyBonus = 0;
       let potentialEcologySources: { type: 'terrain' | 'proximity' | 'combat'; amount: number; detail: string }[] = [];
 
-      const { bonus, sources } = computeEcologyBonusesForDomain(state, factionId, domainId);
-      if (bonus > 0) {
+      const storedBonus = research.ecologyBonusesThisTurn?.[domainId] ?? 0;
+      const storedSources = research.ecologyBreakdownThisTurn?.[domainId] ?? [];
+
+      if (storedBonus > 0) {
         if (isForeignT1) {
           // Foreign T1: ecology IS real assimilation progress
-          ecologyBonus = bonus;
-          ecologySources = sources;
+          ecologyBonus = storedBonus;
+          ecologySources = storedSources;
           isEcologyActive = true;
-          ecologyEstimatedTurns = effectiveCost > 0 ? Math.ceil(Math.max(0, effectiveCost - progress) / bonus) : null;
+          ecologyEstimatedTurns = effectiveCost > 0 ? Math.ceil(Math.max(0, effectiveCost - progress) / storedBonus) : null;
         } else if (isUnlocked && !isCompleted) {
           // Learned domain with incomplete node — real passive progress
-          ecologyBonus = bonus;
-          ecologySources = sources;
+          ecologyBonus = storedBonus;
+          ecologySources = storedSources;
           isEcologyActive = true;
-          ecologyEstimatedTurns = Math.ceil(Math.max(0, effectiveCost - progress) / bonus);
+          ecologyEstimatedTurns = Math.ceil(Math.max(0, effectiveCost - progress) / storedBonus);
         } else {
           // Locked non-T1 domain — show potential only
-          potentialEcologyBonus = bonus;
-          potentialEcologySources = sources;
+          potentialEcologyBonus = storedBonus;
+          potentialEcologySources = storedSources;
         }
       }
 

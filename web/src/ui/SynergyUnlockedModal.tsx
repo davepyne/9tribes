@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-import pairSynergiesData from '../data/pair-synergies.json';
-import emergentRulesData from '../data/emergent-rules.json';
+import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
+import emergentRulesData from '../../../src/content/base/emergent-rules.json';
 import { SynergyCard } from './SynergyCard';
 import type { PairSynergyData, EmergentRuleData } from './SynergyCard';
 import { playSynergyUnlockSting } from '../app/audio/sfxManager';
@@ -40,12 +40,7 @@ const EMERGENT_RULES_FULL: EmergentRuleData[] = (emergentRulesData as unknown as
 
 // ── Helpers ──
 
-function formatDomainName(domainId: string): string {
-  return domainId
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
+import { formatDomainName } from './inspectors/domainFormatters';
 
 // ── Context ──
 

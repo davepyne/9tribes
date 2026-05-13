@@ -3,6 +3,7 @@ import { deleteSaveGame, listSaveGames, type SaveGameSummary } from '../savegame
 import { getMvpFactionConfigs } from '../../../../src/game/scenarios/mvp.js';
 import type { DifficultyLevel } from '../../../../src/systems/aiDifficulty.js';
 import { playMenuUiSound } from '../audio/musicManager';
+import { getFactionInfo } from '../../data/faction-info';
 
 type MenuStep = 'title' | 'mode' | 'setup' | 'tribe' | 'load';
 type MenuMode = 'singleplayer';
@@ -28,18 +29,6 @@ const DIFFICULTY_COPY: Record<DifficultyLevel, string> = {
   easy: 'Relaxed AI pressure and forgiving openings.',
   normal: 'Balanced pressure for standard campaign starts.',
   hard: 'Sharper AI decisions and less room for early mistakes.',
-};
-
-const FACTION_ABILITY: Record<string, string> = {
-  jungle_clan: 'Venom — units poison enemies for damage over time; summon Serpent Gods in jungle',
-  druid_circle: 'Healing Druids — units heal in forest terrain each turn',
-  steppe_clan: 'Skirmish Pursuit — +2 bonus damage when winning exchanges; summon Warlords on open ground',
-  hill_clan: 'Engineering — can build Fortresses and a Catapult; fortified units gain extra defense on hills',
-  coral_people: 'Greedy — capture villages for resources and enslave enemy units instead of killing them',
-  desert_nomads: 'Desert Swarm — bonuses when multiple units cluster; immune to desert attrition',
-  savannah_lions: 'Charge Momentum — units hit harder after moving, up to devastating impact',
-  river_people: 'River Stealth — units are invisible in river and swamp tiles; cavalry charge attacks deal extra damage; summon Ancient Alligators near water',
-  frost_wardens: 'Cold Hardened — better growth from poor land; summon Polar Bears on tundra',
 };
 
 const DEFAULT_SETUP: SetupState = {
@@ -332,7 +321,7 @@ export function MenuClient() {
                     </div>
                     <div>
                       <dt>Ability</dt>
-                      <dd>{FACTION_ABILITY[selectedFaction.id] ?? selectedFaction.passiveTrait}</dd>
+                      <dd>{getFactionInfo(selectedFaction.id)?.menuSummary ?? selectedFaction.passiveTrait}</dd>
                     </div>
                   </dl>
                 </aside>

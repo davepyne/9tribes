@@ -4,8 +4,8 @@ import type { PairSynergyData, EmergentRuleData } from './SynergyCard';
 import type { EnemySynergyIntelMap } from '../game/types/clientState';
 import { intelTier } from '../game/synergy/intelTiers';
 import { playSynergyContactSting } from '../app/audio/sfxManager';
-import pairSynergiesData from '../data/pair-synergies.json';
-import emergentRulesData from '../data/emergent-rules.json';
+import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
+import emergentRulesData from '../../../src/content/base/emergent-rules.json';
 
 type FirstContactEvent = {
   factionId: string;

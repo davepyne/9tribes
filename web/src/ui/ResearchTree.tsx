@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ResearchNodeViewModel } from '../game/types/clientState';
 import { ResearchNode } from './ResearchNode';
+import { DOMAIN_IDS, DOMAIN_TREE_NAMES } from '../data/domainMeta';
 
 type ResearchTreeProps = {
   nodes: ResearchNodeViewModel[];
@@ -8,19 +9,8 @@ type ResearchTreeProps = {
   onSelectNode: (nodeId: string) => void;
 };
 
-// All 10 research domains in display order
-const DOMAINS = [
-  { id: 'venom', name: 'Venom' },
-  { id: 'fortress', name: 'Fortress' },
-  { id: 'charge', name: 'Charge' },
-  { id: 'hitrun', name: 'Hit & Run' },
-  { id: 'nature_healing', name: 'Nature Healing' },
-  { id: 'camel_adaptation', name: 'Camel Adapt' },
-  { id: 'tidal_warfare', name: 'Tidal War' },
-  { id: 'river_stealth', name: 'River Stealth' },
-  { id: 'slaving', name: 'Slaving' },
-  { id: 'heavy_hitter', name: 'Heavy Hitter' },
-] as const;
+const DOMAINS: ReadonlyArray<{readonly id: string; readonly name: string}> =
+  DOMAIN_IDS.map((id) => ({ id, name: DOMAIN_TREE_NAMES[id] ?? id }));
 
 const TIERS = [1, 2, 3] as const;
 

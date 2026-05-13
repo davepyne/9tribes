@@ -1,4 +1,5 @@
-import abilityDomains from '../../data/ability-domains.json';
+import abilityDomains from '../../../../src/content/base/ability-domains.json';
+import { DOMAIN_SHORT_NAMES } from '../../data/domainMeta';
 
 export function formatDomainName(domainId: string): string {
   return domainId
@@ -7,20 +8,8 @@ export function formatDomainName(domainId: string): string {
     .join(' ');
 }
 
-const NATIVE_DOMAIN_DISPLAY_NAMES: Record<string, string> = {
-  venom: 'Venom',
-  nature_healing: 'Healer',
-  hitrun: 'Hit & Run',
-  fortress: 'Fortify',
-  slaving: 'Slavery',
-  camel_adaptation: 'Desert-Adept',
-  charge: 'Charge',
-  river_stealth: 'Stealth',
-  heavy_hitter: 'Shock',
-};
-
 export function formatNativeDomainName(domainId: string): string {
-  return NATIVE_DOMAIN_DISPLAY_NAMES[domainId] ?? formatDomainName(domainId);
+  return DOMAIN_SHORT_NAMES[domainId] ?? formatDomainName(domainId);
 }
 
 export function getDomainDescription(domainId: string): string | undefined {

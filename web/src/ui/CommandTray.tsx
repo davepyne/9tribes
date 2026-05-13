@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ClientState } from '../game/types/clientState';
 import { hexDistance } from '../../../src/core/grid.js';
+import { formatDomainName } from './inspectors/domainFormatters';
 
 type CommandTrayProps = {
   state: ClientState;
@@ -12,13 +13,6 @@ type CommandTrayProps = {
   onSummon?: (unitId: string) => void;
   onSacrifice?: (unitId: string) => void;
 };
-
-function formatDomainName(domainId: string): string {
-  return domainId
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
 
 export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort, onDestroyFort, onBuildCity, onSummon, onSacrifice }: CommandTrayProps) {
   const selectedUnitId = state.selected?.type === 'unit' ? state.selected.unitId : state.actions.selectedUnitId;

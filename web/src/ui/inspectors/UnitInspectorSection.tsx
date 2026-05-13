@@ -8,8 +8,8 @@ import { formatNativeDomainName, getDomainDescription } from './domainFormatters
 import { SynergyCard } from '../SynergyCard';
 import type { ResolvedActiveSynergies } from '../resolveActiveSynergies';
 import { intelTier } from '../../game/synergy/intelTiers';
-import pairSynergiesData from '../../data/pair-synergies.json';
-import emergentRulesData from '../../data/emergent-rules.json';
+import pairSynergiesData from '../../../../src/content/base/pair-synergies.json';
+import emergentRulesData from '../../../../src/content/base/emergent-rules.json';
 import type { PairSynergyData, EmergentRuleData } from '../SynergyCard';
 
 type UnitInspectorSectionProps = {

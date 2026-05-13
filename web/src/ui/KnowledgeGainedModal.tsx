@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-import pairSynergiesData from '../data/pair-synergies.json';
-import emergentRulesData from '../data/emergent-rules.json';
+import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
+import emergentRulesData from '../../../src/content/base/emergent-rules.json';
 
 // ── Data Types ──
 
@@ -159,12 +159,7 @@ export function useLearnDetector(
 
 // ── Domain Name Formatter ──
 
-function formatDomainName(domainId: string): string {
-  return domainId
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
+import { formatDomainName } from './inspectors/domainFormatters';
 
 // ── Provider + Modal Component ──
 

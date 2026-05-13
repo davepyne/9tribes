@@ -35,7 +35,7 @@ import { clearMoveQueueOnUnit, executeQueuedMovesForUnit } from './moveQueueSess
 import { buildReachableMoves } from './movementExplorer.js';
 import { refreshFogForAllFactions, updateSiegeState, getFortBuildEligibility, buildFortAtUnit, getFortDestroyEligibility, destroyFortAtUnit, getPrototypeCost, getAiUnitIds, getPrototypeName, getActiveFactionName, hasCaptureAbility, canPriestSummon, attemptPriestSummon } from './sessionUtils.js';
 import type { GameAction, EnemySynergyIntelMap } from '../types/clientState';
-import pairSynergiesData from '../../data/pair-synergies.json';
+import pairSynergiesData from '../../../../src/content/base/pair-synergies.json';
 import type { ReplayCombatEvent } from '../types/replay';
 import type { PlayStateSource, SerializedGameState } from '../types/playState';
 import type { AttackTargetView } from '../types/worldView';

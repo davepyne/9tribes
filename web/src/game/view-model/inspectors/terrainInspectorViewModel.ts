@@ -1,4 +1,5 @@
 import civilizationsData from '../../../../../src/content/base/civilizations.json';
+import terrainsData from '../../../../../src/content/base/terrains.json';
 import type { GameState } from '../../../../../src/game/types.js';
 import type { RulesRegistry } from '../../../../../src/data/registry/types.js';
 import { evaluateCitySiteBonuses } from '../../../../../src/systems/citySiteSystem.js';
@@ -15,22 +16,16 @@ type CivEntry = {
 
 const CIVS = civilizationsData as Record<string, CivEntry>;
 
-const DOMAIN_LABELS: Record<string, string> = {
-  woodcraft: 'Woodcraft',
-  poisoncraft: 'Poisoncraft',
-  stealth: 'Stealth',
-  horsemanship: 'Horsemanship',
-  mobility: 'Mobility',
-  fortification: 'Fortification',
-  hill_fighting: 'Hill Fighting',
-  shock_resistance: 'Shock Resistance',
-  desert_survival: 'Desert Survival',
-  endurance: 'Endurance',
-  formation_warfare: 'Formation Warfare',
-  seafaring: 'Seafaring',
-  navigation: 'Navigation',
-  charge: 'Charge',
-};
+// Derive capability labels from terrains.json capabilityPressure keys
+const TERRAINS = terrainsData as Record<string, { capabilityPressure?: Record<string, unknown> }>;
+const DOMAIN_LABELS: Record<string, string> = {};
+for (const terrain of Object.values(TERRAINS)) {
+  for (const capId of Object.keys(terrain.capabilityPressure ?? {})) {
+    if (!DOMAIN_LABELS[capId]) {
+      DOMAIN_LABELS[capId] = capId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+  }
+}
 
 // Faction-specific flavor text per terrain. '_default' is the fallback.
 const FLAVOR: Record<string, Record<string, string>> = {

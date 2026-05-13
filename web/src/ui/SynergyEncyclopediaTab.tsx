@@ -1,12 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { helpContent } from '../data/help-content';
-import pairSynergiesData from '../data/pair-synergies.json';
-import emergentRulesData from '../data/emergent-rules.json';
+import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
+import emergentRulesData from '../../../src/content/base/emergent-rules.json';
 import { SynergyCard } from './SynergyCard';
 import type { PairSynergyData, EmergentRuleData } from './SynergyCard';
 import { domainGlyph, domainColor, domainDisplayName } from './SynergyChip';
-
-const ALL_DOMAIN_IDS = ['venom', 'fortress', 'charge', 'hitrun', 'tidal_warfare', 'slaving', 'nature_healing', 'river_stealth', 'camel_adaptation', 'heavy_hitter'];
+import { DOMAIN_IDS } from '../data/domainMeta';
 
 function emergentConditionLabel(rule: EmergentRuleData): string {
   switch (rule.condition) {
@@ -106,7 +105,7 @@ export const SynergyEncyclopediaTab = React.memo(function SynergyEncyclopediaTab
             All
           </button>
         )}
-        {ALL_DOMAIN_IDS.map((domainId) => {
+        {DOMAIN_IDS.map((domainId) => {
           const isActive = activeFilters.has(domainId);
           return (
             <button

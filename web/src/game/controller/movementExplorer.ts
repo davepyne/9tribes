@@ -58,14 +58,17 @@ export function buildReachableMoves(
       const destTerrain = destTile?.terrain ?? '';
       const unitPrototype = state.prototypes.get(unit.prototypeId);
       const unitTags = new Set(unitPrototype?.tags ?? []);
+      const faction = state.factions.get(unit.factionId);
+      const passiveTrait = faction?.identityProfile.passiveTrait ?? '';
+      const traitGrantsImmunity = (...traits: string[]) => traits.includes(passiveTrait);
       const isInSettlement = Array.from(nextState.cities.values()).some((city) => city.position.q === hex.q && city.position.r === hex.r)
         || Array.from(nextState.villages.values()).some((village) => village.position.q === hex.q && village.position.r === hex.r);
       const terrainCausesDamage =
         !isInSettlement
         && (
-          (destTerrain === 'jungle' && !unitTags.has('jungle'))
-          || (destTerrain === 'desert' && !unitTags.has('desert'))
-          || (destTerrain === 'swamp' && !unitTags.has('swamp'))
+          (destTerrain === 'jungle' && !traitGrantsImmunity('jungle_stalkers'))
+          || (destTerrain === 'desert' && !traitGrantsImmunity('desert_logistics', 'charge_momentum'))
+          || (destTerrain === 'swamp' && !traitGrantsImmunity('healing_druids', 'jungle_stalkers', 'river_assault') && !unitTags.has('amphibious'))
         );
       const candidate: ReachableHexView = {
         key,

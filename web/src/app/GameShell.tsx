@@ -25,8 +25,8 @@ import { TechDiscoveryModalProvider, useTechDiscoveryDetector, useTechDiscoveryM
 import { SynergyUnlockedModalProvider, useSynergyUnlockDetector, useSynergyModal } from '../ui/SynergyUnlockedModal';
 import { CityLimitModalProvider, useCityLimitDetector, useCityLimitModal } from '../ui/CityLimitModal';
 import { EnemySynergyContactModal } from '../ui/EnemySynergyContactModal';
-import pairSynergiesData from '../data/pair-synergies.json';
-import emergentRulesData from '../data/emergent-rules.json';
+import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
+import emergentRulesData from '../../../src/content/base/emergent-rules.json';
 import { CombatLogPanel } from '../ui/CombatLogPanel';
 import { useCombatBridge } from './hooks/useCombatBridge';
 import { useSessionAudio } from './hooks/useSessionAudio';

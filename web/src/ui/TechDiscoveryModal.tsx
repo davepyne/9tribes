@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-import researchData from '../data/research.json';
+import researchData from '../../../src/content/base/research.json';
 
 // ── Types ──
 

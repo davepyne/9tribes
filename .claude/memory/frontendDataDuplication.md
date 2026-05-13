@@ -1,30 +1,24 @@
 ---
 name: frontendDataDuplication
-description: content JSON files duplicated in web/src/data/; domain names scattered across 5+ UI files; rename requires touching all
+description: RESOLVED — three tiers of frontend data duplication eliminated via cross-boundary imports, shared constants, and GameState-stored ecology
 type: project
 originSessionId: 64035bca-210b-45fc-be0f-52580fc47def
 ---
-## Frontend Data File Duplication Pattern
+## Frontend Data Duplication — RESOLVED (2026-05-13)
 
-Content JSON files from `src/content/base/` are **copied** (not imported) into `web/src/data/`. The web build has its own `package.json` and cannot import from `src/`.
+Three tiers of duplication between `src/` (backend) and `web/` (frontend) have been eliminated on branch `refactor/data-duplication-elimination`.
 
-**Confirmed duplicates:**
-- `ability-domains.json` → `web/src/data/ability-domains.json`
-- `pair-synergies.json` → `web/src/data/pair-synergies.json`
-- `emergent-rules.json` → `web/src/data/emergent-rules.json`
-- `research.json` → `web/src/data/research.json`
-- `terrains.json` → `web/src/data/terrains.json`
-- `civilizations.json` → referenced via help-content.ts static data
+### Phase 0 — JSON file duplication (eliminated)
+All UI components that imported from `web/src/data/*.json` now import directly from `src/content/base/*.json` via cross-boundary imports. 8 duplicate JSON files deleted. 13+ files updated.
 
-**Domain display name scattering:** A single ability domain's human-readable name appears in at least 5 places:
-1. `src/content/base/ability-domains.json` (source of truth for backend)
-2. `web/src/data/ability-domains.json` (frontend copy)
-3. `web/src/ui/SynergyChip.tsx` (`DOMAIN_NAMES` record)
-4. `web/src/ui/SynergyEncyclopediaTab.tsx` (`DOMAIN_NAMES` record, duplicated)
-5. `web/src/ui/ResearchTree.tsx` (separate `{ id, name }` mapping — may differ intentionally, e.g., "Hit & Run" for research tree vs domain name)
-6. `web/src/data/help-content.ts` (prose descriptions referencing the domain by name)
-7. `web/src/app/routes/MenuClient.tsx` (faction picker blurbs)
+### Phase 1 — Domain display constants (consolidated)
+Created `web/src/data/domainMeta.ts` as the single source for `DOMAIN_IDS`, `DOMAIN_COLORS`, `DOMAIN_ICONS`, `DOMAIN_NAMES`. SynergyChip.tsx, SynergyEncyclopediaTab.tsx, and ResearchTree.tsx all import from it. ResearchTree retains its intentional short-name overrides.
 
-**Why:** The monorepo has two independent build pipelines with no shared module boundary between `src/` and `web/`. Vite cannot resolve imports across this boundary.
+### Phase 2 — Ecology computation (moved to GameState)
+Added `ecologyBonusesThisTurn` and `ecologyBreakdownThisTurn` to `ResearchState`. Populated during the ecology pass in `factionTurnEffects.ts`. The view model (`researchInspectorViewModel.ts`) reads from GameState instead of reimplementing computation logic. ~100 lines of duplicated game logic deleted from the frontend. Resets at start of each faction turn alongside combat accumulators.
 
-**How to apply:** When renaming a domain or changing its description, grep for the old name across all of `web/src/` — don't just update the JSON copy. The SynergyChip and SynergyEncyclopediaTab have **duplicated** DOMAIN_NAMES/DOMAIN_COLORS/DOMAIN_ICONS records (not shared/exported), so both must be updated. ResearchTree.tsx uses its own name mapping that may intentionally differ (it shows research tree node names, not domain names).
+### Why it mattered
+The monorepo had two independent build pipelines with no shared module boundary, leading to content copies and scattered display constants that diverged over time.
+
+### How to apply
+When adding new domain display data, add it to `web/src/data/domainMeta.ts`. When adding new turn-computed data that the frontend needs, store it in GameState during the turn loop and read it from the view model — don't reimplement the computation on the frontend side.

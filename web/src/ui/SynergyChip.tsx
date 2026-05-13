@@ -2,10 +2,11 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import type { ClientState } from '../game/types/clientState';
 import type { CapabilityPipViewModel } from '../game/types/clientState';
-import pairSynergiesData from '../data/pair-synergies.json';
-import emergentRulesData from '../data/emergent-rules.json';
-import abilityDomainsData from '../data/ability-domains.json';
-import researchData from '../data/research.json';
+import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
+import emergentRulesData from '../../../src/content/base/emergent-rules.json';
+import abilityDomainsData from '../../../src/content/base/ability-domains.json';
+import researchData from '../../../src/content/base/research.json';
+import { DOMAIN_COLORS, DOMAIN_ICONS, DOMAIN_NAMES } from '../data/domainMeta';
 import { SynergyCard, type TierDescriptions } from './SynergyCard';
 
 type PairSynergy = typeof pairSynergiesData.pairSynergies[number];
@@ -59,47 +60,7 @@ const EMERGENT_DESCRIPTIONS: Record<string, { effect: string; requirement: strin
   },
 };
 
-// ── Domain palette (ability-domain IDs used by pair-synergies.json) ──
-
-const DOMAIN_COLORS: Record<string, string> = {
-  venom: '#4ade80',
-  fortress: '#60a5fa',
-  charge: '#f59e0b',
-  hitrun: '#94a3b8',
-  tidal_warfare: '#22d3ee',
-  slaving: '#dc2626',
-  nature_healing: '#10b981',
-  river_stealth: '#a855f7',
-  camel_adaptation: '#d97706',
-  heavy_hitter: '#64748b',
-};
-
-const DOMAIN_ICONS: Record<string, string> = {
-  venom: '\u2623',
-  fortress: '\u26E8',
-  charge: '\u1F418',
-  hitrun: '\u276F',
-  tidal_warfare: '\u1F30A',
-  slaving: '\u2694',
-  nature_healing: '\u273E',
-  river_stealth: '\u1F30F',
-  camel_adaptation: '\u1F42A',
-  heavy_hitter: '\u2696',
-};
-
-// Display name overrides for ability domains
-const DOMAIN_NAMES: Record<string, string> = {
-  venom: 'Venomcraft',
-  fortress: 'Fortress Discipline',
-  charge: 'Charge',
-  hitrun: 'Skirmish Pursuit',
-  tidal_warfare: 'Tidal Warfare',
-  slaving: 'Slaving',
-  nature_healing: 'Nature Healing',
-  river_stealth: 'River Stealth',
-  camel_adaptation: 'Camel Adaptation',
-  heavy_hitter: 'Heavy Hitter',
-};
+// ── Resolution logic ──
 
 export function domainGlyph(domainId: string): string {
   return DOMAIN_ICONS[domainId] ?? domainId.slice(0, 2).toUpperCase();
@@ -142,129 +103,6 @@ function buildSoloSynergyData(domainId: string) {
   };
 }
 
-// ── Resolution logic ──
-
-interface ResolvedSynergy {
-  pair: PairSynergy;
-  domains: [string, string];
-}
-
-interface ResolvedEmergentProgress {
-  rule: EmergentRule;
-  satisfiedCategories: string[];
-  totalCategories: number;
-  satisfiedDomains: string[];
-  missingDomains: string[];
-  isComplete: boolean;
-  progress: number;
-}
-
-function resolveSynergies(
-  allDomains: string[],
-  pairEligibleDomains: string[],
-  emergentEligibleDomains: string[],
-  nativeDomain: string,
-): {
-  allDomains: string[];
-  nativeDomain: string;
-  foreignDomains: string[];
-  activePairs: ResolvedSynergy[];
-  emergentProgress: ResolvedEmergentProgress[];
-  activeTriple: EmergentRule | null;
-} {
-  const pairs: PairSynergy[] = pairSynergiesData.pairSynergies;
-  const rules: EmergentRule[] = emergentRulesData.rules;
-
-  const resolvedDomains = allDomains.length > 0 ? allDomains : [nativeDomain];
-  const foreignDomains = resolvedDomains.filter((d) => d !== nativeDomain);
-
-  // Resolve active pairs
-  const activePairs: ResolvedSynergy[] = [];
-  for (const synergy of pairs) {
-    const [d1, d2] = synergy.domains;
-    if (pairEligibleDomains.includes(d1) && pairEligibleDomains.includes(d2)) {
-      activePairs.push({ pair: synergy, domains: [d1, d2] });
-    }
-  }
-
-  // Resolve emergent rule progress
-  const emergentProgress: ResolvedEmergentProgress[] = [];
-  let activeTriple: EmergentRule | null = null;
-
-  for (const rule of rules) {
-    if (rule.condition === 'default') continue;
-
-    const result = computeRuleProgress(rule, emergentEligibleDomains);
-    emergentProgress.push(result);
-    if (result.isComplete && emergentEligibleDomains.length >= 3) {
-      activeTriple = rule;
-    }
-  }
-
-  return { allDomains: resolvedDomains, nativeDomain, foreignDomains, activePairs, emergentProgress, activeTriple };
-}
-
-function computeRuleProgress(rule: EmergentRule, learnedDomains: string[]): ResolvedEmergentProgress {
-  const satisfiedCategories: string[] = [];
-  const satisfiedDomains: string[] = [];
-  const missingDomains: string[] = [];
-
-  if (rule.domainSets) {
-    const alreadyCredited = new Set<string>();
-    for (const [category, domainList] of Object.entries(rule.domainSets)) {
-      const matched = domainList.find(
-        (d: string) => learnedDomains.includes(d) && !alreadyCredited.has(d),
-      );
-      if (matched) {
-        satisfiedCategories.push(category);
-        satisfiedDomains.push(matched);
-        alreadyCredited.add(matched);
-      } else {
-        missingDomains.push(...domainList.slice(0, 1));
-      }
-    }
-  }
-
-  if (rule.mobilityDomains) {
-    const count = learnedDomains.filter((d) => rule.mobilityDomains!.includes(d)).length;
-    if (count >= 3) satisfiedCategories.push('mobility');
-    for (const d of rule.mobilityDomains) {
-      if (learnedDomains.includes(d)) satisfiedDomains.push(d);
-      else missingDomains.push(d);
-    }
-  }
-
-  if (rule.combatDomains) {
-    const count = learnedDomains.filter((d) => rule.combatDomains!.includes(d)).length;
-    if (count >= 3) satisfiedCategories.push('combat');
-    for (const d of rule.combatDomains) {
-      if (learnedDomains.includes(d)) satisfiedDomains.push(d);
-      else missingDomains.push(d);
-    }
-  }
-
-  const totalCategories = rule.domainSets
-    ? Object.keys(rule.domainSets).length
-    : rule.mobilityDomains ? 1 : rule.combatDomains ? 1 : 0;
-
-  const isComplete =
-    (totalCategories > 0 && satisfiedCategories.length >= totalCategories) ||
-    (rule.condition === 'contains_3_mobility' &&
-      learnedDomains.filter((d) => rule.mobilityDomains!.includes(d)).length >= 3) ||
-    (rule.condition === 'contains_3_combat' &&
-      learnedDomains.filter((d) => rule.combatDomains!.includes(d)).length >= 3);
-
-  return {
-    rule,
-    satisfiedCategories,
-    totalCategories: Math.max(totalCategories, 1),
-    satisfiedDomains,
-    missingDomains: [...new Set(missingDomains)],
-    isComplete,
-    progress: totalCategories > 0 ? satisfiedCategories.length / totalCategories : 0,
-  };
-}
-
 // ── Sub-components ──
 
 function DomainDot({
@@ -294,32 +132,6 @@ function DomainDot({
   );
 }
 
-function PairConnection({
-  pair,
-  domainIndexMap,
-}: {
-  pair: ResolvedSynergy;
-  domainIndexMap: Record<string, number>;
-}) {
-  const idxA = domainIndexMap[pair.domains[0]];
-  const idxB = domainIndexMap[pair.domains[1]];
-  if (idxA === undefined || idxB === undefined) return null;
-
-  const dotSize = 28;
-  const gap = 6;
-  const xA = idxA * (dotSize + gap) + dotSize / 2;
-  const xB = idxB * (dotSize + gap) + dotSize / 2;
-  const y = dotSize / 2;
-
-  return (
-    <line
-      x1={xA} y1={y} x2={xB} y2={y}
-      className="syn-pair-line"
-      style={{ stroke: domainColor(pair.domains[0]) }}
-    />
-  );
-}
-
 // ── Main Component ──
 
 type SynergyChipProps = {
@@ -334,33 +146,15 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
   const nativeDomain = activeFaction?.nativeDomain ?? '';
   const factionLearnedDomains = activeFaction?.learnedDomains ?? [];
   const factionColor = activeFaction?.color ?? '#d6a34b';
-  const serverSynergyEligible = activeFaction?.synergyEligibleDomains ?? [];
 
-  // Use faction's learnedDomains (ability-domain IDs) as the source of truth.
-  // These are the IDs that pair-synergies.json and emergent-rules.json understand.
   const learnedDomains = useMemo(() => {
     if (factionLearnedDomains.length > 0) return factionLearnedDomains;
-    // Fallback to native-only when nothing else learned yet
     return [nativeDomain];
   }, [factionLearnedDomains, nativeDomain]);
 
-  const pairEligibleDomains = useMemo(
-    () => capabilities
-      .filter((cap) => cap.level >= 3 && serverSynergyEligible.includes(cap.domainId))
-      .map((cap) => cap.domainId),
-    [capabilities, serverSynergyEligible],
-  );
-
-  const emergentEligibleDomains = useMemo(
-    () => capabilities
-      .filter((cap) => cap.level >= 2 && serverSynergyEligible.includes(cap.domainId))
-      .map((cap) => cap.domainId),
-    [capabilities, serverSynergyEligible],
-  );
-
-  const resolved = useMemo(
-    () => resolveSynergies(learnedDomains, pairEligibleDomains, emergentEligibleDomains, nativeDomain),
-    [learnedDomains, pairEligibleDomains, emergentEligibleDomains, nativeDomain],
+  const foreignDomains = useMemo(
+    () => learnedDomains.filter((d) => d !== nativeDomain),
+    [learnedDomains, nativeDomain],
   );
 
   const handleClick = useCallback((e: React.MouseEvent) => {
@@ -371,13 +165,29 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
   const handleClose = useCallback(() => setExpanded(false), []);
   const handlePanelClick = useCallback((e: React.MouseEvent) => e.stopPropagation(), []);
 
-  const hasContent = resolved.foreignDomains.length > 0 || resolved.activePairs.length > 0;
-
   const activeNativePairId = activeFaction?.activeNativePairId;
   const activeDoubleStackPairIds = activeFaction?.activeDoubleStackPairIds ?? [];
   const hasActiveTriple = activeFaction?.hasActiveTriple ?? false;
   const activeTriplePairIds = activeFaction?.activeTriplePairIds ?? [];
   const activeTripleEmergentRuleId = activeFaction?.activeTripleEmergentRuleId;
+
+  const activePairCount = useMemo(() => {
+    const ids = new Set<string>();
+    if (hasActiveTriple) {
+      for (const id of activeTriplePairIds) ids.add(id);
+    } else {
+      if (activeNativePairId) ids.add(activeNativePairId);
+      for (const id of activeDoubleStackPairIds) ids.add(id);
+    }
+    return ids.size;
+  }, [hasActiveTriple, activeNativePairId, activeDoubleStackPairIds, activeTriplePairIds]);
+
+  const activeTripleRule = useMemo(() => {
+    if (!hasActiveTriple || !activeTripleEmergentRuleId) return null;
+    return (emergentRulesData.rules as EmergentRule[]).find((r) => r.id === activeTripleEmergentRuleId) ?? null;
+  }, [hasActiveTriple, activeTripleEmergentRuleId]);
+
+  const hasContent = foreignDomains.length > 0 || activePairCount > 0;
 
   // Build all cards for the hand using backend state
   const handCards = useMemo(() => {
@@ -385,7 +195,7 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
     const allPairs = pairSynergiesData.pairSynergies as PairSynergy[];
     const allRules = emergentRulesData.rules as EmergentRule[];
 
-    for (const d of resolved.allDomains) {
+    for (const d of learnedDomains) {
       cards.push({
         key: `solo-${d}`,
         kind: 'solo',
@@ -431,7 +241,7 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
     }
 
     return cards;
-  }, [resolved.allDomains, capabilities, hasActiveTriple, activeTriplePairIds, activeTripleEmergentRuleId, activeNativePairId, activeDoubleStackPairIds]);
+  }, [learnedDomains, capabilities, hasActiveTriple, activeTriplePairIds, activeTripleEmergentRuleId, activeNativePairId, activeDoubleStackPairIds]);
 
   return (
     <div className="syn-chip-wrap" onClick={handleClick}>
@@ -445,28 +255,28 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
         <span className="syn-chip__label">ABILITY SYNERGIES</span>
         <span className="syn-chip__domains">
           <DomainDot domainId={nativeDomain} size={14} isNative />
-          {resolved.foreignDomains.slice(0, 3).map((d) => (
+          {foreignDomains.slice(0, 3).map((d) => (
             <DomainDot key={d} domainId={d} size={14} />
           ))}
-          {resolved.foreignDomains.length > 3 && (
-            <span className="syn-chip__more">+{resolved.foreignDomains.length - 3}</span>
+          {foreignDomains.length > 3 && (
+            <span className="syn-chip__more">+{foreignDomains.length - 3}</span>
           )}
         </span>
 
-        {resolved.activePairs.length > 0 && (
+        {activePairCount > 0 && (
           <span className="syn-chip__pairs">
             <svg width="12" height="12" viewBox="0 0 12 12" className="syn-icon-link">
               <circle cx="3" cy="6" r="2" fill="currentColor" opacity="0.5" />
               <circle cx="9" cy="6" r="2" fill="currentColor" />
               <line x1="5" y1="6" x2="7" y2="6" stroke="currentColor" strokeWidth="1.5" />
             </svg>
-            {resolved.activePairs.length}
+            {activePairCount}
           </span>
         )}
 
-        {resolved.activeTriple && (
+        {activeTripleRule && (
           <span className="syn-chip__triple" style={{ color: factionColor }}>
-            &#9733; {resolved.activeTriple.name}
+            &#9733; {activeTripleRule.name}
           </span>
         )}
       </button>
@@ -497,7 +307,7 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
                     factionColor={factionColor}
                     factionId={activeFaction?.id}
                     tierDescriptions={card.tierDescriptions}
-                    isNativeDomain={card.kind === 'solo' && card.key === `solo-${resolved.nativeDomain}`}
+                    isNativeDomain={card.kind === 'solo' && card.key === `solo-${nativeDomain}`}
                     inactive={card.inactive}
                   />
                 </div>

@@ -290,6 +290,46 @@ function startOrAdvanceCodification(
   return current;
 }
 
+function buildEcologyBreakdown(
+  sortedDomains: string[],
+  terrainBonuses: Map<string, number>,
+  proximityBonuses: Map<string, number>,
+  combatBonuses: Record<string, number> | undefined,
+): {
+  bonuses: Record<string, number>;
+  breakdown: Record<string, Array<{ type: 'terrain' | 'proximity' | 'combat'; amount: number; detail: string }>>;
+} {
+  const bonuses: Record<string, number> = {};
+  const breakdown: Record<string, Array<{ type: 'terrain' | 'proximity' | 'combat'; amount: number; detail: string }>> = {};
+
+  for (const domainId of sortedDomains) {
+    const terrain = terrainBonuses.get(domainId) ?? 0;
+    const proximity = proximityBonuses.get(domainId) ?? 0;
+    const combatBonus = combatBonuses?.[domainId] ?? 0;
+    const totalBonus = Math.min(terrain + proximity, MAX_RESEARCH_TERRAIN_BONUS) + combatBonus;
+    if (totalBonus <= 0) continue;
+
+    const sources: Array<{ type: 'terrain' | 'proximity' | 'combat'; amount: number; detail: string }> = [];
+    if (terrain > 0) sources.push({ type: 'terrain', amount: Math.min(terrain, MAX_RESEARCH_TERRAIN_BONUS), detail: `Terrain bonus: +${terrain.toFixed(2)}` });
+    if (proximity > 0) sources.push({ type: 'proximity', amount: proximity, detail: `Proximity bonus: +${proximity.toFixed(2)}` });
+    if (combatBonus > 0) sources.push({ type: 'combat', amount: combatBonus, detail: `Combat bonus: +${combatBonus.toFixed(0)}` });
+
+    bonuses[domainId] = totalBonus;
+    breakdown[domainId] = sources;
+  }
+
+  if (combatBonuses) {
+    for (const [domainId, bonus] of Object.entries(combatBonuses)) {
+      if (!breakdown[domainId]) {
+        bonuses[domainId] = bonus;
+        breakdown[domainId] = [{ type: 'combat', amount: bonus, detail: `Combat bonus: +${bonus.toFixed(0)}` }];
+      }
+    }
+  }
+
+  return { bonuses, breakdown };
+}
+
 function applyEcologyResearchPass(
   state: GameState,
   factionId: FactionId,
@@ -421,10 +461,22 @@ function applyEcologyResearchPass(
     }
   }
 
-  if (!changed) return state;
+  const { bonuses: ecologyBonuses, breakdown: ecologyBreakdown } = buildEcologyBreakdown(
+    sortedDomains, terrainBonuses, proximityBonuses, currentResearch.combatResearchBonusThisTurn,
+  );
+  const researchWithEcology = { ...currentResearch, ecologyBonusesThisTurn: ecologyBonuses, ecologyBreakdownThisTurn: ecologyBreakdown };
+
+  if (!changed) {
+    if (Object.keys(ecologyBonuses).length > 0) {
+      const researchMap = new Map(state.research);
+      researchMap.set(factionId, researchWithEcology);
+      return { ...state, research: researchMap };
+    }
+    return state;
+  }
 
   const researchMap = new Map(state.research);
-  researchMap.set(factionId, currentResearch);
+  researchMap.set(factionId, researchWithEcology);
 
   // Update faction if any domains were assimilated this turn
   const factions = new Map(state.factions);
@@ -726,10 +778,10 @@ export function processFactionPhases(
 
   let current = state;
 
-  // Reset per-turn combat research bonus accumulator
+  // Reset per-turn research bonus accumulators
   const research = current.research.get(factionId);
-  if (research?.combatResearchBonusThisTurn) {
-    const updatedResearch = { ...research, combatResearchBonusThisTurn: undefined };
+  if (research?.combatResearchBonusThisTurn || research?.ecologyBonusesThisTurn || research?.ecologyBreakdownThisTurn) {
+    const updatedResearch = { ...research, combatResearchBonusThisTurn: undefined, ecologyBonusesThisTurn: undefined, ecologyBreakdownThisTurn: undefined };
     const researchMap = new Map(current.research);
     researchMap.set(factionId, updatedResearch);
     current = { ...current, research: researchMap };
