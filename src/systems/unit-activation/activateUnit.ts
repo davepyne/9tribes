@@ -349,11 +349,18 @@ export function activateUnit(
     unitRange <= 1 && (canUseCharge(prototype) || factionDoctrine.chargeTranscendenceEnabled);
   const strategy = current.factionStrategies.get(factionId);
   const unitIntent = getUnitIntent(strategy, unitId);
-  const holdingAtRendezvous = !!(
+  let holdingAtRendezvous = !!(
     unitIntent?.squadId
     && unitIntent.rendezvousHex
     && hexDistance(activeUnit.position, unitIntent.rendezvousHex) <= RENDEZVOUS_READY_DISTANCE
   );
+  // Self-preservation: break squad hold when under immediate threat
+  if (holdingAtRendezvous) {
+    const nearbyEnemies = countEnemyUnitsNearHex(current, factionId, activeUnit.position, 3, unitId);
+    if (nearbyEnemies > 0 || activeUnit.hp / activeUnit.maxHp < 0.4) {
+      holdingAtRendezvous = false;
+    }
+  }
   // For defender units: get the threatened city position for engagement scoring
   const threatenedCityForUnit = unitIntent?.threatenedCityId
     ? current.cities.get(unitIntent.threatenedCityId)

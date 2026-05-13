@@ -21,7 +21,7 @@ import {
 } from '../warEcologySimulation.js';
 import type { UnitStrategicIntent } from '../factionStrategy.js';
 
-import { getTerrainAt, isFortificationHex } from './helpers.js';
+import { getTerrainAt, isFortificationHex, countEnemyUnitsNearHex } from './helpers.js';
 import { moveTransportAndDisembark } from './transport.js';
 import { mapAssignmentToIntent } from './helpers.js';
 import { RENDEZVOUS_READY_DISTANCE, HOLD_DEFENSE_RADIUS } from '../strategic-ai/rendezvous.js';
@@ -136,12 +136,16 @@ export function performStrategicMovement(
   let validMoves = getValidMoves(state, unitId, state.map, registry);
 
   // Phase D: restrict movement for units holding at squad rendezvous
+  // (unless under threat — self-preservation overrides formation discipline)
   if (unitIntent.squadId && unitIntent.rendezvousHex) {
     const distToRendezvous = hexDistance(unit.position, unitIntent.rendezvousHex);
     if (distToRendezvous <= RENDEZVOUS_READY_DISTANCE) {
-      validMoves = validMoves.filter(
-        m => hexDistance(m, unitIntent.rendezvousHex!) <= HOLD_DEFENSE_RADIUS
-      );
+      const nearbyEnemies = countEnemyUnitsNearHex(state, unit.factionId, unit.position, 3, unitId);
+      if (nearbyEnemies === 0) {
+        validMoves = validMoves.filter(
+          m => hexDistance(m, unitIntent.rendezvousHex!) <= HOLD_DEFENSE_RADIUS
+        );
+      }
     }
   }
 
