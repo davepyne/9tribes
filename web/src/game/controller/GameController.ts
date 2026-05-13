@@ -450,10 +450,23 @@ export class GameController {
 
   /** Dequeue and fire the next AI combat from the queue */
   private continueAiCombats(): void {
-    const next = this.session?.dequeueAiCombat();
-    if (!next) return;
+    let next = this.session?.dequeueAiCombat();
+    if (next) {
+      this.combatPendingListener?.(next);
+      return;
+    }
 
-    this.combatPendingListener?.(next);
+    // Queue is drained — let the AI simulation, which paused to keep state
+    // in sync with the animator, queue its next combat against fresh state.
+    this.session?.resumeAiProcessing();
+    next = this.session?.dequeueAiCombat();
+    if (next) {
+      this.combatPendingListener?.(next);
+    } else {
+      // AI fully done — re-emit so any view-model state that depends on
+      // aiProcessing/activeFactionId refreshes for the human turn.
+      this.emit();
+    }
   }
 
   /** Check if a combat involves any human-controlled faction */
