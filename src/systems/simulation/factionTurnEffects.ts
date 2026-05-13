@@ -927,7 +927,8 @@ export function processFactionPhases(
     if (!unit || unit.hp <= 0) continue;
 
     const terrainId = getTerrainAt(current, unit.position);
-    let healRate = getHealRate(unit, current, factionId);
+    // Captured units may be on contested hexes — skip contested check so they still heal at territory rate
+    let healRate = getHealRate(unit, current, factionId, true);
 
     const healPrototype = current.prototypes.get(unit.prototypeId);
     const healTags = healPrototype?.tags ?? [];

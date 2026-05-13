@@ -54,6 +54,7 @@ function getHealRate(
   state: GameState,
   factionId: FactionId,
   registry: RulesRegistry,
+  skipContestedCheck = false,
 ): number {
   const faction = state.factions.get(factionId);
   const terrainId = getTerrainAt(state, unit.position);
@@ -66,7 +67,7 @@ function getHealRate(
     if (dist === 0)
       return Math.floor(unit.maxHp * HEALING_CONFIG.CITY_GARRISON) + getHealingBonus(faction, terrainId);
     if (dist === 1) {
-      const hexOwner = getHexOwner(unit.position, state);
+      const hexOwner = getHexOwner(unit.position, state, skipContestedCheck);
       if (hexOwner === factionId)
         return Math.floor(unit.maxHp * HEALING_CONFIG.OWNED_TERRITORY) + getHealingBonus(faction, terrainId);
     }
@@ -81,7 +82,7 @@ function getHealRate(
   }
 
   // Owned territory
-  const hexOwner = getHexOwner(unit.position, state);
+  const hexOwner = getHexOwner(unit.position, state, skipContestedCheck);
   if (hexOwner === factionId) {
     return Math.floor(unit.maxHp * HEALING_CONFIG.OWNED_TERRITORY) + getHealingBonus(faction, terrainId);
   }
@@ -164,7 +165,8 @@ export function applyHealingForFaction(
 
     // Base heal rate from location
     const terrainId = getTerrainAt(gameState, unit.position);
-    let healRate = getHealRate(unit, gameState, factionId, registry);
+    // Captured units may be on contested hexes — skip contested check so they heal at territory rate
+    let healRate = getHealRate(unit, gameState, factionId, registry, true);
     healRate += doctrine.natureHealingRegenBonus;
 
     // Synergy healing effects

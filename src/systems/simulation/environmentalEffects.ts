@@ -17,7 +17,7 @@ export const HEALING_CONFIG = {
   FIELD: 0.05,
 } as const;
 
-export function getHealRate(unit: { position: HexCoord; maxHp: number }, state: GameState, factionId: FactionId): number {
+export function getHealRate(unit: { position: HexCoord; maxHp: number }, state: GameState, factionId: FactionId, skipContestedCheck = false): number {
   const faction = state.factions.get(factionId);
   const terrainId = getTerrainAt(state, unit.position);
 
@@ -27,7 +27,7 @@ export function getHealRate(unit: { position: HexCoord; maxHp: number }, state: 
     const dist = hexDistance(unit.position, city.position);
     if (dist === 0) return Math.floor(unit.maxHp * HEALING_CONFIG.CITY_GARRISON) + getHealingBonus(faction, terrainId);
     if (dist === 1) {
-      const hexOwner = getHexOwner(unit.position, state);
+      const hexOwner = getHexOwner(unit.position, state, skipContestedCheck);
       if (hexOwner === factionId) return Math.floor(unit.maxHp * HEALING_CONFIG.OWNED_TERRITORY) + getHealingBonus(faction, terrainId);
     }
   }
@@ -39,7 +39,7 @@ export function getHealRate(unit: { position: HexCoord; maxHp: number }, state: 
     }
   }
 
-  const hexOwner = getHexOwner(unit.position, state);
+  const hexOwner = getHexOwner(unit.position, state, skipContestedCheck);
   if (hexOwner === factionId) {
     return Math.floor(unit.maxHp * HEALING_CONFIG.OWNED_TERRITORY) + getHealingBonus(faction, terrainId);
   }

@@ -53,10 +53,12 @@ export function isHexContested(
 /**
  * Get the faction that owns a hex (closest city claims it).
  * Returns null if unclaimed or contested.
+ * Set skipContestedCheck=true to ignore contested status (e.g., for healing calculations on newly captured units).
  */
 export function getHexOwner(
   hex: HexCoord,
-  state: GameState
+  state: GameState,
+  skipContestedCheck = false,
 ): FactionId | null {
   let closestCity: { city: City; dist: number } | null = null;
 
@@ -72,7 +74,7 @@ export function getHexOwner(
   if (!closestCity) return null;
 
   // Check if any enemy unit is adjacent to this hex (contested)
-  if (isHexContested(hex, closestCity.city.factionId, state)) {
+  if (!skipContestedCheck && isHexContested(hex, closestCity.city.factionId, state)) {
     return null;
   }
 
