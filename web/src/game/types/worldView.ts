@@ -10,6 +10,7 @@ export type HexView = {
   q: number;
   r: number;
   terrain: string;
+  resource?: string;
   visibility: VisibilityState;
   ownerFactionId: string | null;
   ownerFactionName: string | null;

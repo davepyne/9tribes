@@ -8,10 +8,9 @@ import { isDeepWaterTerrain } from './terrainUtils.js';
 
 const FRESH_WATER_TERRAINS = new Set<TerrainType>(['river']);
 const OASIS_TERRAINS = new Set<TerrainType>(['oasis']);
-const FISH_TERRAINS = new Set<TerrainType>(['fish']);
 const WOODLAND_TERRAINS = new Set<TerrainType>(['forest', 'jungle']);
 const OPEN_LAND_TERRAINS = new Set<TerrainType>(['plains', 'savannah']);
-const COASTLIKE_TERRAINS = new Set<TerrainType>(['coast', 'river', 'fish']);
+const COASTLIKE_TERRAINS = new Set<TerrainType>(['coast', 'river']);
 
 export const CITY_SITE_PRODUCTION_BONUS = 0.5;
 export const CITY_SITE_SUPPLY_BONUS = 0.5;
@@ -45,7 +44,7 @@ export function evaluateCitySiteBonuses(
 
   const freshWaterCount = countTerrainsInRange(map, position, territoryRadius, FRESH_WATER_TERRAINS);
   const oasisCount = countTerrainsInRange(map, position, territoryRadius, OASIS_TERRAINS);
-  const fishCount = countTerrainsInRange(map, position, territoryRadius, FISH_TERRAINS);
+  const fishCount = countResourcesInRange(map, position, territoryRadius, 'fish');
   const woodlandCount = countTerrainsInRange(map, position, territoryRadius, WOODLAND_TERRAINS);
   const openLandCount = countTerrainsInRange(map, position, territoryRadius, OPEN_LAND_TERRAINS);
 
@@ -301,6 +300,24 @@ function countTerrainsInRange(
   for (const hex of getHexesInRange(position, territoryRadius)) {
     const tile = map.tiles.get(hexToKey(hex));
     if (tile && terrains.has(tile.terrain)) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+function countResourcesInRange(
+  map: GameMap,
+  position: HexCoord,
+  territoryRadius: number,
+  resource: string,
+): number {
+  let count = 0;
+
+  for (const hex of getHexesInRange(position, territoryRadius)) {
+    const tile = map.tiles.get(hexToKey(hex));
+    if (tile?.resource === resource) {
       count += 1;
     }
   }

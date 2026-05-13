@@ -5,6 +5,8 @@ import type { HexCoord, TileCoord } from '../../types.js';
 export type MapGenerationMode = 'fixed' | 'randomClimateBands';
 
 // Terrain types available on the map
+export type TileResource = 'fish';
+
 export type TerrainType =
   | 'plains'
   | 'forest'
@@ -15,7 +17,6 @@ export type TerrainType =
   | 'tundra'
   | 'savannah'
   | 'coast'
-  | 'fish'
   | 'river'
   | 'swamp'
   | 'mountain'
@@ -26,6 +27,7 @@ export interface Tile {
   position: TileCoord;
   terrain: TerrainType;
   improvementId?: string;  // Optional improvement built on tile
+  resource?: TileResource; // Optional resource overlay (e.g. fish on coast)
   unitId?: string;         // Optional unit currently on tile
 }
 

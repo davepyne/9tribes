@@ -263,10 +263,13 @@ export function getTerrainRenderSpec(terrain: string): TerrainRenderSpec {
       };
     case 'fish':
       return {
-        baseTexture: TEXTURES.oceanBase,
-        baseFrame: TERRAIN_FRAMES.oceanBase,
+        baseTexture: TEXTURES.grassBase,
+        baseFrame: resolvedTerrainFrames.grassBase,
         overlayTexture: TEXTURES.fishOverlay,
-        fallbackColor: 0x1a4a6e,
+        overlayFrame: TERRAIN_FRAMES.oceanBase,
+        overlayTint: 0x8ecae6,
+        overlayAlpha: 0.72,
+        fallbackColor: 0x79adc7,
       };
     default:
       return {

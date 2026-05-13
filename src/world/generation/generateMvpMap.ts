@@ -377,7 +377,7 @@ function carveFish(map: GameMap, rng: RNGState): void {
   for (const tile of map.tiles.values()) {
     if (tile.terrain === 'coast') {
       if (rngNextFloat(rng) < FISH_CHANCE) {
-        tile.terrain = 'fish';
+        tile.resource = 'fish';
       }
     }
   }

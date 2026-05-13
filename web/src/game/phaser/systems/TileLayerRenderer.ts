@@ -31,6 +31,7 @@ export class TileLayerRenderer {
     for (const hex of sortedHexes) {
       const point = this.worldToScreen(hex.q, hex.r);
       const baseSpec = getTerrainRenderSpec(hex.terrain);
+      const fishResource = hex.resource === 'fish' ? getTerrainRenderSpec('fish') : null;
       const spec = hex.terrain === 'river'
         ? {
             ...baseSpec,
@@ -99,6 +100,18 @@ export class TileLayerRenderer {
         const icon = this.scene.add.image(point.x, point.y, spec.iconTexture)
           .setOrigin(0.5, 1);
         this.layer.add(icon);
+      }
+
+      if (fishResource?.overlayTexture) {
+        const fishOverlay = this.scene.add.image(point.x, point.y, fishResource.overlayTexture, fishResource.overlayFrame)
+          .setOrigin(0.5, 1);
+        if (fishResource.overlayTint !== undefined) {
+          fishOverlay.setTint(fishResource.overlayTint);
+        }
+        if (fishResource.overlayAlpha !== undefined) {
+          fishOverlay.setAlpha(fishResource.overlayAlpha);
+        }
+        this.layer.add(fishOverlay);
       }
     }
   }

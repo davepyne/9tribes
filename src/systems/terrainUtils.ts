@@ -1,5 +1,5 @@
-const WATER_TERRAINS = new Set(['coast', 'river', 'ocean', 'fish']);
-const DEEP_WATER_TERRAINS = new Set(['coast', 'ocean', 'fish']);
+const WATER_TERRAINS = new Set(['coast', 'river', 'ocean']);
+const DEEP_WATER_TERRAINS = new Set(['coast', 'ocean']);
 const RIVER_STEALTH_TERRAINS = new Set(['river', 'swamp']);
 const WETLAND_TERRAINS = new Set(['river', 'coast', 'swamp']);
 

@@ -56,7 +56,7 @@ const DEFAULT_OPTIONS: ClimateBandMapOptions = {
   riverCountMax: 3,
 };
 
-const WATER_TERRAINS = new Set<TerrainType>(['coast', 'river', 'ocean', 'fish']);
+const WATER_TERRAINS = new Set<TerrainType>(['coast', 'river', 'ocean']);
 const CLUSTER_BIOMES = new Set<TerrainType>(['jungle', 'hill']);
 
 export function generateClimateBandMap(
@@ -87,6 +87,8 @@ export function generateClimateBandMap(
         lastFailure = validation.reasons.join('; ');
         continue;
       }
+
+      carveFish(map, rng);
 
       map.metadata = {
         mode: options.mode,
@@ -370,6 +372,18 @@ function carveOases(map: GameMap, rng: RNGState, climate: ClimateProfile): void 
   }
 }
 
+const FISH_CHANCE = 0.10;
+
+function carveFish(map: GameMap, rng: RNGState): void {
+  for (const tile of map.tiles.values()) {
+    if (tile.terrain === 'coast') {
+      if (rngNextFloat(rng) < FISH_CHANCE) {
+        tile.resource = 'fish';
+      }
+    }
+  }
+}
+
 function placeStarts(
   map: GameMap,
   rng: RNGState,
@@ -637,7 +651,7 @@ function validateGeneratedMap(
 
 function coastIsCoherent(map: GameMap): boolean {
   const visited = new Set<string>();
-  const COASTLIKE_TERRAINS = new Set<TerrainType>(['coast', 'fish']);
+  const COASTLIKE_TERRAINS = new Set<TerrainType>(['coast']);
 
   for (const tile of map.tiles.values()) {
     if (!COASTLIKE_TERRAINS.has(tile.terrain)) continue;

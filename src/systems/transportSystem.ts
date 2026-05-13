@@ -94,8 +94,8 @@ function isValidDisembarkHex(
   if (!tile) return false;
 
   const terrain = tile.terrain;
-  // Reject open ocean and fish grounds; coast counts as beach landing, all land is fine
-  if (terrain === 'ocean' || terrain === 'fish') return false;
+  // Reject open ocean; coast counts as beach landing, all land is fine
+  if (terrain === 'ocean') return false;
   return true;
 }
 
