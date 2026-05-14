@@ -171,8 +171,8 @@ const VENOM_RESEARCH = buildResearchDomain({
     effect: {
       poisonDamageMultiplier: 0.5, // wired
       nativePoisonDetonateOnKill: { damage: 3, stacks: 2, radius: 1 }, // wired (legacy)
-      toxicBloomEnabled: true, // design
-      myceliumNetworkOnKill: true, // design
+      toxicBloomEnabled: true, // wired
+      myceliumNetworkOnKill: true, // wired
     },
   },
 });
