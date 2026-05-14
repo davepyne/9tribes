@@ -708,7 +708,10 @@ export function activateUnit(
 
     if (bestCaptureTarget) {
       const captureResult = attemptNonCombatCapture(
-        current, unitId, bestCaptureTarget, registry, nonCombatChance, hpFraction, captureCooldown, current.rngState
+        current, unitId, bestCaptureTarget, registry, nonCombatChance, hpFraction, captureCooldown, current.rngState,
+        factionDoctrine.slaveStatFraction < 1
+          ? { hpFraction: factionDoctrine.slaveHpFraction, statFraction: factionDoctrine.slaveStatFraction, routImmune: !!factionDoctrine.captureRetreatEnabled }
+          : undefined,
       );
       if (captureResult.captured) {
         const capturedUnit = captureResult.state.units.get(bestCaptureTarget);

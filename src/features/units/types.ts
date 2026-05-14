@@ -62,6 +62,8 @@ export interface Unit {
   slaveDamageBonus?: number;
   slaveHealPenalty?: number;
   captureEscapePrevented?: boolean;
+  slaveStatFraction?: number;         // captured unit stat multiplier (0.6 T1/T2, 0.7 T3, cleared on re-capture by original faction)
+  slaveRoutImmune?: boolean;          // slaving_t2: captured slaves cannot be routed
   nextTurnMovePenalty?: number;
   attackedTargetsThisTurn?: UnitId[];
   lastStandUsedThisTurn?: boolean;

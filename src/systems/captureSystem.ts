@@ -95,6 +95,7 @@ export function attemptCapture(
   greedyAbility?: SignatureAbilityParams | null,
   rngState?: RNGState,
   captureChanceBonus?: number,
+  slaveOverrides?: { hpFraction: number; statFraction: number; routImmune?: boolean },
 ): { captured: boolean; state: GameState } {
   const attackerPrototype = state.prototypes.get(attacker.prototypeId);
   if (!attackerPrototype) {
@@ -155,11 +156,21 @@ export function attemptCapture(
   const attackerFactionId = attacker.factionId;
   const defenderFactionId = defender.factionId;
 
+  // Re-capture check: if the defender was originally from the attacker's faction,
+  // clear slave debuffs (liberation).
+  const originalCapture = defender.history.find(e => e.type === 'captured');
+  const originalFaction = (originalCapture?.details?.originalFaction as string) ?? defenderFactionId;
+  const isReCapture = originalFaction === attackerFactionId;
+
+  const effectiveHpFraction = slaveOverrides?.hpFraction ?? hpFraction;
+
   // Create captured defender unit
   const capturedDefender: Unit = {
     ...defender,
     factionId: attackerFactionId,
-    hp: Math.max(1, Math.floor(defender.maxHp * hpFraction)),
+    hp: Math.max(1, Math.floor(defender.maxHp * effectiveHpFraction)),
+    slaveStatFraction: isReCapture ? undefined : (slaveOverrides?.statFraction ?? defender.slaveStatFraction),
+    slaveRoutImmune: isReCapture ? undefined : slaveOverrides?.routImmune,
     morale: 50,
     routed: false,
     veteranLevel: 'green' as VeteranLevel,
@@ -217,10 +228,11 @@ export function attemptCapture(
   }
 
   if (attackerFaction) {
-    // Add defender to attacker's faction's unitIds
+    // Add defender to attacker's faction's unitIds and increment capture count
     const updatedAttackerFaction = {
       ...attackerFaction,
       unitIds: [...attackerFaction.unitIds, defender.id],
+      slaveCaptureCount: attackerFaction.slaveCaptureCount + 1,
     };
     newFactions.set(attackerFactionId, updatedAttackerFaction);
   }
@@ -279,7 +291,8 @@ export function attemptNonCombatCapture(
   captureChance: number,
   hpFraction: number,
   cooldown: number,
-  rngState?: RNGState
+  rngState?: RNGState,
+  slaveOverrides?: { hpFraction: number; statFraction: number; routImmune?: boolean },
 ): { state: GameState; captured: boolean } {
   const captor = state.units.get(captorId);
   const target = state.units.get(targetId);
@@ -304,11 +317,18 @@ export function attemptNonCombatCapture(
   }
 
   // Capture succeeded — convert target to captor's faction
-  const newHp = Math.max(1, Math.floor(target.maxHp * hpFraction));
+  const originalCapture = target.history.find(e => e.type === 'captured');
+  const originalFaction = (originalCapture?.details?.originalFaction as string) ?? target.factionId;
+  const isReCapture = originalFaction === captor.factionId;
+
+  const effectiveHpFraction = slaveOverrides?.hpFraction ?? hpFraction;
+  const newHp = Math.max(1, Math.floor(target.maxHp * effectiveHpFraction));
   const capturedTarget: Unit = {
     ...target,
     factionId: captor.factionId,
     hp: newHp,
+    slaveStatFraction: isReCapture ? undefined : (slaveOverrides?.statFraction ?? target.slaveStatFraction),
+    slaveRoutImmune: isReCapture ? undefined : slaveOverrides?.routImmune,
     morale: 50,
     routed: false,
     veteranLevel: 'green' as VeteranLevel,
@@ -367,6 +387,7 @@ export function attemptNonCombatCapture(
     newFactions.set(captor.factionId, {
       ...captorFaction,
       unitIds: [...captorFaction.unitIds, targetId],
+      slaveCaptureCount: captorFaction.slaveCaptureCount + 1,
     });
   }
 

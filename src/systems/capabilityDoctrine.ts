@@ -87,6 +87,9 @@ export interface ResearchDoctrine {
   autoCaptureEnabled: boolean;        // foreign slaving_t3 - wounded enemies below 25% HP are auto-captured
   nomadicTranscendenceEnabled: boolean; // native camel_adaptation_t3 - all terrain costs 1 movement
   slaverTranscendenceEnabled: boolean;  // native slaving_t3 - auto-capture below 50% HP
+  slaveHpFraction: number;             // captured unit HP: 0.01 T1, 0.5 T2+, 1.0 none
+  slaveStatFraction: number;           // captured unit stat multiplier: 0.6 T1/T2, 0.7 T3, 1.0 none
+  navalCaptureRadius: number;          // T3: friendly naval units extend auto-capture within this radius
   heavyTranscendenceEnabled: boolean;   // native heavy_hitter_t3 - 100% armor penetration
   lastStandEnabled: boolean;           // native heavy_hitter_t3 - survive lethal hit at 1 HP once per turn
   armorPenetrationEnabled: boolean;     // foreign heavy_hitter_t3 - ignore 50% armor, units cannot be displaced
@@ -130,6 +133,7 @@ type DoctrineCacheEntry = {
   nativeDomainsRef: readonly string[];
   bastionsBuilt: number;
   maelstromsDeclared: number;
+  slaveCaptureCount: number;
   doctrine: ResearchDoctrine;
 };
 const doctrineCache = new Map<FactionId, DoctrineCacheEntry>();
@@ -144,7 +148,7 @@ const doctrineCache = new Map<FactionId, DoctrineCacheEntry>();
  */
 export function resolveResearchDoctrine(
   researchState: ResearchState | undefined,
-  faction?: Pick<Faction, 'nativeDomain' | 'nativeDomains' | 'learnedDomains' | 'id' | 'bastionsBuilt' | 'maelstromsDeclared'>,
+  faction?: Pick<Faction, 'nativeDomain' | 'nativeDomains' | 'learnedDomains' | 'id' | 'bastionsBuilt' | 'maelstromsDeclared' | 'slaveCaptureCount'>,
 ): ResearchDoctrine {
   const completedNodes = researchState?.completedNodes ?? [];
   const learnedDomains = faction?.learnedDomains ?? [];
@@ -153,6 +157,7 @@ export function resolveResearchDoctrine(
   const factionId = faction?.id;
   const bastionsBuilt = faction?.bastionsBuilt ?? 0;
   const maelstromsDeclared = faction?.maelstromsDeclared ?? 0;
+  const slaveCaptureCount = faction?.slaveCaptureCount ?? 0;
 
   // Cache check: reference equality on the mutable arrays + scalar counters
   if (factionId) {
@@ -165,6 +170,7 @@ export function resolveResearchDoctrine(
       && cached.nativeDomainsRef === faction?.nativeDomains
       && cached.bastionsBuilt === bastionsBuilt
       && cached.maelstromsDeclared === maelstromsDeclared
+      && cached.slaveCaptureCount === slaveCaptureCount
     ) {
       return cached.doctrine;
     }
@@ -270,6 +276,14 @@ export function resolveResearchDoctrine(
     lastStandEnabled: hasNativeT3('heavy_hitter'),
     nomadicTranscendenceEnabled: hasNativeT3('camel_adaptation'),
     slaverTranscendenceEnabled: hasNativeT3('slaving'),
+    slaveHpFraction: hasNativeT3('slaving') ? 0.5
+      : hasNode('slaving_t2') ? 0.5
+      : hasNode('slaving_t1') ? 0.01
+      : 1.0,
+    slaveStatFraction: hasNativeT3('slaving') ? 0.7
+      : hasNode('slaving_t1') ? 0.6
+      : 1.0,
+    navalCaptureRadius: hasNativeT3('slaving') ? 2 : 0,
     natureHealingRegenBonus: hasNativeT3('nature_healing')
       ? 3
       : hasNode('nature_healing_t1')
@@ -291,6 +305,7 @@ export function resolveResearchDoctrine(
       nativeDomainsRef: faction?.nativeDomains,
       bastionsBuilt,
       maelstromsDeclared,
+      slaveCaptureCount,
       doctrine,
     });
   }

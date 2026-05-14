@@ -224,6 +224,7 @@ function initializeFaction(
     homeCityId: cityId,
     bastionsBuilt: 0,
     maelstromsDeclared: 0,
+    slaveCaptureCount: 0,
   };
   state.factions.set(factionId, faction);
 

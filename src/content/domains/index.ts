@@ -314,7 +314,7 @@ const SLAVING_RESEARCH = buildResearchDomain({
       damageBonusVsWounded: 0.10, // wired (existing flag named greedyCaptureEnabled)
       captureOnKillChance: 0.10, // wired
       captureHpFraction: 0.01, // arrives at 1% (1 HP-ish)
-      captureStatFraction: 0.6, // design
+      captureStatFraction: 0.6, // wired: doctrine.slaveStatFraction
     },
   },
   t2: {
@@ -323,8 +323,8 @@ const SLAVING_RESEARCH = buildResearchDomain({
     description: 'Captured Slaves now arrive at 50% HP and 60% of original stats. Each captured unit grants +1 production point to the nearest Pirate city. Slaves cannot be routed.',
     effect: {
       captureOnRetreat: 0.15, // wired
-      slaveMarketProductionBonus: 1, // design — strategic
-      slaveRoutImmune: true, // design
+      slaveMarketProductionBonus: 1, // wired — strategic
+      slaveRoutImmune: true, // wired
     },
   },
   t3: {
@@ -334,8 +334,8 @@ const SLAVING_RESEARCH = buildResearchDomain({
     nativeDescription: 'Every 5 captures grants Pirate Lords a "Captive Champion": a free promoted unit using a captured enemy’s prototype, regardless of whether the Pirate Lords have unlocked it themselves.',
     effect: {
       autoCaptureThreshold: 0.3, // wired (extends the existing autoCapture mechanic)
-      navalCaptureRadius: 2, // design
-      captiveChampionThreshold: 5, // design — strategic
+      navalCaptureRadius: 2, // wired: doctrine.navalCaptureRadius
+      captiveChampionThreshold: 5, // wired — strategic
       slaverTranscendenceEnabled: true, // wired (legacy)
     },
   },

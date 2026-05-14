@@ -1,7 +1,8 @@
 import { getEffectiveXpCost } from '../knowledgeSystem.js';
 import { isWaterTerrain } from '../terrainUtils.js';
 import { getZoneEffectsAtHex } from '../zoneEffectSystem.js';
-import { getNeighbors, hexDistance, hexToKey } from '../../core/grid.js';
+import { getNeighbors, hexDistance, hexToKey, getHexesInRange } from '../../core/grid.js';
+import { createUnitId } from '../../core/ids.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { Unit } from '../../features/units/types.js';
 import type { GameState } from '../../game/types.js';
@@ -22,6 +23,7 @@ import { getPrototype } from '../../game/stateAccess.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { getGreedyLootOnKill, getPoisonOnAttack, getPursuitMovementOnKill, isUnitRiverStealthed } from '../factionIdentitySystem.js';
 import { isCoverTerrain } from '../terrainUtils.js';
+import { getNearestFriendlyCity } from '../strategicAi.js';
 
 import {
   recordBattleFought,
@@ -102,6 +104,7 @@ export function applyCombatAction(
     capturedOnKill: false,
     retreatCaptured: false,
     pressGangCaptured: false,
+    captiveChampionSpawned: false,
     poisonDetonated: false,
     greedyLootGained: 0,
     pursuitMovementRestored: 0,
@@ -193,6 +196,9 @@ export function applyCombatAction(
         captureParams.hpFraction,
         captureParams.cooldown,
         state.rngState,
+        attackerDoctrine?.slaveStatFraction && attackerDoctrine.slaveStatFraction < 1
+          ? { hpFraction: attackerDoctrine.slaveHpFraction, statFraction: attackerDoctrine.slaveStatFraction, routImmune: !!attackerDoctrine?.captureRetreatEnabled }
+          : undefined,
       );
 
       const spentAttacker = enslavementResult.state.units.get(preview.attackerId);
@@ -254,7 +260,7 @@ export function applyCombatAction(
     ...defender,
     hp: Math.max(0, defender.hp - preview.result.defenderDamage),
     morale: Math.max(0, defender.morale - preview.result.defenderMoraleLoss),
-    routed: preview.result.defenderRouted || preview.result.defenderFled,
+    routed: defender.slaveRoutImmune ? false : (preview.result.defenderRouted || preview.result.defenderFled),
     hillDugIn: false,
     digInStacks: 0,
     // Preview-based status: marked 'spent' if the preview predicts a kill;
@@ -467,6 +473,23 @@ export function applyCombatAction(
     )
     ? { greedyCaptureChance: 1, greedyCaptureCooldown: 0, greedyCaptureHpFraction: 0.5 }
     : null;
+  // Slaving T3 — Naval capture radius: friendly naval units within range extend
+  // auto-capture to non-capture attackers (naval support aura).
+  const navalRadius = attackerDoctrine?.navalCaptureRadius ?? 0;
+  const hasNavalSupport = navalRadius > 0
+    && !hasCaptureAbility(attackerPrototype, registry)
+    && !autoCaptureAbility
+    && !maelstromAutoCapture
+    && getHexesInRange(defender.position, navalRadius).some(hex => {
+      const unit = getUnitAtHex(current, hex);
+      if (!unit || unit.factionId !== attacker.factionId || unit.id === attacker.id) return false;
+      const proto = current.prototypes.get(unit.prototypeId);
+      const chassis = proto ? registry.getChassis(proto.chassisId) : undefined;
+      return chassis?.movementClass === 'naval' && !unit.slaveStatFraction;
+    });
+  const navalSupportCapture = hasNavalSupport && defender.hp <= defender.maxHp * 0.5
+    ? { greedyCaptureChance: 1, greedyCaptureCooldown: 0, greedyCaptureHpFraction: 0.5 }
+    : null;
   // E3/E4 — emergent capture bonus from Slave Empire (+0.20) and Desert Raider (+0.30 in desert)
   const emergentCaptureBonus = preview.details.emergentCaptureBonus
     + (preview.details.defenderTerrainId === 'desert' ? preview.details.emergentDesertCaptureBonus : 0);
@@ -487,7 +510,7 @@ export function applyCombatAction(
   if (
     defenderActuallyDestroyed
     && nextAttacker.hp > 0
-    && (hasCaptureAbility(attackerPrototype, registry) || isGreedyCoastal || autoCaptureAbility || maelstromAutoCapture)
+    && (hasCaptureAbility(attackerPrototype, registry) || isGreedyCoastal || autoCaptureAbility || maelstromAutoCapture || navalSupportCapture)
   ) {
     const captureResult = attemptCapture(
       current,
@@ -496,11 +519,15 @@ export function applyCombatAction(
       registry,
       autoCaptureAbility
         ?? maelstromAutoCapture
+        ?? navalSupportCapture
         ?? (isGreedyCoastal && !hasCaptureAbility(attackerPrototype, registry)
           ? registry.getSignatureAbility(attacker.factionId)
           : null),
       current.rngState,
       totalCaptureBonus > 0 ? totalCaptureBonus : undefined,
+      attackerDoctrine?.slaveStatFraction && attackerDoctrine.slaveStatFraction < 1
+        ? { hpFraction: attackerDoctrine.slaveHpFraction, statFraction: attackerDoctrine.slaveStatFraction, routImmune: !!attackerDoctrine?.captureRetreatEnabled }
+        : undefined,
     );
     current = captureResult.state;
     capturedOnKill = captureResult.captured;
@@ -518,13 +545,17 @@ export function applyCombatAction(
     // was already deleted from current.units when defenderDestroyed is true.
     if (defender) {
       if (rngChance(current.rngState, 0.3)) {
+        const slaveHp = attackerDoctrine?.slaveHpFraction ?? 0.25;
+        const slaveStat = attackerDoctrine?.slaveStatFraction;
         const captured: Unit = {
           ...defender,
           factionId: attacker.factionId,
-          hp: Math.max(1, Math.floor(defender.maxHp * 0.25)),
+          hp: Math.max(1, Math.floor(defender.maxHp * slaveHp)),
           morale: 40,
           veteranLevel: 'green' as import('../../core/enums.js').VeteranLevel,
           status: 'ready' as import('../../core/enums.js').UnitStatus,
+          ...(slaveStat && slaveStat < 1 ? { slaveStatFraction: slaveStat } : {}),
+          ...(attackerDoctrine?.captureRetreatEnabled ? { slaveRoutImmune: true } : {}),
         };
         const unitsAfterCapture = new Map(current.units);
         unitsAfterCapture.set(preview.defenderId, captured);
@@ -534,6 +565,7 @@ export function applyCombatAction(
           factionsAfterCapture.set(attacker.factionId, {
             ...attackerFactionAfterCapture,
             unitIds: [...attackerFactionAfterCapture.unitIds, captured.id],
+            slaveCaptureCount: attackerFactionAfterCapture.slaveCaptureCount + 1,
           });
         }
         current = { ...current, units: unitsAfterCapture, factions: factionsAfterCapture };
@@ -710,18 +742,87 @@ export function applyCombatAction(
 
   if (!defenderActuallyDestroyed && preview.result.defenderFled && nextAttacker.hp > 0 && (attackerDoctrine?.captureRetreatEnabled || preview.details.retreatCaptureChance > 0)) {
     const retreatChance = (attackerDoctrine?.captureRetreatEnabled ? 0.15 : 0) + preview.details.retreatCaptureChance;
+    const retreatSlaveHp = attackerDoctrine?.slaveHpFraction ?? 0.25;
+    const retreatSlaveOverrides = attackerDoctrine?.slaveStatFraction && attackerDoctrine.slaveStatFraction < 1
+      ? { hpFraction: attackerDoctrine.slaveHpFraction, statFraction: attackerDoctrine.slaveStatFraction, routImmune: !!attackerDoctrine?.captureRetreatEnabled }
+      : undefined;
     const retreatCapture = attemptNonCombatCapture(
       current,
       preview.attackerId,
       preview.defenderId,
       registry,
       retreatChance,
-      0.25,
+      retreatSlaveHp,
       0,
       current.rngState,
+      retreatSlaveOverrides,
     );
     current = retreatCapture.state;
     retreatCaptured = retreatCapture.captured;
+  }
+
+  // Slaving T3 native — Captive Champion: every 5 captures spawn a promoted unit
+  const anyCapture = capturedOnKill || pressGangCaptured || retreatCaptured;
+  if (anyCapture && attackerDoctrine?.slaverTranscendenceEnabled && nextAttacker.hp > 0) {
+    const captorFaction = current.factions.get(attacker.factionId);
+    if (captorFaction && captorFaction.slaveCaptureCount > 0 && captorFaction.slaveCaptureCount % 5 === 0) {
+      const championPrototype = current.prototypes.get(defender.prototypeId);
+      if (championPrototype) {
+        const spawnHex = getNeighbors(nextAttacker.position).find(hex => {
+          const tile = current.map?.tiles.get(hexToKey(hex));
+          if (!tile) return false;
+          return !getUnitAtHex(current, hex);
+        });
+        if (spawnHex) {
+          const stats = championPrototype.derivedStats;
+          const championUnit: Unit = {
+            id: createUnitId(),
+            factionId: attacker.factionId,
+            position: spawnHex,
+            facing: nextAttacker.facing,
+            hp: stats.hp,
+            maxHp: stats.hp,
+            movesRemaining: stats.moves,
+            maxMoves: stats.moves,
+            attacksRemaining: 1,
+            xp: 0,
+            veteranLevel: 'seasoned' as import('../../core/enums.js').VeteranLevel,
+            status: 'ready' as import('../../core/enums.js').UnitStatus,
+            prototypeId: defender.prototypeId,
+            history: [{ type: 'captive_champion', timestamp: current.round, details: { round: current.round, fromCaptureOf: defender.id } }],
+            morale: 75,
+            routed: false,
+            poisonStacks: 0,
+            poisonTurnsRemaining: 0,
+            isStealthed: false,
+            turnsSinceStealthBreak: 0,
+            learnedAbilities: [],
+          };
+          const champUnits = new Map(current.units);
+          champUnits.set(championUnit.id, championUnit);
+          const champFactions = new Map(current.factions);
+          champFactions.set(attacker.factionId, {
+            ...captorFaction,
+            unitIds: [...captorFaction.unitIds, championUnit.id],
+          });
+          current = { ...current, units: champUnits, factions: champFactions };
+          baseResolution.captiveChampionSpawned = true;
+        }
+      }
+    }
+  }
+
+  // Slaving T2 — Slave market: +1 production to nearest city on capture
+  if (anyCapture && attackerDoctrine?.captureRetreatEnabled && nextAttacker.hp > 0) {
+    const nearestCity = getNearestFriendlyCity(current, attacker.factionId, defender.position);
+    if (nearestCity) {
+      const updatedCities = new Map(current.cities);
+      updatedCities.set(nearestCity.id, {
+        ...nearestCity,
+        productionProgress: nearestCity.productionProgress + 1,
+      });
+      current = { ...current, cities: updatedCities };
+    }
   }
 
   let totalKnockbackDistance = 0;
@@ -743,7 +844,7 @@ export function applyCombatAction(
     && preview.result.defenderDamage > defender.maxHp * 0.5
   ) {
     const routedDefender = current.units.get(preview.defenderId);
-    if (routedDefender && routedDefender.hp > 0) {
+    if (routedDefender && routedDefender.hp > 0 && !routedDefender.slaveRoutImmune) {
       current = writeUnitToState(current, { ...routedDefender, routed: true });
       bigChargeRoutTriggered = true;
 
@@ -1321,6 +1422,7 @@ export function applyCombatAction(
       capturedOnKill,
       retreatCaptured,
       pressGangCaptured: baseResolution.pressGangCaptured,
+      captiveChampionSpawned: baseResolution.captiveChampionSpawned,
       poisonDetonated: baseResolution.poisonDetonated,
       greedyLootGained: baseResolution.greedyLootGained,
       pursuitMovementRestored: baseResolution.pursuitMovementRestored,

@@ -127,6 +127,7 @@ export interface CombatActionResolution {
   capturedOnKill: boolean;
   retreatCaptured: boolean;
   pressGangCaptured: boolean;
+  captiveChampionSpawned: boolean;
   poisonDetonated: boolean;
   greedyLootGained: number;
   pursuitMovementRestored: number;
