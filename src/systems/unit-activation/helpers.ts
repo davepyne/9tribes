@@ -163,21 +163,6 @@ export function countNearbyUnitPressure(
   return { nearbyEnemies, nearbyFriendlies };
 }
 
-export function getAliveFactions(state: GameState): Set<FactionId> {
-  const factionsWithUnits = new Set(
-    Array.from(state.units.values())
-      .filter((u) => u.hp > 0)
-      .map((unit) => unit.factionId)
-  );
-  const factionsWithCities = new Set(
-    Array.from(state.cities.values())
-      .filter((city) => !city.besieged)
-      .map((city) => city.factionId)
-  );
-
-  return new Set([...factionsWithUnits, ...factionsWithCities]);
-}
-
 export function removeUnitFromFaction(
   state: GameState,
   factionId: FactionId,

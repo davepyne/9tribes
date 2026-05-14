@@ -309,6 +309,12 @@ export function applyCombatAction(
   if (nextAttacker.hp > 0) {
     nextAttacker = awardCombatXP(nextAttacker, preview.result.defenderDestroyed, !preview.result.attackerDestroyed);
     nextAttacker = tryPromoteUnit(nextAttacker, registry);
+
+    // Slayer bonus: killing a cyclops promotes directly to Elite
+    if (preview.result.defenderDestroyed && defenderPrototype?.tags?.includes('cyclops')) {
+      const eliteThreshold = registry.getVeteranLevel('elite')?.xpThreshold ?? 120;
+      nextAttacker = { ...nextAttacker, xp: eliteThreshold, veteranLevel: 'elite' };
+    }
   }
 
   const nextUnits = new Map(state.units);

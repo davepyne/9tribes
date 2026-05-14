@@ -61,6 +61,7 @@ const PLAYTEST_SPRITE_KEYS: Record<string, string> = {
   frost_ice_defenders: 'frostIceDefenders',
   frost_priest: 'frostPriest',
   frost_polar_bear: 'frostPolarBear',
+  cyclops: 'cyclops',
 };
 
 const REAR_SPRITE_KEYS: Record<string, string> = {
@@ -110,6 +111,7 @@ const REAR_SPRITE_KEYS: Record<string, string> = {
   frost_ice_defenders: 'frostIceDefendersRear',
   frost_priest: 'frostPriestRear',
   frost_polar_bear: 'frostPolarBearRear',
+  cyclops: 'cyclopsRear',
 };
 
 export function getUnitTextureSpec(spriteKey: string): UnitTextureSpec {

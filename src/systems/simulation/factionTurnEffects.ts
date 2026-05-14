@@ -68,6 +68,7 @@ import { log, recordFactionStrategy, recordSiegeEvent, recordResearch, recordTri
 import { getTerrainAt, occupiesFriendlySettlement, applyEnvironmentalDamage, getHealRate } from './environmentalEffects.js';
 import { isWetlandTerrain } from '../terrainUtils.js';
 import { isPassiveWetlandStealth } from '../factionIdentitySystem.js';
+import { isWildFaction, CYCLOPS_REGEN_PER_ROUND } from '../wildCyclopsConstants.js';
 
 function removeUnitFromFaction(
   state: GameState,
@@ -758,6 +759,27 @@ function applyJuggernautBonus(state: GameState, factionId: FactionId): GameState
   return { ...state, factions };
 }
 
+function processWildFactionPhases(state: GameState, factionId: FactionId): GameState {
+  const faction = state.factions.get(factionId);
+  if (!faction) return state;
+
+  const newUnits = new Map(state.units);
+  for (const uid of faction.unitIds) {
+    const unit = newUnits.get(uid);
+    if (!unit || unit.hp <= 0) continue;
+    newUnits.set(uid, {
+      ...unit,
+      movesRemaining: unit.maxMoves,
+      attacksRemaining: 1,
+      status: 'ready',
+      activatedThisRound: false,
+      enteredZoCThisActivation: false,
+      hp: Math.min(unit.maxHp, unit.hp + CYCLOPS_REGEN_PER_ROUND),
+    });
+  }
+  return { ...state, units: newUnits };
+}
+
 export function processFactionPhases(
   state: GameState,
   factionId: FactionId,
@@ -768,6 +790,10 @@ export function processFactionPhases(
   const faction = state.factions.get(factionId);
   if (!faction || !state.map) {
     return state;
+  }
+
+  if (isWildFaction(factionId)) {
+    return processWildFactionPhases(state, factionId);
   }
 
   let current = state;

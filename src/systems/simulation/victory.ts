@@ -1,19 +1,27 @@
 import type { GameState } from '../../game/types.js';
 import type { FactionId } from '../../types.js';
 import type { VictoryType, VictoryStatus } from './traceTypes.js';
+import { isWildFaction } from '../wildCyclopsConstants.js';
 
-export function getVictoryStatus(state: GameState): VictoryStatus {
+export function getAliveFactions(state: GameState): Set<FactionId> {
   const factionsWithUnits = new Set(
     Array.from(state.units.values())
-      .filter((unit) => unit.hp > 0)
-      .map((unit) => unit.factionId)
+      .filter((u) => u.hp > 0)
+      .map((unit) => unit.factionId),
   );
   const factionsWithCities = new Set(
     Array.from(state.cities.values())
       .filter((city) => !city.besieged)
-      .map((city) => city.factionId)
+      .map((city) => city.factionId),
   );
-  const aliveFactionIds = new Set([...factionsWithUnits, ...factionsWithCities]);
+
+  return new Set(
+    [...factionsWithUnits, ...factionsWithCities].filter(id => !isWildFaction(id))
+  );
+}
+
+export function getVictoryStatus(state: GameState): VictoryStatus {
+  const aliveFactionIds = getAliveFactions(state);
 
   if (aliveFactionIds.size === 1) {
     return {
@@ -60,26 +68,6 @@ export function getVictoryStatus(state: GameState): VictoryStatus {
 }
 
 export function isFactionEliminated(state: GameState, factionId: FactionId): boolean {
-  const hasUnits = Array.from(state.units.values()).some(
-    (unit) => unit.factionId === factionId && unit.hp > 0
-  );
-  const hasCities = Array.from(state.cities.values()).some(
-    (city) => city.factionId === factionId && !city.besieged
-  );
-  return !hasUnits && !hasCities;
-}
-
-export function getAliveFactions(state: GameState): Set<FactionId> {
-  const factionsWithUnits = new Set(
-    Array.from(state.units.values())
-      .filter((u) => u.hp > 0)
-      .map((unit) => unit.factionId),
-  );
-  const factionsWithCities = new Set(
-    Array.from(state.cities.values())
-      .filter((city) => !city.besieged)
-      .map((city) => city.factionId),
-  );
-
-  return new Set([...factionsWithUnits, ...factionsWithCities]);
+  if (isWildFaction(factionId)) return false;
+  return !getAliveFactions(state).has(factionId);
 }

@@ -350,5 +350,20 @@
     "baseProductionCost": 36,
     "tags": ["beast", "charge", "trample"],
     "capabilityPressure": {}
+  },
+  "cyclops_frame": {
+    "id": "cyclops_frame",
+    "name": "Wild Cyclops",
+    "role": "melee",
+    "slotTypes": [],
+    "baseHp": 30,
+    "baseMoves": 2,
+    "baseAttack": 8,
+    "baseDefense": 4,
+    "movementClass": "beast",
+    "supplyCost": 0,
+    "baseProductionCost": 0,
+    "tags": ["beast", "wild", "cyclops"],
+    "capabilityPressure": {}
   }
 }

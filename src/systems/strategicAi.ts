@@ -20,6 +20,7 @@ import {
 } from './aiPersonality.js';
 import { getExposureDetails } from './knowledgeSystem.js';
 import { getTerrainPreferenceScore } from './factionIdentitySystem.js';
+import { isWildFaction } from './wildCyclopsConstants.js';
 
 import { getLivingUnitsForFaction, getLivingEnemyUnits, assessThreatenedCities, detectFronts } from './strategic-ai/fronts.js';
 import { determinePosture } from './strategic-ai/posture.js';
@@ -44,6 +45,10 @@ export function computeFactionStrategy(
   const previousStrategy = state.factionStrategies.get(factionId);
   const faction = state.factions.get(factionId);
   if (!faction) {
+    return createEmptyStrategy(state.round, factionId);
+  }
+
+  if (isWildFaction(factionId)) {
     return createEmptyStrategy(state.round, factionId);
   }
 

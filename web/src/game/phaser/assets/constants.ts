@@ -68,6 +68,7 @@ export const TEXTURES = {
   frostIceDefenders: 'unit-frost-ice-defenders',
   frostPriest: 'unit-frost-priest',
   frostPolarBear: 'unit-frost-polar-bear',
+  cyclops: 'unit-cyclops',
 
   druidSpearInfantryRear: 'unit-druid-spear-infantry-flipped',
   druidArcherRear: 'unit-druid-archer-flipped',
@@ -115,6 +116,7 @@ export const TEXTURES = {
   frostIceDefendersRear: 'unit-frost-ice-defenders-flipped',
   frostPriestRear: 'unit-frost-priest-flipped',
   frostPolarBearRear: 'unit-frost-polar-bear-flipped',
+  cyclopsRear: 'unit-cyclops-flipped',
 } as const;
 
 export const FREELAND_SPECS = {

@@ -7,17 +7,19 @@ import { generateClimateBandMap } from '../world/generation/generateClimateBandM
 import { loadRulesRegistry } from '../data/loader/loadRulesRegistry.js';
 import { assemblePrototype } from '../design/assemblePrototype.js';
 import { createFactionId, createUnitId, createCityId, createImprovementId, createPrototypeId } from '../core/ids.js';
+import { rngChance } from '../core/rng.js';
+import { WILD_CYCLOPS_FACTION_ID, CYCLOPS_SPAWN_CHANCE } from '../systems/wildCyclopsConstants.js';
 import { createCombatRecord } from '../features/factions/types.js';
 import { isWaterTerrain, isDeepWaterTerrain } from '../systems/terrainUtils.js';
 import type { CityId, ChassisId, ComponentId, PrototypeId, UnitId, ImprovementId, FactionId, VillageId } from '../types.js';
 import type { Faction } from '../game/types.js';
-import { getHexesInRange, getNeighbors, hexToKey } from '../core/grid.js';
+import { getHexesInRange, getNeighbors, hexToKey, hexDistance } from '../core/grid.js';
 import { createResearchState } from '../systems/researchSystem.js';
 import { recordUnitCreated } from '../systems/historySystem.js';
 import { createCapabilityState } from '../systems/capabilitySystem.js';
 import { createFactionEconomy } from '../features/economy/types.js';
+import { createFreshUnit } from '../features/units/createUnit.js';
 import type { Unit } from '../features/units/types.js';
-import type { VeteranLevel } from '../core/enums.js';
 import type { MapGenerationMode, TerrainType } from '../world/map/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
 import type { BalanceOverrides } from '../balance/types.js';
@@ -246,31 +248,7 @@ function initializeFaction(
 
   if (usesSettlerStart) {
     const settlerId = createUnitId();
-    let settler: Unit = {
-      id: settlerId,
-      factionId,
-      position: startHex,
-      facing: 0,
-      hp: settlerPrototype.derivedStats.hp,
-      maxHp: settlerPrototype.derivedStats.hp,
-      movesRemaining: settlerPrototype.derivedStats.moves,
-      maxMoves: settlerPrototype.derivedStats.moves,
-      attacksRemaining: 1,
-      xp: 0,
-      veteranLevel: 'green' as VeteranLevel,
-      status: 'ready',
-      prototypeId: settlerPrototype.id,
-      history: [],
-      morale: 100,
-      routed: false,
-      poisoned: false,
-      enteredZoCThisActivation: false,
-      poisonStacks: 0,
-      poisonTurnsRemaining: 0,
-      isStealthed: false,
-      turnsSinceStealthBreak: 0,
-      learnedAbilities: [],
-    };
+    let settler = createFreshUnit(factionId, startHex, settlerPrototype, settlerId);
     settler = recordUnitCreated(settler, factionId, settlerPrototype.id, state.round);
     state.units.set(settlerId, settler);
     faction.unitIds.push(settlerId);
@@ -308,31 +286,7 @@ function initializeFaction(
 
     const position = findValidSpawnPosition(state, rawPosition, registry, prototype.chassisId, prototype.tags);
     const unitId = createUnitId();
-    let unit: Unit = {
-      id: unitId,
-      factionId,
-      position,
-      facing: 0,
-      hp: prototype.derivedStats.hp,
-      maxHp: prototype.derivedStats.hp,
-      movesRemaining: prototype.derivedStats.moves,
-      maxMoves: prototype.derivedStats.moves,
-      attacksRemaining: 1,
-      xp: 0,
-      veteranLevel: 'green' as VeteranLevel,
-      status: 'ready',
-      prototypeId: prototype.id,
-      history: [],
-      morale: 100,
-      routed: false,
-      poisoned: false,
-      enteredZoCThisActivation: false,
-      poisonStacks: 0,
-      poisonTurnsRemaining: 0,
-      isStealthed: false,
-      turnsSinceStealthBreak: 0,
-      learnedAbilities: [],
-    };
+    let unit = createFreshUnit(factionId, position, prototype, unitId);
     unit = recordUnitCreated(unit, factionId, prototype.id, state.round);
     state.units.set(unitId, unit);
     faction.unitIds.push(unitId);
@@ -348,6 +302,113 @@ function initializeFaction(
   }
   state.research.set(factionId, researchState);
   state.economy.set(factionId, createFactionEconomy(factionId));
+}
+
+/**
+ * Maybe spawn a wild cyclops on the map.
+ * 25% chance; placed at the most remote passable hex (maximizing minimum distance
+ * to all faction start positions). Creates a minimal "wild_cyclops" faction with
+ * no economy, cities, or research.
+ */
+function maybeSpawnWildCyclops(
+  state: MutableGameState,
+  startingPositions: Map<string, { q: number; r: number }>,
+  registry: RulesRegistry,
+): void {
+  if (!state.map) return;
+  if (!rngChance(state.rngState, CYCLOPS_SPAWN_CHANCE)) return;
+
+  const factionStarts = Array.from(startingPositions.values());
+  if (factionStarts.length === 0) return;
+
+  // Find the most remote passable hex (maximize minimum distance to any faction start)
+  let bestHex: { q: number; r: number } | null = null;
+  let bestMinDist = -1;
+
+  for (const [key, tile] of state.map.tiles) {
+    const terrainDef = registry.getTerrain(tile.terrain);
+    if (terrainDef?.passable === false) continue;
+    if (isDeepWaterTerrain(tile.terrain)) continue;
+
+    const hex = tile.position;
+    let minDist = Infinity;
+    for (const start of factionStarts) {
+      const dist = hexDistance(hex, start);
+      if (dist < minDist) minDist = dist;
+    }
+
+    if (minDist > bestMinDist) {
+      bestMinDist = minDist;
+      bestHex = hex;
+    }
+  }
+
+  if (!bestHex) return;
+
+  const factionId = createFactionId(WILD_CYCLOPS_FACTION_ID);
+
+  const chassisId = 'cyclops_frame' as ChassisId;
+  const chassisDef = registry.getChassis(chassisId);
+  if (!chassisDef) return;
+
+  // Create prototype (summon pattern: chassis-only, no components)
+  const prototypeId = `${factionId}_${chassisId}` as PrototypeId;
+  const prototype: Prototype = {
+    id: prototypeId,
+    factionId,
+    chassisId,
+    componentIds: [],
+    version: 1,
+    name: 'Wild Cyclops',
+    derivedStats: {
+      attack: chassisDef.baseAttack,
+      defense: chassisDef.baseDefense,
+      hp: chassisDef.baseHp,
+      moves: chassisDef.baseMoves,
+      range: chassisDef.baseRange ?? 1,
+      role: chassisDef.role ?? 'melee',
+    },
+    tags: chassisDef.tags,
+    productionCost: chassisDef.baseProductionCost ?? 0,
+  };
+  state.prototypes.set(prototypeId, prototype);
+
+  // Create minimal faction
+  const faction: Faction = {
+    id: factionId,
+    name: 'Wild Cyclops',
+    unitIds: [],
+    cityIds: [],
+    villageIds: [],
+    prototypeIds: [prototypeId],
+    identityProfile: {
+      homeBiome: 'none',
+      signatureUnit: 'cyclops',
+      passiveTrait: 'wild',
+      earlyResearchBias: 'none',
+      naturalPrey: 'all',
+      naturalCounter: 'none',
+      economyAngle: 'none',
+      terrainDependence: 'none',
+      lateGameHybridPotential: 'none',
+    },
+    capabilities: createCapabilityState({}),
+    combatRecord: createCombatRecord(),
+    nativeDomain: 'none',
+    learnedDomains: [],
+    exposureProgress: {},
+    prototypeMastery: {},
+    assimilatedDomainCount: 0,
+    domainAcquisitionMethod: {},
+    synergyEligibleDomains: [],
+  };
+  state.factions.set(factionId, faction);
+
+  // Create the unit
+  const unitId = createUnitId();
+  const unit = createFreshUnit(factionId, bestHex, prototype, unitId);
+  state.units.set(unitId, unit);
+  faction.unitIds.push(unitId);
 }
 
 /**
@@ -448,6 +509,9 @@ export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions 
       defenseBonus: 2,
     });
   }
+
+  // Maybe spawn wild cyclops (25% chance, placed at the most remote hex)
+  maybeSpawnWildCyclops(state, startingPositions, registry);
 
   return state;
 }
