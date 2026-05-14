@@ -6,7 +6,7 @@ import { createUnitId } from '../../core/ids.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { Unit } from '../../features/units/types.js';
 import type { GameState } from '../../game/types.js';
-import type { FactionId } from '../../types.js';
+import type { FactionId, UnitId } from '../../types.js';
 import { rngChance, rngShuffle } from '../../core/rng.js';
 import { resolveCapabilityDoctrine, buildSlaveOverrides } from '../capabilityDoctrine.js';
 import { clearPreparedAbility } from '../abilitySystem.js';
@@ -991,6 +991,49 @@ export function applyCombatAction(
     contaminatedHexes.add(hexToKey(defender.position));
     current = { ...current, contaminatedHexes };
     contaminatedHexApplied = true;
+  }
+
+  // Spore-jump (venom_t2): when a poisoned enemy dies, jump poison stacks to nearby enemies.
+  // Foreign: nearest enemy within 2 hexes. Native: ALL enemies within 2 hexes.
+  if (
+    defenderActuallyDestroyed
+    && attackerDoctrine?.sporeJumpEnabled
+    && nextAttacker.hp > 0
+    && defender.poisonStacks > 0
+  ) {
+    const sporeUnits = new Map(current.units);
+    let sporeJumped = false;
+    if (attackerDoctrine.sporeJumpAllEnemies) {
+      // Native: jump to ALL enemies within 2 hexes
+      for (const [uid, u] of sporeUnits) {
+        if (u.factionId === attacker.factionId || u.hp <= 0) continue;
+        if (hexDistance(u.position, defender.position) > 2) continue;
+        const jumped = applyPoisonDoT(u, 1, attackerDoctrine.poisonDamagePerStack, 3);
+        sporeUnits.set(uid, { ...jumped, poisonedBy: attacker.factionId, poisonSourcePrototypeId: attacker.prototypeId });
+        sporeJumped = true;
+      }
+    } else {
+      // Foreign: jump to nearest enemy within 2 hexes
+      let nearestId: UnitId | null = null;
+      let nearestDist = Infinity;
+      for (const [uid, u] of sporeUnits) {
+        if (u.factionId === attacker.factionId || u.hp <= 0) continue;
+        const dist = hexDistance(u.position, defender.position);
+        if (dist <= 2 && dist < nearestDist) {
+          nearestDist = dist;
+          nearestId = uid;
+        }
+      }
+      if (nearestId) {
+        const u = sporeUnits.get(nearestId)!;
+        const jumped = applyPoisonDoT(u, 1, attackerDoctrine.poisonDamagePerStack, 3);
+        sporeUnits.set(nearestId, { ...jumped, poisonedBy: attacker.factionId, poisonSourcePrototypeId: attacker.prototypeId });
+        sporeJumped = true;
+      }
+    }
+    if (sporeJumped) {
+      current = { ...current, units: sporeUnits };
+    }
   }
 
   updatedAttacker = current.units.get(preview.attackerId);

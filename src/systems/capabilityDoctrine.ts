@@ -31,6 +31,8 @@ export interface ResearchDoctrine {
   stampedeOnRoutEnabled: boolean;    // charge_t2 native - routed targets stampede 2 hexes randomly
   amphibiousAssaultEnabled: boolean; // tidal_warfare_t2 - naval units can attack coastal hexes
   contaminateTerrainEnabled: boolean; // venom_t2 - killing any enemy contaminates hex
+  sporeJumpEnabled: boolean;         // venom_t2 - poisoned kill jumps stacks to nearby enemies
+  sporeJumpAllEnemies: boolean;      // venom_t2 native - jump to ALL enemies in range, not just nearest
   zoCAuraEnabled: boolean;           // fortress_t2 - fortified units project ZoC to adjacent hexes
   canBuildBastion: boolean;          // fortress_t3 (native) - Hill Engineers may construct up to 3 Bastions per game
   canDeclareMaelstrom: boolean;     // tidal_warfare_t3 - once-per-game Maelstrom declaration
@@ -215,6 +217,8 @@ export function resolveResearchDoctrine(
     stampedeOnRoutEnabled: hasNode('charge_t2') && nativeDomains.has('charge'),
     amphibiousAssaultEnabled: hasNode('tidal_warfare_t2'),
     contaminateTerrainEnabled: hasNode('venom_t2'),
+    sporeJumpEnabled: hasNode('venom_t2'),
+    sporeJumpAllEnemies: hasNode('venom_t2') && nativeDomains.has('venom'),
     zoCAuraEnabled: hasNode('fortress_t2'),
     // Bastion is a native-only capstone (Hill Engineers, fortress_t3 native) with a
     // hard 3-per-game cap tracked on faction.bastionsBuilt. The cap is enforced here

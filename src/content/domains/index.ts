@@ -161,7 +161,7 @@ const VENOM_RESEARCH = buildResearchDomain({
     type: 'contaminate_terrain',
     description: 'When a poisoned enemy dies, their hex becomes contaminated (1 dmg/turn, 3 turns), and 1 poison stack jumps to the nearest enemy within 2 hexes.',
     nativeDescription: 'Hunting Spores jump to ALL enemies within 2 hexes (not just the nearest); contamination lasts 5 turns instead of 3.',
-    effect: { contaminateOnKill: true, sporeJumpRadius: 2 }, // contaminateOnKill: wired; sporeJumpRadius: design
+    effect: { contaminateOnKill: true, sporeJumpRadius: 2 }, // wired
   },
   t3: {
     name: 'Mycelium Tide',
