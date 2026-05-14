@@ -5,7 +5,7 @@ import type { RulesRegistry } from '../../data/registry/types.js';
 import type { Unit } from '../../features/units/types.js';
 import type { GameState } from '../../game/types.js';
 import type { FactionId } from '../../types.js';
-import { rngChance } from '../../core/rng.js';
+import { rngChance, rngShuffle } from '../../core/rng.js';
 import { resolveCapabilityDoctrine } from '../capabilityDoctrine.js';
 import { clearPreparedAbility } from '../abilitySystem.js';
 import { applyCombatSignals } from '../combatSignalSystem.js';
@@ -624,6 +624,48 @@ export function applyCombatAction(
     totalKnockbackDistance = knockbackResult.appliedDistance;
   }
 
+  // Charge T2 — Rout on big charge + Stampede
+  let bigChargeRoutTriggered = false;
+  let stampedeDamageApplied = 0;
+  if (
+    preview.details.isChargeAttack
+    && !preview.result.defenderDestroyed
+    && !retreatCaptured
+    && attackerDoctrine?.routOnBigChargeEnabled
+    && preview.result.defenderDamage > defender.maxHp * 0.5
+  ) {
+    const routedDefender = current.units.get(preview.defenderId);
+    if (routedDefender && routedDefender.hp > 0) {
+      current = writeUnitToState(current, { ...routedDefender, routed: true });
+      bigChargeRoutTriggered = true;
+
+      // Native Stampede: routed target moves 2 hexes randomly, takes 2 dmg on collision
+      if (attackerDoctrine.stampedeOnRoutEnabled) {
+        let stampedeUnit = current.units.get(preview.defenderId);
+        if (stampedeUnit) {
+          const neighbors = getNeighbors(stampedeUnit.position);
+          const shuffled = rngShuffle(current.rngState, neighbors);
+          let moved = 0;
+          for (const hex of shuffled) {
+            if (moved >= 2) break;
+            const occupant = getUnitAtHex(current, hex);
+            if (occupant) {
+              // Collision: deal 2 damage to the stampeding unit
+              stampedeUnit = { ...stampedeUnit, hp: Math.max(0, stampedeUnit.hp - 2) };
+              stampedeDamageApplied = 2;
+              break;
+            }
+            const tile = current.map?.tiles.get(`${hex.q},${hex.r}`);
+            if (!tile) continue;
+            stampedeUnit = { ...stampedeUnit, position: hex };
+            moved++;
+          }
+          current = writeUnitToState(current, stampedeUnit);
+        }
+      }
+    }
+  }
+
   if (preview.result.defenderDestroyed && !capturedOnKill) {
     current = destroyTransportIfApplicable(current, preview.defenderId, registry);
   }
@@ -1073,6 +1115,12 @@ export function applyCombatAction(
   }
   if (totalKnockbackDistance > 0 && !preview.result.defenderDestroyed) {
     pushCombatEffect(triggeredEffects, 'Knockback', `Defender was displaced ${totalKnockbackDistance} hex${totalKnockbackDistance === 1 ? '' : 'es'}.`, 'aftermath');
+  }
+  if (bigChargeRoutTriggered) {
+    pushCombatEffect(triggeredEffects, 'Big Charge Rout', 'Heavy charge routed the defender.', 'ability');
+    if (stampedeDamageApplied > 0) {
+      pushCombatEffect(triggeredEffects, 'Stampede', `Routed defender stampeded into an obstacle, taking ${stampedeDamageApplied} damage.`, 'ability');
+    }
   }
   if (reStealthTriggered) {
     pushCombatEffect(triggeredEffects, 'Stealth Recharge', 'Attacker slipped back into stealth after the exchange.', 'aftermath');

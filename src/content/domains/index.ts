@@ -408,7 +408,7 @@ const CHARGE_RESEARCH = buildResearchDomain({
     type: 'stampede',
     description: 'Charges knock enemies back 2 hexes. Charges that deal more than 50% of target max HP also rout the target (-30% attack 2 turns, no retaliation this combat).',
     nativeDescription: 'Routed targets Stampede: they move 2 hexes in a random direction, taking 2 damage if they collide with anything.',
-    effect: { chargeKnockback: 2, routOnBigCharge: true, stampedeOnRout: true }, // chargeKnockback: wired; rest: design
+    effect: { chargeKnockback: 2, routOnBigCharge: true, stampedeOnRout: true }, // all: wired
   },
   t3: {
     name: 'Sundering Charge',

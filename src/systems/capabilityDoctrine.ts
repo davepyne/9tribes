@@ -26,6 +26,8 @@ export interface ResearchDoctrine {
   // Tier 2 qualitative effects
   canopyCoverEnabled: boolean;       // nature_healing_t2 - ranged +30% defense in forest/jungle
   elephantStampede2Enabled: boolean; // charge_t2 - charges knock back 2 hexes
+  routOnBigChargeEnabled: boolean;   // charge_t2 - charge dealing >50% maxHp routs defender
+  stampedeOnRoutEnabled: boolean;    // charge_t2 native - routed targets stampede 2 hexes randomly
   amphibiousAssaultEnabled: boolean; // tidal_warfare_t2 - naval units can attack coastal hexes
   contaminateTerrainEnabled: boolean; // venom_t2 - killing any enemy contaminates hex
   zoCAuraEnabled: boolean;           // fortress_t2 - fortified units project ZoC to adjacent hexes
@@ -181,6 +183,8 @@ export function resolveResearchDoctrine(
     // Tier 2 qualitative effects
     canopyCoverEnabled: hasNode('nature_healing_t2'),
     elephantStampede2Enabled: hasNode('charge_t2'),
+    routOnBigChargeEnabled: hasNode('charge_t2'),
+    stampedeOnRoutEnabled: hasNode('charge_t2') && nativeDomain === 'charge',
     amphibiousAssaultEnabled: hasNode('tidal_warfare_t2'),
     contaminateTerrainEnabled: hasNode('venom_t2'),
     zoCAuraEnabled: hasNode('fortress_t2'),
