@@ -2,6 +2,7 @@
 import type { GameState, Faction } from '../game/types.js';
 import type { FactionId, UnitId } from '../types.js';
 import type { Unit } from '../features/units/types.js';
+import { tickZoneEffectLifetimes } from './zoneEffectSystem.js';
 
 /**
  * Activation state for alternating unit activation.
@@ -107,11 +108,15 @@ export function advanceTurn(gameState: GameState): GameState {
   if (!nextFactionId) return gameState; // No factions
   
   const isNewRound = nextFactionId === getFirstFactionId(factions);
-  
+
   const newUnits = resetFactionUnitsMoves(gameState.units, nextFactionId);
-  
+
+  // Tick zone-effect lifetimes once per round, on rollover. Permanent effects
+  // (turnsRemaining === -1) are untouched; expired effects are removed.
+  const tickedState = isNewRound ? tickZoneEffectLifetimes(gameState) : gameState;
+
   return {
-    ...gameState,
+    ...tickedState,
     round: isNewRound ? gameState.round + 1 : gameState.round,
     turnNumber: gameState.turnNumber + 1,
     activeFactionId: nextFactionId,

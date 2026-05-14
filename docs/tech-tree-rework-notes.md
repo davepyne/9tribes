@@ -66,6 +66,15 @@ The new content is the **canonical design**, and existing legacy flags are still
 - **Charge T3 splash + chain amplification**: native Lions splash 50% of charge damage to enemies adjacent to target; charges through friendly Lions chain +10% per ally in line (cap +50%).
 - **Heavy Hitter T3 Last Stand**: native flag `lastStandPerCombat` — when reduced to 0 HP, survive at 1 HP once per combat. Touches the kill-resolution path in `applyCombatAction()`.
 
+### Tier 3 — Strategic-layer infrastructure (foundation)
+
+The five remaining new-system mechanics (Maelstrom, Toxic Bloom, Oasis, Sapling, Submerge) share two pieces of infrastructure that ship as their own foundation before any mechanic plugs in:
+
+- **Zone effects system**: ✅ **shipped (skeleton).** Generic map-level effects keyed by `ZoneEffectId`, with center+radius coverage, damage and movement penalty per turn, and a lifetime that ticks down on round rollover. Lives in `src/features/zoneEffects/types.ts` (data shape) and `src/systems/zoneEffectSystem.ts` (lifecycle/query helpers). `state.zoneEffects: ReadonlyMap<ZoneEffectId, ZoneEffect>` is the canonical store; `tickZoneEffectLifetimes()` runs from `turnSystem.ts` and `warEcologySimulation.ts` on round rollover. Designed for Maelstrom (radius 3/5, 3/5 turns) and Toxic Bloom (radius 0, 3 turns / permanent). Friendly fire is OFF; visibility is universal; multiple effects on a hex stack additively.
+- **Terrain mutation utility**: ✅ **shipped.** `src/systems/terrainMutationSystem.ts` exports `setTerrainAt(state, hex, terrain)` and `setTerrainInRadius(state, center, radius, terrain)`. Mutates `state.map.tiles` directly so every downstream system (movement, defense, vision, ecology) picks up the change automatically. One-way; no reversal. Designed for Oasis (radius 2 → desert) and Sapling (radius 0 → forest).
+
+The damage and movement-penalty consumer hooks (per-faction-turn pass for damage, movement cost calculator for penalty) will land alongside the first mechanic that uses them (Toxic Bloom or Maelstrom, whichever ships first).
+
 ### Strategic-layer wiring (new player actions / new state)
 
 These are the highest-value identity moments but require new UI affordances, new persistent faction-level state, or new map mutators:
