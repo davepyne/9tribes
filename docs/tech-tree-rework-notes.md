@@ -2,7 +2,7 @@
 
 > Branch: `claude/review-document-6rr9w`
 > Companion to: `docs/tech-tree-audit.md`
-> Status: Phase 1 (creative content + source-of-truth migration + bug fixes) — complete.
+> Status: Phase 1 (creative content + source-of-truth migration + bug fixes) — complete. Phase 2 (Tier 1 wiring) — complete. Tier 2 wiring — in progress.
 
 This document tracks the rework of the T1–T3 progression system delivered on this branch and lists the mechanics that are defined in the new domain catalog but not yet wired into combat/movement/strategic code.
 
@@ -57,10 +57,12 @@ The new content is the **canonical design**, and existing legacy flags are still
 - **Camel T1 +1 movement on harsh terrain**: ✅ **wired.** `factionTurnEffects.ts` adds +1 moves when unit starts turn on desert/tundra with `heatResistanceEnabled`, capped at maxMoves+1.
 - **Venom T2 spore-jump** (`venom.spore-jump`): when a poisoned enemy dies, jump 1 stack to nearest (foreign) or all (native) enemies within 2 hexes. Touches `applyCombatAction()` poison-death path.
 - **Venom T3 Toxic Bloom**: track contaminated hexes and tick 2 dmg/turn while occupied. Extends the existing contamination system.
-- **Nature Healing T1 forest regen bonus**: units ending turn on forest/jungle regen +3 HP instead of +1. Touches `factionTurnEffects.applyRegen`.
+- **Nature Healing T1 forest regen bonus**: ✅ **wired.** `forestRegenBonus` in `capabilityDoctrine.ts`; consumed in `factionTurnEffects.ts` heal loop — units on forest/jungle regen +3 HP/turn instead of +1 when `nature_healing_t1` is completed.
 - **Hitrun T2 Bloodtrail momentum**: track per-unit wound count -> +1 movement next turn. New per-unit state field.
-- **Hitrun T3 killing chain**: after kill, allow second attack at -40% (foreign) / 100% (native), up to 3 chains for native. Touches `applyCombatAction()` post-kill path.
-- **Charge T2 Stampede**: routed enemies displace randomly 2 hexes. Touches rout-resolution.
+- **Hitrun T3 killing chain**: ✅ **wired.** `killChainEnabled` / `nativeKillChainEnabled` in `capabilityDoctrine.ts`; consumed in `apply.ts` post-kill path. Foreign: 1 chain at 60% damage. Native (Steppe Riders): chain up to 3 kills at 100% damage. Uses per-unit-per-turn `killChainCountThisTurn` tracking.
+- **Charge T2 rout-on-big-charge + Stampede**: ✅ **wired.** `routOnBigChargeEnabled` / `stampedeOnRoutEnabled` in `capabilityDoctrine.ts`; consumed in `apply.ts` after knockback. Charge dealing >50% maxHP routs defender; native Savannah Lions stampede routed targets 2 hexes randomly (seeded RNG), dealing 2 damage on collision.
+- **River Stealth T2 predator bleed + persistent stealth**: ✅ **wired.** `predatorBleedEnabled` / `persistentStealthOnAttackEnabled` in `capabilityDoctrine.ts`. Bleed: first attack from stealth applies bleed (1 dmg/turn, 3 turns) via `bleeding`/`bleedTurnsRemaining` on Unit, ticked in `environmentalEffects.ts`. Persistent stealth: native River People attacks from stealth do NOT break stealth.
+- **Heavy Hitter T3 Last Stand**: ✅ **wired.** `lastStandEnabled` in `capabilityDoctrine.ts`; consumed in `apply.ts` kill-resolution path. Arctic Wardens with native heavy_hitter T3 survive a lethal hit at 1 HP once per turn. Uses per-unit-per-turn `lastStandUsedThisTurn` tracking, reset in `turnSystem.ts` and `factionTurnEffects.ts`. Does not trigger on instant-kill synergy effects.
 - **Charge T3 splash + chain amplification**: native Lions splash 50% of charge damage to enemies adjacent to target; charges through friendly Lions chain +10% per ally in line (cap +50%).
 - **Heavy Hitter T3 Last Stand**: native flag `lastStandPerCombat` — when reduced to 0 HP, survive at 1 HP once per combat. Touches the kill-resolution path in `applyCombatAction()`.
 
@@ -83,7 +85,7 @@ These are all designed to coexist with existing systems (poison stacks, contamin
 
 ## What this means for play today
 
-- **All existing tests pass** (728/728). The migration is behavior-preserving for everything that was already wired.
+- **All existing tests pass** (729/729). The migration is behavior-preserving for everything that was already wired.
 - **Heavy Hitter Arctic Wardens are immediately stronger** because their native T3 capstone (100% armor pen + immovable) now actually applies. This was a documented capability that was dead code before.
 - **Savannah Lions are slightly weaker** because their charge T3 no longer accidentally grants 100% armor pen (that effect belongs to Heavy Hitter and is wired there now). They retain their legitimate terrain-ignoring charges.
 - **Hill Engineers no longer start with `heavy_hitter` learned.** They begin like every other tribe (one native domain only). Only Pirate Lords retain a dual-start (slaving + tidal_warfare).
