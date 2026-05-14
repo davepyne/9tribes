@@ -271,7 +271,7 @@ const FORTRESS_RESEARCH = buildResearchDomain({
     type: 'shield_wall',
     description: 'Units adjacent to a friendly ally gain +15% defense. Two adjacent allies grant +25%.',
     nativeDescription: 'Hill Engineers may swap positions with an adjacent ally once per turn at no movement cost (formation discipline).',
-    effect: { adjacentAllyDefenseBonus: 0.15, multiAllyDefenseBonus: 0.25, formationSwapEnabled: true }, // first: wired; rest: design
+    effect: { adjacentAllyDefenseBonus: 0.15, multiAllyDefenseBonus: 0.25, formationSwapEnabled: true }, // first two: wired; rest: design
   },
   t2: {
     name: 'Spike Lines',

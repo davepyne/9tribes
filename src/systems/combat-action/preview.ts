@@ -244,13 +244,18 @@ export function previewCombatAction(
       && !(defenderPrototype.tags?.includes('cavalry') || defenderPrototype.tags?.includes('elephant'));
     if (attackerIsRanged && defenderIsInfantry) {
       const supportRadius = defenderDoctrine.fortressTranscendenceEnabled ? 2 : 1;
-      const hasSupportAlly = Array.from(state.units.values()).some((neighbor) =>
-        neighbor.id !== defender.id
-        && neighbor.factionId === defender.factionId
-        && neighbor.hp > 0
-        && hexDistance(neighbor.position, defender.position) <= supportRadius);
-      if (hasSupportAlly) {
-        situationalDefenseModifier += defenderDoctrine.fortressAuraUpgradeEnabled ? 0.25 : 0.15;
+      let adjacentAllyCount = 0;
+      for (const neighbor of state.units.values()) {
+        if (neighbor.id !== defender.id
+          && neighbor.factionId === defender.factionId
+          && neighbor.hp > 0
+          && hexDistance(neighbor.position, defender.position) <= supportRadius) {
+          adjacentAllyCount++;
+        }
+      }
+      if (adjacentAllyCount > 0) {
+        const shieldwallBonus = adjacentAllyCount >= 2 ? 0.25 : 0.15;
+        situationalDefenseModifier += defenderDoctrine.fortressAuraUpgradeEnabled ? 0.25 : shieldwallBonus;
       }
     }
   }
