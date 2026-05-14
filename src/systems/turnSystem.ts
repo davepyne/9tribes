@@ -3,6 +3,7 @@ import type { GameState, Faction } from '../game/types.js';
 import type { FactionId, UnitId } from '../types.js';
 import type { Unit } from '../features/units/types.js';
 import { tickZoneEffectLifetimes } from './zoneEffectSystem.js';
+import { detectAndSpawnToxicBlooms, cleanseToxicBlooms } from './toxicBloomSystem.js';
 
 /**
  * Activation state for alternating unit activation.
@@ -113,7 +114,15 @@ export function advanceTurn(gameState: GameState): GameState {
 
   // Tick zone-effect lifetimes once per round, on rollover. Permanent effects
   // (turnsRemaining === -1) are untouched; expired effects are removed.
-  const tickedState = isNewRound ? tickZoneEffectLifetimes(gameState) : gameState;
+  // Then run the Toxic Bloom passes: cleanse Druid-occupied blooms, then
+  // detect new Bloom spawns from poison clusters. Detection runs AFTER the
+  // tick + cleanse so a hex freed this round can host a fresh Bloom.
+  let tickedState = gameState;
+  if (isNewRound) {
+    tickedState = tickZoneEffectLifetimes(tickedState);
+    tickedState = cleanseToxicBlooms(tickedState);
+    tickedState = detectAndSpawnToxicBlooms(tickedState);
+  }
 
   return {
     ...tickedState,

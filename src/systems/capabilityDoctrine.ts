@@ -64,6 +64,10 @@ export interface ResearchDoctrine {
   ignoreZocOnApproachEnabled: boolean; // hitrun_t1 - ignore ZoC on the approach hex when attacking
   pressGangCaptureEnabled: boolean;  // slaving_t1 - capture chance on kill vs wounded
   nativePoisonDetonateEnabled: boolean; // venom_t3 native - poison detonation on kill
+  toxicBloomEnabled: boolean;           // venom_t3 - faction may spawn Toxic Blooms at poison-cluster hexes
+  toxicBloomPermanent: boolean;         // venom_t3 native - spawned Blooms are permanent (turnsRemaining: -1)
+  myceliumNetworkOnKillEnabled: boolean; // venom_t3 native - kill inside own Bloom propagates poison to nearby friendly units
+  cleanseToxicBloomEnabled: boolean;    // nature_healing_t3 native - Druid units passively cleanse Toxic Blooms they stand on
 
   // T3 upgrades
   poisonBonusEnabled: boolean;       // foreign venom_t3 - poison-tagged units deal +50% poison damage
@@ -228,6 +232,10 @@ export function resolveResearchDoctrine(
     ignoreZocOnApproachEnabled: hasNode('hitrun_t1'),
     pressGangCaptureEnabled: hasNode('slaving_t1'),
     nativePoisonDetonateEnabled: hasNativeT3('venom'),
+    toxicBloomEnabled: hasNode('venom_t3'),
+    toxicBloomPermanent: hasNativeT3('venom'),
+    myceliumNetworkOnKillEnabled: hasNativeT3('venom'),
+    cleanseToxicBloomEnabled: hasNativeT3('nature_healing'),
 
     // T3 upgrades
     poisonBonusEnabled: hasForeignT3('venom'),
