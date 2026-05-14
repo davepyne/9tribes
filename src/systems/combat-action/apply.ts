@@ -994,7 +994,6 @@ export function applyCombatAction(
   }
 
   // Spore-jump (venom_t2): when a poisoned enemy dies, jump poison stacks to nearby enemies.
-  // Foreign: nearest enemy within 2 hexes. Native: ALL enemies within 2 hexes.
   if (
     defenderActuallyDestroyed
     && attackerDoctrine?.sporeJumpEnabled
@@ -1002,18 +1001,19 @@ export function applyCombatAction(
     && defender.poisonStacks > 0
   ) {
     const sporeUnits = new Map(current.units);
+    const jumpPoison = (id: UnitId, u: Unit) => {
+      const jumped = applyPoisonDoT(u, 1, attackerDoctrine.poisonDamagePerStack, 3);
+      sporeUnits.set(id, { ...jumped, poisonedBy: attacker.factionId, poisonSourcePrototypeId: attacker.prototypeId });
+    };
     let sporeJumped = false;
     if (attackerDoctrine.sporeJumpAllEnemies) {
-      // Native: jump to ALL enemies within 2 hexes
       for (const [uid, u] of sporeUnits) {
         if (u.factionId === attacker.factionId || u.hp <= 0) continue;
         if (hexDistance(u.position, defender.position) > 2) continue;
-        const jumped = applyPoisonDoT(u, 1, attackerDoctrine.poisonDamagePerStack, 3);
-        sporeUnits.set(uid, { ...jumped, poisonedBy: attacker.factionId, poisonSourcePrototypeId: attacker.prototypeId });
+        jumpPoison(uid, u);
         sporeJumped = true;
       }
     } else {
-      // Foreign: jump to nearest enemy within 2 hexes
       let nearestId: UnitId | null = null;
       let nearestDist = Infinity;
       for (const [uid, u] of sporeUnits) {
@@ -1022,12 +1022,11 @@ export function applyCombatAction(
         if (dist <= 2 && dist < nearestDist) {
           nearestDist = dist;
           nearestId = uid;
+          if (dist === 1) break;
         }
       }
       if (nearestId) {
-        const u = sporeUnits.get(nearestId)!;
-        const jumped = applyPoisonDoT(u, 1, attackerDoctrine.poisonDamagePerStack, 3);
-        sporeUnits.set(nearestId, { ...jumped, poisonedBy: attacker.factionId, poisonSourcePrototypeId: attacker.prototypeId });
+        jumpPoison(nearestId, sporeUnits.get(nearestId)!);
         sporeJumped = true;
       }
     }

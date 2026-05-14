@@ -10,6 +10,7 @@ import { createUnitId } from '../src/core/ids';
 import type { GameState, Unit, HexCoord, FactionId } from '../src/game/types';
 
 const registry = loadRulesRegistry();
+let extraUnitCounter = 0;
 
 function getCombatants(state: GameState) {
   const factionIds = Array.from(state.factions.keys()) as FactionId[];
@@ -35,7 +36,7 @@ function addExtraUnit(
   factionId: FactionId,
   template: Unit,
 ): { state: GameState; unitId: Unit['id'] } {
-  const uid = createUnitId(`spore-test-${Math.random().toString(36).slice(2, 8)}`);
+  const uid = createUnitId(`spore-test-${++extraUnitCounter}`);
   const extra: Unit = {
     ...template,
     id: uid,
@@ -144,8 +145,7 @@ describe('foreign spore-jump (nearest enemy within 2 hexes)', () => {
 
     // Verify positions are on the map
     if (!state.map.tiles.has(hexToKey(nearPos)) || !state.map.tiles.has(hexToKey(farPos))) {
-      // Skip if hexes don't exist — use only nearby guaranteed hexes
-      return;
+      throw new Error(`Test hex not on map: near=${hexToKey(nearPos)} far=${hexToKey(farPos)}`);
     }
 
     let res1 = addExtraUnit(state, nearPos, defenderFactionId, attacker);
@@ -189,7 +189,9 @@ describe('foreign spore-jump (nearest enemy within 2 hexes)', () => {
 
     // Add one enemy nearby
     const nearPos: HexCoord = { q: defenderPos.q + 1, r: defenderPos.r };
-    if (!state.map.tiles.has(hexToKey(nearPos))) return;
+    if (!state.map.tiles.has(hexToKey(nearPos))) {
+      throw new Error(`Test hex not on map: ${hexToKey(nearPos)}`);
+    }
 
     let res = addExtraUnit(state, nearPos, defenderFactionId, attacker);
     state = res.state;
@@ -264,7 +266,9 @@ describe('native spore-jump (all enemies within 2 hexes)', () => {
     const pos1: HexCoord = { q: defenderPos.q + 1, r: defenderPos.r };
     const pos2: HexCoord = { q: defenderPos.q - 1, r: defenderPos.r + 1 };
 
-    if (!state.map.tiles.has(hexToKey(pos1)) || !state.map.tiles.has(hexToKey(pos2))) return;
+    if (!state.map.tiles.has(hexToKey(pos1)) || !state.map.tiles.has(hexToKey(pos2))) {
+      throw new Error(`Test hex not on map: pos1=${hexToKey(pos1)} pos2=${hexToKey(pos2)}`);
+    }
 
     let res1 = addExtraUnit(state, pos1, defenderFactionId, attacker);
     state = res1.state;
@@ -293,12 +297,11 @@ describe('native spore-jump (all enemies within 2 hexes)', () => {
 
   it('does not jump to friendly units', () => {
     let state = buildMvpScenario(42);
-    const { attacker, defender, attackerFactionId, defenderFactionId } = getCombatants(state);
+    const { attacker, defender, attackerFactionId } = getCombatants(state);
 
     state = placeAdjacent(state, attacker, defender);
     const defenderPos = { q: attacker.position.q + 1, r: attacker.position.r };
 
-    // Defender at 1 HP and poisoned
     const units = new Map(state.units);
     units.set(defender.id, {
       ...units.get(defender.id)!,
@@ -310,10 +313,10 @@ describe('native spore-jump (all enemies within 2 hexes)', () => {
       poisonedBy: attackerFactionId,
     });
     state = { ...state, units };
-
-    // Add one friendly unit near the defender
     const friendlyPos: HexCoord = { q: defenderPos.q + 1, r: defenderPos.r };
-    if (!state.map.tiles.has(hexToKey(friendlyPos))) return;
+    if (!state.map.tiles.has(hexToKey(friendlyPos))) {
+      throw new Error(`Test hex not on map: ${hexToKey(friendlyPos)}`);
+    }
 
     let res = addExtraUnit(state, friendlyPos, attackerFactionId, attacker);
     state = res.state;
