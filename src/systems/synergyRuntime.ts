@@ -7,13 +7,13 @@ import {
   type PairSynergyConfig,
 } from './synergyEngine.js';
 import pairSynergiesData from '../content/base/pair-synergies.json' with { type: 'json' };
-import abilityDomainsData from '../content/base/ability-domains.json' with { type: 'json' };
+import { getAllAbilityDomains } from '../content/domains/index.js';
 import emergentRulesData from '../content/base/emergent-rules.json' with { type: 'json' };
 
 const synergyEngine: SynergyEngine = new SynergyEngine(
   pairSynergiesData.pairSynergies as PairSynergyConfig[],
   emergentRulesData.rules as EmergentRuleConfig[],
-  Object.values(abilityDomainsData.domains) as DomainConfig[],
+  getAllAbilityDomains() as DomainConfig[],
 );
 
 export function getSynergyEngine(): SynergyEngine {

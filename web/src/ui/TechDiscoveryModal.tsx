@@ -1,14 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-import researchData from '../../../src/content/base/research.json';
+import { RESEARCH_DOMAINS } from '../../../src/content/domains/index.js';
 
 // ── Types ──
-
-type ResearchDataMap = Record<string, {
-  id: string;
-  name: string;
-  nodes: Record<string, { qualitativeEffect?: { description?: string } }>;
-}>;
 
 type TechDiscoveryEvent = {
   nodeId: string;
@@ -17,53 +11,9 @@ type TechDiscoveryEvent = {
   effectDescription: string | null;
 };
 
-// ── Runtime Validation ──
-
-function validateResearchData(data: unknown): asserts data is ResearchDataMap {
-  if (typeof data !== 'object' || data === null) {
-    throw new Error('research.json: expected an object at top level');
-  }
-  const entries = Object.entries(data as Record<string, unknown>);
-  if (entries.length === 0) {
-    throw new Error('research.json: expected at least one domain entry');
-  }
-  for (const [key, domain] of entries) {
-    if (typeof domain !== 'object' || domain === null) {
-      throw new Error(`research.json: domain "${key}" is not an object`);
-    }
-    const d = domain as Record<string, unknown>;
-    if (typeof d.id !== 'string' || d.id !== key) {
-      throw new Error(`research.json: domain "${key}" missing or mismatched "id" field`);
-    }
-    if (typeof d.name !== 'string') {
-      throw new Error(`research.json: domain "${key}" missing "name" field`);
-    }
-    if (typeof d.nodes !== 'object' || d.nodes === null) {
-      throw new Error(`research.json: domain "${key}" missing "nodes" object`);
-    }
-    const nodeEntries = Object.entries(d.nodes as Record<string, unknown>);
-    if (nodeEntries.length === 0) {
-      throw new Error(`research.json: domain "${key}" has empty "nodes"`);
-    }
-    for (const [nodeId, node] of nodeEntries) {
-      if (typeof node !== 'object' || node === null) {
-        throw new Error(`research.json: node "${nodeId}" in domain "${key}" is not an object`);
-      }
-      const n = node as Record<string, unknown>;
-      if (typeof n.id !== 'string') {
-        throw new Error(`research.json: node "${nodeId}" in domain "${key}" missing "id"`);
-      }
-      if (typeof n.name !== 'string') {
-        throw new Error(`research.json: node "${nodeId}" in domain "${key}" missing "name"`);
-      }
-    }
-  }
-}
-
-// ── Helpers ──
-
-validateResearchData(researchData);
-const RESEARCH: ResearchDataMap = researchData;
+// The catalog is a TypeScript module owned by the backend (src/content/domains).
+// The frontend imports its typed exports directly — no runtime validation is
+// required because the shape is guaranteed at compile time.
 
 const TIER_LABELS: Record<number, string> = {
   1: 'Foundation',
@@ -73,7 +23,7 @@ const TIER_LABELS: Record<number, string> = {
 
 function lookupEffectDescription(nodeId: string): string | null {
   const domainId = nodeId.split('_t')[0];
-  return RESEARCH[domainId]?.nodes[nodeId]?.qualitativeEffect?.description ?? null;
+  return RESEARCH_DOMAINS[domainId]?.nodes[nodeId]?.qualitativeEffect?.description ?? null;
 }
 
 // ── Context ──

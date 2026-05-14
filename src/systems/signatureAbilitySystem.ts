@@ -6,27 +6,13 @@ import { getNeighbors, hexDistance } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
 import { getTerrainAt } from './abilitySystem.js';
 import { isUnitVisibleTo } from './fogSystem.js';
-import abilityDomainsData from '../content/base/ability-domains.json' assert { type: 'json' };
+import { ABILITY_DOMAINS, type AbilityDomainDef } from '../content/domains/index.js';
 
-// Type for ability domain entries
-type AbilityDomain = {
-  id: string;
-  name: string;
-  nativeFaction: string;
-  tags: string[];
-  baseEffect: {
-    type: string;
-    [key: string]: unknown;
-  };
-};
-
-function getAbilityDomains(): Record<string, AbilityDomain> {
-  return (abilityDomainsData as { domains: Record<string, AbilityDomain> }).domains;
-}
+// Type for ability domain entries — sourced from src/content/domains
+type AbilityDomain = AbilityDomainDef;
 
 function getDomainForTag(tag: string): AbilityDomain | null {
-  const domains = getAbilityDomains();
-  for (const domain of Object.values(domains)) {
+  for (const domain of Object.values(ABILITY_DOMAINS)) {
     if (domain.tags.includes(tag)) {
       return domain;
     }

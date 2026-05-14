@@ -1,12 +1,10 @@
-import abilityDomains from '../../../src/content/base/ability-domains.json';
+import { ABILITY_DOMAINS } from '../../../src/content/domains/index.js';
 
-const domains = abilityDomains.domains as Record<string, { id: string; name: string }>;
-
-export const DOMAIN_IDS = Object.keys(domains) as readonly string[];
+export const DOMAIN_IDS = Object.keys(ABILITY_DOMAINS) as readonly string[];
 export type DomainId = typeof DOMAIN_IDS[number];
 
 export const DOMAIN_NAMES: Record<string, string> = Object.fromEntries(
-  Object.entries(domains).map(([id, d]) => [id, d.name]),
+  Object.entries(ABILITY_DOMAINS).map(([id, d]) => [id, d.name]),
 );
 
 // Frontend-only display overrides (short names for compact UI contexts)

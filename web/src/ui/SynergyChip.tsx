@@ -4,8 +4,7 @@ import type { ClientState } from '../game/types/clientState';
 import type { CapabilityPipViewModel } from '../game/types/clientState';
 import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
 import emergentRulesData from '../../../src/content/base/emergent-rules.json';
-import abilityDomainsData from '../../../src/content/base/ability-domains.json';
-import researchData from '../../../src/content/base/research.json';
+import { ABILITY_DOMAINS, RESEARCH_DOMAINS, getAbilityDomainById } from '../../../src/content/domains/index.js';
 import { DOMAIN_COLORS, DOMAIN_ICONS, DOMAIN_NAMES } from '../data/domainMeta';
 import { SynergyCard, type TierDescriptions } from './SynergyCard';
 
@@ -75,11 +74,11 @@ export function domainDisplayName(domainId: string): string {
 }
 
 export function domainBenefit(domainId: string): string {
-  return (abilityDomainsData.domains as Record<string, { baseEffect?: { description?: string } }>)[domainId]?.baseEffect?.description ?? '';
+  return getAbilityDomainById(domainId)?.baseEffect.description ?? '';
 }
 
 function buildTierDescriptions(domainId: string, capabilities: CapabilityPipViewModel[]): TierDescriptions {
-  const nodes = (researchData as Record<string, { nodes: Record<string, { qualitativeEffect?: { description?: string } }> }>)[domainId]?.nodes;
+  const nodes = RESEARCH_DOMAINS[domainId]?.nodes;
   const cap = capabilities.find((c) => c.domainId === domainId);
   return {
     t1: nodes?.[`${domainId}_t1`]?.qualitativeEffect?.description ?? '',
@@ -92,13 +91,14 @@ function buildTierDescriptions(domainId: string, capabilities: CapabilityPipView
 }
 
 function buildSoloSynergyData(domainId: string) {
-  const domain = (abilityDomainsData.domains as Record<string, { id: string; name: string; baseEffect?: { description: string } }>)[domainId];
+  const domain = ABILITY_DOMAINS[domainId];
+  const description = domain?.baseEffect.description ?? '';
   return {
     id: domainId,
     name: domain?.name ?? domainId,
     domains: [domainId],
-    description: domain?.baseEffect?.description ?? '',
-    friendlyFlavor: domain?.baseEffect?.description ?? '',
+    description,
+    friendlyFlavor: description,
     enemyFlavor: '',
   };
 }

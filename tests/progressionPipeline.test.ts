@@ -10,7 +10,7 @@ import { getHexesInRange } from '../src/core/grid';
 import { hexDistance } from '../src/core/grid';
 import pairSynergiesData from '../src/content/base/pair-synergies.json';
 import emergentRulesData from '../src/content/base/emergent-rules.json';
-import abilityDomainsData from '../src/content/base/ability-domains.json';
+import { ABILITY_DOMAINS } from '../src/content/domains/index.js';
 
 const registry = loadRulesRegistry();
 
@@ -159,7 +159,7 @@ describe('progression pipeline constants', () => {
     const engine = new SynergyEngine(
       pairSynergiesData.pairSynergies as any[],
       emergentRulesData.rules as any[],
-      Object.values(abilityDomainsData.domains) as any[],
+      Object.values(ABILITY_DOMAINS) as any[],
     );
 
     it('returns null for 0 emergent-eligible domains', () => {

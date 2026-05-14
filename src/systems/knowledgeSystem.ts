@@ -5,22 +5,15 @@ import type { GameState } from '../game/types.js';
 import type { FactionId } from '../types.js';
 import type { Faction } from '../features/factions/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
-import abilityDomainsData from '../content/base/ability-domains.json' with { type: 'json' };
+import { ABILITY_DOMAINS, type AbilityDomainDef } from '../content/domains/index.js';
 import pairSynergiesData from '../content/base/pair-synergies.json' with { type: 'json' };
 import { recordDomainLearned, recordSynergyPair } from './simulation/traceRecorder.js';
 import type { SimulationTrace } from './simulation/traceTypes.js';
 
-// Domain tags to domain ID mapping (built from ability-domains.json)
-type DomainConfig = {
-  id: string;
-  name: string;
-  nativeFaction: string;
-  restrictedToNative?: boolean;
-  tags: string[];
-  baseEffect: unknown;
-};
+// Domain tags to domain ID mapping (sourced from src/content/domains)
+type DomainConfig = AbilityDomainDef;
 
-const DOMAINS = abilityDomainsData.domains as Record<string, DomainConfig>;
+const DOMAINS: Record<string, DomainConfig> = ABILITY_DOMAINS;
 
 // Domains restricted to their native faction only — derived from ability-domains.json
 const RESTRICTED_DOMAINS = new Set(

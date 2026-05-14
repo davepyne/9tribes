@@ -345,11 +345,13 @@ export function previewCombatAction(
     isCharge: isChargeAttack,
     isStealthed: attackerWasStealthed,
     chargeShield: attackerSynergyResult.chargeShield,
-    antiDisplacement: defenderSynergyResult.antiDisplacement || defenderDoctrine?.armorPenetrationEnabled === true || attackerDoctrine?.chargeTranscendenceEnabled === true,
+    antiDisplacement: defenderSynergyResult.antiDisplacement || defenderDoctrine?.armorPenetrationEnabled === true || defenderDoctrine?.heavyTranscendenceEnabled === true,
     stealthChargeMultiplier: attackerSynergyResult.stealthChargeMultiplier,
     accuracyDebuff: attackerSynergyResult.sandstormAccuracyDebuff,
     forestFirstStrike,
-    armorPenetration: (attackerDoctrine?.chargeTranscendenceEnabled ? 1.0 : attackerDoctrine?.armorPenetrationEnabled ? 0.5 : 0) + attackerSynergyResult.armorPiercing,
+    // Heavy Hitter native T3 (Arctic Wardens) — 100% armor pen. Foreign T3 — 50%.
+    // Previously cross-wired to chargeTranscendenceEnabled; corrected here.
+    armorPenetration: (attackerDoctrine?.heavyTranscendenceEnabled ? 1.0 : attackerDoctrine?.armorPenetrationEnabled ? 0.5 : 0) + attackerSynergyResult.armorPiercing,
   });
 
   let totalKnockbackDistance = result.defenderKnockedBack ? result.knockbackDistance : 0;
