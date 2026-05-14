@@ -8,13 +8,14 @@ type CommandTrayProps = {
   onEndTurn: () => void;
   onSetTargetingMode: (mode: 'move' | 'attack') => void;
   onBuildBastion?: (unitId: string) => void;
+  onDeclareMaelstrom?: (unitId: string) => void;
   onDestroyFort?: (unitId: string) => void;
   onBuildCity?: (unitId: string) => void;
   onSummon?: (unitId: string) => void;
   onSacrifice?: (unitId: string) => void;
 };
 
-export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildBastion, onDestroyFort, onBuildCity, onSummon, onSacrifice }: CommandTrayProps) {
+export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildBastion, onDeclareMaelstrom, onDestroyFort, onBuildCity, onSummon, onSacrifice }: CommandTrayProps) {
   const selectedUnitId = state.selected?.type === 'unit' ? state.selected.unitId : state.actions.selectedUnitId;
   const selectedUnit = selectedUnitId
     ? state.world.units.find((u) => u.id === selectedUnitId)
@@ -23,6 +24,7 @@ export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, o
   const settlementPreview = state.hud.settlementPreview;
 
   const canBuildBastion = selectedUnit?.canBuildBastion ?? false;
+  const canDeclareMaelstrom = selectedUnit?.canDeclareMaelstrom ?? false;
   const canDestroyFort = selectedUnit?.canDestroyFort ?? false;
   const canSacrifice = selectedUnit?.canSacrifice ?? false;
 
@@ -91,6 +93,16 @@ export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, o
                 title="Raise a Bastion — Hill Engineers' native fortress capstone (max 3 per game)"
               >
                 Raise Bastion
+              </button>
+            ) : null}
+            {canDeclareMaelstrom ? (
+              <button
+                type="button"
+                className="ct-mode-btn"
+                onClick={() => onDeclareMaelstrom?.(selectedUnitId!)}
+                title="Declare Maelstrom — once-per-game tidal AoE (damage + slow to enemies)"
+              >
+                Declare Maelstrom
               </button>
             ) : null}
             {canDestroyFort ? (

@@ -222,6 +222,7 @@ function initializeFaction(
     synergyEligibleDomains: [factionConfig.nativeDomain],
     homeCityId: cityId,
     bastionsBuilt: 0,
+    maelstromsDeclared: 0,
   };
   state.factions.set(factionId, faction);
 

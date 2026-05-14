@@ -49,6 +49,7 @@ import {
   BASTION_DECISION_SCORE,
   BASTION_ATTACK_MARGIN,
 } from './bastion.js';
+import { getMaelstromOpportunity, declareMaelstromIfEligible, MAELSTROM_DECISION_SCORE } from './maelstrom.js';
 import { findBestTargetChoice, findBestRangedTarget } from './targeting.js';
 import { performStrategicMovement } from './movement.js';
 import { RENDEZVOUS_READY_DISTANCE } from '../strategic-ai/rendezvous.js';
@@ -436,6 +437,21 @@ export function activateUnit(
     if (current.improvements.size > improvementCount) {
       log(trace, `${faction.name} ${prototype.name} raised a Bastion (${bastionOpportunity.reason})`);
       current = applyHillDugInIfEligible(current, factionId, unitId);
+      return { state: setUnitActivated(current, unitId), pendingCombat: null };
+    }
+  }
+
+  // Maelstrom declaration: once-per-game Tidal T3 strategic action.
+  const maelstromOpportunity = getMaelstromOpportunity(current, factionId, unitId, registry);
+  if (
+    maelstromOpportunity
+    && maelstromOpportunity.score >= MAELSTROM_DECISION_SCORE
+    && bestImmediateAttackScore < BASTION_ATTACK_MARGIN
+  ) {
+    const effectCount = current.zoneEffects.size;
+    current = declareMaelstromIfEligible(current, factionId, unitId, registry);
+    if (current.zoneEffects.size > effectCount) {
+      log(trace, `${faction.name} ${prototype.name} declared a Maelstrom (${maelstromOpportunity.reason})`);
       return { state: setUnitActivated(current, unitId), pendingCombat: null };
     }
   }

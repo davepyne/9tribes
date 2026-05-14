@@ -9,6 +9,7 @@ import { entersEnemyZoC, getZoCMovementCost } from './zocSystem.js';
 import { applyOpportunityAttacks } from './opportunityAttackSystem.js';
 import { getMovementCostModifier, isUnitRiverStealthed } from './factionIdentitySystem.js';
 import { isWaterTerrain, isDeepWaterTerrain, isCoverTerrain } from './terrainUtils.js';
+import { getZoneEffectMovementPenalty } from './zoneEffectSystem.js';
 import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import { canUseCharge } from './abilitySystem.js';
 import { pruneDeadUnits } from './combatActionSystem.js';
@@ -172,7 +173,12 @@ export function previewMove(
     ? 0.5
     : 1;
   totalCost = Math.max(minimumMoveCost, totalCost);
-  
+
+  // Zone-effect movement penalty (Maelstrom, etc.): non-owner units pay extra
+  // to enter hexes covered by hostile zone effects. Applied after the cost
+  // floor so it cannot be negated by minimum-cost reductions.
+  totalCost += getZoneEffectMovementPenalty(gameState, targetHex, unit.factionId);
+
   // Swamp: always enterable but consumes all remaining moves (difficult terrain)
   const consumesAllMoves = targetTerrainId === 'swamp';
 

@@ -13,6 +13,7 @@ import { canBoardTransport, getUnitTransport, getValidDisembarkHexes, getEmbarke
 import { getSpriteKeyForUnit, inferChassisId } from './spriteKeys.js';
 import { hexToKey, hexDistance, getNeighbors } from '../../../../src/core/grid.js';
 import { getImprovementBonus } from '../../../../src/systems/combat-action/helpers.js';
+import { isWaterTerrain } from '../../../../src/systems/terrainUtils.js';
 
 function thisChassisMovementClass(chassisId: string | undefined, registry: RulesRegistry): string | undefined {
   return chassisId ? registry.getChassis(chassisId)?.movementClass : undefined;
@@ -83,6 +84,14 @@ export function buildUnitView(
   const canBuildBastion = !!isHillClan && !!unitFaction && atFullMoves && !hasExistingImprovement
     && isInfantryOrRanged && hasFortressT3 && underBastionCap;
 
+  // Precompute Maelstrom declaration eligibility — faction has tidal_warfare T3,
+  // hasn't declared yet this game, and unit is on water terrain.
+  const hasTidalT3 = state.research.get(unit.factionId)
+    ?.completedNodes.includes('tidal_warfare_t3' as ResearchNodeId) ?? false;
+  const isOnWater = isWaterTerrain(tileTerrain);
+  const canDeclareMaelstrom = !!unitFaction && isOnWater && hasTidalT3
+    && (unitFaction.maelstromsDeclared ?? 0) < 1 && unit.status === 'ready' && unit.hp > 0;
+
   const canDestroyFort = !!isHillClan && atFullMoves && improvementBonus > 0
     && !!prototype?.tags?.includes('engineer');
 
@@ -142,6 +151,7 @@ export function buildUnitView(
     canBrace: canBrace || undefined,
     canAmbush: canAmbush || undefined,
     canBuildBastion: canBuildBastion || undefined,
+    canDeclareMaelstrom: canDeclareMaelstrom || undefined,
     canDestroyFort: canDestroyFort || undefined,
     canSacrifice: canSacrifice || undefined,
     ...(() => {

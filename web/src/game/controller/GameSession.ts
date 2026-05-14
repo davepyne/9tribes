@@ -33,7 +33,7 @@ import { buildPendingCombat, type PendingCombat } from './combatSession.js';
 export type { PendingCombat } from './combatSession.js';
 import { clearMoveQueueOnUnit, executeQueuedMovesForUnit } from './moveQueueSession.js';
 import { buildReachableMoves } from './movementExplorer.js';
-import { refreshFogForAllFactions, updateSiegeState, getBastionBuildEligibility, buildBastionAtUnit, getFortDestroyEligibility, destroyFortAtUnit, getPrototypeCost, getAiUnitIds, getPrototypeName, getActiveFactionName, hasCaptureAbility, canPriestSummon, attemptPriestSummon } from './sessionUtils.js';
+import { refreshFogForAllFactions, updateSiegeState, getBastionBuildEligibility, buildBastionAtUnit, getFortDestroyEligibility, destroyFortAtUnit, getPrototypeCost, getAiUnitIds, getPrototypeName, getActiveFactionName, hasCaptureAbility, canPriestSummon, attemptPriestSummon, getMaelstromDeclareEligibility, declareMaelstromAtUnit } from './sessionUtils.js';
 import type { GameAction, EnemySynergyIntelMap } from '../types/clientState';
 import pairSynergiesData from '../../../../src/content/base/pair-synergies.json';
 import type { ReplayCombatEvent } from '../types/replay';
@@ -369,6 +369,10 @@ export class GameSession {
       case 'build_bastion':
         this.takeUndoSnapshot();
         this.applyBuildBastion(action.unitId);
+        return;
+      case 'declare_maelstrom':
+        this.takeUndoSnapshot();
+        this.applyDeclareMaelstrom(action.unitId);
         return;
       case 'destroy_fort':
         this.takeUndoSnapshot();
@@ -1062,6 +1066,23 @@ export class GameSession {
     this.feedback.lastMove = null;
     this.feedback.lastTurnChange = null;
     this.record('turn', `${getPrototypeName(this.state,unit.prototypeId)} raised a Bastion at ${unit.position.q},${unit.position.r}.`);
+  }
+
+  private applyDeclareMaelstrom(unitId: string) {
+    const unit = this.state.units.get(unitId as UnitId);
+    if (!unit || !this.state.activeFactionId || unit.factionId !== this.state.activeFactionId) {
+      return;
+    }
+
+    const eligibility = getMaelstromDeclareEligibility(this.state, unit);
+    if (!eligibility.canDeclare) {
+      return;
+    }
+
+    this.state = declareMaelstromAtUnit(this.state, unit);
+    this.feedback.lastMove = null;
+    this.feedback.lastTurnChange = null;
+    this.record('turn', `${getPrototypeName(this.state, unit.prototypeId)} declared a Maelstrom at ${unit.position.q},${unit.position.r}.`);
   }
 
   private applyDestroyFort(unitId: string) {

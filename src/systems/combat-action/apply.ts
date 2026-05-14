@@ -1,5 +1,6 @@
 import { getEffectiveXpCost } from '../knowledgeSystem.js';
 import { isWaterTerrain } from '../terrainUtils.js';
+import { getZoneEffectsAtHex } from '../zoneEffectSystem.js';
 import { getNeighbors, hexDistance, hexToKey } from '../../core/grid.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { Unit } from '../../features/units/types.js';
@@ -457,6 +458,15 @@ export function applyCombatAction(
         greedyCaptureHpFraction: autoCaptureThreshold,
       }
     : null;
+  // Maelstrom auto-capture: native tidal T3 — naval kills inside attacker's
+  // own Maelstrom auto-capture regardless of HP threshold (slaving synergy).
+  const maelstromAutoCapture = attackerDoctrine?.maelstromAutoCaptureEnabled
+    && isNavalAttacker
+    && getZoneEffectsAtHex(current, defender.position).some(
+      e => e.type === 'maelstrom' && e.ownerFactionId === attacker.factionId,
+    )
+    ? { greedyCaptureChance: 1, greedyCaptureCooldown: 0, greedyCaptureHpFraction: 0.5 }
+    : null;
   // E3/E4 — emergent capture bonus from Slave Empire (+0.20) and Desert Raider (+0.30 in desert)
   const emergentCaptureBonus = preview.details.emergentCaptureBonus
     + (preview.details.defenderTerrainId === 'desert' ? preview.details.emergentDesertCaptureBonus : 0);
@@ -477,7 +487,7 @@ export function applyCombatAction(
   if (
     defenderActuallyDestroyed
     && nextAttacker.hp > 0
-    && (hasCaptureAbility(attackerPrototype, registry) || isGreedyCoastal || autoCaptureAbility)
+    && (hasCaptureAbility(attackerPrototype, registry) || isGreedyCoastal || autoCaptureAbility || maelstromAutoCapture)
   ) {
     const captureResult = attemptCapture(
       current,
@@ -485,6 +495,7 @@ export function applyCombatAction(
       defender,
       registry,
       autoCaptureAbility
+        ?? maelstromAutoCapture
         ?? (isGreedyCoastal && !hasCaptureAbility(attackerPrototype, registry)
           ? registry.getSignatureAbility(attacker.factionId)
           : null),

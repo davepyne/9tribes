@@ -32,6 +32,10 @@ export interface ResearchDoctrine {
   contaminateTerrainEnabled: boolean; // venom_t2 - killing any enemy contaminates hex
   zoCAuraEnabled: boolean;           // fortress_t2 - fortified units project ZoC to adjacent hexes
   canBuildBastion: boolean;          // fortress_t3 (native) - Hill Engineers may construct up to 3 Bastions per game
+  canDeclareMaelstrom: boolean;     // tidal_warfare_t3 - once-per-game Maelstrom declaration
+  maelstromRadius: number;          // 3 (foreign) or 5 (native Pirate Lords)
+  maelstromDuration: number;        // 3 (foreign) or 5 (native)
+  maelstromAutoCaptureEnabled: boolean; // native only: naval kills in Maelstrom auto-capture
 
   // Tier 3 qualitative effects
   toxicBulwarkEnabled: boolean;      // venom_t3 - all units apply poison on hit
@@ -123,6 +127,7 @@ type DoctrineCacheEntry = {
   learnedDomainsRef: readonly string[];
   nativeDomain: string;
   bastionsBuilt: number;
+  maelstromsDeclared: number;
   doctrine: ResearchDoctrine;
 };
 const doctrineCache = new Map<FactionId, DoctrineCacheEntry>();
@@ -137,13 +142,14 @@ const doctrineCache = new Map<FactionId, DoctrineCacheEntry>();
  */
 export function resolveResearchDoctrine(
   researchState: ResearchState | undefined,
-  faction?: Pick<Faction, 'nativeDomain' | 'learnedDomains' | 'id' | 'bastionsBuilt'>,
+  faction?: Pick<Faction, 'nativeDomain' | 'learnedDomains' | 'id' | 'bastionsBuilt' | 'maelstromsDeclared'>,
 ): ResearchDoctrine {
   const completedNodes = researchState?.completedNodes ?? [];
   const learnedDomains = faction?.learnedDomains ?? [];
   const nativeDomain = faction?.nativeDomain ?? '';
   const factionId = faction?.id;
   const bastionsBuilt = faction?.bastionsBuilt ?? 0;
+  const maelstromsDeclared = faction?.maelstromsDeclared ?? 0;
 
   // Cache check: reference equality on the mutable arrays + scalar counters
   if (factionId) {
@@ -154,6 +160,7 @@ export function resolveResearchDoctrine(
       && cached.learnedDomainsRef === learnedDomains
       && cached.nativeDomain === nativeDomain
       && cached.bastionsBuilt === bastionsBuilt
+      && cached.maelstromsDeclared === maelstromsDeclared
     ) {
       return cached.doctrine;
     }
@@ -200,6 +207,12 @@ export function resolveResearchDoctrine(
     canBuildBastion:
       hasNativeT3('fortress')
       && (faction?.bastionsBuilt ?? 0) < 3,
+    canDeclareMaelstrom:
+      hasNode('tidal_warfare_t3')
+      && (faction?.maelstromsDeclared ?? 0) < 1,
+    maelstromRadius: hasNativeT3('tidal_warfare') ? 5 : 3,
+    maelstromDuration: hasNativeT3('tidal_warfare') ? 5 : 3,
+    maelstromAutoCaptureEnabled: hasNativeT3('tidal_warfare'),
 
     // Tier 3 qualitative effects
     toxicBulwarkEnabled: hasNativeT3('venom'),
@@ -272,6 +285,7 @@ export function resolveResearchDoctrine(
       learnedDomainsRef: learnedDomains,
       nativeDomain,
       bastionsBuilt,
+      maelstromsDeclared,
       doctrine,
     });
   }

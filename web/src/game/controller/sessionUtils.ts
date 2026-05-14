@@ -13,6 +13,7 @@ import { isCityEncircled } from '../../../../src/systems/territorySystem.js';
 import { calculatePrototypeCost, getDomainIdsByTags, isUnlockPrototype } from '../../../../src/systems/knowledgeSystem.js';
 import { hasCaptureAbility } from '../../../../src/systems/captureSystem.js';
 import { canPriestSummon, attemptPriestSummon } from '../../../../src/systems/summonSystem.js';
+import { declareMaelstrom } from '../../../../src/systems/maelstromSystem.js';
 import type { RulesRegistry } from '../../../../src/data/registry/types.js';
 
 // ---------------------------------------------------------------------------
@@ -156,6 +157,31 @@ export function buildBastionAtUnit(
     units,
     factions,
   };
+}
+
+export function getMaelstromDeclareEligibility(
+  state: GameState,
+  unit: Unit,
+): { canDeclare: boolean } {
+  const faction = state.factions.get(unit.factionId);
+  const research = getResearch(state, unit.factionId);
+  const doctrine = faction ? resolveCapabilityDoctrine(research, faction) : undefined;
+
+  if (!faction || !doctrine?.canDeclareMaelstrom) {
+    return { canDeclare: false };
+  }
+  if (unit.hp <= 0 || unit.status !== 'ready') {
+    return { canDeclare: false };
+  }
+  return { canDeclare: true };
+}
+
+export function declareMaelstromAtUnit(
+  state: GameState,
+  unit: Unit,
+): GameState {
+  const result = declareMaelstrom(state, unit.factionId as import('../../../../src/types.js').FactionId, unit.position);
+  return result.state;
 }
 
 export function getFortDestroyEligibility(
