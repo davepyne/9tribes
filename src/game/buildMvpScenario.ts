@@ -377,6 +377,7 @@ export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions 
     improvements: new Map(baseState.improvements),
     research: new Map(baseState.research),
     economy: new Map(baseState.economy),
+    villages: new Map(baseState.villages),
   };
 
   if (mapMode === 'randomClimateBands') {
