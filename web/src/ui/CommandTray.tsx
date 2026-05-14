@@ -7,14 +7,14 @@ type CommandTrayProps = {
   state: ClientState;
   onEndTurn: () => void;
   onSetTargetingMode: (mode: 'move' | 'attack') => void;
-  onBuildFort?: (unitId: string) => void;
+  onBuildBastion?: (unitId: string) => void;
   onDestroyFort?: (unitId: string) => void;
   onBuildCity?: (unitId: string) => void;
   onSummon?: (unitId: string) => void;
   onSacrifice?: (unitId: string) => void;
 };
 
-export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort, onDestroyFort, onBuildCity, onSummon, onSacrifice }: CommandTrayProps) {
+export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildBastion, onDestroyFort, onBuildCity, onSummon, onSacrifice }: CommandTrayProps) {
   const selectedUnitId = state.selected?.type === 'unit' ? state.selected.unitId : state.actions.selectedUnitId;
   const selectedUnit = selectedUnitId
     ? state.world.units.find((u) => u.id === selectedUnitId)
@@ -22,7 +22,7 @@ export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, o
   const selectedCity = state.hud.selectedCity;
   const settlementPreview = state.hud.settlementPreview;
 
-  const canBuildFort = selectedUnit?.canBuildFort ?? false;
+  const canBuildBastion = selectedUnit?.canBuildBastion ?? false;
   const canDestroyFort = selectedUnit?.canDestroyFort ?? false;
   const canSacrifice = selectedUnit?.canSacrifice ?? false;
 
@@ -83,13 +83,14 @@ export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, o
       <div className="ct-segment ct-segment--actions">
         {selectedUnit ? (
           <>
-            {canBuildFort ? (
+            {canBuildBastion ? (
               <button
                 type="button"
                 className="ct-mode-btn"
-                onClick={() => onBuildFort?.(selectedUnitId!)}
+                onClick={() => onBuildBastion?.(selectedUnitId!)}
+                title="Raise a Bastion — Hill Engineers' native fortress capstone (max 3 per game)"
               >
-                Build Fort
+                Raise Bastion
               </button>
             ) : null}
             {canDestroyFort ? (

@@ -28,7 +28,7 @@ export interface ResearchDoctrine {
   amphibiousAssaultEnabled: boolean; // tidal_warfare_t2 - naval units can attack coastal hexes
   contaminateTerrainEnabled: boolean; // venom_t2 - killing any enemy contaminates hex
   zoCAuraEnabled: boolean;           // fortress_t2 - fortified units project ZoC to adjacent hexes
-  canBuildFieldForts: boolean;       // fortress_t2 - infantry/ranged can build field forts
+  canBuildBastion: boolean;          // fortress_t3 (native) - Hill Engineers may construct up to 3 Bastions per game
 
   // Tier 3 qualitative effects
   toxicBulwarkEnabled: boolean;      // venom_t3 - all units apply poison on hit
@@ -106,6 +106,7 @@ type DoctrineCacheEntry = {
   completedNodesRef: readonly string[];
   learnedDomainsRef: readonly string[];
   nativeDomain: string;
+  bastionsBuilt: number;
   doctrine: ResearchDoctrine;
 };
 const doctrineCache = new Map<FactionId, DoctrineCacheEntry>();
@@ -120,14 +121,15 @@ const doctrineCache = new Map<FactionId, DoctrineCacheEntry>();
  */
 export function resolveResearchDoctrine(
   researchState: ResearchState | undefined,
-  faction?: Pick<Faction, 'nativeDomain' | 'learnedDomains' | 'id'>,
+  faction?: Pick<Faction, 'nativeDomain' | 'learnedDomains' | 'id' | 'bastionsBuilt'>,
 ): ResearchDoctrine {
   const completedNodes = researchState?.completedNodes ?? [];
   const learnedDomains = faction?.learnedDomains ?? [];
   const nativeDomain = faction?.nativeDomain ?? '';
   const factionId = faction?.id;
+  const bastionsBuilt = faction?.bastionsBuilt ?? 0;
 
-  // Cache check: reference equality on the two mutable arrays + nativeDomain string
+  // Cache check: reference equality on the mutable arrays + scalar counters
   if (factionId) {
     const cached = doctrineCache.get(factionId);
     if (
@@ -135,6 +137,7 @@ export function resolveResearchDoctrine(
       && cached.completedNodesRef === completedNodes
       && cached.learnedDomainsRef === learnedDomains
       && cached.nativeDomain === nativeDomain
+      && cached.bastionsBuilt === bastionsBuilt
     ) {
       return cached.doctrine;
     }
@@ -172,7 +175,12 @@ export function resolveResearchDoctrine(
     amphibiousAssaultEnabled: hasNode('tidal_warfare_t2'),
     contaminateTerrainEnabled: hasNode('venom_t2'),
     zoCAuraEnabled: hasNode('fortress_t2'),
-    canBuildFieldForts: hasNode('fortress_t2'),
+    // Bastion is a native-only capstone (Hill Engineers, fortress_t3 native) with a
+    // hard 3-per-game cap tracked on faction.bastionsBuilt. The cap is enforced here
+    // so all eligibility checks (player UI, AI heuristic) flow through the same flag.
+    canBuildBastion:
+      hasNativeT3('fortress')
+      && (faction?.bastionsBuilt ?? 0) < 3,
 
     // Tier 3 qualitative effects
     toxicBulwarkEnabled: hasNativeT3('venom'),
@@ -231,6 +239,7 @@ export function resolveResearchDoctrine(
       completedNodesRef: completedNodes,
       learnedDomainsRef: learnedDomains,
       nativeDomain,
+      bastionsBuilt,
       doctrine,
     });
   }

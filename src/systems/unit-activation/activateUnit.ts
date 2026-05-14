@@ -41,12 +41,14 @@ import {
 } from './helpers.js';
 import {
   shouldBrace,
-  getFieldFortOpportunity,
-  buildFieldFortIfEligible,
   applyHillDugInIfEligible,
-  FIELD_FORT_DECISION_SCORE,
-  FIELD_FORT_ATTACK_MARGIN,
-} from './fieldFort.js';
+} from './braceAndDugIn.js';
+import {
+  getBastionOpportunity,
+  buildBastionIfEligible,
+  BASTION_DECISION_SCORE,
+  BASTION_ATTACK_MARGIN,
+} from './bastion.js';
 import { findBestTargetChoice, findBestRangedTarget } from './targeting.js';
 import { performStrategicMovement } from './movement.js';
 import { RENDEZVOUS_READY_DISTANCE } from '../strategic-ai/rendezvous.js';
@@ -419,20 +421,20 @@ export function activateUnit(
     }
   }
 
-  const fieldFortOpportunity = getFieldFortOpportunity(current, factionId, unitId, registry, fortsBuiltThisRound);
+  const bastionOpportunity = getBastionOpportunity(current, factionId, unitId, registry, fortsBuiltThisRound);
   const bestImmediateAttackScore = Math.max(
     enemy && activeUnit.attacksRemaining > 0 ? enemyChoice.score : -Infinity,
     bestChargeScore,
   );
   if (
-    fieldFortOpportunity
-    && fieldFortOpportunity.score >= FIELD_FORT_DECISION_SCORE
-    && bestImmediateAttackScore < FIELD_FORT_ATTACK_MARGIN
+    bastionOpportunity
+    && bastionOpportunity.score >= BASTION_DECISION_SCORE
+    && bestImmediateAttackScore < BASTION_ATTACK_MARGIN
   ) {
     const improvementCount = current.improvements.size;
-    current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+    current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
     if (current.improvements.size > improvementCount) {
-      log(trace, `${faction.name} ${prototype.name} built a field fort (${fieldFortOpportunity.reason})`);
+      log(trace, `${faction.name} ${prototype.name} raised a Bastion (${bastionOpportunity.reason})`);
       current = applyHillDugInIfEligible(current, factionId, unitId);
       return { state: setUnitActivated(current, unitId), pendingCombat: null };
     }
@@ -476,7 +478,7 @@ export function activateUnit(
     units.set(unitId, prepareAbility(activeUnit, 'brace', current.round));
     log(trace, `${faction.name} ${prototype.name} braced`);
     current = { ...current, units };
-    current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+    current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
     current = applyHillDugInIfEligible(current, factionId, unitId);
     return { state: current, pendingCombat: null };
   }
@@ -633,7 +635,7 @@ export function activateUnit(
       },
     });
 
-    current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+    current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
     current = applyHillDugInIfEligible(current, factionId, unitId);
     return { state: current, pendingCombat: null };
   }
@@ -647,7 +649,7 @@ export function activateUnit(
     units.set(unitId, prepareAbility(activeUnit, 'ambush', current.round));
     log(trace, `${faction.name} ${prototype.name} prepared an ambush`);
     current = { ...current, units };
-    current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+    current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
     current = applyHillDugInIfEligible(current, factionId, unitId);
     return { state: current, pendingCombat: null };
   }
@@ -692,7 +694,7 @@ export function activateUnit(
         const capturedProto = capturedUnit ? captureResult.state.prototypes.get(capturedUnit.prototypeId) : null;
         log(trace, `${faction.name} ${prototype.name} ENSLAVED ${capturedProto?.name ?? 'unit'} (non-combat capture)`);
         current = captureResult.state;
-        current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+        current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
         current = applyHillDugInIfEligible(current, factionId, unitId);
         return { state: setUnitActivated(current, unitId), pendingCombat: null };
       } else {
@@ -712,7 +714,7 @@ export function activateUnit(
   const movedUnit = current.units.get(unitId);
   if (movedUnit) {
     if (movedUnit.attacksRemaining <= 0) {
-      current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+      current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
       current = applyHillDugInIfEligible(current, factionId, unitId);
       return { state: setUnitActivated(current, unitId), pendingCombat: null };
     }
@@ -841,7 +843,7 @@ export function activateUnit(
               triggeredEffects: postMoveResolution.triggeredEffects,
             },
           });
-          current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+          current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
           current = applyHillDugInIfEligible(current, factionId, unitId);
           return { state: setUnitActivated(current, unitId), pendingCombat: null };
         }
@@ -849,7 +851,7 @@ export function activateUnit(
     }
   }
 
-  current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+  current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
   current = applyHillDugInIfEligible(current, factionId, unitId);
 
   return { state: setUnitActivated(current, unitId), pendingCombat: null };

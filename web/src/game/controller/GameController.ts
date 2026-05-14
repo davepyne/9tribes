@@ -137,7 +137,7 @@ export class GameController {
       case 'prepare_ability':
       case 'board_transport':
       case 'disembark_unit':
-      case 'build_fort':
+      case 'build_bastion':
       case 'destroy_fort':
       case 'summon_unit':
         if (this.session) {

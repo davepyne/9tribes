@@ -100,6 +100,8 @@ export interface Faction {
   synergyEligibleDomains: string[];        // domains that activate pair/triple synergies (sacrifice + native only)
   // Home city for sacrifice mechanic - the faction's starting city
   homeCityId?: CityId;
+  // Strategic-action counters
+  bastionsBuilt: number;                    // fortress native T3 capstone: Hill Engineers may build up to 3 Bastions per game
 }
 
 export type DomainAcquisitionMethod = 'native' | 'sacrifice' | 'ecology' | 'exposure' | 'absorption';

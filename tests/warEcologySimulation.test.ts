@@ -612,9 +612,10 @@ describe('hill engineering threshold', () => {
           factionId === hillFactionId
             ? {
                 ...research,
-                // hill_clan's native domain is fortress, so fortress_t1 is auto-completed
-                // fortress_t2 enables canBuildFieldForts
-                completedNodes: ['fortress_t1' as never, 'fortress_t2' as never],
+                // hill_clan's native domain is fortress, so fortress_t1 is auto-completed.
+                // Bastion construction is gated on the native T3 capstone, so all three
+                // tiers must be present for the AI to raise one.
+                completedNodes: ['fortress_t1' as never, 'fortress_t2' as never, 'fortress_t3' as never],
               }
             : research,
         ])
@@ -626,7 +627,7 @@ describe('hill engineering threshold', () => {
     );
 
     expect(forts).toHaveLength(1);
-    expect(forts[0]?.defenseBonus).toBe(2);
+    expect(forts[0]?.defenseBonus).toBe(4);
   });
 
   it('hill doctrine makes defenders on hills tougher in combat', () => {

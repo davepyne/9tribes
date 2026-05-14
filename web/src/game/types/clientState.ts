@@ -426,7 +426,7 @@ export type GameAction =
   | { type: 'prepare_ability'; unitId: string; ability: 'brace' | 'ambush' }
   | { type: 'board_transport'; unitId: string; transportId: string }
   | { type: 'disembark_unit'; unitId: string; transportId: string; destination: HexCoord }
-  | { type: 'build_fort'; unitId: string }
+  | { type: 'build_bastion'; unitId: string }
   | { type: 'destroy_fort'; unitId: string }
   | { type: 'build_city'; unitId: string }
   | { type: 'summon_unit'; unitId: string }

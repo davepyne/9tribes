@@ -33,7 +33,7 @@ import { buildPendingCombat, type PendingCombat } from './combatSession.js';
 export type { PendingCombat } from './combatSession.js';
 import { clearMoveQueueOnUnit, executeQueuedMovesForUnit } from './moveQueueSession.js';
 import { buildReachableMoves } from './movementExplorer.js';
-import { refreshFogForAllFactions, updateSiegeState, getFortBuildEligibility, buildFortAtUnit, getFortDestroyEligibility, destroyFortAtUnit, getPrototypeCost, getAiUnitIds, getPrototypeName, getActiveFactionName, hasCaptureAbility, canPriestSummon, attemptPriestSummon } from './sessionUtils.js';
+import { refreshFogForAllFactions, updateSiegeState, getBastionBuildEligibility, buildBastionAtUnit, getFortDestroyEligibility, destroyFortAtUnit, getPrototypeCost, getAiUnitIds, getPrototypeName, getActiveFactionName, hasCaptureAbility, canPriestSummon, attemptPriestSummon } from './sessionUtils.js';
 import type { GameAction, EnemySynergyIntelMap } from '../types/clientState';
 import pairSynergiesData from '../../../../src/content/base/pair-synergies.json';
 import type { ReplayCombatEvent } from '../types/replay';
@@ -366,9 +366,9 @@ export class GameSession {
         this._undoSnapshot = null;
         this.applySacrifice(action.unitId);
         return;
-      case 'build_fort':
+      case 'build_bastion':
         this.takeUndoSnapshot();
-        this.applyBuildFort(action.unitId);
+        this.applyBuildBastion(action.unitId);
         return;
       case 'destroy_fort':
         this.takeUndoSnapshot();
@@ -1042,7 +1042,7 @@ export class GameSession {
     );
   }
 
-  private applyBuildFort(unitId: string) {
+  private applyBuildBastion(unitId: string) {
     const unit = this.state.units.get(unitId as UnitId);
     if (!unit || !this.state.activeFactionId || unit.factionId !== this.state.activeFactionId) {
       return;
@@ -1053,15 +1053,15 @@ export class GameSession {
       return;
     }
 
-    const fortEligibility = getFortBuildEligibility(this.state, this.registry, unit);
-    if (!fortEligibility.canBuild) {
+    const bastionEligibility = getBastionBuildEligibility(this.state, this.registry, unit);
+    if (!bastionEligibility.canBuild) {
       return;
     }
 
-    this.state = buildFortAtUnit(this.state, unit, fortEligibility.defenseBonus);
+    this.state = buildBastionAtUnit(this.state, unit, bastionEligibility.defenseBonus);
     this.feedback.lastMove = null;
     this.feedback.lastTurnChange = null;
-    this.record('turn', `${getPrototypeName(this.state,unit.prototypeId)} built a field fort at ${unit.position.q},${unit.position.r}.`);
+    this.record('turn', `${getPrototypeName(this.state,unit.prototypeId)} raised a Bastion at ${unit.position.q},${unit.position.r}.`);
   }
 
   private applyDestroyFort(unitId: string) {

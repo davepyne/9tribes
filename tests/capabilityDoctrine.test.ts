@@ -32,12 +32,33 @@ describe('capability doctrine thresholds', () => {
     expect(fortressT1.shieldWallEnabled).toBe(true);
     expect(fortressT1.rapidEntrenchEnabled).toBe(true);
 
-    // fortress_t2 enables ZoC aura and field forts
+    // fortress_t2 enables ZoC aura. Bastion construction (canBuildBastion)
+    // is gated on the native T3, not T2 — verified below.
     const fortressT2Research = createResearchState('hill_clan' as never, 'fortress');
     fortressT2Research.completedNodes.push('fortress_t2' as never);
     const fortressT2 = resolveResearchDoctrine(fortressT2Research);
     expect(fortressT2.zoCAuraEnabled).toBe(true);
-    expect(fortressT2.canBuildFieldForts).toBe(true);
+    expect(fortressT2.canBuildBastion).toBe(false);
+
+    // fortress_t3 (native) enables Bastion construction
+    const fortressT3Research = createResearchState('hill_clan' as never, 'fortress');
+    fortressT3Research.completedNodes.push('fortress_t2' as never, 'fortress_t3' as never);
+    const fortressT3 = resolveResearchDoctrine(fortressT3Research, {
+      id: 'hill_clan' as never,
+      nativeDomain: 'fortress',
+      learnedDomains: ['fortress'],
+      bastionsBuilt: 0,
+    });
+    expect(fortressT3.canBuildBastion).toBe(true);
+
+    // Bastion cap: once 3 bastions are built, the flag flips off
+    const fortressT3CapHit = resolveResearchDoctrine(fortressT3Research, {
+      id: 'hill_clan' as never,
+      nativeDomain: 'fortress',
+      learnedDomains: ['fortress'],
+      bastionsBuilt: 3,
+    });
+    expect(fortressT3CapHit.canBuildBastion).toBe(false);
 
     // nature_healing_t1 enables forest ambush
     const natureT1 = resolveResearchDoctrine(createResearchState('frost_wardens' as never, 'nature_healing'));

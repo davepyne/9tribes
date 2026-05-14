@@ -275,20 +275,20 @@ const FORTRESS_RESEARCH = buildResearchDomain({
   },
   t2: {
     name: 'Spike Lines',
-    type: 'field_fort_construction',
-    description: 'Infantry and ranged units can build field fortifications and project Zone of Control. Bracing units make adjacent hexes cost +1 movement to enemies; charges into braced units take 1 unavoidable damage.',
-    nativeDescription: 'Hill Engineers’ Spike Lines persist for 2 turns after the bracing unit moves away — the engineering stays.',
-    effect: { canBuildFieldForts: true, spikeLinesEnabled: true, persistentSpikeLinesEnabled: true }, // canBuildFieldForts: wired; rest: design
+    type: 'spike_lines',
+    description: 'Infantry and ranged units project Zone of Control. Bracing units make adjacent hexes cost +1 movement to enemies; charges into a braced Fortress unit take 1 unavoidable damage.',
+    nativeDescription: 'Hill Engineers’ Spike Lines persist for 2 turns after the bracing unit moves away — the engineering stays even when the engineer doesn’t.',
+    effect: { spikeLinesEnabled: true, persistentSpikeLinesEnabled: true, zocAuraEnabled: true }, // zocAuraEnabled (legacy zoCAuraEnabled): wired; rest: design
   },
   t3: {
-    name: 'Living Wall',
-    type: 'fortress_aura_upgrade',
+    name: 'Bastion',
+    type: 'bastion_construction',
     description: 'Fortress aura grants +25% defense (up from +15%). Three adjacent Fortress units form a "Phalanx": share 50% of damage taken across the group.',
-    nativeDescription: 'Hill Engineers can spend a turn to construct a Bastion hex (improvement): permanent +40% defense and grants vision to allies within 3 hexes. All Hill units can brace, and aura range is doubled. Maximum 3 Bastions per game.',
+    nativeDescription: 'Hill Engineers may raise a Bastion — a permanent fortification (+400% defense floor for the holding unit, vision aura 3 hexes for allies). Maximum 3 Bastions per game. All Hill units can brace, and the fortress aura range is doubled.',
     effect: {
-      fortressAuraDefenseBonus: 0.25, // wired
+      fortressAuraDefenseBonus: 0.25, // wired (foreign tier upgrade)
       phalanxDamageShare: 0.5, // design
-      bastionMax: 3, // design — strategic-layer action
+      canBuildBastion: true, // wired (native): unlocks the build_bastion player action; AI heuristic in bastion.ts. Hard cap 3 per game.
       fortressTranscendenceEnabled: true, // wired (legacy: all-brace + aura range 2)
     },
   },

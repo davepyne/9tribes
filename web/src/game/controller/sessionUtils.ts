@@ -74,7 +74,7 @@ export function isFortificationHex(state: GameState, position: { q: number; r: n
   return getImprovementAtHex(state, position)?.type === 'fortification';
 }
 
-export function getFortBuildEligibility(
+export function getBastionBuildEligibility(
   state: GameState,
   registry: RulesRegistry,
   unit: Unit,
@@ -83,13 +83,14 @@ export function getFortBuildEligibility(
   const research = getResearch(state, unit.factionId);
   const doctrine = faction ? resolveCapabilityDoctrine(research, faction) : undefined;
   const prototype = getPrototype(state, unit.prototypeId);
-  const isEngineer = prototype?.tags?.includes('engineer') ?? false;
 
   if (!faction || faction.id !== 'hill_clan') {
     return { canBuild: false, defenseBonus: 0 };
   }
 
-  if (!doctrine?.canBuildFieldForts && !isEngineer) {
+  // canBuildBastion already enforces fortress native T3 + the 3-per-game cap
+  // (faction.bastionsBuilt < 3) at the doctrine layer.
+  if (!doctrine?.canBuildBastion) {
     return { canBuild: false, defenseBonus: 0 };
   }
 
@@ -111,22 +112,22 @@ export function getFortBuildEligibility(
     return { canBuild: false, defenseBonus: 0 };
   }
 
-  const fieldFort = registry.getImprovement('field_fort');
+  const bastion = registry.getImprovement('bastion');
   return {
     canBuild: true,
-    defenseBonus: fieldFort?.defenseBonus ?? 1,
+    defenseBonus: bastion?.defenseBonus ?? 4,
   };
 }
 
-export function buildFortAtUnit(
+export function buildBastionAtUnit(
   state: GameState,
   unit: Unit,
   defenseBonus: number,
 ): GameState {
-  const fortId = createImprovementId();
+  const improvementId = createImprovementId();
   const improvements = new Map(state.improvements);
-  improvements.set(fortId, {
-    id: fortId,
+  improvements.set(improvementId, {
+    id: improvementId,
     type: 'fortification',
     position: { ...unit.position },
     ownerFactionId: unit.factionId,
@@ -141,10 +142,19 @@ export function buildFortAtUnit(
     status: 'fortified' as const,
   });
 
+  // Increment the per-game Bastion counter so the doctrine flag re-evaluates
+  // to false once the cap is hit.
+  const factions = new Map(state.factions);
+  const faction = state.factions.get(unit.factionId);
+  if (faction) {
+    factions.set(unit.factionId, { ...faction, bastionsBuilt: faction.bastionsBuilt + 1 });
+  }
+
   return {
     ...state,
     improvements,
     units,
+    factions,
   };
 }
 

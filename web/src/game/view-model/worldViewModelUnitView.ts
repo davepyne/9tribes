@@ -68,18 +68,20 @@ export function buildUnitView(
   const effectiveDefense = Math.max(1, Math.round(baseDefense * (1 + terrainMod + improvementBonus + veteranDefBonus)));
   const tileTerrain = tile?.terrain;
 
-  // Precompute fort build eligibility
+  // Precompute Bastion build eligibility — Hill Engineers (hill_clan) only,
+  // gated on fortress native T3 + the 3-per-game bastionsBuilt cap.
   const unitFaction = state.factions.get(unit.factionId);
-  const unitResearch = state.research.get(unit.factionId);
   const isHillClan = unitFaction?.id === 'hill_clan';
   const atFullMoves = unit.movesRemaining === unit.maxMoves;
   const hasExistingImprovement = getImprovementBonus(state, unit.position) > 0;
   const isInfantryOrRanged = prototype
     ? (thisChassisMovementClass(prototype?.chassisId, registry) === 'infantry' || prototype?.derivedStats?.role === 'ranged')
     : false;
-  const canBuildFieldForts = unitResearch?.completedNodes?.includes('fortress_t2' as ResearchNodeId) ?? false;
-  const canBuildFort = !!isHillClan && !!unitFaction && atFullMoves && !hasExistingImprovement && isInfantryOrRanged
-    && (prototype?.tags?.includes('engineer') || canBuildFieldForts);
+  const hasFortressT3 = unitFaction?.nativeDomain === 'fortress'
+    && (state.research.get(unit.factionId)?.completedNodes?.includes('fortress_t3' as ResearchNodeId) ?? false);
+  const underBastionCap = (unitFaction?.bastionsBuilt ?? 0) < 3;
+  const canBuildBastion = !!isHillClan && !!unitFaction && atFullMoves && !hasExistingImprovement
+    && isInfantryOrRanged && hasFortressT3 && underBastionCap;
 
   const canDestroyFort = !!isHillClan && atFullMoves && improvementBonus > 0
     && !!prototype?.tags?.includes('engineer');
@@ -139,7 +141,7 @@ export function buildUnitView(
     isEngineer: prototype?.tags?.includes('engineer') || undefined,
     canBrace: canBrace || undefined,
     canAmbush: canAmbush || undefined,
-    canBuildFort: canBuildFort || undefined,
+    canBuildBastion: canBuildBastion || undefined,
     canDestroyFort: canDestroyFort || undefined,
     canSacrifice: canSacrifice || undefined,
     ...(() => {
