@@ -20,6 +20,7 @@ export interface ResearchDoctrine {
   venomousStrikesEnabled: boolean;  // venom_t1 - all attacks apply 1 poison stack
   poisonPersistenceEnabled: boolean; // venom_t1 (native only) - poison stacks never expire
   forcedMarchEnabled: boolean;      // charge_t1 - first attack deals +15% damage
+  firstAttackPerTargetEnabled: boolean; // charge_t1 native - first-attack bonus resets per target
   rapidEntrenchEnabled: boolean;    // fortress_t1 (via shield wall - same flag?)
 
   // Tier 2 qualitative effects
@@ -170,6 +171,7 @@ export function resolveResearchDoctrine(
     venomousStrikesEnabled: hasNode('venom_t1'),
     poisonPersistenceEnabled: hasNode('venom_t1') && nativeDomain === 'venom',
     forcedMarchEnabled: hasNode('charge_t1'),
+    firstAttackPerTargetEnabled: hasNode('charge_t1') && nativeDomain === 'charge',
     rapidEntrenchEnabled: hasNode('fortress_t1') || hasNativeT3('fortress'),
 
     // Tier 2 qualitative effects

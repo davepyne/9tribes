@@ -1069,6 +1069,7 @@ export function processFactionPhases(
       poisonTurnsRemaining: safeInSettlement ? 0 : unit.poisonTurnsRemaining,
       enteredZoCThisActivation: false,
       nextTurnMovePenalty: undefined,
+      attackedTargetsThisTurn: [],
     };
 
     let stealthUpdatedUnit = tickStealthCooldown(refreshedUnit);

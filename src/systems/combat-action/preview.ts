@@ -239,6 +239,17 @@ export function previewCombatAction(
       chargeMomentumTriggered = true;
     }
   }
+  // Charge T1 first-attack bonus: +20% on first attack of combat (foreign) or per-target (native)
+  let firstAttackTriggered = false;
+  if (attackerDoctrine?.forcedMarchEnabled && isChargeAttack) {
+    const alreadyAttacked = attacker.attackedTargetsThisTurn ?? [];
+    const isFreshTarget = !alreadyAttacked.includes(defenderId);
+    const isFirstAttack = alreadyAttacked.length === 0;
+    if (attackerDoctrine.firstAttackPerTargetEnabled ? isFreshTarget : isFirstAttack) {
+      situationalAttackModifier += 0.2;
+      firstAttackTriggered = true;
+    }
+  }
   if (defenderDoctrine?.shieldWallEnabled) {
     const defenderIsInfantry = defenderPrototype.derivedStats.role === 'melee'
       && !(defenderPrototype.tags?.includes('cavalry') || defenderPrototype.tags?.includes('elephant'));
@@ -411,6 +422,9 @@ export function previewCombatAction(
   }
   if (chargeMomentumTriggered) {
     pushCombatEffect(triggeredEffects, 'Charge Momentum', 'Long charge added 15% bonus damage.', 'ability');
+  }
+  if (firstAttackTriggered) {
+    pushCombatEffect(triggeredEffects, 'First Strike', 'First attack bonus dealt +20% damage.', 'ability');
   }
   if (coldHardenedTriggered) {
     pushCombatEffect(triggeredEffects, 'Cold Hardened', 'Arctic defender hardened stance for 10% defense.', 'ability');

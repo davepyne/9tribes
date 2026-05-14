@@ -309,6 +309,10 @@ export function applyCombatAction(
   if (nextAttacker.hp > 0) {
     nextAttacker = awardCombatXP(nextAttacker, preview.result.defenderDestroyed, !preview.result.attackerDestroyed);
     nextAttacker = tryPromoteUnit(nextAttacker, registry);
+    nextAttacker = {
+      ...nextAttacker,
+      attackedTargetsThisTurn: [...(nextAttacker.attackedTargetsThisTurn ?? []), preview.defenderId],
+    };
   }
 
   const nextUnits = new Map(state.units);

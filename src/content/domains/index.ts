@@ -401,7 +401,7 @@ const CHARGE_RESEARCH = buildResearchDomain({
     type: 'battle_momentum',
     description: 'First attack each combat deals +20% damage. If that attack kills, the attacker gains +1 attack action this turn.',
     nativeDescription: 'Savannah Lions’ first-attack bonus applies to the first attack on EACH new target this turn, not just the first attack of combat.',
-    effect: { firstChargeNoCooldown: true, firstAttackDamageBonus: 0.2, firstAttackPerTarget: true }, // firstChargeNoCooldown: wired; rest: design
+    effect: { firstChargeNoCooldown: true, firstAttackDamageBonus: 0.2, firstAttackPerTarget: true }, // all: wired
   },
   t2: {
     name: 'Routing Force',
