@@ -7,14 +7,15 @@ import type { HistoryEntryType, VeteranLevel } from '../core/enums.js';
 import type { GameState } from '../game/types.js';
 import type { CombatRecord } from '../features/factions/types.js';
 
-// Create a new history entry with timestamp
+// Create a new history entry with a round-based timestamp
 function createHistoryEntry(
   type: HistoryEntryType,
-  details: Record<string, unknown>
+  details: Record<string, unknown>,
+  round: number
 ): HistoryEntry {
   return {
     type,
-    timestamp: Date.now(),
+    timestamp: round,
     details,
   };
 }
@@ -23,9 +24,10 @@ function createHistoryEntry(
 export function addHistoryEntry(
   unit: Unit,
   type: HistoryEntryType,
-  details: Record<string, unknown>
+  details: Record<string, unknown>,
+  round: number
 ): Unit {
-  const entry = createHistoryEntry(type, details);
+  const entry = createHistoryEntry(type, details, round);
   return {
     ...unit,
     history: [...(unit.history ?? []), entry],
@@ -36,9 +38,10 @@ export function addHistoryEntry(
 export function recordUnitCreated(
   unit: Unit,
   factionId: FactionId,
-  prototypeId: PrototypeId
+  prototypeId: PrototypeId,
+  round: number
 ): Unit {
-  return addHistoryEntry(unit, 'created', { factionId, prototypeId });
+  return addHistoryEntry(unit, 'created', { factionId, prototypeId }, round);
 }
 
 // Record battle participation
@@ -47,28 +50,30 @@ export function recordBattleFought(
   opponentId: UnitId,
   won: boolean,
   damageDealt: number,
-  damageTaken: number
+  damageTaken: number,
+  round: number
 ): Unit {
   return addHistoryEntry(unit, 'battle_fought', {
     opponentId,
     outcome: won ? 'victory' : 'defeat',
     damageDealt,
     damageTaken,
-  });
+  }, round);
 }
 
 // Record veteran level promotion
 export function recordPromotion(
   unit: Unit,
   fromLevel: VeteranLevel,
-  toLevel: VeteranLevel
+  toLevel: VeteranLevel,
+  round: number
 ): Unit {
-  return addHistoryEntry(unit, 'promoted', { fromLevel, toLevel });
+  return addHistoryEntry(unit, 'promoted', { fromLevel, toLevel }, round);
 }
 
 // Record enemy unit killed
-export function recordEnemyKilled(unit: Unit, victimId: UnitId): Unit {
-  return addHistoryEntry(unit, 'unit_killed', { victimId });
+export function recordEnemyKilled(unit: Unit, victimId: UnitId, round: number): Unit {
+  return addHistoryEntry(unit, 'unit_killed', { victimId }, round);
 }
 
 // Query: Get all history entries of a specific type

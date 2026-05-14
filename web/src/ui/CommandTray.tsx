@@ -22,46 +22,9 @@ export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, o
   const selectedCity = state.hud.selectedCity;
   const settlementPreview = state.hud.settlementPreview;
 
-  const canBuildFort = (() => {
-    if (!selectedUnit) return false;
-    if (!selectedUnit.isActiveFaction) return false;
-    if (selectedUnit.movesRemaining !== selectedUnit.movesMax) return false;
-
-    const faction = state.world.factions.find((f) => f.id === selectedUnit.factionId);
-    if (!faction || faction.id !== 'hill_clan') return false;
-
-    // Engineers can always build forts; other hill units need fortress_t2
-    if (!selectedUnit.isEngineer && faction.nativeDomain !== 'fortress') return false;
-
-    if (!selectedUnit.isEngineer) {
-      const canBuildFieldForts = state.research?.nodes.some(
-        (node) => node.nodeId === 'fortress_t2' && node.state === 'completed',
-      ) ?? false;
-      if (!canBuildFieldForts) return false;
-    }
-
-    const hasFort = state.world.improvements.some(
-      (improvement) => improvement.q === selectedUnit.q && improvement.r === selectedUnit.r,
-    );
-    if (hasFort) return false;
-
-    return selectedUnit.movementClass === 'infantry' || selectedUnit.role === 'ranged';
-  })();
-
-  const canDestroyFort = (() => {
-    if (!selectedUnit) return false;
-    if (!selectedUnit.isActiveFaction) return false;
-    if (!selectedUnit.isEngineer) return false;
-    if (selectedUnit.movesRemaining !== selectedUnit.movesMax) return false;
-
-    const faction = state.world.factions.find((f) => f.id === selectedUnit.factionId);
-    if (!faction || faction.id !== 'hill_clan') return false;
-
-    const hasFort = state.world.improvements.some(
-      (improvement) => improvement.q === selectedUnit.q && improvement.r === selectedUnit.r,
-    );
-    return hasFort;
-  })();
+  const canBuildFort = selectedUnit?.canBuildFort ?? false;
+  const canDestroyFort = selectedUnit?.canDestroyFort ?? false;
+  const canSacrifice = selectedUnit?.canSacrifice ?? false;
 
   const canBuildCity = (() => {
     if (!selectedUnit) return false;
@@ -72,23 +35,6 @@ export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, o
     const hasVillage = state.world.villages.some((village) => village.q === selectedUnit.q && village.r === selectedUnit.r);
     const hasImprovement = state.world.improvements.some((improvement) => improvement.q === selectedUnit.q && improvement.r === selectedUnit.r);
     return !hasCity && !hasVillage && !hasImprovement;
-  })();
-
-  const canSacrifice = (() => {
-    if (!selectedUnit) return false;
-    if (!selectedUnit.isActiveFaction) return false;
-    const learned = selectedUnit.learnedAbilities ?? [];
-    if (learned.length === 0) return false;
-
-    const faction = state.world.factions.find((f) => f.id === selectedUnit.factionId);
-    if (!faction || !faction.homeCityId) return false;
-
-    const homeCity = state.world.cities.find((c) => c.id === faction.homeCityId);
-    if (!homeCity || homeCity.factionId !== faction.id || homeCity.besieged) return false;
-
-    if (hexDistance({ q: selectedUnit.q, r: selectedUnit.r }, { q: homeCity.q, r: homeCity.r }) > 1) return false;
-
-    return true;
   })();
 
   return (

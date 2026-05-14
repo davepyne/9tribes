@@ -3,6 +3,7 @@ import type { RulesRegistry } from '../../data/registry/types.js';
 import { getRoleEffectiveness } from '../../data/roleEffectiveness.js';
 import { getWeaponEffectiveness } from '../../data/weaponEffectiveness.js';
 import type { GameState } from '../../game/types.js';
+import type { Unit } from '../../features/units/types.js';
 import type { FactionId, HexCoord, UnitId } from '../../types.js';
 import { isUnitRiverStealthed } from '../factionIdentitySystem.js';
 import { isUnitEffectivelyStealthed } from '../fogSystem.js';
@@ -27,7 +28,7 @@ export function findBestTargetChoice(
   registry: RulesRegistry,
   threatenedCityPosition?: HexCoord,
 ) {
-  let bestTarget: typeof state.units extends Map<any, infer U> ? U : never = null as any;
+  let bestTarget: Unit | null = null;
   let bestScore = -Infinity;
   const strategy = state.factionStrategies.get(friendlyFactionId);
   const actingUnit = state.units.get(unitId);
@@ -158,7 +159,7 @@ export function findBestRangedTarget(
   range: number,
   threatenedCityPosition?: HexCoord,
 ) {
-  let bestTarget: typeof state.units extends Map<any, infer U> ? U : never = null as any;
+  let bestTarget: Unit | null = null;
   let bestScore = -Infinity;
   const strategy = state.factionStrategies.get(friendlyFactionId);
   const actingUnit = state.units.get(unitId);

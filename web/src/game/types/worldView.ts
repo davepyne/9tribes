@@ -71,6 +71,9 @@ export type UnitView = {
   routed?: boolean;
   preparedAbility?: string;
   isSettler?: boolean;
+  canBuildFort?: boolean;
+  canDestroyFort?: boolean;
+  canSacrifice?: boolean;
   canBrace?: boolean;
   canAmbush?: boolean;
   isEmbarked?: boolean;

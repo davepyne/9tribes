@@ -1,5 +1,38 @@
 import civilizationsData from '../../../src/content/base/civilizations.json';
 import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
+import { DOMAIN_TERRAIN_AFFINITY, TERRAIN_RESEARCH_BONUS } from '../../../src/systems/simulation/factionTurnEffects.js';
+import { DOMAIN_NAMES } from './domainMeta.js';
+
+// ── Dynamic terrain table (derived from backend constants) ──
+function generateTerrainTableHtml(): string {
+  // Invert DOMAIN_TERRAIN_AFFINITY: terrain -> domains[]
+  const terrainToDomains: Record<string, string[]> = {};
+  for (const [domain, terrains] of Object.entries(DOMAIN_TERRAIN_AFFINITY)) {
+    for (const terrain of terrains) {
+      if (!terrainToDomains[terrain]) terrainToDomains[terrain] = [];
+      const name = DOMAIN_NAMES[domain] ?? domain;
+      if (!terrainToDomains[terrain].includes(name)) {
+        terrainToDomains[terrain].push(name);
+      }
+    }
+  }
+
+  // Build sorted table (ascending XP matches original order)
+  const terrainOrder = Object.keys(TERRAIN_RESEARCH_BONUS).sort(
+    (a, b) => TERRAIN_RESEARCH_BONUS[a] - TERRAIN_RESEARCH_BONUS[b]
+  );
+
+  const rows = terrainOrder.map(t => {
+    const xp = TERRAIN_RESEARCH_BONUS[t];
+    const domainNames = terrainToDomains[t]?.join(', ') ?? '—';
+    const terrainLabel = t.charAt(0).toUpperCase() + t.slice(1);
+    const note = t === 'mountain' ? ' (impassable — city territory only)' : '';
+    return `<tr><td>${terrainLabel}</td><td>+${xp.toFixed(2)}</td><td>${domainNames}${note}</td></tr>`;
+  });
+
+  const header = '<table>\n  <tr><th>Terrain</th><th>XP/hex</th><th>Domain</th></tr>';
+  return `${header}\n${rows.join('\n')}\n</table>`;
+}
 
 // ── Help System Content ──
 // All player-facing prose for the in-game Help Panel.
@@ -367,22 +400,7 @@ export const helpContent: HelpContent = {
 <h4>Terrain Affinity</h4>
 <p>Each domain has specific terrain types where it thrives. Units and city territory on matching terrain generate research progress for that domain. The per-hex bonus scales with how rare that terrain is on the map:</p>
 
-<table>
-  <tr><th>Terrain</th><th>XP/hex</th><th>Domain</th></tr>
-  <tr><td>Hill</td><td>+0.25</td><td>Fortress</td></tr>
-  <tr><td>Coast</td><td>+0.25</td><td>Tidal Warfare, Slaving</td></tr>
-  <tr><td>Plains</td><td>+0.50</td><td>Skirmish Pursuit</td></tr>
-  <tr><td>Savannah</td><td>+0.50</td><td>Charge</td></tr>
-  <tr><td>Forest</td><td>+0.50</td><td>Nature Healing</td></tr>
-  <tr><td>Desert</td><td>+0.50</td><td>Camel Adaptation</td></tr>
-  <tr><td>Ocean</td><td>+0.50</td><td>Tidal Warfare, Slaving</td></tr>
-  <tr><td>Tundra</td><td>+1.00</td><td>Heavy Hitter</td></tr>
-  <tr><td>River</td><td>+1.75</td><td>River Stealth</td></tr>
-  <tr><td>Jungle</td><td>+1.75</td><td>Venom</td></tr>
-  <tr><td>Swamp</td><td>+2.00</td><td>River Stealth</td></tr>
-  <tr><td>Oasis</td><td>+2.00</td><td>Camel Adaptation</td></tr>
-  <tr><td>Mountain</td><td>+3.00</td><td>Fortress (impassable — city territory only)</td></tr>
-</table>
+${generateTerrainTableHtml()}
 
 <p>Terrain bonuses are capped at <strong>+5 XP per domain per turn</strong>. Your city territory on matching hexes also contributes — expanding into rare terrain is a powerful research strategy.</p>
 

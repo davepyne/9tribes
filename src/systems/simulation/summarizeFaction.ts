@@ -4,13 +4,14 @@ import { getBattleCount, getKillCount } from '../historySystem.js';
 import { describeCapabilityLevels } from '../capabilitySystem.js';
 import { getFactionCityIds } from '../factionOwnershipSystem.js';
 import { getVillageCount } from '../villageSystem.js';
+import { hasUnit, getUnit, getPrototype } from '../../game/stateAccess.js';
 
 export function summarizeFaction(state: GameState, factionId: FactionId): string {
   const faction = state.factions.get(factionId);
   if (!faction) return '';
-  const livingUnits = faction.unitIds.filter((id) => state.units.has(id as never));
+  const livingUnits = faction.unitIds.filter((id) => hasUnit(state, id));
   const prototypeNames = faction.prototypeIds
-    .map((id) => state.prototypes.get(id as never)?.name)
+    .map((id) => getPrototype(state, id)?.name)
     .filter((name): name is string => Boolean(name));
 
   const economy = state.economy.get(factionId);
@@ -31,8 +32,8 @@ export function summarizeFaction(state: GameState, factionId: FactionId): string
     economyInfo,
     weInfo,
     siegeInfo,
-    `battles=${livingUnits.reduce((sum, id) => sum + getBattleCount(state.units.get(id as never)!), 0)}`,
-    `kills=${livingUnits.reduce((sum, id) => sum + getKillCount(state.units.get(id as never)!), 0)}`,
+    `battles=${livingUnits.reduce((sum, id) => sum + getBattleCount(getUnit(state, id)!), 0)}`,
+    `kills=${livingUnits.reduce((sum, id) => sum + getKillCount(getUnit(state, id)!), 0)}`,
     `capabilities=${describeCapabilityLevels(faction)}`,
     `prototypes=${prototypeNames.join(', ')}`,
   ].filter(Boolean).join(' | ');

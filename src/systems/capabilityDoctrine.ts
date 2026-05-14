@@ -1,9 +1,10 @@
-import type { FactionId } from '../types.js';
+import type { FactionId, ResearchNodeId, ComponentId } from '../types.js';
 import type { ResearchState } from '../features/research/types.js';
 import type { Faction } from '../features/factions/types.js';
 import type { HybridRecipeDef } from '../data/registry/types.js';
 import type { Prototype } from '../features/prototypes/types.js';
 import { getDomainProgression } from './domainProgression.js';
+import { includesResearchNode, includesComponent } from '../game/stateAccess.js';
 
 export interface ResearchDoctrine {
   // Quantitative effects derived from research tier
@@ -80,7 +81,7 @@ export function hasCompletedResearchNodes(
   requiredResearchNodes: string[] | undefined
 ): boolean {
   return (requiredResearchNodes ?? []).every((nodeId) =>
-    researchState?.completedNodes.includes(nodeId as never)
+    researchState?.completedNodes.includes(nodeId as ResearchNodeId)
   );
 }
 
@@ -143,7 +144,7 @@ export function resolveResearchDoctrine(
   }
 
   function hasNode(nodeId: string): boolean {
-    return completedNodes.includes(nodeId as never);
+    return completedNodes.includes(nodeId as ResearchNodeId);
   }
 
   const progression = faction ? getDomainProgression(faction, researchState) : null;
@@ -246,5 +247,5 @@ export const resolveCapabilityDoctrine = resolveResearchDoctrine;
  * Check if a prototype has a specific component.
  */
 export function prototypeHasComponent(prototype: Prototype, componentId: string): boolean {
-  return prototype.componentIds.includes(componentId as never);
+  return includesComponent(prototype.componentIds, componentId);
 }

@@ -18,6 +18,7 @@ import { getBulwarkDefenseBonus, getTidalCoastDebuff } from '../signatureAbility
 import { calculateFlankingBonus, isRearAttack } from '../zocSystem.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { getWallDefenseBonus } from '../siegeSystem.js';
+import { getPrototype } from '../../game/stateAccess.js';
 import {
   applyCombatSynergies,
   type CombatContext,
@@ -58,8 +59,8 @@ export function previewCombatAction(
     return null;
   }
 
-  const attackerPrototype = state.prototypes.get(attacker.prototypeId as never);
-  const defenderPrototype = state.prototypes.get(defender.prototypeId as never);
+  const attackerPrototype = getPrototype(state, attacker.prototypeId);
+  const defenderPrototype = getPrototype(state, defender.prototypeId);
   if (!attackerPrototype || !defenderPrototype) {
     return null;
   }

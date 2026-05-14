@@ -18,6 +18,7 @@ import { attemptCapture, attemptNonCombatCapture, getCaptureParams, hasCaptureAb
 import { addExhaustion, EXHAUSTION_CONFIG } from '../warExhaustionSystem.js';
 import { applyContactTransfer } from '../capabilitySystem.js';
 import { applyPoisonDoT, enterStealth, findRetreatHex } from '../signatureAbilitySystem.js';
+import { getPrototype } from '../../game/stateAccess.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { getGreedyLootOnKill, getPoisonOnAttack, getPursuitMovementOnKill, isUnitRiverStealthed } from '../factionIdentitySystem.js';
 import { isCoverTerrain } from '../terrainUtils.js';
@@ -145,8 +146,8 @@ export function applyCombatAction(
     };
   }
 
-  const attackerPrototype = state.prototypes.get(attacker.prototypeId as never);
-  const defenderPrototype = state.prototypes.get(defender.prototypeId as never);
+  const attackerPrototype = getPrototype(state, attacker.prototypeId);
+  const defenderPrototype = getPrototype(state, defender.prototypeId);
   if (!attackerPrototype || !defenderPrototype) {
     return {
       state,
@@ -666,12 +667,13 @@ export function applyCombatAction(
       preview.result.defenderDestroyed,
       preview.result.attackerDamage,
       preview.result.defenderDamage,
+      state.round,
     );
     if (preview.result.defenderDestroyed) {
-      updatedAttacker = recordEnemyKilled(updatedAttacker, defender.id);
+      updatedAttacker = recordEnemyKilled(updatedAttacker, defender.id, state.round);
     }
     if (updatedAttacker.veteranLevel !== attacker.veteranLevel) {
-      updatedAttacker = recordPromotion(updatedAttacker, attacker.veteranLevel, updatedAttacker.veteranLevel);
+      updatedAttacker = recordPromotion(updatedAttacker, attacker.veteranLevel, updatedAttacker.veteranLevel, state.round);
     }
     current = writeUnitToState(current, updatedAttacker);
   }

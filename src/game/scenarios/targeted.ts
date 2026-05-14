@@ -1,7 +1,8 @@
 import type { GameState } from '../../game/types.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
-import type { FactionId, ChassisId, ComponentId, PrototypeId, CityId } from '../../types.js';
+import type { FactionId, ChassisId, ComponentId, PrototypeId, CityId, UnitId } from '../../types.js';
 import type { Unit } from '../../features/units/types.js';
+import type { Prototype } from '../../features/prototypes/types.js';
 import { assemblePrototype } from '../../design/assemblePrototype.js';
 import { createUnitId } from '../../core/ids.js';
 import { recordUnitCreated } from '../../systems/historySystem.js';
@@ -23,6 +24,8 @@ export interface PlaceEnemyNearCityOptions {
 }
 
 function spawnUnit(
+  prototypes: Map<PrototypeId, Prototype>,
+  units: Map<UnitId, Unit>,
   state: GameState,
   registry: RulesRegistry,
   factionId: FactionId,
@@ -43,7 +46,7 @@ function spawnUnit(
       validation: { ignoreResearchRequirements: true, ignoreProgressionRequirements: true },
     },
   );
-  state.prototypes.set(prototype.id, prototype);
+  prototypes.set(prototype.id, prototype);
   faction.prototypeIds.push(prototype.id);
 
   const unitId = createUnitId();
@@ -72,8 +75,8 @@ function spawnUnit(
     turnsSinceStealthBreak: 0,
     learnedAbilities: [],
   };
-  unit = recordUnitCreated(unit, factionId, prototype.id);
-  state.units.set(unitId, unit);
+  unit = recordUnitCreated(unit, factionId, prototype.id, state.round);
+  units.set(unitId, unit);
   faction.unitIds.push(unitId);
   return unit;
 }
@@ -89,9 +92,12 @@ export function placeEnemyNearCity(
   const city = state.cities.get(cityId)!;
   const cityPos = city.position;
 
+  const prototypes = new Map(state.prototypes);
+  const units = new Map(state.units);
+
   for (const eu of opts.enemyUnits) {
     spawnUnit(
-      state, registry, opts.enemyFactionId,
+      prototypes, units, state, registry, opts.enemyFactionId,
       eu.chassisId, eu.componentIds,
       { q: cityPos.q + eu.offset.q, r: cityPos.r + eu.offset.r },
     );
@@ -100,12 +106,12 @@ export function placeEnemyNearCity(
   if (opts.defenderUnits) {
     for (const du of opts.defenderUnits) {
       spawnUnit(
-        state, registry, opts.targetFactionId,
+        prototypes, units, state, registry, opts.targetFactionId,
         du.chassisId, du.componentIds,
         { q: cityPos.q + du.offset.q, r: cityPos.r + du.offset.r },
       );
     }
   }
 
-  return state;
+  return { ...state, prototypes, units };
 }

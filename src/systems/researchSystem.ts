@@ -8,6 +8,7 @@ import {
   getDomainTierFromProgression,
   isDomainUnlockedForFaction,
 } from './domainProgression.js';
+import { includesResearchNode } from '../game/stateAccess.js';
 
 /**
  * Create initial research state for a new faction.
@@ -56,7 +57,7 @@ export function startResearch(
   // Prerequisite enforcement: all prerequisites must be completed
   if (prerequisites && prerequisites.length > 0) {
     const allPrereqsMet = prerequisites.every((prereqId) =>
-      state.completedNodes.includes(prereqId as never)
+      state.completedNodes.includes(prereqId as ResearchNodeId)
     );
     if (!allPrereqsMet) {
       return state; // Cannot start research — prerequisites not met

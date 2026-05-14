@@ -2,19 +2,14 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
 import emergentRulesData from '../../../src/content/base/emergent-rules.json';
+import { validatePairSynergiesData, validateEmergentRulesData } from '../data/jsonValidators';
+import type { PairSynergy } from '../data/jsonValidators';
 import { SynergyCard } from './SynergyCard';
 import type { PairSynergyData, EmergentRuleData } from './SynergyCard';
 import { playSynergyUnlockSting } from '../app/audio/sfxManager';
 import type { BackendSynergyState } from './resolveActiveSynergies';
 
 // ── Types ──
-
-type PairSynergy = {
-  id: string;
-  name: string;
-  domains: string[];
-  description: string;
-};
 
 type SynergyUnlockEvent = {
   synergies: Array<{ id: string; name: string; domains: string[]; description: string }>;
@@ -24,6 +19,9 @@ type SynergyUnlockEvent = {
 type FactionSynergyState = BackendSynergyState & { id: string };
 
 // ── Typed data ──
+
+validatePairSynergiesData(pairSynergiesData);
+validateEmergentRulesData(emergentRulesData);
 
 const PAIR_SYNERGIES: PairSynergy[] = (pairSynergiesData as { pairSynergies: Array<{
   id: string; name: string; domains: string[]; description: string;

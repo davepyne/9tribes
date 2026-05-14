@@ -4,6 +4,7 @@ import type { Unit } from '../../features/units/types.js';
 import type { HexCoord } from '../../types.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import { resolveCapabilityDoctrine } from '../capabilityDoctrine.js';
+import { getPrototype } from '../../game/stateAccess.js';
 import { clearPreparedAbility } from '../abilitySystem.js';
 import { applyKnockback } from '../signatureAbilitySystem.js';
 import { destroyTransport, isTransportUnit } from '../transportSystem.js';
@@ -44,7 +45,7 @@ export function removeDeadUnitsFromFactions(factions: GameState['factions'], uni
 }
 
 export function canAttackTarget(state: GameState, registry: RulesRegistry, attacker: Unit, defender: Unit): boolean {
-  const attackerPrototype = state.prototypes.get(attacker.prototypeId as never);
+  const attackerPrototype = getPrototype(state, attacker.prototypeId);
   if (!attackerPrototype) {
     return false;
   }
@@ -173,8 +174,8 @@ export function createCombatActionPreviewRecord(
 ): import('./types.js').CombatActionPreview | null {
   const attacker = state.units.get(attackerId);
   const defender = state.units.get(defenderId);
-  const attackerPrototype = attacker ? state.prototypes.get(attacker.prototypeId as never) : null;
-  const defenderPrototype = defender ? state.prototypes.get(defender.prototypeId as never) : null;
+  const attackerPrototype = attacker ? getPrototype(state, attacker.prototypeId) : null;
+  const defenderPrototype = defender ? getPrototype(state, defender.prototypeId) : null;
   if (!attacker || !defender || !attackerPrototype || !defenderPrototype) {
     return null;
   }
@@ -202,7 +203,7 @@ export function destroyTransportIfApplicable(
 ): GameState {
   const unit = state.units.get(unitId);
   if (!unit) return state;
-  const proto = state.prototypes.get(unit.prototypeId as never);
+  const proto = getPrototype(state, unit.prototypeId);
   if (proto && isTransportUnit(proto, registry)) {
     const destroyResult = destroyTransport(state, unit.id, state.transportMap);
     return { ...destroyResult.state, transportMap: destroyResult.transportMap };

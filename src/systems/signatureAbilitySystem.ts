@@ -1,6 +1,7 @@
 // Signature Ability System - Helper functions for faction-specific abilities
 import type { GameState, Unit, HexCoord } from '../game/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
+import type { UnitId } from '../types.js';
 import { getNeighbors, hexDistance } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
 import { getTerrainAt } from './abilitySystem.js';
@@ -37,16 +38,18 @@ function getDomainForTag(tag: string): AbilityDomain | null {
  * Check if a unit has fortress training (for Bulwark ability)
  */
 export function hasFortressTraining(
-  unitId: string,
+  unitId: UnitId,
   state: GameState,
   registry: RulesRegistry
 ): boolean {
-  const prototype = state.prototypes.get(unitId as unknown as import('../types.js').PrototypeId);
+  const unit = state.units.get(unitId);
+  if (!unit) return false;
+  const prototype = state.prototypes.get(unit.prototypeId);
   if (!prototype) return false;
   // Check prototype tags first
   if (prototype.tags?.includes('fortress')) return true;
   // Also check component tags for backward compatibility
-  const componentIds = (prototype as unknown as { componentIds?: string[] }).componentIds ?? [];
+  const componentIds = prototype.componentIds ?? [];
   for (const componentId of componentIds) {
     const component = registry.getComponent(componentId);
     if (component?.tags?.includes('fortress')) return true;

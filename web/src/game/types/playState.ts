@@ -2,8 +2,8 @@ import type { RNGState } from '../../../../src/core/rng.js';
 import type { Faction, FactionEconomy, Improvement, Prototype, ResearchState, Unit, Village, WarExhaustion } from '../../../../src/game/types.js';
 import type { City, GameState } from '../../../../src/game/types.js';
 import type { FactionStrategy } from '../../../../src/systems/factionStrategy.js';
-import type { TransportMap } from '../../../../src/systems/transportSystem.js';
-import type { VillageCaptureCooldownMap } from '../../../../src/systems/villageCaptureSystem.js';
+import type { TransportMap, TransportState } from '../../../../src/systems/transportSystem.js';
+import type { VillageCaptureCooldownMap, VillageCaptureRecord } from '../../../../src/systems/villageCaptureSystem.js';
 import type { FactionFogState } from '../../../../src/systems/fogSystem.js';
 import type { FactionId } from '../../../../src/types.js';
 import type { GameMap, MapGenerationMode, Tile } from '../../../../src/world/map/types.js';
@@ -51,8 +51,8 @@ export type SerializedGameState = Omit<
   factionStrategies: SerializedEntries<FactionStrategy>;
   poisonTraps: SerializedEntries<{ damage: number; slow: number; ownerFactionId: FactionId }>;
   contaminatedHexes: string[];
-  transportMap: SerializedEntries<{ transportId: string; embarkedUnitIds: string[] }>;
-  villageCaptureCooldowns: SerializedEntries<{ position: string; capturedByFactionId: FactionId; capturedRound: number }>;
+  transportMap: SerializedEntries<TransportState>;
+  villageCaptureCooldowns: SerializedEntries<VillageCaptureRecord>;
   fogState: SerializedEntries<SerializedFactionFogState>;
   rngState: RNGState;
 };
@@ -123,8 +123,8 @@ export function deserializeGameState(payload: SerializedGameState): GameState {
     factionStrategies: toTypedMap(payload.factionStrategies),
     poisonTraps: toTypedMap(payload.poisonTraps),
     contaminatedHexes: new Set(payload.contaminatedHexes),
-    transportMap: toTypedMap(payload.transportMap as any),
-    villageCaptureCooldowns: toTypedMap(payload.villageCaptureCooldowns as any),
+    transportMap: toTypedMap(payload.transportMap),
+    villageCaptureCooldowns: toTypedMap(payload.villageCaptureCooldowns),
     fogState: Array.isArray(payload.fogState)
       ? new Map(
           payload.fogState.map(([fid, fs]) => [

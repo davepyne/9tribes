@@ -51,7 +51,24 @@ export function runWarEcologySimulation(
   trace?: import('./simulation/traceTypes.js').SimulationTrace,
   difficulty?: DifficultyLevel,
 ): GameState {
-  let current = { ...initialState };
+  let current: GameState = {
+    ...initialState,
+    factions: new Map(initialState.factions),
+    units: new Map(initialState.units),
+    cities: new Map(initialState.cities),
+    villages: new Map(initialState.villages),
+    prototypes: new Map(initialState.prototypes),
+    improvements: new Map(initialState.improvements),
+    research: new Map(initialState.research),
+    economy: new Map(initialState.economy),
+    warExhaustion: new Map(initialState.warExhaustion),
+    factionStrategies: new Map(initialState.factionStrategies),
+    poisonTraps: new Map(initialState.poisonTraps),
+    fogState: new Map(initialState.fogState),
+    transportMap: new Map(initialState.transportMap),
+    villageCaptureCooldowns: new Map(initialState.villageCaptureCooldowns),
+    contaminatedHexes: new Set(initialState.contaminatedHexes),
+  };
   let roundsCompleted = 0;
 
   while (roundsCompleted < maxTurns && getAliveFactions(current).size > 1) {

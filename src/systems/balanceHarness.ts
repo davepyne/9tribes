@@ -344,7 +344,7 @@ function isSignatureCapableUnit(factionId: FactionId, prototype: Prototype, regi
 
 function getPrototypeProductionCost(
   prototype: Prototype,
-  faction: NonNullable<ReturnType<typeof buildMvpScenario>['factions'] extends Map<any, infer F> ? F : never>,
+  faction: NonNullable<ReturnType<typeof buildMvpScenario>['factions'] extends ReadonlyMap<any, infer F> ? F : never>,
 ): number {
   if (getPrototypeCostType(prototype) === 'villages') {
     return prototype.sourceRecipeId === 'settler' ? 0 : prototype.productionCost;

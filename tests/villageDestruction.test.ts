@@ -54,8 +54,8 @@ describe('village destruction', () => {
     expect(updatedFaction.villageIds).not.toContain(villageId);
   });
 
-  it('VILLAGE_LOST war exhaustion is 0 (WE disabled)', () => {
-    expect(EXHAUSTION_CONFIG.VILLAGE_LOST).toBe(0);
+  it('VILLAGE_LOST war exhaustion is 2 (enabled)', () => {
+    expect(EXHAUSTION_CONFIG.VILLAGE_LOST).toBe(2);
   });
 
   it('spawns villages from city territory after the base 4-turn cooldown', () => {

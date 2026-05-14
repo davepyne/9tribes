@@ -216,7 +216,7 @@ export class SynergyEngine {
       return null;
     }
 
-    const tripleName = this.generateTripleName(emergentEligibleDomains, pairIds);
+    const tripleName = emergent.name;
 
     const domainTriple: [string, string, string] = [
       emergentEligibleDomains[0],
@@ -255,147 +255,48 @@ export class SynergyEngine {
   }
 
   private ruleMatches(domains: string[], rule: EmergentRuleConfig): boolean {
-    switch (rule.condition) {
-      case 'contains_terrain AND contains_combat AND contains_mobility': {
-        if (!rule.domainSets) return false;
-        const hasTerrain = domains.some(d => rule.domainSets!['terrain'].includes(d));
-        const hasCombat = domains.some(d => rule.domainSets!['combat'].includes(d));
-        const hasMobility = domains.some(d => rule.domainSets!['mobility'].includes(d));
-        return hasTerrain && hasCombat && hasMobility;
-      }
-      case 'contains_healing AND contains_defensive AND contains_offensive': {
-        if (!rule.domainSets) return false;
-        const hasHealing = domains.some(d => rule.domainSets!['healing'].includes(d));
-        const hasDefensive = domains.some(d => rule.domainSets!['defensive'].includes(d));
-        const hasOffensive = domains.some(d => rule.domainSets!['offensive'].includes(d));
-        return hasHealing && hasDefensive && hasOffensive;
-      }
-      case 'contains_stealth AND contains_combat AND contains_terrain': {
-        if (!rule.domainSets) return false;
-        const hasStealth = domains.some(d => rule.domainSets!['stealth'].includes(d));
-        const hasCombat = domains.some(d => rule.domainSets!['combat'].includes(d));
-        const hasTerrain = domains.some(d => rule.domainSets!['terrain'].includes(d));
-        return hasStealth && hasCombat && hasTerrain;
-      }
-      case 'contains_fortress AND contains_healing AND contains_defensive': {
-        if (!rule.domainSets) return false;
-        const hasFortress = domains.some(d => rule.domainSets!['fortress']?.includes(d));
-        const hasHealing = domains.some(d => rule.domainSets!['healing']?.includes(d));
-        const hasDefensive = domains.some(d => rule.domainSets!['defensive']?.includes(d));
-        return hasFortress && hasHealing && hasDefensive;
-      }
-      case 'contains_slaving AND contains_heavy AND contains_fortress': {
-        if (!rule.domainSets) return false;
-        const hasSlaving = domains.some(d => rule.domainSets!['slaving'].includes(d));
-        const hasHeavy = domains.some(d => rule.domainSets!['heavy'].includes(d));
-        const hasFortress = domains.some(d => rule.domainSets!['fortress'].includes(d));
-        return hasSlaving && hasHeavy && hasFortress;
-      }
-      case 'contains_camels AND contains_slaving AND contains_mobility': {
-        if (!rule.domainSets) return false;
-        const hasCamels = domains.some(d => rule.domainSets!['camels'].includes(d));
-        const hasSlaving = domains.some(d => rule.domainSets!['slaving'].includes(d));
-        const hasMobility = domains.some(d => rule.domainSets!['mobility'].includes(d));
-        return hasCamels && hasSlaving && hasMobility;
-      }
-      case 'contains_venom AND contains_stealth AND contains_combat': {
-        if (!rule.domainSets) return false;
-        const hasVenom = domains.some(d => rule.domainSets!['venom'].includes(d));
-        const hasStealth = domains.some(d => rule.domainSets!['stealth'].includes(d));
-        const hasCombat = domains.some(d => rule.domainSets!['combat'].includes(d));
-        return hasVenom && hasStealth && hasCombat;
-      }
-      case 'contains_fortress AND contains_heavy AND contains_terrain': {
-        if (!rule.domainSets) return false;
-        const hasFortress = domains.some(d => rule.domainSets!['fortress'].includes(d));
-        const hasHeavy = domains.some(d => rule.domainSets!['heavy'].includes(d));
-        const hasTerrain = domains.some(d => rule.domainSets!['terrain'].includes(d));
-        return hasFortress && hasHeavy && hasTerrain;
-      }
-      case 'contains_3_mobility': {
-        if (!rule.mobilityDomains) return false;
-        const mobilityCount = domains.filter(d => rule.mobilityDomains!.includes(d)).length;
-        return mobilityCount >= 3;
-      }
-      case 'contains_3_combat': {
-        if (!rule.combatDomains) return false;
-        const combatCount = domains.filter(d => rule.combatDomains!.includes(d)).length;
-        return combatCount >= 3;
-      }
-      case 'default':
+    // Format: 'contains_X AND contains_Y AND ...', 'contains_3_X', or 'default'.
+    const parts = rule.condition.split(' AND ');
+    for (const part of parts) {
+      const trimmed = part.trim();
+      if (trimmed === 'default') {
         return true;
-      default:
-        return false;
+      }
+      const match3 = RE_CONTAINS_3.exec(trimmed);
+      if (match3) {
+        const category = match3[1];
+        const domainList = getCategoryDomainList(rule, category);
+        if (!domainList) return false;
+        const count = domains.filter(d => domainList.includes(d)).length;
+        if (count < 3) return false;
+        continue;
+      }
+      const match = RE_CONTAINS.exec(trimmed);
+      if (match && rule.domainSets) {
+        const category = match[1];
+        const categoryDomains = rule.domainSets[category];
+        if (!categoryDomains || !categoryDomains.some(d => domains.includes(d))) {
+          return false;
+        }
+        continue;
+      }
+      return false;
     }
+    return true;
   }
 
-  private generateTripleName(domains: string[], pairs: string[]): string {
-    const domainSet = new Set(domains);
-
-    // Ghost Army: 3 mobility domains
-    const mobilityCount = domains.filter(d =>
-      ['charge', 'hitrun', 'camel_adaptation', 'river_stealth'].includes(d)
-    ).length;
-    if (mobilityCount >= 3) {
-      return 'Ghost Army';
-    }
-
-    // Terrain Lord: terrain + combat + mobility
-    const hasTerrain = ['camel_adaptation', 'tidal_warfare', 'heavy_hitter'].some(d => domainSet.has(d));
-    const hasCombat = ['venom', 'fortress', 'charge', 'hitrun', 'slaving', 'heavy_hitter'].some(d => domainSet.has(d));
-    const hasMobility = ['camel_adaptation', 'charge', 'hitrun', 'river_stealth'].some(d => domainSet.has(d));
-    if (hasTerrain && hasCombat && hasMobility) {
-      return 'Terrain Lord';
-    }
-
-    // Slave Empire: slaving + heavy_hitter + fortress
-    if (domainSet.has('slaving') && domainSet.has('heavy_hitter') && domainSet.has('fortress')) {
-      return 'Slave Empire';
-    }
-
-    // Raid Camp: camel_adaptation + slaving + (charge | hitrun)
-    if (domainSet.has('camel_adaptation') && domainSet.has('slaving') &&
-        (domainSet.has('charge') || domainSet.has('hitrun'))) {
-      return 'Raid Camp';
-    }
-
-    // Poison Shadow: venom + river_stealth + (charge | hitrun)
-    if (domainSet.has('venom') && domainSet.has('river_stealth') &&
-        (domainSet.has('charge') || domainSet.has('hitrun'))) {
-      return 'Poison Shadow';
-    }
-
-    // Iron Turtle: fortress + heavy_hitter + (tidal_warfare | camel_adaptation)
-    if (domainSet.has('fortress') && domainSet.has('heavy_hitter') &&
-        (domainSet.has('tidal_warfare') || domainSet.has('camel_adaptation'))) {
-      return 'Iron Turtle';
-    }
-
-    // Paladin: nature_healing + (fortress|tidal_warfare|heavy_hitter) + (venom|charge|hitrun|slaving)
-    if (domainSet.has('nature_healing')) {
-      const hasDefensive = ['fortress', 'tidal_warfare', 'heavy_hitter'].some(d => domainSet.has(d));
-      const hasOffensive = ['venom', 'charge', 'hitrun', 'slaving'].some(d => domainSet.has(d));
-      if (hasDefensive && hasOffensive) {
-        return 'Paladin';
-      }
-    }
-
-    // Standing Stone: fortress + nature_healing + (tidal_warfare | heavy_hitter)
-    if (domainSet.has('fortress') && domainSet.has('nature_healing') &&
-        (domainSet.has('tidal_warfare') || domainSet.has('heavy_hitter'))) {
-      return 'Standing Stone';
-    }
-
-    // Terrain Assassin: river_stealth + combat + terrain
-    if (domainSet.has('river_stealth')) {
-      const hasCombatTA = ['venom', 'charge', 'hitrun', 'slaving'].some(d => domainSet.has(d));
-      const hasTerrainTA = ['camel_adaptation', 'tidal_warfare', 'heavy_hitter'].some(d => domainSet.has(d));
-      if (hasCombatTA && hasTerrainTA) {
-        return 'Terrain Assassin';
-      }
-    }
-
-    // Default fallback: Many-Faced
-    return 'Many-Faced';
-  }
 }
+
+const CATEGORY_DOMAIN_KEYS: Record<string, keyof EmergentRuleConfig> = {
+  mobility: 'mobilityDomains',
+  combat: 'combatDomains',
+};
+
+const RE_CONTAINS_3 = /^contains_3_(.+)$/;
+const RE_CONTAINS = /^contains_(.+)$/;
+
+function getCategoryDomainList(rule: EmergentRuleConfig, category: string): string[] | undefined {
+  const key = CATEGORY_DOMAIN_KEYS[category];
+  return key ? (rule[key] as string[] | undefined) : undefined;
+}
+

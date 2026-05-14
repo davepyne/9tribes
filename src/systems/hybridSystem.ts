@@ -1,7 +1,7 @@
 import type { GameState } from '../game/types.js';
 import type { Faction } from '../features/factions/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
-import type { FactionId, PrototypeId } from '../types.js';
+import type { ChassisId, ComponentId, FactionId, PrototypeId, UnitId } from '../types.js';
 import { createPrototypeId } from '../core/ids.js';
 import { assemblePrototype } from '../design/assemblePrototype.js';
 import { getDomainProgression, meetsLearnedDomainRequirement } from './domainProgression.js';
@@ -48,8 +48,8 @@ export function unlockHybridRecipes(
     try {
       prototype = assemblePrototype(
         factionId,
-        recipe.chassisId as never,
-        recipe.componentIds as never,
+        recipe.chassisId as ChassisId,
+        recipe.componentIds as ComponentId[],
         registry,
         Array.from(current.prototypes.keys()),
         {

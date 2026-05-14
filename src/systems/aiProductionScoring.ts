@@ -73,7 +73,7 @@ export function getTargetArmySize(
 
 export function getProductionCostForPrototype(
   prototype: Pick<Prototype, 'name' | 'chassisId' | 'tags' | 'sourceRecipeId' | 'productionCost'>,
-  faction: NonNullable<GameState['factions'] extends Map<any, infer F> ? F : never>,
+  faction: NonNullable<GameState['factions'] extends ReadonlyMap<any, infer F> ? F : never>,
 ): number {
   if (getPrototypeCostType(prototype) === 'villages') {
     return prototype.sourceRecipeId === 'settler' ? 0 : getPrototypeQueueCost(prototype);
@@ -145,7 +145,7 @@ export function scoreForceProjectionValue(
 export function scorePriestSummonValue(
   state: GameState,
   factionId: FactionId,
-  prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>,
+  prototype: NonNullable<GameState['prototypes'] extends ReadonlyMap<any, infer P> ? P : never>,
   registry: RulesRegistry,
   weight: number,
 ): number {
@@ -173,7 +173,7 @@ export function scorePriestSummonValue(
 }
 
 export function scoreUnderCapPressure(
-  prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>,
+  prototype: NonNullable<GameState['prototypes'] extends ReadonlyMap<any, infer P> ? P : never>,
   totalCost: number,
   supplyCost: number,
   context: ProductionScoringContext,
@@ -204,7 +204,7 @@ export function scoreUnderCapPressure(
 }
 
 export function scoreArmySizePressure(
-  prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>,
+  prototype: NonNullable<GameState['prototypes'] extends ReadonlyMap<any, infer P> ? P : never>,
   totalFriendlyUnits: number,
   targetArmySize: number,
   difficultyProfile: AiDifficultyProfile,
@@ -218,7 +218,7 @@ export function scoreArmySizePressure(
 }
 
 export function scoreArmyQualityLag(
-  prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>,
+  prototype: NonNullable<GameState['prototypes'] extends ReadonlyMap<any, infer P> ? P : never>,
   totalCost: number,
   context: ProductionScoringContext,
   difficultyProfile: AiDifficultyProfile,
@@ -244,7 +244,7 @@ export function scoreArmyQualityLag(
 }
 
 export function scoreAggressiveSupplyFill(
-  prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>,
+  prototype: NonNullable<GameState['prototypes'] extends ReadonlyMap<any, infer P> ? P : never>,
   supplyCost: number,
   context: ProductionScoringContext,
   difficultyProfile: AiDifficultyProfile,
@@ -268,7 +268,7 @@ export function scoreSettlerExpansionValue(
   state: GameState,
   factionId: FactionId,
   strategy: FactionStrategy,
-  prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>,
+  prototype: NonNullable<GameState['prototypes'] extends ReadonlyMap<any, infer P> ? P : never>,
   difficultyProfile: AiDifficultyProfile,
   difficulty?: DifficultyLevel,
   visibleEnemyPressureOverride?: number,
@@ -355,7 +355,7 @@ export function scoreCatapultPreference(
   factionId: FactionId,
   state: GameState,
   strategy: FactionStrategy,
-  prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>
+  prototype: NonNullable<GameState['prototypes'] extends ReadonlyMap<any, infer P> ? P : never>
 ): number {
   if (!(prototype.tags ?? []).includes('siege')) return 0;
   const posture = strategy.posture;
@@ -381,7 +381,7 @@ export function scoreCatapultPreference(
   return 0;
 }
 
-export function scoreEnemyCounterPressure(enemyUnits: GameState['units'] extends Map<any, infer U> ? U[] : never, state: GameState, role: string): number {
+export function scoreEnemyCounterPressure(enemyUnits: GameState['units'] extends ReadonlyMap<any, infer U> ? U[] : never, state: GameState, role: string): number {
   let score = 0;
   for (const enemy of enemyUnits) {
     const prototype = state.prototypes.get(enemy.prototypeId);
@@ -395,7 +395,7 @@ export function scoreEnemyCounterPressure(enemyUnits: GameState['units'] extends
 }
 
 export function scoreCounterCompositionPivot(
-  enemyUnits: GameState['units'] extends Map<any, infer U> ? U[] : never,
+  enemyUnits: GameState['units'] extends ReadonlyMap<any, infer U> ? U[] : never,
   state: GameState,
   role: string,
   difficultyProfile: AiDifficultyProfile,
@@ -468,7 +468,7 @@ export function scorePostureFit(posture: FactionStrategy['posture'], tags: strin
   return 2;
 }
 
-export function scoreIdentityFit(signatureUnit: string, economyAngle: string, prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>): number {
+export function scoreIdentityFit(signatureUnit: string, economyAngle: string, prototype: NonNullable<GameState['prototypes'] extends ReadonlyMap<any, infer P> ? P : never>): number {
   let score = 0;
   const signature = signatureUnit.toLowerCase();
   const name = prototype.name.toLowerCase();
@@ -491,8 +491,8 @@ export function scoreIdentityFit(signatureUnit: string, economyAngle: string, pr
 }
 
 export function scoreFactionSignatureExploit(
-  faction: NonNullable<GameState['factions'] extends Map<any, infer F> ? F : never>,
-  prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>,
+  faction: NonNullable<GameState['factions'] extends ReadonlyMap<any, infer F> ? F : never>,
+  prototype: NonNullable<GameState['prototypes'] extends ReadonlyMap<any, infer P> ? P : never>,
   difficultyProfile: AiDifficultyProfile,
 ): number {
   const weight = difficultyProfile.production.signatureExploitWeight;
@@ -532,7 +532,7 @@ export function scoreFactionSignatureExploit(
   return score * weight;
 }
 
-export function scoreHybridFit(strategy: FactionStrategy, prototype: NonNullable<GameState['prototypes'] extends Map<any, infer P> ? P : never>): number {
+export function scoreHybridFit(strategy: FactionStrategy, prototype: NonNullable<GameState['prototypes'] extends ReadonlyMap<any, infer P> ? P : never>): number {
   if (!prototype.sourceRecipeId) return 0;
   let score = strategy.hybridGoal.pursueHybridProduction ? 2.5 : 0.5;
   if (strategy.hybridGoal.preferredRecipeIds.includes(prototype.sourceRecipeId)) {

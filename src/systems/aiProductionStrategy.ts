@@ -4,7 +4,7 @@
 
 import type { GameState } from '../game/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
-import type { FactionId } from '../types.js';
+import type { FactionId, PrototypeId, ResearchNodeId } from '../types.js';
 import type { FactionStrategy, ProductionPriority } from './factionStrategy.js';
 import { calculatePrototypeCost, getDomainIdsByTags } from './knowledgeSystem.js';
 import {
@@ -285,7 +285,7 @@ export function chooseStrategicProduction(
   const best = priorities[0];
   if (!best) return null;
 
-  const prototype = state.prototypes.get(best.prototypeId as never);
+  const prototype = state.prototypes.get(best.prototypeId as PrototypeId);
   const faction = state.factions.get(factionId);
   if (!prototype || !faction) return null;
 
@@ -318,7 +318,7 @@ function rankRushProductionPriorities(
   strategy: FactionStrategy,
   registry: RulesRegistry,
   prototypes: ReturnType<typeof getAvailableProductionPrototypes>,
-  enemyUnits: GameState['units'] extends Map<any, infer U> ? U[] : never,
+  enemyUnits: GameState['units'] extends ReadonlyMap<any, infer U> ? U[] : never,
 ): ProductionPriority[] {
   const militaryPrototypes = prototypes.filter((prototype) => isMilitaryPrototype(prototype));
   const candidates = militaryPrototypes.length > 0 ? militaryPrototypes : prototypes;

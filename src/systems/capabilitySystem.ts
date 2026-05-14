@@ -8,6 +8,7 @@ import type {
 import type { FactionId } from '../types.js';
 import type { HybridRecipeDef, RulesRegistry } from '../data/registry/types.js';
 import { hexToKey } from '../core/grid.js';
+import { getCity, getUnit } from '../game/stateAccess.js';
 
 const HISTORY_LIMIT = 20;
 
@@ -139,11 +140,11 @@ export function applyEcologyPressure(
 
   const claimedHexes = new Set<string>();
   for (const cityId of faction.cityIds) {
-    const city = game.cities.get(cityId as never);
+    const city = getCity(game, cityId);
     if (city) claimedHexes.add(hexToKey(city.position));
   }
   for (const unitId of faction.unitIds) {
-    const unit = game.units.get(unitId as never);
+    const unit = getUnit(game, unitId);
     if (unit) claimedHexes.add(hexToKey(unit.position));
   }
 
@@ -176,7 +177,7 @@ export function applyForceCompositionPressure(
 
   let current = game;
   for (const unitId of faction.unitIds) {
-    const unit = current.units.get(unitId as never);
+    const unit = getUnit(current, unitId);
     if (!unit) continue;
     const prototype = current.prototypes.get(unit.prototypeId);
     if (!prototype) continue;

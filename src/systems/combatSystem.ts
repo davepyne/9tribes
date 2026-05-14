@@ -154,7 +154,20 @@ export interface ResolveCombatOptions {
   armorPenetration?: number;
 }
 
-// Execute a combat round between two units
+/**
+ * Execute a combat round between two units.
+ *
+ * NOTE: This function is NOT dead code. It is the core combat math function
+ * called by `previewCombatAction()` in `combat-action/preview.ts`, which is
+ * then consumed by `applyCombatAction()` in `combat-action/apply.ts`.
+ * Both the AI path (`activateUnit`) and the player path (`GameSession`)
+ * converge on `previewCombatAction()` → `applyCombatAction()`, so all
+ * combat damage math flows through this function.
+ *
+ * Tests in `combat.test.ts` call `resolveCombat()` directly to verify the
+ * math in isolation. The pipeline tests in `combatAction.test.ts` exercise
+ * the full `previewCombatAction()` → `applyCombatAction()` stack.
+ */
 export function resolveCombat(options: ResolveCombatOptions): CombatResult {
   const {
     attacker, defender, attackerPrototype, defenderPrototype,
@@ -357,11 +370,3 @@ export function getVeteranMoraleBonus(registry: RulesRegistry, veteranLevel: str
   return veteranDef?.moraleBonus ?? 0;
 }
 
-// Add history entry to unit
-export function addBattleHistory(unit: Unit, opponentId: string, won: boolean): void {
-  unit.history.push({
-    type: 'battle_fought',
-    timestamp: Date.now(),
-    details: { opponentId, outcome: won ? 'victory' : 'defeat' },
-  });
-}

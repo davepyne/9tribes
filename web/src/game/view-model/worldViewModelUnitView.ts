@@ -1,6 +1,7 @@
 import type { RulesRegistry } from '../../../../src/data/registry/types.js';
 import type { GameState, Unit } from '../../../../src/game/types.js';
 import { getFaction, getPrototype, getResearch } from '../stateAccess.js';
+import type { ResearchNodeId, CityId } from '../../../../src/types.js';
 import { canUseAmbush, canUseBrace, getTerrainAt, hasAdjacentEnemy } from '../../../../src/systems/abilitySystem.js';
 import { resolveCapabilityDoctrine } from '../../../../src/systems/capabilityDoctrine.js';
 import { isUnitEffectivelyStealthed } from '../../../../src/systems/fogSystem.js';
@@ -9,7 +10,8 @@ import { getUnitSupplyCost } from '../../../../src/systems/productionSystem.js';
 import { canPriestSummon } from '../../../../src/systems/summonSystem.js';
 import { canBoardTransport, getUnitTransport, getValidDisembarkHexes, getEmbarkedUnits, isTransportUnit } from '../../../../src/systems/transportSystem.js';
 import { getSpriteKeyForUnit, inferChassisId } from './spriteKeys.js';
-import { hexToKey, getNeighbors } from '../../../../src/core/grid.js';
+import { hexToKey, hexDistance, getNeighbors } from '../../../../src/core/grid.js';
+import { getImprovementBonus } from '../../../../src/systems/combat-action/helpers.js';
 
 function thisChassisMovementClass(chassisId: string | undefined, registry: RulesRegistry): string | undefined {
   return chassisId ? registry.getChassis(chassisId)?.movementClass : undefined;
@@ -58,31 +60,39 @@ export function buildUnitView(
   const tile = state.map?.tiles.get(`${unit.position.q},${unit.position.r}`);
   const terrainDef = tile ? registry.getTerrain(tile.terrain) : undefined;
   const terrainMod = terrainDef?.defenseModifier ?? 0;
-  let improvementBonus = 0;
-  for (const [, improvement] of state.improvements) {
-    if (improvement.position.q === unit.position.q && improvement.position.r === unit.position.r) {
-      improvementBonus = improvement.defenseBonus ?? 0;
-      break;
-    }
-  }
-  if (improvementBonus === 0) {
-    for (const [, city] of state.cities) {
-      if (city.position.q === unit.position.q && city.position.r === unit.position.r) {
-        improvementBonus = 1;
-        break;
-      }
-    }
-  }
-  if (improvementBonus === 0) {
-    for (const [, village] of state.villages) {
-      if (village.position.q === unit.position.q && village.position.r === unit.position.r) {
-        improvementBonus = 0.5;
-        break;
-      }
-    }
-  }
-  const effectiveDefense = Math.max(1, Math.round(baseDefense * (1 + terrainMod + improvementBonus)));
+  const improvementBonus = getImprovementBonus(state, unit.position, unit.factionId);
+  const veteranDefBonus = registry.getVeteranLevel(unit.veteranLevel ?? '')?.defenseBonus ?? 0;
+  // Note: situationalDefenseModifier (from brace, flanking, etc.) is combat-context-dependent
+  // and cannot be precomputed here. The backend calculateDefense() includes it on a per-combat basis.
+  const effectiveDefense = Math.max(1, Math.round(baseDefense * (1 + terrainMod + improvementBonus + veteranDefBonus)));
   const tileTerrain = tile?.terrain;
+
+  // Precompute fort build eligibility
+  const unitFaction = state.factions.get(unit.factionId);
+  const unitResearch = state.research.get(unit.factionId);
+  const isHillClan = unitFaction?.id === 'hill_clan';
+  const atFullMoves = unit.movesRemaining === unit.maxMoves;
+  const hasExistingImprovement = getImprovementBonus(state, unit.position) > 0;
+  const isInfantryOrRanged = prototype
+    ? (thisChassisMovementClass(prototype?.chassisId, registry) === 'infantry' || prototype?.derivedStats?.role === 'ranged')
+    : false;
+  const canBuildFieldForts = unitResearch?.completedNodes?.includes('fortress_t2' as ResearchNodeId) ?? false;
+  const canBuildFort = !!isHillClan && !!unitFaction && atFullMoves && !hasExistingImprovement && isInfantryOrRanged
+    && (prototype?.tags?.includes('engineer') || canBuildFieldForts);
+
+  const canDestroyFort = !!isHillClan && atFullMoves && improvementBonus > 0
+    && !!prototype?.tags?.includes('engineer');
+
+  // Precompute sacrifice eligibility (has learned abilities, home city not besieged, adjacent to home city)
+  const learnedCount = unit.learnedAbilities?.length ?? 0;
+  const homeCity = unitFaction?.homeCityId
+    ? state.cities.get(unitFaction.homeCityId as CityId)
+    : undefined;
+  const adjacentToHome = homeCity
+    ? hexDistance(unit.position, { q: homeCity.position.q, r: homeCity.position.r }) <= 1
+    : false;
+  const canSacrifice = !!(unitFaction && learnedCount > 0 && homeCity
+    && homeCity.factionId === unit.factionId && !homeCity.besieged && adjacentToHome);
 
   return {
     id: unit.id,
@@ -128,6 +138,9 @@ export function buildUnitView(
     isEngineer: prototype?.tags?.includes('engineer') || undefined,
     canBrace: canBrace || undefined,
     canAmbush: canAmbush || undefined,
+    canBuildFort: canBuildFort || undefined,
+    canDestroyFort: canDestroyFort || undefined,
+    canSacrifice: canSacrifice || undefined,
     ...(() => {
       const isPriestOrEngineer = prototype?.tags?.includes('priest') || prototype?.tags?.includes('engineer');
       if (!isPriestOrEngineer) return {};

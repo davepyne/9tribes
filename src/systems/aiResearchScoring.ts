@@ -233,7 +233,7 @@ export function scoreDoctrinePackageCompletion(
   return score;
 }
 
-export function getDomainsWithResearchProgress(research: NonNullable<GameState['research'] extends Map<any, infer R> ? R : never>): Set<string> {
+export function getDomainsWithResearchProgress(research: NonNullable<GameState['research'] extends ReadonlyMap<any, infer R> ? R : never>): Set<string> {
   const domains = new Set<string>();
 
   for (const nodeId of research.completedNodes) {

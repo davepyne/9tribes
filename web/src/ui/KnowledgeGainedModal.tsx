@@ -2,23 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
 import emergentRulesData from '../../../src/content/base/emergent-rules.json';
-
-// ── Data Types ──
-
-type PairSynergy = {
-  id: string;
-  name: string;
-  domains: string[];
-  description: string;
-};
-
-type EmergentRule = {
-  id: string;
-  name: string;
-  condition: string;
-  domainSets: Record<string, string[]>;
-  effect: { description: string };
-};
+import { validatePairSynergiesData, validateEmergentRulesData } from '../data/jsonValidators';
+import type { PairSynergy, EmergentRule } from '../data/jsonValidators';
 
 type KnowledgeGainedEvent = {
   unitId: string;
@@ -30,16 +15,17 @@ type KnowledgeGainedEvent = {
 
 // ── Typed data imports ──
 
-const PAIR_SYNERGIES: PairSynergy[] = (pairSynergiesData as { pairSynergies: Array<{
-  id: string; name: string; domains: string[]; description: string;
-}> }).pairSynergies.map((s) => ({
+validatePairSynergiesData(pairSynergiesData);
+validateEmergentRulesData(emergentRulesData);
+
+const PAIR_SYNERGIES: PairSynergy[] = (pairSynergiesData as { pairSynergies: PairSynergy[] }).pairSynergies.map((s) => ({
   id: s.id,
   name: s.name,
   domains: s.domains,
   description: s.description,
 }));
 
-const EMERGENT_RULES: EmergentRule[] = (emergentRulesData as unknown as { rules: EmergentRule[] }).rules;
+const EMERGENT_RULES: EmergentRule[] = (emergentRulesData as { rules: EmergentRule[] }).rules;
 
 // ── Synergy Lookup Logic ──
 

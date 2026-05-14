@@ -132,7 +132,8 @@ export function attemptCapture(
   }
 
   // Roll for capture
-  const roll = rngState ? rngNextFloat(rngState) : Math.random();
+  if (!rngState) throw new Error('rngState is required for deterministic capture roll');
+  const roll = rngNextFloat(rngState);
   const totalChance = Math.min(1, chance + (captureChanceBonus ?? 0));
   const captureSucceeded = roll < totalChance;
 
@@ -166,7 +167,7 @@ export function attemptCapture(
       ...defender.history,
       {
         type: 'captured',
-        timestamp: Date.now(),
+        timestamp: state.round,
         details: {
           capturedBy: attacker.id,
           originalFaction: defenderFactionId,
@@ -184,7 +185,7 @@ export function attemptCapture(
       ...attacker.history,
       {
         type: 'capture_attempt',
-        timestamp: Date.now(),
+        timestamp: state.round,
         details: {
           targetId: defender.id,
           targetFaction: defenderFactionId,
@@ -297,7 +298,8 @@ export function attemptNonCombatCapture(
   }
 
   // Roll for capture
-  if ((rngState ? rngNextFloat(rngState) : Math.random()) >= captureChance) {
+  if (!rngState) throw new Error('rngState is required for deterministic capture roll');
+  if (rngNextFloat(rngState) >= captureChance) {
     return { state, captured: false }; // Failed
   }
 
@@ -314,7 +316,7 @@ export function attemptNonCombatCapture(
       ...target.history,
       {
         type: 'captured',
-        timestamp: Date.now(),
+        timestamp: state.round,
         details: {
           capturedBy: captorId,
           originalFaction: target.factionId,
@@ -333,7 +335,7 @@ export function attemptNonCombatCapture(
       ...captor.history,
       {
         type: 'capture_attempt',
-        timestamp: Date.now(),
+        timestamp: state.round,
         details: {
           targetId,
           targetFaction: target.factionId,

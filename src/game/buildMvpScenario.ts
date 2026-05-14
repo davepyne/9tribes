@@ -1,6 +1,6 @@
 // MVP Scenario Builder - Creates a complete game state from scenario config
 
-import type { GameState } from './types.js';
+import type { GameState, City, Prototype, Improvement, ResearchState, FactionEconomy, WarExhaustion } from './types.js';
 import { createEmptyGameState } from './createGameState.js';
 import { generateMvpMap } from '../world/generation/generateMvpMap.js';
 import { generateClimateBandMap } from '../world/generation/generateClimateBandMap.js';
@@ -10,7 +10,7 @@ import { createFactionId, createUnitId, createCityId, createImprovementId, creat
 import { createCombatRecord } from '../features/factions/types.js';
 import { isWaterTerrain, isDeepWaterTerrain } from '../systems/terrainUtils.js';
 import { createWarExhaustion } from '../systems/warExhaustionSystem.js';
-import type { CityId, ChassisId, ComponentId, PrototypeId } from '../types.js';
+import type { CityId, ChassisId, ComponentId, PrototypeId, UnitId, ImprovementId, FactionId } from '../types.js';
 import type { Faction } from '../game/types.js';
 import { getHexesInRange, getNeighbors, hexToKey } from '../core/grid.js';
 import { createResearchState } from '../systems/researchSystem.js';
@@ -24,6 +24,29 @@ import type { RulesRegistry } from '../data/registry/types.js';
 import type { BalanceOverrides } from '../balance/types.js';
 import { getMvpFactionConfigs, getMvpScenarioConfig, getStartingUnits, MVP_IMPROVEMENTS } from './scenarios/mvp.js';
 import { createCitySiteBonuses } from '../systems/citySiteSystem.js';
+
+// Mutable version of GameState for one-shot scenario building
+type MutableGameState = GameState & {
+  cities: Map<CityId, City>;
+  factions: Map<FactionId, Faction>;
+  units: Map<UnitId, Unit>;
+  prototypes: Map<PrototypeId, Prototype>;
+  improvements: Map<ImprovementId, Improvement>;
+  research: Map<FactionId, ResearchState>;
+  economy: Map<FactionId, FactionEconomy>;
+  warExhaustion: Map<FactionId, WarExhaustion>;
+};
+
+// ---------------------------------------------------------------------------
+// ONE-TIME SETUP WITH INTENTIONAL MUTATION
+// This file builds the initial MVP game state (factions, cities, units, map).
+// Unlike the rest of the engine (which favors pure-ish functions returning
+// new state), this module directly mutates the GameState it's constructing.
+// This is a deliberate pattern: scenario setup is a one-shot, linear build
+// process — there's no benefit to immutability when no other code reads the
+// in-progress state. The mutation is fully contained within this file and
+// never leaks into the simulation loop.
+// ---------------------------------------------------------------------------
 
 /**
  * Check if a position is valid terrain for a unit with the given chassis.
@@ -131,7 +154,7 @@ function stampTerrainPatch(
 }
 
 function initializeFaction(
-  state: GameState,
+  state: MutableGameState,
   factionConfig: ReturnType<typeof getMvpFactionConfigs>[number],
   startHex: { q: number; r: number },
   registry: RulesRegistry,
@@ -249,7 +272,7 @@ function initializeFaction(
       turnsSinceStealthBreak: 0,
       learnedAbilities: [],
     };
-    settler = recordUnitCreated(settler, factionId, settlerPrototype.id);
+    settler = recordUnitCreated(settler, factionId, settlerPrototype.id, state.round);
     state.units.set(settlerId, settler);
     faction.unitIds.push(settlerId);
   }
@@ -311,7 +334,7 @@ function initializeFaction(
       turnsSinceStealthBreak: 0,
       learnedAbilities: [],
     };
-    unit = recordUnitCreated(unit, factionId, prototype.id);
+    unit = recordUnitCreated(unit, factionId, prototype.id, state.round);
     state.units.set(unitId, unit);
     faction.unitIds.push(unitId);
   }
@@ -334,8 +357,7 @@ function initializeFaction(
  * Creates factions, units, cities, and map with improvements.
  */
 export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions = {}): GameState {
-  // Create empty game state
-  const state = createEmptyGameState(seed);
+  const baseState = createEmptyGameState(seed);
   const registry = options.registry ?? loadRulesRegistry(options.balanceOverrides);
   const scenarioConfig = getMvpScenarioConfig(options.balanceOverrides);
   const requestedFactionIds = new Set(options.selectedFactionIds ?? []);
@@ -347,6 +369,18 @@ export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions 
   const mapDimensions = mapSize ? MAP_SIZE_DIMENSIONS[mapSize] : undefined;
   const startingPositions = new Map<string, { q: number; r: number }>();
   const settlerStartFactionIds = new Set(options.settlerStartFactionIds ?? []);
+
+  const state: MutableGameState = {
+    ...baseState,
+    cities: new Map(baseState.cities),
+    factions: new Map(baseState.factions),
+    units: new Map(baseState.units),
+    prototypes: new Map(baseState.prototypes),
+    improvements: new Map(baseState.improvements),
+    research: new Map(baseState.research),
+    economy: new Map(baseState.economy),
+    warExhaustion: new Map(baseState.warExhaustion),
+  };
 
   if (mapMode === 'randomClimateBands') {
     const generated = generateClimateBandMap(

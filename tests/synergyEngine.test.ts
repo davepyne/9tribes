@@ -25,7 +25,7 @@ function makeEmergent(
   overrides: Partial<EmergentRuleConfig> & { id: string },
 ): EmergentRuleConfig {
   return {
-    name: overrides.name ?? `Rule ${overrides.id}`,
+    name: overrides.name ?? overrides.id,
     condition: 'default',
     effect: overrides.effect ?? { type: 'multiplier', pairSynergyMultiplier: 1.0, description: 'test' },
     ...overrides,
@@ -758,6 +758,7 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
   const namingRules: EmergentRuleConfig[] = [
     makeEmergent({
       id: 'terrain_lord',
+      name: 'Terrain Lord',
       condition: 'contains_terrain AND contains_combat AND contains_mobility',
       domainSets: {
         terrain: ['camel_adaptation', 'tidal_warfare', 'heavy_hitter'],
@@ -768,12 +769,14 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
     }),
     makeEmergent({
       id: 'ghost_army',
+      name: 'Ghost Army',
       condition: 'contains_3_mobility',
       mobilityDomains: ['charge', 'hitrun', 'camel_adaptation', 'river_stealth'],
       effect: { type: 'ghost_army', phaseDistance: 3, killChainRedeployRange: 99, phaseAlliesMovementBonus: 2, description: 'test' },
     }),
     makeEmergent({
       id: 'slave_empire',
+      name: 'Slave Empire',
       condition: 'contains_slaving AND contains_heavy AND contains_fortress',
       domainSets: {
         slaving: ['slaving'],
@@ -784,6 +787,7 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
     }),
     makeEmergent({
       id: 'raid_camp',
+      name: 'Raid Camp',
       condition: 'contains_camels AND contains_slaving AND contains_mobility',
       domainSets: {
         camels: ['camel_adaptation'],
@@ -794,6 +798,7 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
     }),
     makeEmergent({
       id: 'poison_shadow',
+      name: 'Poison Shadow',
       condition: 'contains_venom AND contains_stealth AND contains_combat',
       domainSets: {
         venom: ['venom'],
@@ -804,6 +809,7 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
     }),
     makeEmergent({
       id: 'iron_turtle',
+      name: 'Iron Turtle',
       condition: 'contains_fortress AND contains_heavy AND contains_terrain',
       domainSets: {
         fortress: ['fortress'],
@@ -814,6 +820,7 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
     }),
     makeEmergent({
       id: 'paladin',
+      name: 'Paladin',
       condition: 'contains_healing AND contains_defensive AND contains_offensive',
       domainSets: {
         healing: ['nature_healing'],
@@ -824,6 +831,7 @@ describe('SynergyEngine.generateTripleName (via resolveFactionTriple)', () => {
     }),
     makeEmergent({
       id: 'fallback',
+      name: 'Many-Faced',
       condition: 'default',
       effect: { type: 'many_faced', bulwarkDefense: 0.40, bulwarkReflection: 0.25, predatorDamage: 0.40, predatorRangeBonus: 1, phantomMovementBonus: 1, description: 'test' },
     }),

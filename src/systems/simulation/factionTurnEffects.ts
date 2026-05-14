@@ -23,6 +23,8 @@ import {
 } from '../productionSystem.js';
 import { chooseStrategicProduction, rankProductionPriorities } from '../aiProductionStrategy.js';
 import { chooseStrategicResearch } from '../aiResearchStrategy.js';
+import { getCity, getPrototype } from '../../game/stateAccess.js';
+import { includesResearchNode, asResearchNodeId } from '../../game/stateAccess.js';
 import {
   degradeWalls,
   repairWalls,
@@ -128,7 +130,7 @@ export const TERRAIN_RESEARCH_BONUS: Record<string, number> = {
 
 export const MAX_RESEARCH_TERRAIN_BONUS = 5;
 
-function computeTerrainResearchBonuses(
+export function computeTerrainResearchBonuses(
   state: GameState,
   factionId: FactionId,
   domainIds: readonly string[],
@@ -154,7 +156,7 @@ function computeTerrainResearchBonuses(
     }
 
     for (const cid of faction.cityIds) {
-      const city = state.cities.get(cid as never);
+      const city = getCity(state, cid);
       if (!city) continue;
       const radius = city.territoryRadius ?? 2;
       for (const hex of getHexesInRange(city.position, radius)) {
@@ -172,7 +174,7 @@ function computeTerrainResearchBonuses(
 
 export const RESEARCH_PROXIMITY_BONUS_PER_CONTACT = 0.5;
 
-function computeProximityResearchBonuses(
+export function computeProximityResearchBonuses(
   state: GameState,
   factionId: FactionId,
 ): Map<string, number> {
@@ -223,12 +225,12 @@ function startOrAdvanceCodification(
       const decisionDomain = registry.getAllResearchDomains()
         .find((domain) => domain.nodes[decision.nodeId]);
       const prerequisitesMet = (decisionNode?.prerequisites ?? []).every(
-        (prereqId) => currentResearch.completedNodes.includes(prereqId as never),
+        (prereqId) => includesResearchNode(currentResearch.completedNodes, prereqId),
       );
       if (prerequisitesMet) {
         currentResearch = startResearch(
           currentResearch,
-          decision.nodeId as never,
+          asResearchNodeId(decision.nodeId),
           decisionNode?.prerequisites,
           faction.learnedDomains,
         );
@@ -290,7 +292,7 @@ function startOrAdvanceCodification(
   return current;
 }
 
-function buildEcologyBreakdown(
+export function buildEcologyBreakdown(
   sortedDomains: string[],
   terrainBonuses: Map<string, number>,
   proximityBonuses: Map<string, number>,
@@ -330,7 +332,7 @@ function buildEcologyBreakdown(
   return { bonuses, breakdown };
 }
 
-function applyEcologyResearchPass(
+export function applyEcologyResearchPass(
   state: GameState,
   factionId: FactionId,
   registry: RulesRegistry,
@@ -922,7 +924,7 @@ export function processFactionPhases(
       const rankedChoices = rankProductionPriorities(current, factionId, strategy, registry, difficulty);
       let queued = false;
       for (const priority of rankedChoices) {
-        const proto = current.prototypes.get(priority.prototypeId as never);
+        const proto = getPrototype(current, priority.prototypeId);
         if (!proto) continue;
 
         // Spawn feasibility gate: skip if the unit can't physically spawn adjacent to this city
@@ -990,7 +992,7 @@ export function processFactionPhases(
       unitId: unitIdStr as string,
       unitTags: healTags,
       baseHeal: healRate,
-      position: unit.position as unknown as { x: number; y: number },
+      position: unit.position,
       adjacentAllies: [],
       isStealthed: unit.isStealthed,
     };
@@ -1017,7 +1019,7 @@ export function processFactionPhases(
                 unitId: neighborUnitId,
                 unitTags: neighborTags,
                 baseHeal: aura.allyHeal,
-                position: neighborUnit.position as unknown as { x: number; y: number },
+                position: neighborUnit.position,
                 adjacentAllies: [],
                 isStealthed: neighborUnit.isStealthed,
               };

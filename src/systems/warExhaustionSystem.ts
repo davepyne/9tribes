@@ -11,15 +11,15 @@ import { applyMoraleLoss } from './moraleSystem.js';
 import { rngShuffle } from '../core/rng.js';
 
 export const EXHAUSTION_CONFIG = {
-  UNIT_KILLED: 0,
-  UNIT_LOST: 0,
-  CITY_CAPTURED: 0,
-  VILLAGE_LOST: 0,
-  SUPPLY_DEFICIT_PER_POINT: 0,
-  BESIEGED_CITY_PER_TURN: 0,
-  CITY_CAPTURED_ATTACKER: 0,
-  DECAY_NO_LOSS: 0,
-  DECAY_TERRITORY_CLEARED: 0,
+  UNIT_KILLED: 2,
+  UNIT_LOST: 2,
+  CITY_CAPTURED: 5,
+  VILLAGE_LOST: 2,
+  SUPPLY_DEFICIT_PER_POINT: 1,
+  BESIEGED_CITY_PER_TURN: 1,
+  CITY_CAPTURED_ATTACKER: 2,
+  DECAY_NO_LOSS: 2,
+  DECAY_TERRITORY_CLEARED: 1,
   VICTORY_OFFSET: 0,
 };
 
@@ -51,14 +51,16 @@ export function addExhaustion(
  * Calculate production penalty from war exhaustion.
  */
 export function calculateProductionPenalty(exhaustion: number): number {
-  return 0;
+  // Every 25 exhaustion points reduces production by 5% (0.05)
+  return Math.floor(exhaustion / 25) * 0.05;
 }
 
 /**
  * Calculate morale penalty to all units from war exhaustion.
  */
 export function calculateMoralePenalty(exhaustion: number): number {
-  return 0;
+  // Every 20 exhaustion points reduces morale by 1
+  return Math.floor(exhaustion / 20);
 }
 
 /**

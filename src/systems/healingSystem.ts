@@ -178,7 +178,7 @@ export function applyHealingForFaction(
       unitId: unitIdStr,
       unitTags: tags,
       baseHeal: healRate,
-      position: unit.position as unknown as { x: number; y: number },
+      position: unit.position,
       adjacentAllies: [],
       isStealthed: unit.isStealthed,
     };
@@ -206,7 +206,7 @@ export function applyHealingForFaction(
           unitId: auraSource.id,
           unitTags: neighborTags,
           baseHeal: aura.allyHeal,
-          position: auraSource.position as unknown as { x: number; y: number },
+          position: auraSource.position,
           adjacentAllies: [],
           isStealthed: auraSource.isStealthed,
         };

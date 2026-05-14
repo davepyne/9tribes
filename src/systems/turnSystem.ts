@@ -31,7 +31,7 @@ export function isFactionTurn(gameState: GameState, factionId: FactionId): boole
  * Reset moves and attacks for all units of a faction to their max
  */
 function resetFactionUnitsMoves(
-  units: Map<UnitId, Unit>,
+  units: ReadonlyMap<UnitId, Unit>,
   factionId: FactionId
 ): Map<UnitId, Unit> {
   const newUnits = new Map(units);
@@ -52,7 +52,7 @@ function resetFactionUnitsMoves(
 /**
  * Get the first faction in the factions map (for round start)
  */
-function getFirstFactionId(factions: Map<FactionId, Faction>): FactionId | null {
+function getFirstFactionId(factions: ReadonlyMap<FactionId, Faction>): FactionId | null {
   const iterator = factions.keys();
   const first = iterator.next();
   return first.done ? null : first.value;
@@ -62,7 +62,7 @@ function getFirstFactionId(factions: Map<FactionId, Faction>): FactionId | null 
  * Get the next faction in order (cycles through factions map)
  */
 function getNextFactionId(
-  factions: Map<FactionId, Faction>,
+  factions: ReadonlyMap<FactionId, Faction>,
   currentFactionId: FactionId
 ): FactionId | null {
   const factionIds = Array.from(factions.keys());

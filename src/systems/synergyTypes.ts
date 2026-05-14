@@ -300,7 +300,7 @@ export interface HealingContext {
   unitId: string;
   unitTags: string[];
   baseHeal: number;
-  position: { x: number; y: number };
+  position: { q: number; r: number };
   adjacentAllies: string[];
   isStealthed: boolean;
 }

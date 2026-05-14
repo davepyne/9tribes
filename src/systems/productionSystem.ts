@@ -3,14 +3,16 @@
 
 import type { GameState } from '../game/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
-import type { FactionId, CityId } from '../types.js';
+import type { FactionId, CityId, PrototypeId, VillageId } from '../types.js';
 import type { City, ProductionItem, CurrentProduction, ProductionCostType } from '../features/cities/types.js';
 import type { Unit } from '../features/units/types.js';
 import type { HistoryEntry } from '../features/units/types.js';
 import type { Prototype } from '../features/prototypes/types.js';
+import type { VeteranLevel, UnitStatus } from '../core/enums.js';
 import { createUnitId } from '../core/ids.js';
 import { getNeighbors, hexDistance, hexToKey, getHexesInRange } from '../core/grid.js';
 import { recordUnitCreated } from './historySystem.js';
+import { getPrototype } from '../game/stateAccess.js';
 import { isHexOccupied } from './occupancySystem.js';
 import { isWaterTerrain, isDeepWaterTerrain } from './terrainUtils.js';
 import { getDomainIdsByTags, incrementPrototypeMastery } from './knowledgeSystem.js';
@@ -148,7 +150,7 @@ export function canCompleteCurrentProduction(
     return isProductionComplete(city);
   }
 
-  const prototype = state.prototypes.get(city.currentProduction.item.id as never);
+  const prototype = getPrototype(state, city.currentProduction.item.id);
   if (!isSettlerPrototype(prototype)) {
     return false;
   }
@@ -172,7 +174,7 @@ export function completeProduction(
   const item = city.currentProduction.item;
   if (item.type !== 'unit') return state;
 
-  const prototype = state.prototypes.get(item.id as any);
+  const prototype = getPrototype(state, item.id);
   if (!prototype) return state;
 
   if (city.currentProduction.costType === 'villages') {
@@ -209,8 +211,8 @@ export function completeProduction(
     maxMoves: prototype.derivedStats.moves,
     attacksRemaining: 1,
     xp: 0,
-    veteranLevel: 'green' as any,
-    status: 'ready' as any,
+    veteranLevel: 'green' as VeteranLevel,
+    status: 'ready' as UnitStatus,
     prototypeId: prototype.id,
     history: [] as HistoryEntry[],
     morale: 100,
@@ -224,7 +226,7 @@ export function completeProduction(
     learnedAbilities: [],
   };
 
-  unit = recordUnitCreated(unit, city.factionId, prototype.id);
+  unit = recordUnitCreated(unit, city.factionId, prototype.id, state.round);
 
   // Update state
   const newUnits = new Map(state.units);
@@ -243,7 +245,7 @@ export function completeProduction(
   // Prototype mastery tracking: when a unit is built, track which domains it uses
   // Get domain IDs from the prototype's tags
   const prototypeDomainIds = getDomainIdsByTags(prototype.tags ?? []);
-  let currentState = {
+  let currentState: GameState = {
     ...state,
     units: newUnits,
     factions: newFactions,
@@ -255,7 +257,7 @@ export function completeProduction(
       return state;
     }
     for (const villageId of villageIds) {
-      currentState = destroyVillage(currentState, villageId as never);
+      currentState = destroyVillage(currentState, villageId as VillageId);
     }
   }
   
@@ -448,7 +450,7 @@ export function canProducePrototype(
 ): boolean {
   const faction = state.factions.get(factionId);
   const research = state.research.get(factionId);
-  const prototype = state.prototypes.get(prototypeId as never);
+  const prototype = getPrototype(state, prototypeId);
   if (!faction || !prototype || prototype.factionId !== factionId) {
     return false;
   }
