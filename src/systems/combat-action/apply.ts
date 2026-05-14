@@ -551,6 +551,38 @@ export function applyCombatAction(
     }
   }
 
+  // Mycelium Network (venom_t3 native): a kill on a hex covered by an
+  // attacker-owned Toxic Bloom propagates 2 fresh poison stacks to ALL
+  // friendly units within 3 hexes of that bloom's center.
+  if (
+    defenderActuallyDestroyed
+    && attackerDoctrine?.myceliumNetworkOnKillEnabled
+    && nextAttacker.hp > 0
+  ) {
+    let ownedBloom: import('../../game/types.js').ZoneEffect | null = null;
+    for (const effect of current.zoneEffects.values()) {
+      if (effect.type !== 'toxic_bloom') continue;
+      if (effect.ownerFactionId !== attacker.factionId) continue;
+      if (hexDistance(defender.position, effect.center) > effect.radius) continue;
+      ownedBloom = effect;
+      break;
+    }
+    if (ownedBloom) {
+      const propagationUnits = new Map(current.units);
+      let propagated = false;
+      for (const [uid, u] of propagationUnits) {
+        if (u.factionId !== attacker.factionId) continue;
+        if (u.hp <= 0) continue;
+        if (hexDistance(u.position, ownedBloom.center) > 3) continue;
+        propagationUnits.set(uid, applyPoisonDoT(u, 2, attackerDoctrine.poisonDamagePerStack, 3));
+        propagated = true;
+      }
+      if (propagated) {
+        current = { ...current, units: propagationUnits };
+      }
+    }
+  }
+
   // Phase A — Poison detonate (venom_t3 native): AoE poison on adjacent enemies after kill
   let poisonDetonated = false;
   if (defenderActuallyDestroyed && attackerDoctrine?.nativePoisonDetonateEnabled && nextAttacker.hp > 0) {
