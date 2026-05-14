@@ -6,6 +6,7 @@ import { getHealingBonus } from '../factionIdentitySystem.js';
 import { getHexOwner } from '../territorySystem.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { pruneDeadUnits } from '../combatActionSystem.js';
+import { getZoneEffectDamageOnHex } from '../zoneEffectSystem.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { SimulationTrace } from './traceTypes.js';
 import { log } from './traceRecorder.js';
@@ -182,6 +183,15 @@ export function applyEnvironmentalDamage(
       updatedUnit = { ...updatedUnit, hp: Math.max(0, updatedUnit.hp - 1) };
       log(trace, `${faction.name} ${current.prototypes.get(unit.prototypeId)?.name ?? 'unit'} suffers contamination (1 dmg)`);
       died = updatedUnit.hp <= 0;
+    }
+
+    if (!died && !safeInSettlement) {
+      const zoneDamage = getZoneEffectDamageOnHex(current, unit.position, faction.id);
+      if (zoneDamage > 0) {
+        updatedUnit = { ...updatedUnit, hp: Math.max(0, updatedUnit.hp - zoneDamage) };
+        log(trace, `${faction.name} ${current.prototypes.get(unit.prototypeId)?.name ?? 'unit'} suffers Toxic Bloom (${zoneDamage} dmg)`);
+        died = updatedUnit.hp <= 0;
+      }
     }
 
     if (!died && updatedUnit.bleeding && (updatedUnit.bleedTurnsRemaining ?? 0) > 0) {
