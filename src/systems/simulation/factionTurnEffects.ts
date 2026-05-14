@@ -1057,7 +1057,11 @@ export function processFactionPhases(
         : 0;
     const poisonMovePenalty = unit.poisoned ? doctrine.poisonMovePenalty : 0;
     const staggerPenalty = unit.nextTurnMovePenalty ?? 0;
-    const refreshedMoves = Math.max(0, unit.maxMoves + coldProvisionMoveBonus - poisonMovePenalty - staggerPenalty);
+    const harshTerrainBonus = doctrine.heatResistanceEnabled && (currentTerrainId === 'desert' || currentTerrainId === 'tundra') ? 1 : 0;
+    const refreshedMoves = Math.min(
+      unit.maxMoves + 1,
+      Math.max(0, unit.maxMoves + coldProvisionMoveBonus + harshTerrainBonus - poisonMovePenalty - staggerPenalty),
+    );
     const refreshedUnit = {
       ...unit,
       movesRemaining: refreshedMoves,

@@ -356,7 +356,7 @@ const CAMEL_RESEARCH = buildResearchDomain({
     type: 'endurance',
     description: 'No movement penalty in desert or tundra. +1 movement when starting the turn on harsh terrain (desert, tundra, dunes).',
     nativeDescription: 'Desert Nomads ignore movement penalties on ALL non-impassable terrain.',
-    effect: { ignoreDesertMovementPenalty: true, harshTerrainMoveBonus: 1, nomadicTerrainImmunity: true }, // first: wired; nomadicTerrainImmunity: design (used to map to nomadicTranscendenceEnabled)
+    effect: { ignoreDesertMovementPenalty: true, harshTerrainMoveBonus: 1, nomadicTerrainImmunity: true }, // first two: wired; nomadicTerrainImmunity: design (used to map to nomadicTranscendenceEnabled)
   },
   t2: {
     name: 'Mirage',
