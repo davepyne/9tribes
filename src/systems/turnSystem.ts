@@ -46,6 +46,7 @@ function resetFactionUnitsMoves(
         enteredZoCThisActivation: false,
         nextTurnMovePenalty: undefined,
         attackedTargetsThisTurn: [],
+        lastStandUsedThisTurn: undefined,
       });
     }
   }

@@ -119,6 +119,7 @@ export function applyCombatAction(
     emergentSustainMinHpSaved: false,
     emergentSmiteApplied: 0,
     emergentUndyingSaved: false,
+    lastStandSaved: false,
     emergentManyFacedStance: '',
     instantKillTriggered: false,
     stunApplied: 0,
@@ -164,6 +165,11 @@ export function applyCombatAction(
   const attackerFactionForDoctrine = state.factions.get(attacker.factionId);
   const attackerDoctrine = attackerFactionForDoctrine
     ? resolveCapabilityDoctrine(state.research.get(attacker.factionId), attackerFactionForDoctrine)
+    : undefined;
+
+  const defenderFactionForDoctrine = state.factions.get(defender.factionId);
+  const defenderDoctrineEarly = defenderFactionForDoctrine
+    ? resolveCapabilityDoctrine(state.research.get(defender.factionId), defenderFactionForDoctrine)
     : undefined;
 
   // E5 — Paladin minHp: can't drop below threshold from a single hit
@@ -266,6 +272,18 @@ export function applyCombatAction(
   if (preview.details.instantKill && nextDefender.hp > 0) {
     nextDefender = { ...nextDefender, hp: 0 };
     baseResolution.instantKillTriggered = true;
+  }
+
+  // Heavy Hitter T3 native — Last Stand: survive lethal at 1 HP once per turn
+  if (
+    nextDefender.hp <= 0
+    && defender.hp > 0
+    && defenderDoctrineEarly?.lastStandEnabled
+    && !defender.lastStandUsedThisTurn
+    && !baseResolution.instantKillTriggered
+  ) {
+    nextDefender = { ...nextDefender, hp: 1, lastStandUsedThisTurn: true };
+    baseResolution.lastStandSaved = true;
   }
 
   if (preview.attackerWasStealthed && attacker.isStealthed && nextAttacker.hp > 0) {
@@ -1087,6 +1105,9 @@ export function applyCombatAction(
   if (baseResolution.emergentUndyingSaved) {
     pushCombatEffect(triggeredEffects, 'Juggernaut Undying', 'Juggernaut survived a lethal blow at 1 HP.', 'synergy');
   }
+  if (baseResolution.lastStandSaved) {
+    pushCombatEffect(triggeredEffects, 'Last Stand', 'Arctic Warden survived a lethal blow at 1 HP.', 'ability');
+  }
   if (preview.details.emergentManyFacedStance) {
     const stanceLabel = preview.details.emergentManyFacedStance.charAt(0).toUpperCase() + preview.details.emergentManyFacedStance.slice(1);
     pushCombatEffect(triggeredEffects, `Many-Faced: ${stanceLabel}`, `Adapted stance based on combat context.`, 'synergy');
@@ -1139,6 +1160,7 @@ export function applyCombatAction(
       emergentSustainMinHpSaved: baseResolution.emergentSustainMinHpSaved,
       emergentSmiteApplied: baseResolution.emergentSmiteApplied,
       emergentUndyingSaved: baseResolution.emergentUndyingSaved,
+      lastStandSaved: baseResolution.lastStandSaved,
       emergentManyFacedStance: baseResolution.emergentManyFacedStance,
       instantKillTriggered: baseResolution.instantKillTriggered,
       stunApplied: baseResolution.stunApplied,

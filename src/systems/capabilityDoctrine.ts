@@ -73,6 +73,7 @@ export interface ResearchDoctrine {
   nomadicTranscendenceEnabled: boolean; // native camel_adaptation_t3 - all terrain costs 1 movement
   slaverTranscendenceEnabled: boolean;  // native slaving_t3 - auto-capture below 50% HP
   heavyTranscendenceEnabled: boolean;   // native heavy_hitter_t3 - 100% armor penetration
+  lastStandEnabled: boolean;           // native heavy_hitter_t3 - survive lethal hit at 1 HP once per turn
   armorPenetrationEnabled: boolean;     // foreign heavy_hitter_t3 - ignore 50% armor, units cannot be displaced
   natureHealingRegenBonus: number;    // nature_healing_t1/T3 - +1 HP/turn, or +3 HP/turn for native T3
   forestRegenBonus: number;           // nature_healing_t1 - +3 regen on forest/jungle instead of +1
@@ -229,6 +230,7 @@ export function resolveResearchDoctrine(
     autoCaptureEnabled: hasForeignT3('slaving'),
     armorPenetrationEnabled: hasForeignT3('heavy_hitter'),
     heavyTranscendenceEnabled: hasNativeT3('heavy_hitter'),
+    lastStandEnabled: hasNativeT3('heavy_hitter'),
     nomadicTranscendenceEnabled: hasNativeT3('camel_adaptation'),
     slaverTranscendenceEnabled: hasNativeT3('slaving'),
     natureHealingRegenBonus: hasNativeT3('nature_healing')

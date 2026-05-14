@@ -539,7 +539,7 @@ const HEAVY_HITTER_RESEARCH = buildResearchDomain({
       armorPenetration: 0.5, // wired (foreign)
       cannotBeDisplaced: true, // wired
       nativeArmorPenetration: 1.0, // design — must be wired in preview.ts (replaces the chargeTranscendence cross-wire)
-      lastStandPerCombat: true, // design
+      lastStandPerCombat: true, // wired
       heavyTranscendenceEnabled: true, // wired (currently dead code — this rework wires it)
     },
   },

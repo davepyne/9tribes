@@ -1083,6 +1083,7 @@ export function processFactionPhases(
       enteredZoCThisActivation: false,
       nextTurnMovePenalty: undefined,
       attackedTargetsThisTurn: [],
+      lastStandUsedThisTurn: undefined,
     };
 
     let stealthUpdatedUnit = tickStealthCooldown(refreshedUnit);
