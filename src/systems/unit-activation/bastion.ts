@@ -20,7 +20,8 @@ import type { GameState, UnitId } from '../../game/types.js';
 import type { FactionId } from '../../types.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import { resolveResearchDoctrine } from '../capabilityDoctrine.js';
-import { getNearestFriendlyCity, getUnitIntent } from '../strategicAi.js';
+import { getUnitIntent } from '../strategicAi.js';
+import { getNearestFriendlyCity } from '../../game/stateAccess.js';
 
 import { getTerrainAt, getImprovementAtHex, countFriendlyUnitsNearHex, countUnitsNearHex, countFortificationsNearHex } from './helpers.js';
 

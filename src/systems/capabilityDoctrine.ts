@@ -97,6 +97,14 @@ export interface ResearchDoctrine {
   forestRegenBonus: number;           // nature_healing_t1 - +3 regen on forest/jungle instead of +1
 }
 
+export type SlaveOverrides = { hpFraction: number; statFraction: number; routImmune?: boolean };
+
+/** Build slave overrides from doctrine, or undefined if slaving is inactive. */
+export function buildSlaveOverrides(doctrine: ResearchDoctrine | undefined): SlaveOverrides | undefined {
+  if (!doctrine || doctrine.slaveStatFraction >= 1) return undefined;
+  return { hpFraction: doctrine.slaveHpFraction, statFraction: doctrine.slaveStatFraction, routImmune: !!doctrine.captureRetreatEnabled };
+}
+
 /**
  * Check if a faction has completed specific research nodes.
  */
@@ -133,7 +141,6 @@ type DoctrineCacheEntry = {
   nativeDomainsRef: readonly string[];
   bastionsBuilt: number;
   maelstromsDeclared: number;
-  slaveCaptureCount: number;
   doctrine: ResearchDoctrine;
 };
 const doctrineCache = new Map<FactionId, DoctrineCacheEntry>();
@@ -148,7 +155,7 @@ const doctrineCache = new Map<FactionId, DoctrineCacheEntry>();
  */
 export function resolveResearchDoctrine(
   researchState: ResearchState | undefined,
-  faction?: Pick<Faction, 'nativeDomain' | 'nativeDomains' | 'learnedDomains' | 'id' | 'bastionsBuilt' | 'maelstromsDeclared' | 'slaveCaptureCount'>,
+  faction?: Pick<Faction, 'nativeDomain' | 'nativeDomains' | 'learnedDomains' | 'id' | 'bastionsBuilt' | 'maelstromsDeclared'>,
 ): ResearchDoctrine {
   const completedNodes = researchState?.completedNodes ?? [];
   const learnedDomains = faction?.learnedDomains ?? [];
@@ -157,7 +164,6 @@ export function resolveResearchDoctrine(
   const factionId = faction?.id;
   const bastionsBuilt = faction?.bastionsBuilt ?? 0;
   const maelstromsDeclared = faction?.maelstromsDeclared ?? 0;
-  const slaveCaptureCount = faction?.slaveCaptureCount ?? 0;
 
   // Cache check: reference equality on the mutable arrays + scalar counters
   if (factionId) {
@@ -170,7 +176,6 @@ export function resolveResearchDoctrine(
       && cached.nativeDomainsRef === faction?.nativeDomains
       && cached.bastionsBuilt === bastionsBuilt
       && cached.maelstromsDeclared === maelstromsDeclared
-      && cached.slaveCaptureCount === slaveCaptureCount
     ) {
       return cached.doctrine;
     }
@@ -305,7 +310,6 @@ export function resolveResearchDoctrine(
       nativeDomainsRef: faction?.nativeDomains,
       bastionsBuilt,
       maelstromsDeclared,
-      slaveCaptureCount,
       doctrine,
     });
   }

@@ -13,6 +13,8 @@ import type {
   CityId, FactionId, ImprovementId, PrototypeId, ResearchNodeId, UnitId, VillageId,
   ChassisId, ComponentId,
 } from '../types.js';
+import { hexDistance } from '../core/grid.js';
+import type { HexCoord } from '../types.js';
 
 // ── Map.get accessors ───────────────────────────────────────────────
 
@@ -73,3 +75,23 @@ export function asResearchNodeId(id: string): ResearchNodeId { return id as Rese
 export function asVillageId(id: string): VillageId { return id as VillageId; }
 export function asChassisId(id: string): ChassisId { return id as ChassisId; }
 export function asComponentId(id: string): ComponentId { return id as ComponentId; }
+
+// ── Spatial queries ──────────────────────────────────────────────
+
+export function getNearestFriendlyCity(
+  state: GameState,
+  factionId: FactionId,
+  origin: HexCoord,
+): City | undefined {
+  let best: City | undefined;
+  let bestDist = Infinity;
+  for (const city of state.cities.values()) {
+    if (city.factionId !== factionId) continue;
+    const dist = hexDistance(origin, city.position);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = city;
+    }
+  }
+  return best;
+}

@@ -13,7 +13,7 @@ import {
 } from '../abilitySystem.js';
 import { applyCombatAction, previewCombatAction } from '../combatActionSystem.js';
 import type { CombatActionPreview } from '../combat-action/types.js';
-import { resolveResearchDoctrine } from '../capabilityDoctrine.js';
+import { resolveResearchDoctrine, buildSlaveOverrides } from '../capabilityDoctrine.js';
 import { describeCapabilityLevels } from '../capabilitySystem.js';
 import { findFleeHex } from '../moraleSystem.js';
 import { moveUnit, canMoveTo, getValidMoves } from '../movementSystem.js';
@@ -709,9 +709,7 @@ export function activateUnit(
     if (bestCaptureTarget) {
       const captureResult = attemptNonCombatCapture(
         current, unitId, bestCaptureTarget, registry, nonCombatChance, hpFraction, captureCooldown, current.rngState,
-        factionDoctrine.slaveStatFraction < 1
-          ? { hpFraction: factionDoctrine.slaveHpFraction, statFraction: factionDoctrine.slaveStatFraction, routImmune: !!factionDoctrine.captureRetreatEnabled }
-          : undefined,
+        buildSlaveOverrides(factionDoctrine),
       );
       if (captureResult.captured) {
         const capturedUnit = captureResult.state.units.get(bestCaptureTarget);

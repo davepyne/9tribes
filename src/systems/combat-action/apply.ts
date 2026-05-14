@@ -1,14 +1,14 @@
 import { getEffectiveXpCost } from '../knowledgeSystem.js';
 import { isWaterTerrain } from '../terrainUtils.js';
 import { getZoneEffectsAtHex } from '../zoneEffectSystem.js';
-import { getNeighbors, hexDistance, hexToKey, getHexesInRange } from '../../core/grid.js';
+import { getNeighbors, hexDistance, hexToKey } from '../../core/grid.js';
 import { createUnitId } from '../../core/ids.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { Unit } from '../../features/units/types.js';
 import type { GameState } from '../../game/types.js';
 import type { FactionId } from '../../types.js';
 import { rngChance, rngShuffle } from '../../core/rng.js';
-import { resolveCapabilityDoctrine } from '../capabilityDoctrine.js';
+import { resolveCapabilityDoctrine, buildSlaveOverrides } from '../capabilityDoctrine.js';
 import { clearPreparedAbility } from '../abilitySystem.js';
 import { applyCombatSignals } from '../combatSignalSystem.js';
 import { addResearchProgressToNode, getNextResearchNodeForDomain } from '../researchSystem.js';
@@ -16,14 +16,13 @@ import { unlockHybridRecipes } from '../hybridSystem.js';
 import { awardCombatXP } from '../xpSystem.js';
 import { tryPromoteUnit } from '../veterancySystem.js';
 import { tryLearnFromKill } from '../learnByKillSystem.js';
-import { attemptCapture, attemptNonCombatCapture, getCaptureParams, hasCaptureAbility } from '../captureSystem.js';
+import { attemptCapture, attemptNonCombatCapture, getCaptureParams, hasCaptureAbility, findOriginalFaction, liberationOverrides } from '../captureSystem.js';
 import { applyContactTransfer } from '../capabilitySystem.js';
 import { applyPoisonDoT, enterStealth, findRetreatHex } from '../signatureAbilitySystem.js';
-import { getPrototype } from '../../game/stateAccess.js';
+import { getPrototype, getNearestFriendlyCity } from '../../game/stateAccess.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { getGreedyLootOnKill, getPoisonOnAttack, getPursuitMovementOnKill, isUnitRiverStealthed } from '../factionIdentitySystem.js';
 import { isCoverTerrain } from '../terrainUtils.js';
-import { getNearestFriendlyCity } from '../strategicAi.js';
 
 import {
   recordBattleFought,
@@ -196,9 +195,7 @@ export function applyCombatAction(
         captureParams.hpFraction,
         captureParams.cooldown,
         state.rngState,
-        attackerDoctrine?.slaveStatFraction && attackerDoctrine.slaveStatFraction < 1
-          ? { hpFraction: attackerDoctrine.slaveHpFraction, statFraction: attackerDoctrine.slaveStatFraction, routImmune: !!attackerDoctrine?.captureRetreatEnabled }
-          : undefined,
+        buildSlaveOverrides(attackerDoctrine),
       );
 
       const spentAttacker = enslavementResult.state.units.get(preview.attackerId);
@@ -480,9 +477,9 @@ export function applyCombatAction(
     && !hasCaptureAbility(attackerPrototype, registry)
     && !autoCaptureAbility
     && !maelstromAutoCapture
-    && getHexesInRange(defender.position, navalRadius).some(hex => {
-      const unit = getUnitAtHex(current, hex);
-      if (!unit || unit.factionId !== attacker.factionId || unit.id === attacker.id) return false;
+    && Array.from(current.units.values()).some(unit => {
+      if (unit.factionId !== attacker.factionId || unit.id === attacker.id) return false;
+      if (hexDistance(unit.position, defender.position) > navalRadius) return false;
       const proto = current.prototypes.get(unit.prototypeId);
       const chassis = proto ? registry.getChassis(proto.chassisId) : undefined;
       return chassis?.movementClass === 'naval' && !unit.slaveStatFraction;
@@ -525,9 +522,7 @@ export function applyCombatAction(
           : null),
       current.rngState,
       totalCaptureBonus > 0 ? totalCaptureBonus : undefined,
-      attackerDoctrine?.slaveStatFraction && attackerDoctrine.slaveStatFraction < 1
-        ? { hpFraction: attackerDoctrine.slaveHpFraction, statFraction: attackerDoctrine.slaveStatFraction, routImmune: !!attackerDoctrine?.captureRetreatEnabled }
-        : undefined,
+      buildSlaveOverrides(attackerDoctrine),
     );
     current = captureResult.state;
     capturedOnKill = captureResult.captured;
@@ -546,7 +541,9 @@ export function applyCombatAction(
     if (defender) {
       if (rngChance(current.rngState, 0.3)) {
         const slaveHp = attackerDoctrine?.slaveHpFraction ?? 0.25;
-        const slaveStat = attackerDoctrine?.slaveStatFraction;
+        const overrides = buildSlaveOverrides(attackerDoctrine);
+        const isReCapture = findOriginalFaction(defender, defender.factionId) === attacker.factionId;
+        const liberation = liberationOverrides(isReCapture, overrides, defender.slaveStatFraction);
         const captured: Unit = {
           ...defender,
           factionId: attacker.factionId,
@@ -554,8 +551,8 @@ export function applyCombatAction(
           morale: 40,
           veteranLevel: 'green' as import('../../core/enums.js').VeteranLevel,
           status: 'ready' as import('../../core/enums.js').UnitStatus,
-          ...(slaveStat && slaveStat < 1 ? { slaveStatFraction: slaveStat } : {}),
-          ...(attackerDoctrine?.captureRetreatEnabled ? { slaveRoutImmune: true } : {}),
+          slaveStatFraction: liberation.statFraction,
+          slaveRoutImmune: liberation.routImmune,
         };
         const unitsAfterCapture = new Map(current.units);
         unitsAfterCapture.set(preview.defenderId, captured);
@@ -743,9 +740,7 @@ export function applyCombatAction(
   if (!defenderActuallyDestroyed && preview.result.defenderFled && nextAttacker.hp > 0 && (attackerDoctrine?.captureRetreatEnabled || preview.details.retreatCaptureChance > 0)) {
     const retreatChance = (attackerDoctrine?.captureRetreatEnabled ? 0.15 : 0) + preview.details.retreatCaptureChance;
     const retreatSlaveHp = attackerDoctrine?.slaveHpFraction ?? 0.25;
-    const retreatSlaveOverrides = attackerDoctrine?.slaveStatFraction && attackerDoctrine.slaveStatFraction < 1
-      ? { hpFraction: attackerDoctrine.slaveHpFraction, statFraction: attackerDoctrine.slaveStatFraction, routImmune: !!attackerDoctrine?.captureRetreatEnabled }
-      : undefined;
+    const retreatSlaveOverrides = buildSlaveOverrides(attackerDoctrine);
     const retreatCapture = attemptNonCombatCapture(
       current,
       preview.attackerId,

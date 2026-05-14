@@ -9,6 +9,31 @@ import type { VeteranLevel } from '../core/enums.js';
 import type { UnitId } from '../types.js';
 import type { RNGState } from '../core/rng.js';
 import { rngNextFloat } from '../core/rng.js';
+import type { SlaveOverrides } from './capabilityDoctrine.js';
+
+/**
+ * Find the original faction of a unit (before any captures).
+ * Used to detect re-capture / liberation scenarios.
+ */
+export function findOriginalFaction(unit: Unit, currentFactionId: string): string {
+  const originalCapture = unit.history.find(e => e.type === 'captured');
+  return (originalCapture?.details?.originalFaction as string) ?? currentFactionId;
+}
+
+/**
+ * Compute liberation overrides for a captured unit.
+ * If the captor is the unit's original faction, clear slave debuffs.
+ */
+export function liberationOverrides(
+  isReCapture: boolean,
+  overrides: SlaveOverrides | undefined,
+  existingFraction: number | undefined,
+): { statFraction: number | undefined; routImmune: boolean | undefined } {
+  return {
+    statFraction: isReCapture ? undefined : (overrides?.statFraction ?? existingFraction),
+    routImmune: isReCapture ? undefined : overrides?.routImmune,
+  };
+}
 
 /**
  * Check if a prototype has capture capability (has a component with captureChance)
@@ -144,33 +169,21 @@ export function attemptCapture(
   }
 
   // Capture succeeded!
-  // 1. Change defender's factionId to attacker's faction
-  // 2. Set HP to hpFraction of maxHp
-  // 3. Reset morale to 50
-  // 4. Set routed = false
-  // 5. Reset veteranLevel to 'green'
-  // 6. Add defender's unitId to new faction's unitIds
-  // 7. Remove from old faction's unitIds
-  // 8. Add history entries to both attacker and defender
 
   const attackerFactionId = attacker.factionId;
   const defenderFactionId = defender.factionId;
 
-  // Re-capture check: if the defender was originally from the attacker's faction,
-  // clear slave debuffs (liberation).
-  const originalCapture = defender.history.find(e => e.type === 'captured');
-  const originalFaction = (originalCapture?.details?.originalFaction as string) ?? defenderFactionId;
-  const isReCapture = originalFaction === attackerFactionId;
-
+  const isReCapture = findOriginalFaction(defender, defenderFactionId) === attackerFactionId;
   const effectiveHpFraction = slaveOverrides?.hpFraction ?? hpFraction;
+  const liberation = liberationOverrides(isReCapture, slaveOverrides, defender.slaveStatFraction);
 
   // Create captured defender unit
   const capturedDefender: Unit = {
     ...defender,
     factionId: attackerFactionId,
     hp: Math.max(1, Math.floor(defender.maxHp * effectiveHpFraction)),
-    slaveStatFraction: isReCapture ? undefined : (slaveOverrides?.statFraction ?? defender.slaveStatFraction),
-    slaveRoutImmune: isReCapture ? undefined : slaveOverrides?.routImmune,
+    slaveStatFraction: liberation.statFraction,
+    slaveRoutImmune: liberation.routImmune,
     morale: 50,
     routed: false,
     veteranLevel: 'green' as VeteranLevel,
@@ -317,18 +330,17 @@ export function attemptNonCombatCapture(
   }
 
   // Capture succeeded — convert target to captor's faction
-  const originalCapture = target.history.find(e => e.type === 'captured');
-  const originalFaction = (originalCapture?.details?.originalFaction as string) ?? target.factionId;
-  const isReCapture = originalFaction === captor.factionId;
+  const isReCapture = findOriginalFaction(target, target.factionId) === captor.factionId;
 
   const effectiveHpFraction = slaveOverrides?.hpFraction ?? hpFraction;
   const newHp = Math.max(1, Math.floor(target.maxHp * effectiveHpFraction));
+  const liberation = liberationOverrides(isReCapture, slaveOverrides, target.slaveStatFraction);
   const capturedTarget: Unit = {
     ...target,
     factionId: captor.factionId,
     hp: newHp,
-    slaveStatFraction: isReCapture ? undefined : (slaveOverrides?.statFraction ?? target.slaveStatFraction),
-    slaveRoutImmune: isReCapture ? undefined : slaveOverrides?.routImmune,
+    slaveStatFraction: liberation.statFraction,
+    slaveRoutImmune: liberation.routImmune,
     morale: 50,
     routed: false,
     veteranLevel: 'green' as VeteranLevel,
