@@ -9,7 +9,6 @@ export function determinePosture(
   unitCount: number,
   enemyUnitCount: number,
   threatenedCities: ThreatAssessment[],
-  exhaustion: number,
   supplyDeficit: number,
   fronts: FrontLine[],
   personality: AiPersonalitySnapshot,
@@ -19,7 +18,7 @@ export function determinePosture(
 ): PostureDecision {
   const cityThreat = threatenedCities[0]?.threatScore ?? 0;
   const majorFront = fronts[0];
-  if (unitCount <= 1 || exhaustion >= 10 || supplyDeficit >= 3) {
+  if (unitCount <= 1 || supplyDeficit >= 3) {
     return {
       posture: 'recovery',
       reasons: ['posture_guard=recovery:critical_recovery_state'],
@@ -36,7 +35,6 @@ export function determinePosture(
     fronts: fronts.length,
     localAdvantage: unitCount - enemyUnitCount,
     supplyDeficit,
-    exhaustion,
   };
   const scoreByPosture = new Map<FactionPosture, number>();
   for (const posture of ['offensive', 'balanced', 'defensive', 'recovery', 'siege', 'exploration'] as FactionPosture[]) {
@@ -71,7 +69,7 @@ export function determinePosture(
     const previousUnitCount = Object.keys(previousStrategy.unitIntents).length;
     const lostArmyMass =
       previousUnitCount > 0 && unitCount <= Math.max(1, Math.floor(previousUnitCount * 0.7));
-    const decisiveBreak = cityThreat >= 5 || exhaustion >= 8 || supplyDeficit >= 2 || lostArmyMass;
+    const decisiveBreak = cityThreat >= 5 || supplyDeficit >= 2 || lostArmyMass;
     const stickyPosture =
       previousStrategy.posture === 'offensive' || previousStrategy.posture === 'siege'
         ? previousStrategy.posture

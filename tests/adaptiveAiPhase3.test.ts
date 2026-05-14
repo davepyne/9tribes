@@ -1,5 +1,6 @@
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
+import type { MutableGameState } from '../src/game/buildMvpScenario';
 import { assemblePrototype } from '../src/design/assemblePrototype';
 import { computeFactionStrategy } from '../src/systems/strategicAi';
 import { rankProductionPriorities } from '../src/systems/aiProductionStrategy';
@@ -15,7 +16,7 @@ function countAssignments(strategy: ReturnType<typeof computeFactionStrategy>, a
 
 describe('adaptive AI phase 3', () => {
   it('pushes hard steppe production further toward mounted skirmish identity units than normal', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     trimState(state, ['steppe_clan', 'hill_clan']);
     const steppeId = 'steppe_clan' as never;
     const cavalry = assemblePrototype(
@@ -72,7 +73,7 @@ describe('adaptive AI phase 3', () => {
   });
 
   it('uses personality-weighted posture selection after safety guards', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     trimState(state, ['steppe_clan', 'druid_circle']);
     const steppeId = 'steppe_clan' as never;
     const druidId = 'druid_circle' as never;
@@ -81,8 +82,8 @@ describe('adaptive AI phase 3', () => {
 
     state.units.set(steppeUnitId, { ...state.units.get(steppeUnitId)!, position: { q: 8, r: 6 }, hp: 100 });
     state.units.set(druidUnitId, { ...state.units.get(druidUnitId)!, position: { q: 9, r: 6 }, hp: 100 });
-    let withFog = updateFogState(state, steppeId);
-    withFog = updateFogState(withFog, druidId);
+    let withFog = updateFogState(state, steppeId) as unknown as MutableGameState;
+    withFog = updateFogState(withFog, druidId) as unknown as MutableGameState;
 
     const steppeStrategy = computeFactionStrategy(withFog, steppeId, registry);
     const druidStrategy = computeFactionStrategy(withFog, druidId, registry);
@@ -93,7 +94,7 @@ describe('adaptive AI phase 3', () => {
   });
 
   it('changes focus target preference when doctrine/personality changes', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     trimState(state, ['druid_circle', 'steppe_clan']);
     const druidId = 'druid_circle' as never;
     const steppeId = 'steppe_clan' as never;
@@ -109,8 +110,8 @@ describe('adaptive AI phase 3', () => {
     state.units.set(enemySupportId, { ...state.units.get(enemySupportId)!, position: { q: 9, r: 7 }, hp: 100, routed: false });
     state.units.set(enemyIsolatedId, { ...state.units.get(enemyIsolatedId)!, position: { q: 5, r: 8 }, hp: 100, routed: false });
 
-    let withFog = updateFogState(state, druidId);
-    withFog = updateFogState(withFog, steppeId);
+    let withFog = updateFogState(state, druidId) as unknown as MutableGameState;
+    withFog = updateFogState(withFog, steppeId) as unknown as MutableGameState;
     const baseline = computeFactionStrategy(withFog, druidId, registry);
 
     const druid = withFog.factions.get(druidId)!;
@@ -126,7 +127,7 @@ describe('adaptive AI phase 3', () => {
   });
 
   it('changes assignment mix by faction personality and emits assignment debug reasons', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     trimState(state, ['steppe_clan', 'hill_clan']);
     const steppeId = 'steppe_clan' as never;
     const hillId = 'hill_clan' as never;
@@ -135,8 +136,8 @@ describe('adaptive AI phase 3', () => {
 
     state.units.set(steppeUnit, { ...state.units.get(steppeUnit)!, position: { q: 8, r: 6 }, hp: 100 });
     state.units.set(hillUnit, { ...state.units.get(hillUnit)!, position: { q: 9, r: 6 }, hp: 100 });
-    let withFog = updateFogState(state, steppeId);
-    withFog = updateFogState(withFog, hillId);
+    let withFog = updateFogState(state, steppeId) as unknown as MutableGameState;
+    withFog = updateFogState(withFog, hillId) as unknown as MutableGameState;
 
     const steppeStrategy = computeFactionStrategy(withFog, steppeId, registry);
     const hillStrategy = computeFactionStrategy(withFog, hillId, registry);
@@ -147,8 +148,8 @@ describe('adaptive AI phase 3', () => {
   });
 
   it('remains deterministic in short sim runs with phase-3 strategy wiring', () => {
-    const stateA = buildMvpScenario(42, { registry });
-    const stateB = buildMvpScenario(42, { registry });
+    const stateA = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
+    const stateB = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     const traceA = createSimulationTrace();
     const traceB = createSimulationTrace();
 

@@ -156,17 +156,7 @@ export interface ResolveCombatOptions {
 
 /**
  * Execute a combat round between two units.
- *
- * NOTE: This function is NOT dead code. It is the core combat math function
- * called by `previewCombatAction()` in `combat-action/preview.ts`, which is
- * then consumed by `applyCombatAction()` in `combat-action/apply.ts`.
- * Both the AI path (`activateUnit`) and the player path (`GameSession`)
- * converge on `previewCombatAction()` → `applyCombatAction()`, so all
- * combat damage math flows through this function.
- *
- * Tests in `combat.test.ts` call `resolveCombat()` directly to verify the
- * math in isolation. The pipeline tests in `combatAction.test.ts` exercise
- * the full `previewCombatAction()` → `applyCombatAction()` stack.
+ * Core damage math called by previewCombatAction() → applyCombatAction().
  */
 export function resolveCombat(options: ResolveCombatOptions): CombatResult {
   const {

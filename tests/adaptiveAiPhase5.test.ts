@@ -1,5 +1,6 @@
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
+import type { MutableGameState } from '../src/game/buildMvpScenario';
 import { computeFactionStrategy } from '../src/systems/strategicAi';
 import { createSimulationTrace, runWarEcologySimulation } from '../src/systems/warEcologySimulation';
 import { updateFogState } from '../src/systems/fogSystem';
@@ -25,8 +26,8 @@ function readWaitReason(strategy: ReturnType<typeof computeFactionStrategy>) {
 
 describe('adaptive AI phase 5', () => {
   it('switches hard into denial raids when losing and exposed enemy economy exists', () => {
-    const state = buildMvpScenario(42, { registry });
-    const trimmed = trimState(state, ['hill_clan', 'steppe_clan', 'coral_people']);
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
+    const trimmed = trimState(state, ['hill_clan', 'steppe_clan', 'coral_people']) as unknown as MutableGameState;
     const hillId = 'hill_clan' as never;
     const steppeId = 'steppe_clan' as never;
     const hillFaction = trimmed.factions.get(hillId)!;
@@ -110,8 +111,8 @@ describe('adaptive AI phase 5', () => {
   });
 
   it('holds/regroups when squad mass is insufficient to commit', () => {
-    const state = buildMvpScenario(42, { registry });
-    const trimmed = trimState(state, ['steppe_clan', 'hill_clan']);
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
+    const trimmed = trimState(state, ['steppe_clan', 'hill_clan']) as unknown as MutableGameState;
     const steppeId = 'steppe_clan' as never;
     const hillId = 'hill_clan' as never;
     const steppeUnits = trimmed.factions.get(steppeId)!.unitIds;
@@ -133,8 +134,8 @@ describe('adaptive AI phase 5', () => {
   });
 
   it('uses soft target budgets and allows overfill when one opportunity dominates', () => {
-    const state = buildMvpScenario(42, { registry });
-    const trimmed = trimState(state, ['steppe_clan', 'hill_clan']);
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
+    const trimmed = trimState(state, ['steppe_clan', 'hill_clan']) as unknown as MutableGameState;
     const steppeId = 'steppe_clan' as never;
     const hillId = 'hill_clan' as never;
     const steppeUnits = trimmed.factions.get(steppeId)!.unitIds;
@@ -158,8 +159,8 @@ describe('adaptive AI phase 5', () => {
   });
 
   it('allows doctrine override for exceptional hitrun/charge opportunities', () => {
-    const state = buildMvpScenario(42, { registry });
-    const trimmed = trimState(state, ['savannah_lions', 'hill_clan']);
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
+    const trimmed = trimState(state, ['savannah_lions', 'hill_clan']) as unknown as MutableGameState;
     const steppeId = 'savannah_lions' as never;
     const hillId = 'hill_clan' as never;
 

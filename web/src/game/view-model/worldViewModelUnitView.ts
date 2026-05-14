@@ -8,6 +8,7 @@ import { isUnitEffectivelyStealthed } from '../../../../src/systems/fogSystem.js
 import { isUnlockPrototype } from '../../../../src/systems/knowledgeSystem.js';
 import { getUnitSupplyCost } from '../../../../src/systems/productionSystem.js';
 import { canPriestSummon } from '../../../../src/systems/summonSystem.js';
+import { getVeteranDefenseBonus } from '../../../../src/systems/combatSystem.js';
 import { canBoardTransport, getUnitTransport, getValidDisembarkHexes, getEmbarkedUnits, isTransportUnit } from '../../../../src/systems/transportSystem.js';
 import { getSpriteKeyForUnit, inferChassisId } from './spriteKeys.js';
 import { hexToKey, hexDistance, getNeighbors } from '../../../../src/core/grid.js';
@@ -61,7 +62,7 @@ export function buildUnitView(
   const terrainDef = tile ? registry.getTerrain(tile.terrain) : undefined;
   const terrainMod = terrainDef?.defenseModifier ?? 0;
   const improvementBonus = getImprovementBonus(state, unit.position, unit.factionId);
-  const veteranDefBonus = registry.getVeteranLevel(unit.veteranLevel ?? '')?.defenseBonus ?? 0;
+  const veteranDefBonus = getVeteranDefenseBonus(registry, unit.veteranLevel ?? '');
   // Note: situationalDefenseModifier (from brace, flanking, etc.) is combat-context-dependent
   // and cannot be precomputed here. The backend calculateDefense() includes it on a per-combat basis.
   const effectiveDefense = Math.max(1, Math.round(baseDefense * (1 + terrainMod + improvementBonus + veteranDefBonus)));

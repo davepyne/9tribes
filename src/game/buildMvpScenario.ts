@@ -1,6 +1,6 @@
 // MVP Scenario Builder - Creates a complete game state from scenario config
 
-import type { GameState, City, Prototype, Improvement, ResearchState, FactionEconomy } from './types.js';
+import type { GameState, City, Prototype, Improvement, ResearchState, FactionEconomy, Village } from './types.js';
 import { createEmptyGameState } from './createGameState.js';
 import { generateMvpMap } from '../world/generation/generateMvpMap.js';
 import { generateClimateBandMap } from '../world/generation/generateClimateBandMap.js';
@@ -9,7 +9,7 @@ import { assemblePrototype } from '../design/assemblePrototype.js';
 import { createFactionId, createUnitId, createCityId, createImprovementId, createPrototypeId } from '../core/ids.js';
 import { createCombatRecord } from '../features/factions/types.js';
 import { isWaterTerrain, isDeepWaterTerrain } from '../systems/terrainUtils.js';
-import type { CityId, ChassisId, ComponentId, PrototypeId, UnitId, ImprovementId, FactionId } from '../types.js';
+import type { CityId, ChassisId, ComponentId, PrototypeId, UnitId, ImprovementId, FactionId, VillageId } from '../types.js';
 import type { Faction } from '../game/types.js';
 import { getHexesInRange, getNeighbors, hexToKey } from '../core/grid.js';
 import { createResearchState } from '../systems/researchSystem.js';
@@ -25,7 +25,7 @@ import { getMvpFactionConfigs, getMvpScenarioConfig, getStartingUnits, MVP_IMPRO
 import { createCitySiteBonuses } from '../systems/citySiteSystem.js';
 
 // Mutable version of GameState for one-shot scenario building
-type MutableGameState = GameState & {
+export type MutableGameState = GameState & {
   cities: Map<CityId, City>;
   factions: Map<FactionId, Faction>;
   units: Map<UnitId, Unit>;
@@ -33,6 +33,7 @@ type MutableGameState = GameState & {
   improvements: Map<ImprovementId, Improvement>;
   research: Map<FactionId, ResearchState>;
   economy: Map<FactionId, FactionEconomy>;
+  villages: Map<VillageId, Village>;
 };
 
 // ---------------------------------------------------------------------------

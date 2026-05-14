@@ -1,5 +1,6 @@
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
+import type { MutableGameState } from '../src/game/buildMvpScenario';
 import { assemblePrototype } from '../src/design/assemblePrototype';
 import { computeFactionStrategy } from '../src/systems/strategicAi';
 import {
@@ -12,7 +13,7 @@ import { getFactionProjectedSupplyDemand } from '../src/systems/productionSystem
 
 const registry = loadRulesRegistry();
 
-function ensurePrototype(state: ReturnType<typeof buildMvpScenario>, factionId: string, chassisId: string, componentIds: string[]) {
+function ensurePrototype(state: MutableGameState, factionId: string, chassisId: string, componentIds: string[]) {
   const existing = Array.from(state.prototypes.values()).find(
     (p) => p.factionId === factionId && p.chassisId === chassisId,
   );
@@ -24,7 +25,7 @@ function ensurePrototype(state: ReturnType<typeof buildMvpScenario>, factionId: 
   return prototype;
 }
 
-function getPrototypeByChassis(state: ReturnType<typeof buildMvpScenario>, factionId: string, chassisId: string, componentIds?: string[]) {
+function getPrototypeByChassis(state: MutableGameState, factionId: string, chassisId: string, componentIds?: string[]) {
   const existing = Array.from(state.prototypes.values()).find(
     (prototype) => prototype.factionId === factionId && prototype.chassisId === chassisId,
   );
@@ -35,7 +36,7 @@ function getPrototypeByChassis(state: ReturnType<typeof buildMvpScenario>, facti
 
 describe('adaptive AI phase 2', () => {
   it('keeps settler production off on easy and makes it more attractive for defensive tribes on normal', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     const hillId = 'hill_clan' as never;
     const steppeId = 'steppe_clan' as never;
     const hillFaction = state.factions.get(hillId)!;
@@ -74,7 +75,7 @@ describe('adaptive AI phase 2', () => {
   });
 
   it('computes projected supply margins for production candidates', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     const factionId = 'steppe_clan' as never;
     const cavalry = getPrototypeByChassis(state, factionId, 'cavalry_frame', ['basic_bow', 'skirmish_drill']);
     expect(cavalry).toBeTruthy();
@@ -95,7 +96,7 @@ describe('adaptive AI phase 2', () => {
   });
 
   it('applies strong soft penalties to premium upkeep when supply tightens', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     const factionId = 'steppe_clan' as never;
     const cavalry = getPrototypeByChassis(state, factionId, 'cavalry_frame', ['basic_bow', 'skirmish_drill']);
     expect(cavalry).toBeTruthy();
@@ -129,7 +130,7 @@ describe('adaptive AI phase 2', () => {
   });
 
   it('shifts mounted-heavy research toward logistics-friendly domains when supply is tight', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     const factionId = 'steppe_clan' as never;
     const faction = state.factions.get(factionId)!;
     const research = state.research.get(factionId)!;
@@ -176,7 +177,7 @@ describe('adaptive AI phase 2', () => {
   });
 
   it('pushes normal research toward foreign breadth before native tier 3 when breadth is undeveloped', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     const factionId = 'steppe_clan' as never;
     const faction = state.factions.get(factionId)!;
     const research = state.research.get(factionId)!;
@@ -203,7 +204,7 @@ describe('adaptive AI phase 2', () => {
   });
 
   it('weights stronger available military more heavily on normal when army quality lags the unlock state', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     const factionId = 'steppe_clan' as never;
     const cavalry = getPrototypeByChassis(state, factionId, 'cavalry_frame', ['basic_bow', 'skirmish_drill']);
     const infantry = getPrototypeByChassis(state, factionId, 'infantry_frame');
@@ -232,7 +233,7 @@ describe('adaptive AI phase 2', () => {
   });
 
   it('keeps hard settler windows tighter than normal when supply and reserves are weak', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     const factionId = 'hill_clan' as never;
     const faction = state.factions.get(factionId)!;
     const settler = Array.from(state.prototypes.values()).find(
@@ -266,7 +267,7 @@ describe('adaptive AI phase 2', () => {
   });
 
   it('pushes hard production toward quality catch-up more aggressively than normal', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     const factionId = 'steppe_clan' as never;
     const cavalry = getPrototypeByChassis(state, factionId, 'cavalry_frame', ['basic_bow', 'skirmish_drill']);
     const infantry = getPrototypeByChassis(state, factionId, 'infantry_frame');
@@ -299,7 +300,7 @@ describe('adaptive AI phase 2', () => {
   });
 
   it('pushes hard research into breadth earlier than normal once native tier 2 is secured', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     const factionId = 'steppe_clan' as never;
     const faction = state.factions.get(factionId)!;
     const research = state.research.get(factionId)!;
@@ -335,7 +336,7 @@ describe('adaptive AI phase 2', () => {
   });
 
   it('uses hard strategic visibility to counter-build hidden ranged-heavy armies', () => {
-    const state = buildMvpScenario(42, { registry });
+    const state = buildMvpScenario(42, { registry }) as unknown as MutableGameState;
     const steppeId = 'steppe_clan' as never;
     const hillId = 'hill_clan' as never;
     const steppeFaction = state.factions.get(steppeId)!;
