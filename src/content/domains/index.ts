@@ -528,7 +528,7 @@ const HEAVY_HITTER_RESEARCH = buildResearchDomain({
     type: 'damageReflection',
     description: 'When attacked, retaliate by reflecting 25% of damage dealt back to the attacker.',
     nativeDescription: 'Arctic Wardens reflect 50% of damage AND stagger the attacker (-1 movement next turn).',
-    effect: { damageReflectionPercent: 0.25, nativeReflectionPercent: 0.5, staggerOnReflect: true }, // first: wired; rest: design
+    effect: { damageReflectionPercent: 0.25, nativeReflectionPercent: 0.5, staggerOnReflect: true }, // all: wired
   },
   t3: {
     name: 'Unbreakable',

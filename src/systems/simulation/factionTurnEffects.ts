@@ -1056,7 +1056,8 @@ export function processFactionPhases(
         ? 1
         : 0;
     const poisonMovePenalty = unit.poisoned ? doctrine.poisonMovePenalty : 0;
-    const refreshedMoves = Math.max(0, unit.maxMoves + coldProvisionMoveBonus - poisonMovePenalty);
+    const staggerPenalty = unit.nextTurnMovePenalty ?? 0;
+    const refreshedMoves = Math.max(0, unit.maxMoves + coldProvisionMoveBonus - poisonMovePenalty - staggerPenalty);
     const refreshedUnit = {
       ...unit,
       movesRemaining: refreshedMoves,
@@ -1067,6 +1068,7 @@ export function processFactionPhases(
       poisonStacks: safeInSettlement ? 0 : unit.poisonStacks,
       poisonTurnsRemaining: safeInSettlement ? 0 : unit.poisonTurnsRemaining,
       enteredZoCThisActivation: false,
+      nextTurnMovePenalty: undefined,
     };
 
     let stealthUpdatedUnit = tickStealthCooldown(refreshedUnit);

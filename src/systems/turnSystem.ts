@@ -37,12 +37,14 @@ function resetFactionUnitsMoves(
   const newUnits = new Map(units);
   for (const [unitId, unit] of units) {
     if (unit.factionId === factionId) {
+      const staggerPenalty = unit.nextTurnMovePenalty ?? 0;
       newUnits.set(unitId, {
         ...unit,
-        movesRemaining: unit.maxMoves,
+        movesRemaining: Math.max(0, unit.maxMoves - staggerPenalty),
         attacksRemaining: 1,
         status: 'ready',
         enteredZoCThisActivation: false,
+        nextTurnMovePenalty: undefined,
       });
     }
   }

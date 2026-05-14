@@ -48,6 +48,7 @@ export interface ResearchDoctrine {
   stealthRechargeEnabled: boolean;   // river_stealth_t2 - re-enter stealth after attacking
   captureRetreatEnabled: boolean;    // slaving_t2 - 15% chance to capture wounded enemies on retreat
   damageReflectionEnabled: boolean;  // heavy_hitter_t2 - reflect 25% damage back to attackers
+  nativeDamageReflectionEnabled: boolean; // heavy_hitter_t2 native - reflect 50% + stagger attacker
   hitAndRunEnabled: boolean;         // hitrun_t2 - cavalry can attack then retreat in same turn
 
   // Phase 2 — Tribe Identity flags
@@ -201,6 +202,7 @@ export function resolveResearchDoctrine(
     stealthRechargeEnabled: hasNode('river_stealth_t2'),
     captureRetreatEnabled: hasNode('slaving_t2'),
     damageReflectionEnabled: hasNode('heavy_hitter_t2'),
+    nativeDamageReflectionEnabled: hasNode('heavy_hitter_t2') && nativeDomain === 'heavy_hitter',
     hitAndRunEnabled: hasNode('hitrun_t2'),
 
     // Phase 2 — Tribe Identity flags

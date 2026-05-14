@@ -725,10 +725,12 @@ export function applyCombatAction(
   updatedAttacker = current.units.get(preview.attackerId);
   let reflectionDamageApplied = 0;
   if (defenderDoctrine?.damageReflectionEnabled && preview.result.defenderDamage > 0 && updatedAttacker) {
-    reflectionDamageApplied = Math.max(1, Math.floor(preview.result.defenderDamage * 0.25));
+    const reflectionPct = defenderDoctrine.nativeDamageReflectionEnabled ? 0.5 : 0.25;
+    reflectionDamageApplied = Math.max(1, Math.floor(preview.result.defenderDamage * reflectionPct));
     updatedAttacker = {
       ...updatedAttacker,
       hp: Math.max(0, updatedAttacker.hp - reflectionDamageApplied),
+      ...(defenderDoctrine.nativeDamageReflectionEnabled ? { nextTurnMovePenalty: 1 } : {}),
     };
     current = writeUnitToState(current, updatedAttacker);
   }

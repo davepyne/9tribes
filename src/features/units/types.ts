@@ -62,6 +62,7 @@ export interface Unit {
   slaveDamageBonus?: number;
   slaveHealPenalty?: number;
   captureEscapePrevented?: boolean;
+  nextTurnMovePenalty?: number;
   // Learn-by-kill system: abilities learned from killing enemy faction units
   learnedAbilities: LearnedAbility[];
   // Multi-turn move queue target; undefined = no active queue
