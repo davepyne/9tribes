@@ -220,6 +220,9 @@ export function previewCombatAction(
   if (attackerDoctrine?.antiFortificationEnabled && (defender.preparedAbility === 'brace' || defenderOnFort)) {
     situationalAttackModifier += 0.2;
   }
+  if (attackerDoctrine?.damageBonusVsElevationEnabled && (defenderTerrainId === 'hill' || defenderTerrainId === 'mountain')) {
+    situationalAttackModifier += 0.2;
+  }
   if (attackerDoctrine?.chargeRoutedBonusEnabled && isChargeAttack && defender.routed) {
     situationalAttackModifier += 0.5;
   }

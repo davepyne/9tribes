@@ -43,6 +43,7 @@ export interface ResearchDoctrine {
   roughTerrainMovementEnabled: boolean;    // river_stealth_t1 - +1 movement in rough terrain
   greedyCaptureEnabled: boolean;     // slaving_t1 - +15% damage vs wounded enemies (<50% HP)
   antiFortificationEnabled: boolean; // heavy_hitter_t1 - +20% damage vs fortified/bracing enemies
+  damageBonusVsElevationEnabled: boolean; // heavy_hitter_t1 - +20% damage vs enemies on hill/mountain
   permanentStealthEnabled: boolean;  // camel_adaptation_t2 - permanent stealth in desert/tundra
   stealthRechargeEnabled: boolean;   // river_stealth_t2 - re-enter stealth after attacking
   captureRetreatEnabled: boolean;    // slaving_t2 - 15% chance to capture wounded enemies on retreat
@@ -195,6 +196,7 @@ export function resolveResearchDoctrine(
     roughTerrainMovementEnabled: false, // retired: river_stealth_t1 reflavored to wetland_stealth
     greedyCaptureEnabled: hasNode('slaving_t1'),
     antiFortificationEnabled: hasNode('heavy_hitter_t1'),
+    damageBonusVsElevationEnabled: hasNode('heavy_hitter_t1'),
     permanentStealthEnabled: hasNode('camel_adaptation_t2'),
     stealthRechargeEnabled: hasNode('river_stealth_t2'),
     captureRetreatEnabled: hasNode('slaving_t2'),

@@ -521,7 +521,7 @@ const HEAVY_HITTER_RESEARCH = buildResearchDomain({
     type: 'anti_fortification',
     description: '+20% damage vs fortified or bracing enemies; +20% damage vs enemies on hill or mountain terrain.',
     nativeDescription: 'Arctic Wardens’ attacks against fortified targets also reduce the target’s defense bonus by 50% for the rest of combat.',
-    effect: { damageBonusVsFortified: 0.2, damageBonusVsElevation: 0.2, fortifiedDefenseReduction: 0.5 }, // first: wired; rest: design
+    effect: { damageBonusVsFortified: 0.2, damageBonusVsElevation: 0.2, fortifiedDefenseReduction: 0.5 }, // first two: wired; rest: design
   },
   t2: {
     name: 'Backbreaker',
