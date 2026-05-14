@@ -49,16 +49,19 @@ The new content is the **canonical design**, and existing legacy flags are still
 
 ### High-value wiring (touch a few existing call sites)
 
+- **Heavy Hitter T1 +20% vs elevation**: ✅ **wired.** `damageBonusVsElevationEnabled` in `capabilityDoctrine.ts`, consumed in `preview.ts` when defender terrain is hill/mountain.
+- **Heavy Hitter T2 native reflection (50%) + stagger**: ✅ **wired.** `nativeDamageReflectionEnabled` in doctrine; `apply.ts` branches reflection to 50% + stagger via `nextTurnMovePenalty` on Unit, consumed at turn start in `turnSystem.ts` and `factionTurnEffects.ts`.
+- **Hitrun T1 ignore ZoC on approach**: ✅ **wired.** `ignoreZocOnApproachEnabled` in doctrine; `zocSystem.ts` returns 0 ZoC cost when destination has adjacent enemies.
+- **Fortress T1 multi-ally defense scaling**: ✅ **wired.** Shieldwall in `preview.ts` now counts adjacent allies: 2+ allies = +25%, 1 ally = +15%.
+- **Charge T1 first-attack-per-target**: ✅ **wired.** `firstAttackPerTargetEnabled` in doctrine; `preview.ts` grants +20% on first attack per-target (native) vs first attack per-combat (foreign). `attackedTargetsThisTurn` on Unit, tracked in `apply.ts`, reset at turn start.
+- **Camel T1 +1 movement on harsh terrain**: ✅ **wired.** `factionTurnEffects.ts` adds +1 moves when unit starts turn on desert/tundra with `heatResistanceEnabled`, capped at maxMoves+1.
 - **Venom T2 spore-jump** (`venom.spore-jump`): when a poisoned enemy dies, jump 1 stack to nearest (foreign) or all (native) enemies within 2 hexes. Touches `applyCombatAction()` poison-death path.
 - **Venom T3 Toxic Bloom**: track contaminated hexes and tick 2 dmg/turn while occupied. Extends the existing contamination system.
 - **Nature Healing T1 forest regen bonus**: units ending turn on forest/jungle regen +3 HP instead of +1. Touches `factionTurnEffects.applyRegen`.
 - **Hitrun T2 Bloodtrail momentum**: track per-unit wound count -> +1 movement next turn. New per-unit state field.
 - **Hitrun T3 killing chain**: after kill, allow second attack at -40% (foreign) / 100% (native), up to 3 chains for native. Touches `applyCombatAction()` post-kill path.
-- **Charge T1 first-attack-per-target**: native Lions get `firstAttackDamageBonus` reset per new target this turn, not once-per-combat.
 - **Charge T2 Stampede**: routed enemies displace randomly 2 hexes. Touches rout-resolution.
 - **Charge T3 splash + chain amplification**: native Lions splash 50% of charge damage to enemies adjacent to target; charges through friendly Lions chain +10% per ally in line (cap +50%).
-- **Heavy Hitter T1 +20% vs elevation**: damage bonus when defender is on hill/mountain. Single conditional in `preview.ts`.
-- **Heavy Hitter T2 native reflection (50%) + stagger**: extend the existing `damageReflectionPercent` consumer.
 - **Heavy Hitter T3 Last Stand**: native flag `lastStandPerCombat` — when reduced to 0 HP, survive at 1 HP once per combat. Touches the kill-resolution path in `applyCombatAction()`.
 
 ### Strategic-layer wiring (new player actions / new state)
