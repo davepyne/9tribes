@@ -16,7 +16,7 @@ export interface ResearchDoctrine {
   forestAmbushEnabled: boolean;     // nature_healing_t1 - kept for combat-side nature effects
   shieldWallEnabled: boolean;       // fortress_t1 - +15% defense when adjacent to ally
   riverCrossingEnabled: boolean;    // tidal_warfare_t1 - no penalty crossing rivers
-  marchingStaminaEnabled: boolean;  // hitrun_t1 - reduces war exhaustion decay by 1 per turn
+  marchingStaminaEnabled: boolean;  // retired: hitrun_t1 reflavored to skirmish_step
   venomousStrikesEnabled: boolean;  // venom_t1 - all attacks apply 1 poison stack
   poisonPersistenceEnabled: boolean; // venom_t1 (native only) - poison stacks never expire
   forcedMarchEnabled: boolean;      // charge_t1 - first attack deals +15% damage

@@ -56,9 +56,6 @@ function buildTerrainTestState(
   state.research = new Map(
     Array.from(state.research.entries()).filter(([id]) => keepFactionIds.has(id)),
   );
-  state.warExhaustion = new Map(
-    Array.from(state.warExhaustion.entries()).filter(([id]) => keepFactionIds.has(id)),
-  );
 
   // Set all terrain to plains, then the test hex to the target terrain
   const pos = { q: 8, r: 8 };

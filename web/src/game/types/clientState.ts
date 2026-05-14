@@ -49,13 +49,6 @@ export type HudViewModel = {
     used: number;
     deficit: number;
   } | null;
-  exhaustion: {
-    points: number;
-    productionPenalty: number;
-    moralePenalty: number;
-    turnsWithoutLoss: number;
-    marchingStaminaEnabled: boolean;
-  } | null;
   summonTimer: {
     cooldownRemaining: number | null;
     turnsRemaining: number | null;
@@ -154,11 +147,6 @@ export type CityInspectorViewModel = {
     deficit: number;
   };
   turnsUntilNextVillage: number;
-  exhaustion: {
-    points: number;
-    productionPenalty: number;
-    moralePenalty: number;
-  };
   villageReadiness: {
     eligible: boolean;
     latestVillageRound: number;

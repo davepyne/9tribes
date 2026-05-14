@@ -235,9 +235,6 @@ function buildAlternatingState() {
   state.research = new Map(
     Array.from(state.research.entries()).filter(([factionId]) => keptFactions.has(factionId))
   );
-  state.warExhaustion = new Map(
-    Array.from(state.warExhaustion.entries()).filter(([factionId]) => keptFactions.has(factionId))
-  );
 
   return { state, alphaUnits, betaUnits };
 }
@@ -257,15 +254,11 @@ describe('alternating activation simulation', () => {
 
     const result = runWarEcologySimulation(state, registry, 1);
 
-    // Supply attrition: besieged cities → 0 supply income → deficit → targeted 50% strikes.
-    // deficit >= unit count, so all units get struck for floor(maxHp * 0.5).
-    const alphaMaxHp = state.units.get(alphaUnits[0])!.maxHp;
-    const betaMaxHp = state.units.get(betaUnits[0])!.maxHp;
-    const alphaDmg = Math.floor(alphaMaxHp * 0.5);
-    const betaDmg = Math.floor(betaMaxHp * 0.5);
-    expect(result.units.get(alphaUnits[0])?.hp).toBe(state.units.get(alphaUnits[0])!.hp - alphaDmg);
-    expect(result.units.get(alphaUnits[1])?.hp).toBe(state.units.get(alphaUnits[1])!.hp - alphaDmg);
-    expect(result.units.get(betaUnits[0])?.hp).toBe(state.units.get(betaUnits[0])!.hp - betaDmg);
+    // Supply attrition was removed with war exhaustion system.
+    // Units heal each turn but no longer take supply strike damage.
+    expect(result.units.get(alphaUnits[0])?.hp).toBeGreaterThan(0);
+    expect(result.units.get(alphaUnits[1])?.hp).toBeGreaterThan(0);
+    expect(result.units.get(betaUnits[0])?.hp).toBeGreaterThan(0);
   });
 
   it('ticks poison and jungle attrition once per faction phase, while jungle clan ignores jungle attrition', () => {
@@ -356,9 +349,6 @@ describe('alternating activation simulation', () => {
     state.research = new Map(
       Array.from(state.research.entries()).filter(([factionId]) => [jungleId, steppeId, druidId].includes(factionId as never))
     );
-    state.warExhaustion = new Map(
-      Array.from(state.warExhaustion.entries()).filter(([factionId]) => [jungleId, steppeId, druidId].includes(factionId as never))
-    );
 
     for (const tile of state.map!.tiles.values()) {
       tile.terrain = 'plains';
@@ -369,16 +359,14 @@ describe('alternating activation simulation', () => {
 
     const result = runWarEcologySimulation(state, registry, 1);
 
-    // Supply attrition: besieged cities → 0 income → deficit → targeted 50% strikes.
-    const jungleSupplyDmg = Math.floor(jungleMaxHp * 0.5);
-    const steppeSupplyDmg = Math.floor(steppeMaxHp * 0.5);
-    const druidSupplyDmg = Math.floor(druidMaxHp * 0.5);
-    // jungle_clan ignores jungle attrition (passiveTrait='jungle_stalkers'), only supply strike
-    expect(result.units.get(jungleUnitId)?.hp).toBe(jungleMaxHp - jungleSupplyDmg);
-    // steppe_clan: jungle -1, poison fallback -1, supply strike
-    expect(result.units.get(steppeUnitId)?.hp).toBe(steppeMaxHp - 1 - 1 - steppeSupplyDmg);
+    // Supply attrition was removed with war exhaustion system.
+    // Only jungle and poison attrition apply.
+    // jungle_clan ignores jungle attrition (passiveTrait='jungle_stalkers'), takes 0 damage
+    expect(result.units.get(jungleUnitId)?.hp).toBe(jungleMaxHp);
+    // steppe_clan: jungle -1, poison fallback -1
+    expect(result.units.get(steppeUnitId)?.hp).toBe(steppeMaxHp - 1 - 1);
     expect(result.units.get(steppeUnitId)?.poisoned).toBe(false);
-    expect(result.units.get(druidUnitId)?.hp).toBeGreaterThanOrEqual(druidMaxHp - druidSupplyDmg);
+    expect(result.units.get(druidUnitId)?.hp).toBe(druidMaxHp - 1);
   });
 
   it('clears poison when a unit occupies a friendly settlement', () => {
@@ -405,9 +393,6 @@ describe('alternating activation simulation', () => {
     );
     state.research = new Map(
       [steppeId, druidId].map((factionId) => [factionId, state.research.get(factionId)!])
-    );
-    state.warExhaustion = new Map(
-      [steppeId, druidId].map((factionId) => [factionId, state.warExhaustion.get(factionId)!])
     );
     state.cities = new Map();
     state.villages = new Map([
@@ -539,10 +524,6 @@ describe('druid movement behavior', () => {
       [druidId, state.research.get(druidId)!],
       [steppeId, state.research.get(steppeId)!],
     ]);
-    state.warExhaustion = new Map([
-      [druidId, state.warExhaustion.get(druidId)!],
-      [steppeId, state.warExhaustion.get(steppeId)!],
-    ]);
 
     for (const tile of state.map!.tiles.values()) {
       tile.terrain = 'plains';
@@ -638,9 +619,6 @@ describe('hill engineering threshold', () => {
             : research,
         ])
     );
-    state.warExhaustion = new Map(
-      Array.from(state.warExhaustion.entries()).filter(([factionId]) => factionId === hillFactionId || factionId === steppeFactionId)
-    );
 
     const result = runWarEcologySimulation(state, registry, 1);
     const forts = Array.from(result.improvements.values()).filter(
@@ -714,10 +692,6 @@ describe('hill engineering threshold', () => {
       state.research = new Map([
         [steppeFactionId, state.research.get(steppeFactionId)!],
         [hillFactionId, state.research.get(hillFactionId)!],
-      ]);
-      state.warExhaustion = new Map([
-        [steppeFactionId, state.warExhaustion.get(steppeFactionId)!],
-        [hillFactionId, state.warExhaustion.get(hillFactionId)!],
       ]);
 
       for (const tile of state.map!.tiles.values()) {

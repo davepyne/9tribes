@@ -109,23 +109,6 @@ export const TopHud = React.memo(function TopHud({ state, turnBanner, onOpenRese
                 {state.hud.supply.deficit > 0 ? `-${state.hud.supply.deficit.toFixed(1)}` : `+${(state.hud.supply.income - state.hud.supply.used).toFixed(1)}`} per turn
               </strong>
             </div>
-            {state.hud.exhaustion && state.hud.exhaustion.points > 0 && (
-              <>
-                <div className="supply-popup__divider">Penalties</div>
-                <div className="supply-popup__stat supply-popup__stat--penalty">
-                  <span>Exhaustion</span>
-                  <span>{state.hud.exhaustion.points.toFixed(1)} pts</span>
-                </div>
-                <div className="supply-popup__stat supply-popup__stat--penalty">
-                  <span>Production</span>
-                  <span>-{Math.round(state.hud.exhaustion.productionPenalty * 100)}%</span>
-                </div>
-                <div className="supply-popup__stat supply-popup__stat--penalty">
-                  <span>Morale</span>
-                  <span>-{state.hud.exhaustion.moralePenalty} per unit</span>
-                </div>
-              </>
-            )}
             {recoveringCityCount > 0 && (
               <div className="supply-popup__note">
                 ΓÜá {recoveringCityCount} city{recoveringCityCount !== 1 ? 'ies' : 'y'} recovering from capture

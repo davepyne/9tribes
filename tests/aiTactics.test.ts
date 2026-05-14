@@ -48,10 +48,6 @@ function buildHeadToHeadState() {
     [steppeId, state.research.get(steppeId)!],
     [druidId, state.research.get(druidId)!],
   ]);
-  state.warExhaustion = new Map([
-    [steppeId, state.warExhaustion.get(steppeId)!],
-    [druidId, state.warExhaustion.get(druidId)!],
-  ]);
   state.activeFactionId = steppeId;
   return { state, registry, steppeId, druidId };
 }

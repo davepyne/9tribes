@@ -54,7 +54,6 @@ export function computeFactionStrategy(
   const personality = computeAiPersonalitySnapshot(state, factionId, registry, difficulty);
   const economy = state.economy.get(factionId);
   const supplyDeficit = economy ? getSupplyDeficit(economy) : 0;
-  const exhaustion = state.warExhaustion.get(factionId)?.exhaustionPoints ?? 0;
 
   // --- Last stand trigger and phase management ---
   const peakArmySize = Math.max(previousStrategy?.peakArmySize ?? 0, friendlyUnits.length);
@@ -111,7 +110,7 @@ export function computeFactionStrategy(
         friendlyUnits.length,
         enemyUnits.length,
         threatenedCities,
-        exhaustion,
+        0,
         supplyDeficit,
         fronts,
         personality,
@@ -173,7 +172,7 @@ export function computeFactionStrategy(
     threatenedCities,
     fronts,
     supplyDeficit,
-    exhaustion,
+    0,
     hybridGoal,
     absorptionGoal,
     postureDecision.reasons,

@@ -171,25 +171,6 @@ export const RightInspector = React.memo(function RightInspector({ state, onSetC
 
           <section className="panel city-panel">
             <div className="panel-heading compact">
-              <p className="panel-kicker">Exhaustion</p>
-              <h2>Morale Pressure</h2>
-            </div>
-            <div className="meta-row">
-              <span>Exhaustion</span>
-              <strong>{selectedCity.exhaustion.points}</strong>
-            </div>
-            <div className="meta-row">
-              <span>Production penalty</span>
-              <strong>{Math.round(selectedCity.exhaustion.productionPenalty * 100)}%</strong>
-            </div>
-            <div className="meta-row">
-              <span>Morale penalty</span>
-              <strong>{selectedCity.exhaustion.moralePenalty}</strong>
-            </div>
-          </section>
-
-          <section className="panel city-panel">
-            <div className="panel-heading compact">
               <p className="panel-kicker">Village Readiness</p>
               <h2>{selectedCity.villageReadiness.eligible ? 'Eligible' : 'Blocked'}</h2>
             </div>

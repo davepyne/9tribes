@@ -33,13 +33,6 @@ import {
   captureCityWithResult,
 } from '../siegeSystem.js';
 import {
-  addExhaustion,
-  tickWarExhaustion,
-  applyDecay,
-  calculateMoralePenalty,
-  EXHAUSTION_CONFIG,
-} from '../warExhaustionSystem.js';
-import {
   getFactionCityIds,
 } from '../factionOwnershipSystem.js';
 import {
@@ -67,7 +60,6 @@ import type { SynergyEngine, ActiveTripleStack, ActiveDoubleStack, ActiveSynergy
 import { applyHealingSynergies, type HealingContext } from '../synergyEffects.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { maybeExpirePreparedAbility } from '../unitActivationSystem.js';
-import { applySupplyDeficitPenalties } from '../warExhaustionSystem.js';
 import type { DifficultyLevel } from '../aiDifficulty.js';
 import { getAiDifficultyProfile } from '../aiDifficulty.js';
 import type { FactionStrategy } from '../factionStrategy.js';
@@ -75,7 +67,7 @@ import type { SimulationTrace } from './traceTypes.js';
 import { log, recordFactionStrategy, recordSiegeEvent, recordResearch, recordTripleStack } from './traceRecorder.js';
 import { getTerrainAt, occupiesFriendlySettlement, applyEnvironmentalDamage, getHealRate } from './environmentalEffects.js';
 import { isWetlandTerrain } from '../terrainUtils.js';
-import { isPassiveWetlandStealth, getForagingRidersExhaustionBonus } from '../factionIdentitySystem.js';
+import { isPassiveWetlandStealth } from '../factionIdentitySystem.js';
 
 function removeUnitFromFaction(
   state: GameState,
@@ -965,7 +957,6 @@ export function processFactionPhases(
   }
   current = { ...current, cities: citiesMap };
   log(trace, `${faction.name} supply deficit: ${getSupplyDeficit(economy)}`);
-  current = applySupplyDeficitPenalties(current, factionId, registry);
 
   const factionAbilities = registry.getSignatureAbility(factionId);
   if (factionAbilities?.summon) {
@@ -1197,15 +1188,8 @@ export function processFactionPhases(
             continue;
           }
         }
-
-        const we = current.warExhaustion.get(factionId);
-        if (we) {
-          const newWE = addExhaustion(we, EXHAUSTION_CONFIG.BESIEGED_CITY_PER_TURN);
-          const weMap = new Map(current.warExhaustion);
-          weMap.set(factionId, newWE);
-          current = { ...current, warExhaustion: weMap };
-        }
       }
+
     } else {
       const repairedCity = repairWalls(city);
       if (repairedCity.wallHP !== city.wallHP) {
@@ -1240,38 +1224,6 @@ export function processFactionPhases(
     }
   }
   current = { ...current, cities: siegeCities };
-
-  const weState = current.warExhaustion.get(factionId);
-  if (weState) {
-    const hadLoss = faction.combatRecord.lastLossRound === current.round;
-    const tickedWE = tickWarExhaustion(weState, hadLoss);
-    const weResearch = current.research.get(factionId);
-    const weDoctrine = resolveResearchDoctrine(weResearch, faction);
-    const marchingStaminaBonus = weDoctrine.marchingStaminaEnabled ? 1 : 0;
-    const foragingRidersBonus = getForagingRidersExhaustionBonus(faction);
-    const decayedWE = applyDecay(tickedWE, {
-      noLossTurns: tickedWE.turnsWithoutLoss,
-      territoryClear: false,
-      marchingStaminaBonus: marchingStaminaBonus + foragingRidersBonus,
-    });
-    const weMap = new Map(current.warExhaustion);
-    weMap.set(factionId, decayedWE);
-    current = { ...current, warExhaustion: weMap };
-
-    const moralePenalty = calculateMoralePenalty(decayedWE.exhaustionPoints);
-    if (moralePenalty > 0) {
-      const unitsWithWE = new Map(current.units);
-      for (const unitIdStr of faction.unitIds) {
-        const unit = unitsWithWE.get(unitIdStr as UnitId);
-        if (!unit || unit.hp <= 0) continue;
-        unitsWithWE.set(unitIdStr as UnitId, {
-          ...unit,
-          morale: Math.max(0, unit.morale - moralePenalty),
-        });
-      }
-      current = { ...current, units: unitsWithWE };
-    }
-  }
 
   // Hill engineering dig-in: stationary hill_clan units accumulate defense stacks
   if (faction.identityProfile?.passiveTrait === 'hill_engineering') {

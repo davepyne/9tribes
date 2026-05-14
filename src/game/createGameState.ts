@@ -25,7 +25,6 @@ export function createEmptyGameState(seed: number): GameState {
     improvements: new Map(),
     research: new Map(),
     economy: new Map(),
-    warExhaustion: new Map(),
     factionStrategies: new Map(),
     poisonTraps: new Map(),
     contaminatedHexes: new Set(),

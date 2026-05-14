@@ -576,7 +576,6 @@ describe('strategic AI', () => {
         cost: 20,
       },
     });
-    state.warExhaustion.set(hillId, { ...state.warExhaustion.get(hillId)!, exhaustionPoints: 12 });
 
     const result = runWarEcologySimulation(state, registry, 1);
     const updatedCity = result.cities.get(hillCityId)!;
@@ -605,7 +604,6 @@ describe('strategic AI', () => {
         },
       },
     });
-    state.warExhaustion.set(hillId, { ...state.warExhaustion.get(hillId)!, exhaustionPoints: 8 });
 
     const strategy = computeFactionStrategy(state, hillId, registry);
     const decision = chooseStrategicResearch(state, hillId, strategy, registry);
@@ -690,7 +688,6 @@ describe('strategic AI', () => {
       ...faction,
       prototypeIds: [...faction.prototypeIds, customCavalryId],
     });
-    state.warExhaustion.set(hillId, { ...state.warExhaustion.get(hillId)!, exhaustionPoints: 10 });
 
     const strategy = computeFactionStrategy(state, hillId, registry);
     const decision = chooseStrategicProduction(state, hillId, strategy, registry);

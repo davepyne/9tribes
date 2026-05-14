@@ -1,5 +1,5 @@
 import type { RNGState } from '../../../../src/core/rng.js';
-import type { Faction, FactionEconomy, Improvement, Prototype, ResearchState, Unit, Village, WarExhaustion } from '../../../../src/game/types.js';
+import type { Faction, FactionEconomy, Improvement, Prototype, ResearchState, Unit, Village } from '../../../../src/game/types.js';
 import type { City, GameState } from '../../../../src/game/types.js';
 import type { FactionStrategy } from '../../../../src/systems/factionStrategy.js';
 import type { TransportMap, TransportState } from '../../../../src/systems/transportSystem.js';
@@ -29,7 +29,6 @@ export type SerializedGameState = Omit<
   | 'improvements'
   | 'research'
   | 'economy'
-  | 'warExhaustion'
   | 'factionStrategies'
   | 'poisonTraps'
   | 'contaminatedHexes'
@@ -47,7 +46,6 @@ export type SerializedGameState = Omit<
   improvements: SerializedEntries<Improvement>;
   research: SerializedEntries<ResearchState>;
   economy: SerializedEntries<FactionEconomy>;
-  warExhaustion: SerializedEntries<WarExhaustion>;
   factionStrategies: SerializedEntries<FactionStrategy>;
   poisonTraps: SerializedEntries<{ damage: number; slow: number; ownerFactionId: FactionId }>;
   contaminatedHexes: string[];
@@ -84,7 +82,6 @@ export function serializeGameState(state: GameState): SerializedGameState {
     improvements: Array.from(state.improvements.entries()),
     research: Array.from(state.research.entries()),
     economy: Array.from(state.economy.entries()),
-    warExhaustion: Array.from(state.warExhaustion.entries()),
     factionStrategies: Array.from(state.factionStrategies.entries()),
     poisonTraps: Array.from(state.poisonTraps.entries()),
     contaminatedHexes: Array.from(state.contaminatedHexes.values()),
@@ -119,7 +116,6 @@ export function deserializeGameState(payload: SerializedGameState): GameState {
     improvements: toTypedMap(payload.improvements),
     research: toTypedMap(payload.research),
     economy: toTypedMap(payload.economy),
-    warExhaustion: toTypedMap(payload.warExhaustion),
     factionStrategies: toTypedMap(payload.factionStrategies),
     poisonTraps: toTypedMap(payload.poisonTraps),
     contaminatedHexes: new Set(payload.contaminatedHexes),

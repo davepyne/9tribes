@@ -24,7 +24,6 @@ import {
 } from '../../../../../src/systems/productionSystem.js';
 import { calculatePrototypeCost, getDomainIdsByTags, getPrototypeCostModifier, isUnlockPrototype } from '../../../../../src/systems/knowledgeSystem.js';
 import { getUnitSupplyCost } from '../../../../../src/systems/productionSystem.js';
-import { calculateProductionPenalty, calculateMoralePenalty } from '../../../../../src/systems/warExhaustionSystem.js';
 import { hexDistance, hexToKey } from '../../../../../src/core/grid.js';
 import type {
   CityInspectorViewModel,
@@ -54,7 +53,6 @@ export function buildCityInspectorViewModel(state: GameState, cityId: string, re
 
   const faction = state.factions.get(city.factionId);
   const economy = deriveResourceIncome(state, city.factionId, registry);
-  const exhaustion = state.warExhaustion.get(city.factionId);
   const isFriendly = city.factionId === state.activeFactionId;
   const canManageProduction = isFriendly && !city.besieged;
   const cityCount = Math.max(1, getFactionCityIds(state, city.factionId).length);
@@ -208,11 +206,6 @@ export function buildCityInspectorViewModel(state: GameState, cityId: string, re
       deficit: getSupplyDeficit(economy),
     },
     turnsUntilNextVillage: readiness.roundsUntilCooldownReady,
-    exhaustion: {
-      points: exhaustion?.exhaustionPoints ?? 0,
-      productionPenalty: calculateProductionPenalty(exhaustion?.exhaustionPoints ?? 0),
-      moralePenalty: calculateMoralePenalty(exhaustion?.exhaustionPoints ?? 0),
-    },
     villageReadiness: {
       eligible: readiness.eligible,
       latestVillageRound: readiness.latestVillageRound ?? 0,

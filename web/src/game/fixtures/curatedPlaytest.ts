@@ -37,7 +37,6 @@ function curatePlaytestState(state: GameState) {
   state.villages = new Map();
   state.research = new Map(Array.from(state.research.entries()).filter(([factionId]) => factionIds.has(factionId)));
   state.economy = new Map(Array.from(state.economy.entries()).filter(([factionId]) => factionIds.has(factionId)));
-  state.warExhaustion = new Map(Array.from(state.warExhaustion.entries()).filter(([factionId]) => factionIds.has(factionId)));
   state.factionStrategies = new Map();
   state.improvements = new Map();
   state.poisonTraps = new Map();

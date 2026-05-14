@@ -43,11 +43,9 @@ function fmtFactions(state: GameState, factions?: string[]): string {
     const kills = living.reduce((s, uid) => s + getKillCount(state.units.get(uid)!), 0);
     const cities = faction.cityIds.length;
     const villages = faction.villageIds.length;
-    const we = state.warExhaustion.get(id);
-    const weStr = we && we.exhaustionPoints > 0 ? `we${we.exhaustionPoints}` : '';
     const learned = faction.learnedDomains.length > 1 ? ` dom${faction.learnedDomains.length}` : '';
     const triple = faction.activeTripleStack ? ` triple=${faction.activeTripleStack.name}` : '';
-    lines.push(`  ${id}: u${living.length} c${cities} v${villages} bat${battles} kill${kills}${learned}${triple} ${weStr}`.trim());
+    lines.push(`  ${id}: u${living.length} c${cities} v${villages} bat${battles} kill${kills}${learned}${triple}`.trim());
   }
   return lines.join('\n');
 }

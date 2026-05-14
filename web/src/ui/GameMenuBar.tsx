@@ -167,7 +167,7 @@ export const GameMenuBar = React.memo(function GameMenuBar({ state, onOpenResear
           <div
             className={`gmb-chip gmb-chip--supply${state.hud.supply.deficit > 0 ? ' gmb-chip--deficit' : ''}`}
             title={state.hud.supply.deficit > 0
-              ? `DEFICIT: -${state.hud.supply.deficit.toFixed(1)} supply/turn\nMorale drain: ~${state.hud.supply.deficit.toFixed(1)} per unit/turn\nExhaustion: ${state.hud.exhaustion?.points?.toFixed(1) ?? 0} pts (+${(state.hud.supply.deficit * 2).toFixed(1)}/turn)\nProduction output reduced by ${Math.round((state.hud.exhaustion?.productionPenalty ?? 0) * 100)}%\nMorale penalty: ${state.hud.exhaustion?.moralePenalty ?? 0} per unit`
+              ? `DEFICIT: -${state.hud.supply.deficit.toFixed(1)} supply/turn\nMorale drain: ~${state.hud.supply.deficit.toFixed(1)} per unit/turn`
               : 'Supply is balanced. No penalties in effect.'}
           >
             <span className="gmb-chip-label">Supply</span>

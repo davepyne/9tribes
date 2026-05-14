@@ -36,9 +36,6 @@ export function trimState(state: GameState, factionIds: string[]): GameState {
   state.research = new Map(
     Array.from(state.research.entries()).filter(([factionId]) => keepFactions.has(factionId)),
   );
-  state.warExhaustion = new Map(
-    Array.from(state.warExhaustion.entries()).filter(([factionId]) => keepFactions.has(factionId)),
-  );
   state.factionStrategies = new Map();
 
   for (const [factionId, faction] of state.factions) {

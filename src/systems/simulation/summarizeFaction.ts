@@ -19,9 +19,6 @@ export function summarizeFaction(state: GameState, factionId: FactionId): string
     ? `prod=${economy.productionPool.toFixed(1)} supply=${economy.supplyIncome.toFixed(1)}/${economy.supplyDemand}`
     : '';
 
-  const we = state.warExhaustion.get(factionId);
-  const weInfo = we && we.exhaustionPoints > 0 ? `WE=${we.exhaustionPoints}` : '';
-
   const besiegedCities = getFactionCityIds(state, factionId).filter((id) => state.cities.get(id)?.besieged);
   const siegeInfo = besiegedCities.length > 0 ? `besieged=${besiegedCities.length}` : '';
 
@@ -30,7 +27,6 @@ export function summarizeFaction(state: GameState, factionId: FactionId): string
     `units=${livingUnits.length}`,
     `villages=${getVillageCount(state, factionId)}`,
     economyInfo,
-    weInfo,
     siegeInfo,
     `battles=${livingUnits.reduce((sum, id) => sum + getBattleCount(getUnit(state, id)!), 0)}`,
     `kills=${livingUnits.reduce((sum, id) => sum + getKillCount(getUnit(state, id)!), 0)}`,

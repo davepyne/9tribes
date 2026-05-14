@@ -90,7 +90,6 @@ export interface AiDecisionContext {
   fronts?: number;
   localAdvantage?: number;
   supplyDeficit?: number;
-  exhaustion?: number;
   targetDistance?: number;
   attackAdvantage?: number;
   retreatRisk?: number;
@@ -168,7 +167,6 @@ function applyStateModifiers(
 ): void {
   const profile = getAiDifficultyProfile(difficulty);
   const supplyDeficit = getSupplyDeficit(state.economy.get(factionId) ?? { factionId, productionPool: 0, supplyIncome: 0, supplyDemand: 0 });
-  const exhaustion = state.warExhaustion.get(factionId)?.exhaustionPoints ?? 0;
   const cityIds = state.factions.get(factionId)?.cityIds ?? [];
   const threatenedCities = cityIds.filter((cityId) => {
     const city = state.cities.get(cityId);
@@ -177,13 +175,6 @@ function applyStateModifiers(
       (unit) => unit.hp > 0 && unit.factionId !== factionId && hexDistance(unit.position, city.position) <= 3,
     );
   }).length;
-
-  if (exhaustion >= 8) {
-    snapshot.scalars.aggression = clampScalar(snapshot.scalars.aggression - 0.15);
-    snapshot.scalars.caution = clampScalar(snapshot.scalars.caution + 0.15);
-    snapshot.thresholds.retreatThreshold = Math.min(1.25, snapshot.thresholds.retreatThreshold + 0.1);
-    snapshot.reasons.push(`state: exhaustion=${exhaustion}`);
-  }
 
   if (supplyDeficit > 0) {
     const pressure = Math.min(0.2, supplyDeficit * 0.05);

@@ -71,21 +71,6 @@ describe('adaptive AI phase 3', () => {
     );
   });
 
-  it('keeps hard recovery guard ahead of weighted posture scoring', () => {
-    const state = buildMvpScenario(42, { registry });
-    trimState(state, ['steppe_clan', 'hill_clan']);
-    const steppeId = 'steppe_clan' as never;
-
-    state.warExhaustion.set(steppeId, {
-      ...state.warExhaustion.get(steppeId)!,
-      exhaustionPoints: 12,
-    });
-
-    const strategy = computeFactionStrategy(state, steppeId, registry);
-    expect(strategy.posture).toBe('recovery');
-    expect(strategy.debugReasons.some((reason) => reason.includes('posture_guard=recovery'))).toBe(true);
-  });
-
   it('uses personality-weighted posture selection after safety guards', () => {
     const state = buildMvpScenario(42, { registry });
     trimState(state, ['steppe_clan', 'druid_circle']);

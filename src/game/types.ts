@@ -3,7 +3,7 @@ import type { RNGState } from '../core/rng.js';
 import type { GameStatus } from '../core/enums.js';
 
 // Re-export domain entities
-export type { Faction, CombatRecord, WarExhaustion } from '../features/factions/types.js';
+export type { Faction, CombatRecord } from '../features/factions/types.js';
 export type { Unit, HistoryEntry } from '../features/units/types.js';
 export type { City, ProductionItem } from '../features/cities/types.js';
 export type { Village } from '../features/villages/types.js';
@@ -26,7 +26,6 @@ import type { Prototype } from '../features/prototypes/types.js';
 import type { Improvement } from '../features/improvements/types.js';
 import type { ResearchState } from '../features/research/types.js';
 import type { FactionEconomy } from '../features/economy/types.js';
-import type { WarExhaustion } from '../features/factions/types.js';
 import type { GameMap } from '../world/map/types.js';
 import type { FactionStrategy } from '../systems/factionStrategy.js';
 import type { TransportMap } from '../systems/transportSystem.js';
@@ -49,7 +48,6 @@ export interface GameState {
   improvements: ReadonlyMap<ImprovementId, Improvement>;
   research: ReadonlyMap<FactionId, ResearchState>;
   economy: ReadonlyMap<FactionId, FactionEconomy>;
-  warExhaustion: ReadonlyMap<FactionId, WarExhaustion>;
   factionStrategies: ReadonlyMap<FactionId, FactionStrategy>;
   poisonTraps: ReadonlyMap<string, { damage: number; slow: number; ownerFactionId: FactionId }>;
   contaminatedHexes: ReadonlySet<string>;

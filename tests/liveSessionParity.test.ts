@@ -210,7 +210,6 @@ function buildParitySlice(
     options.factionIds.map((factionId) => {
       const faction = state.factions.get(factionId as never);
       const research = state.research.get(factionId as never);
-      const warExhaustion = state.warExhaustion.get(factionId as never);
       return [
         factionId,
         {
@@ -221,12 +220,6 @@ function buildParitySlice(
                 activeNodeId: research.activeNodeId,
                 completedNodes: [...research.completedNodes].sort(),
                 progressByNodeId: sortRecord({ ...research.progressByNodeId } as Record<string, number>),
-              }
-            : null,
-          warExhaustion: warExhaustion
-            ? {
-                exhaustionPoints: warExhaustion.exhaustionPoints,
-                turnsWithoutLoss: warExhaustion.turnsWithoutLoss,
               }
             : null,
         },
@@ -335,36 +328,6 @@ describe('live session parity harness', () => {
       buildParitySlice(live, { factionIds: [steppeId] }),
     ).toEqual(
       buildParitySlice(sim, { factionIds: [steppeId] }),
-    );
-  });
-
-  it('matches the shared faction phase for war-exhaustion ticking and morale penalties', () => {
-    const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    const steppeId = 'steppe_clan';
-    trimState(state, [steppeId]);
-
-    const unitId = state.factions.get(steppeId as never)!.unitIds[0];
-    state.activeFactionId = steppeId as never;
-    state.warExhaustion.set(steppeId as never, {
-      factionId: steppeId as never,
-      exhaustionPoints: 12,
-      turnsWithoutLoss: 0,
-    });
-    state.units.set(unitId as never, {
-      ...state.units.get(unitId as never)!,
-      morale: 100,
-      status: 'spent',
-      movesRemaining: 0,
-      attacksRemaining: 0,
-    });
-
-    const live = runLiveEndTurn(cloneState(state), [steppeId]);
-    const sim = runSimFactionPhase(state, steppeId);
-
-    expect(
-      buildParitySlice(live, { factionIds: [steppeId], unitIds: [unitId] }),
-    ).toEqual(
-      buildParitySlice(sim, { factionIds: [steppeId], unitIds: [unitId] }),
     );
   });
 

@@ -378,11 +378,6 @@ export function isPassiveWetlandStealth(faction: Faction | undefined): boolean {
   return faction?.identityProfile.passiveTrait === 'river_assault';
 }
 
-/** foraging_riders passive: war exhaustion decays 1 extra per turn */
-export function getForagingRidersExhaustionBonus(faction: Faction | undefined): number {
-  return faction?.identityProfile.passiveTrait === 'foraging_riders' ? 1 : 0;
-}
-
 /** foraging_riders passive: +1 movement back after kill */
 export function getPursuitMovementOnKill(faction: Faction | undefined): number {
   return faction?.identityProfile.passiveTrait === 'foraging_riders' ? 1 : 0;

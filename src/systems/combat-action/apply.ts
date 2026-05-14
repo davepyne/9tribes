@@ -15,7 +15,6 @@ import { awardCombatXP } from '../xpSystem.js';
 import { tryPromoteUnit } from '../veterancySystem.js';
 import { tryLearnFromKill } from '../learnByKillSystem.js';
 import { attemptCapture, attemptNonCombatCapture, getCaptureParams, hasCaptureAbility } from '../captureSystem.js';
-import { addExhaustion, EXHAUSTION_CONFIG } from '../warExhaustionSystem.js';
 import { applyContactTransfer } from '../capabilitySystem.js';
 import { applyPoisonDoT, enterStealth, findRetreatHex } from '../signatureAbilitySystem.js';
 import { getPrototype } from '../../game/stateAccess.js';
@@ -610,27 +609,6 @@ export function applyCombatAction(
   } else if (attackerActuallyDestroyed) {
     current = updateCombatRecordOnLoss(current, attacker.factionId as FactionId, current.round);
     current = updateCombatRecordOnWin(current, defender.factionId as FactionId, current.round);
-  }
-
-  const attackerWarExhaustion = current.warExhaustion.get(attacker.factionId);
-  const defenderWarExhaustion = current.warExhaustion.get(defender.factionId);
-  if (preview.result.defenderDestroyed && attackerWarExhaustion) {
-    current = {
-      ...current,
-      warExhaustion: new Map(current.warExhaustion).set(
-        attacker.factionId,
-        addExhaustion(attackerWarExhaustion, EXHAUSTION_CONFIG.UNIT_KILLED),
-      ),
-    };
-  }
-  if (attackerActuallyDestroyed && defenderWarExhaustion) {
-    current = {
-      ...current,
-      warExhaustion: new Map(current.warExhaustion).set(
-        defender.factionId,
-        addExhaustion(defenderWarExhaustion, EXHAUSTION_CONFIG.UNIT_KILLED),
-      ),
-    };
   }
 
   const hitAndRunEligible =

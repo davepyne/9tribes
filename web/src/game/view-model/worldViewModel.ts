@@ -9,7 +9,6 @@ import { getValidMoves } from '../../../../src/systems/movementSystem.js';
 import { SIEGE_CONFIG } from '../../../../src/systems/siegeSystem.js';
 import { getVictoryStatus } from '../../../../src/systems/warEcologySimulation.js';
 import { getHexOwner } from '../../../../src/systems/territorySystem.js';
-import { calculateProductionPenalty, calculateMoralePenalty } from '../../../../src/systems/warExhaustionSystem.js';
 import { getSpriteKeyForImprovement } from './spriteKeys.js';
 import { buildSettlementPreview } from './inspectors/cityInspectorViewModel.js';
 import { buildResearchInspectorViewModel } from './inspectors/researchInspectorViewModel.js';
@@ -31,7 +30,6 @@ import type {
   ReachableHexView,
   WorldViewModel,
 } from '../types/worldView';
-import { resolveCapabilityDoctrine } from '../../../../src/systems/capabilityDoctrine.js';
 import { getResearch, getFaction } from '../stateAccess.js';
 import { isUnitEmbarked } from '../../../../src/systems/transportSystem.js';
 
@@ -267,23 +265,6 @@ function buildPlayHudViewModel(
             used: economy.supplyDemand,
             deficit: getSupplyDeficit(economy),
           };
-        })()
-      : null,
-    exhaustion: state.activeFactionId
-      ? (() => {
-          const ex = state.warExhaustion.get(state.activeFactionId);
-          const faction = state.factions.get(state.activeFactionId);
-          const research = state.research.get(state.activeFactionId);
-          const doctrine = faction && research ? resolveCapabilityDoctrine(research, faction) : null;
-          return ex
-            ? {
-                points: ex.exhaustionPoints,
-                productionPenalty: calculateProductionPenalty(ex.exhaustionPoints),
-                moralePenalty: calculateMoralePenalty(ex.exhaustionPoints),
-                turnsWithoutLoss: ex.turnsWithoutLoss,
-                marchingStaminaEnabled: doctrine?.marchingStaminaEnabled ?? false,
-              }
-            : { points: 0, productionPenalty: 0, moralePenalty: 0, turnsWithoutLoss: 0, marchingStaminaEnabled: false };
         })()
       : null,
     summonTimer: (() => {

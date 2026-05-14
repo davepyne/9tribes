@@ -5,10 +5,6 @@ import {
   resetAllUnitsForRound,
 } from './turnSystem.js';
 import { resetCombatRecordStreaks } from './historySystem.js';
-import {
-  applyDecay,
-} from './warExhaustionSystem.js';
-import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import type { GameState } from '../game/types.js';
 import type { FactionId } from '../types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
@@ -61,7 +57,6 @@ export function runWarEcologySimulation(
     improvements: new Map(initialState.improvements),
     research: new Map(initialState.research),
     economy: new Map(initialState.economy),
-    warExhaustion: new Map(initialState.warExhaustion),
     factionStrategies: new Map(initialState.factionStrategies),
     poisonTraps: new Map(initialState.poisonTraps),
     fogState: new Map(initialState.fogState),
@@ -129,23 +124,6 @@ export function runWarEcologySimulation(
 
     for (const factionId of current.factions.keys()) {
       current = resetCombatRecordStreaks(current, factionId);
-      const we = current.warExhaustion.get(factionId);
-      if (!we) {
-        continue;
-      }
-
-      const faction = current.factions.get(factionId);
-      const research = current.research.get(factionId);
-      const doctrine = faction && research ? resolveResearchDoctrine(research, faction) : null;
-      const marchingStaminaBonus = doctrine?.marchingStaminaEnabled ? 1 : 0;
-      const decayedWE = applyDecay(we, {
-        noLossTurns: we.turnsWithoutLoss,
-        territoryClear: false,
-        marchingStaminaBonus,
-      });
-      const weMap = new Map(current.warExhaustion);
-      weMap.set(factionId, decayedWE);
-      current = { ...current, warExhaustion: weMap };
     }
 
     maybeRecordEndSnapshot(current, trace);

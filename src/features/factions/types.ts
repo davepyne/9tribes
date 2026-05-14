@@ -56,12 +56,6 @@ export function createCombatRecord(): CombatRecord {
   };
 }
 
-export interface WarExhaustion {
-  factionId: FactionId;
-  exhaustionPoints: number;
-  turnsWithoutLoss: number;
-}
-
 export interface FactionIdentityProfile {
   homeBiome: string;
   signatureUnit: string;

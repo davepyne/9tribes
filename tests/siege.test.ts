@@ -284,27 +284,6 @@ describe('city capture', () => {
     expect(result.factions.get(defenderId)?.cityIds).not.toContain(cityId);
   });
 
-  it('adds war exhaustion on capture', () => {
-    let state = buildMvpScenario(42);
-    for (const factionId of state.factions.keys()) {
-      state = initializeFogForFaction(state, factionId);
-    }
-    const factionIds = Array.from(state.factions.keys());
-    const attackerId = factionIds[1];
-    const defenderId = factionIds[0];
-
-    const defenderFaction = state.factions.get(defenderId)!;
-    const cityId = defenderFaction.cityIds[0];
-    const city = state.cities.get(cityId)!;
-
-    const result = captureCity(city, attackerId, state);
-
-    // Defender loses city: CITY_CAPTURED = 5
-    expect(result.warExhaustion.get(defenderId)?.exhaustionPoints).toBe(5);
-    // Attacker captures city: CITY_CAPTURED_ATTACKER = 2
-    expect(result.warExhaustion.get(attackerId)?.exhaustionPoints).toBe(2);
-  });
-
   it('destroys villages in city territory on capture', () => {
     let state = buildMvpScenario(42);
     for (const factionId of state.factions.keys()) {

@@ -69,7 +69,6 @@ export interface FactionBaseMetrics {
   livingUnits: number;
   cities: number;
   villages: number;
-  warExhaustion: number;
   capabilityTotal: number;
   unlockedRecipes: number;
   routedUnits: number;
@@ -111,7 +110,6 @@ export interface SeedBalanceMetrics {
   unresolved: boolean;
   livingUnits: number;
   routedUnits: number;
-  totalWarExhaustion: number;
   eventCounts: SeedEventCounts;
   factions: Record<string, FactionSeedMetrics>;
 }
@@ -122,7 +120,6 @@ export interface FactionBatchMetrics {
   avgLivingUnits: number;
   avgCities: number;
   avgVillages: number;
-  avgWarExhaustion: number;
   avgCapabilityTotal: number;
   avgUnlockedRecipes: number;
   avgRoutedUnits: number;
@@ -161,7 +158,6 @@ export interface BatchBalanceSummary {
   avgFinalRound: number;
   avgLivingUnits: number;
   avgRoutedUnits: number;
-  avgTotalWarExhaustion: number;
   totalBattles: number;
   totalKills: number;
   totalCityCaptures: number;
@@ -405,7 +401,6 @@ function getFactionMetrics(
       livingUnits: 0,
       cities: 0,
       villages: 0,
-      warExhaustion: 0,
       capabilityTotal: 0,
       unlockedRecipes: 0,
       routedUnits: 0,
@@ -476,7 +471,6 @@ function getFactionMetrics(
     livingUnits: livingUnits.length,
     cities: getFactionCityCount(state, factionId),
     villages: getFactionVillageCount(state, factionId),
-    warExhaustion: state.warExhaustion.get(factionId)?.exhaustionPoints ?? 0,
     capabilityTotal: roundMetric(capabilityTotal), // Raw aggregate, not normalized for balance.
     unlockedRecipes: faction.capabilities?.unlockedRecipeIds.length ?? 0,
     routedUnits,
@@ -643,10 +637,6 @@ export function collectSeedBalanceMetrics(
     unresolved,
     livingUnits: livingUnits.length,
     routedUnits,
-    totalWarExhaustion: roundMetric(
-      Array.from(finalState.warExhaustion.values())
-        .reduce((sum, entry) => sum + entry.exhaustionPoints, 0)
-    ),
     eventCounts: {
       battles: totalBattles,
       kills: totalKills,
@@ -692,7 +682,6 @@ export function runBalanceHarness(
           avgLivingUnits: roundMetric(factionRuns.reduce((sum, run) => sum + run.livingUnits, 0) / runs.length),
           avgCities: roundMetric(factionRuns.reduce((sum, run) => sum + run.cities, 0) / runs.length),
           avgVillages: roundMetric(factionRuns.reduce((sum, run) => sum + run.villages, 0) / runs.length),
-          avgWarExhaustion: roundMetric(factionRuns.reduce((sum, run) => sum + run.warExhaustion, 0) / runs.length),
           avgCapabilityTotal: roundMetric(factionRuns.reduce((sum, run) => sum + run.capabilityTotal, 0) / runs.length),
           avgUnlockedRecipes: roundMetric(factionRuns.reduce((sum, run) => sum + run.unlockedRecipes, 0) / runs.length),
           avgRoutedUnits: roundMetric(factionRuns.reduce((sum, run) => sum + run.routedUnits, 0) / runs.length),
@@ -762,9 +751,6 @@ export function runBalanceHarness(
     avgFinalRound: roundMetric(runs.reduce((sum, run) => sum + run.finalRound, 0) / runs.length),
     avgLivingUnits: roundMetric(runs.reduce((sum, run) => sum + run.livingUnits, 0) / runs.length),
     avgRoutedUnits: roundMetric(runs.reduce((sum, run) => sum + run.routedUnits, 0) / runs.length),
-    avgTotalWarExhaustion: roundMetric(
-      runs.reduce((sum, run) => sum + run.totalWarExhaustion, 0) / runs.length
-    ),
     totalBattles: runs.reduce((sum, run) => sum + run.eventCounts.battles, 0),
     totalKills: runs.reduce((sum, run) => sum + run.eventCounts.kills, 0),
     totalCityCaptures: runs.reduce((sum, run) => sum + run.eventCounts.cityCaptures, 0),

@@ -3,7 +3,6 @@ import { buildMvpScenario } from '../src/game/buildMvpScenario';
 import { previewMove, moveUnit } from '../src/systems/movementSystem';
 import { runWarEcologySimulation } from '../src/systems/warEcologySimulation';
 import { destroyVillage, evaluateAndSpawnVillage, spawnVillage } from '../src/systems/villageSystem';
-import { EXHAUSTION_CONFIG } from '../src/systems/warExhaustionSystem';
 import { getSettlementOwnershipSnapshot } from '../src/systems/factionOwnershipSystem';
 import type { GameState } from '../src/game/types';
 
@@ -52,10 +51,6 @@ describe('village destruction', () => {
     const result = destroyVillage(stateWithVillage, villageId!);
     const updatedFaction = result.factions.get(factionId)!;
     expect(updatedFaction.villageIds).not.toContain(villageId);
-  });
-
-  it('VILLAGE_LOST war exhaustion is 2 (enabled)', () => {
-    expect(EXHAUSTION_CONFIG.VILLAGE_LOST).toBe(2);
   });
 
   it('spawns villages from city territory after the base 4-turn cooldown', () => {

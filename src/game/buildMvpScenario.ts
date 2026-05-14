@@ -1,6 +1,6 @@
 // MVP Scenario Builder - Creates a complete game state from scenario config
 
-import type { GameState, City, Prototype, Improvement, ResearchState, FactionEconomy, WarExhaustion } from './types.js';
+import type { GameState, City, Prototype, Improvement, ResearchState, FactionEconomy } from './types.js';
 import { createEmptyGameState } from './createGameState.js';
 import { generateMvpMap } from '../world/generation/generateMvpMap.js';
 import { generateClimateBandMap } from '../world/generation/generateClimateBandMap.js';
@@ -9,7 +9,6 @@ import { assemblePrototype } from '../design/assemblePrototype.js';
 import { createFactionId, createUnitId, createCityId, createImprovementId, createPrototypeId } from '../core/ids.js';
 import { createCombatRecord } from '../features/factions/types.js';
 import { isWaterTerrain, isDeepWaterTerrain } from '../systems/terrainUtils.js';
-import { createWarExhaustion } from '../systems/warExhaustionSystem.js';
 import type { CityId, ChassisId, ComponentId, PrototypeId, UnitId, ImprovementId, FactionId } from '../types.js';
 import type { Faction } from '../game/types.js';
 import { getHexesInRange, getNeighbors, hexToKey } from '../core/grid.js';
@@ -34,7 +33,6 @@ type MutableGameState = GameState & {
   improvements: Map<ImprovementId, Improvement>;
   research: Map<FactionId, ResearchState>;
   economy: Map<FactionId, FactionEconomy>;
-  warExhaustion: Map<FactionId, WarExhaustion>;
 };
 
 // ---------------------------------------------------------------------------
@@ -339,7 +337,7 @@ function initializeFaction(
     faction.unitIds.push(unitId);
   }
 
-  // Research, economy, war exhaustion
+  // Research, economy
   const researchState = createResearchState(factionId, factionConfig.nativeDomain, factionConfig.researchRate);
   if (factionConfig.startingCompletedResearchNodes?.length) {
     researchState.completedNodes = Array.from(new Set([
@@ -349,7 +347,6 @@ function initializeFaction(
   }
   state.research.set(factionId, researchState);
   state.economy.set(factionId, createFactionEconomy(factionId));
-  state.warExhaustion.set(factionId, createWarExhaustion(factionId));
 }
 
 /**
@@ -379,7 +376,6 @@ export function buildMvpScenario(seed: number, options: BuildMvpScenarioOptions 
     improvements: new Map(baseState.improvements),
     research: new Map(baseState.research),
     economy: new Map(baseState.economy),
-    warExhaustion: new Map(baseState.warExhaustion),
   };
 
   if (mapMode === 'randomClimateBands') {

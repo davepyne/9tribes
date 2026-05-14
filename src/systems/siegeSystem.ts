@@ -7,10 +7,6 @@ import type { City } from '../features/cities/types.js';
 import type { FactionId } from '../types.js';
 import { isCityEncircled } from './territorySystem.js';
 import { getHexesInRange, hexDistance } from '../core/grid.js';
-import {
-  addExhaustion,
-  EXHAUSTION_CONFIG,
-} from './warExhaustionSystem.js';
 import { syncFactionSettlementIds } from './factionOwnershipSystem.js';
 import { tryLearnFromCityCapture } from './learnByKillSystem.js';
 import { destroyVillagesInCityTerritory } from './villageSystem.js';
@@ -131,7 +127,7 @@ export function getCapturingFaction(
 }
 
 /**
- * Execute city capture: transfer ownership, reset walls, update war exhaustion.
+ * Execute city capture: transfer ownership, reset walls.
  */
 export interface CaptureCityResult {
   state: GameState;
@@ -182,30 +178,10 @@ export function captureCityWithResult(
     });
   }
 
-  // Update war exhaustion
-  const warExhaustion = new Map(currentState.warExhaustion);
-
-  const victimWE = warExhaustion.get(oldOwnerFactionId);
-  if (victimWE) {
-    warExhaustion.set(
-      oldOwnerFactionId,
-      addExhaustion(victimWE, EXHAUSTION_CONFIG.CITY_CAPTURED)
-    );
-  }
-
-  const attackerWE = warExhaustion.get(newOwnerFactionId);
-  if (attackerWE) {
-    warExhaustion.set(
-      newOwnerFactionId,
-      addExhaustion(attackerWE, EXHAUSTION_CONFIG.CITY_CAPTURED_ATTACKER)
-    );
-  }
-
   currentState = {
     ...currentState,
     cities,
     factions,
-    warExhaustion,
   };
 
   currentState = syncFactionSettlementIds(currentState, oldOwnerFactionId);

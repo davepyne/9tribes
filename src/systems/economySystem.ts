@@ -8,7 +8,6 @@ import type { FactionEconomy } from '../features/economy/types.js';
 import { createFactionEconomy } from '../features/economy/types.js';
 import { getHexesInRange, hexToKey } from '../core/grid.js';
 import { calculateTerritoryYield } from './territorySystem.js';
-import { calculateProductionPenalty } from './warExhaustionSystem.js';
 import { getEconomyProductionBonus, getEconomySupplyBonus } from './factionIdentitySystem.js';
 import { getFactionCityIds, getFactionVillageIds } from './factionOwnershipSystem.js';
 import { getFactionProjectedSupplyDemand } from './productionSystem.js';
@@ -56,7 +55,6 @@ export function advanceCaptureTimers(state: GameState, factionId: FactionId): Ga
  * - Village production bonus (+1 per village)
  * - Terrain yields from hexes within radius 2 of each city
  * - Territory supply bonus (from territorySystem)
- * - War exhaustion production penalty
  */
 export function deriveResourceIncome(
   state: GameState,
@@ -131,13 +129,6 @@ export function deriveResourceIncome(
 
   // Supply demand is derived from per-prototype logistical cost.
   economy.supplyDemand = getFactionProjectedSupplyDemand(state, factionId, registry);
-
-  // War exhaustion production penalty
-  const we = state.warExhaustion.get(factionId);
-  if (we && we.exhaustionPoints > 0) {
-    const penalty = calculateProductionPenalty(we.exhaustionPoints);
-    economy.productionPool *= (1 - penalty);
-  }
 
   // Round production to avoid floating point drift
   economy.productionPool = Number(economy.productionPool.toFixed(2));
