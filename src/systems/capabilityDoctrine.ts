@@ -54,6 +54,7 @@ export interface ResearchDoctrine {
   // Phase 2 — Tribe Identity flags
   wetlandStealthEnabled: boolean;    // river_stealth_t1 - stealth on wetland end-of-turn
   skirmishStepEnabled: boolean;      // hitrun_t1 - move then attack bonus
+  ignoreZocOnApproachEnabled: boolean; // hitrun_t1 - ignore ZoC on the approach hex when attacking
   pressGangCaptureEnabled: boolean;  // slaving_t1 - capture chance on kill vs wounded
   nativePoisonDetonateEnabled: boolean; // venom_t3 native - poison detonation on kill
 
@@ -208,6 +209,7 @@ export function resolveResearchDoctrine(
     // Phase 2 — Tribe Identity flags
     wetlandStealthEnabled: hasNode('river_stealth_t1'),
     skirmishStepEnabled: hasNode('hitrun_t1'),
+    ignoreZocOnApproachEnabled: hasNode('hitrun_t1'),
     pressGangCaptureEnabled: hasNode('slaving_t1'),
     nativePoisonDetonateEnabled: hasNativeT3('venom'),
 

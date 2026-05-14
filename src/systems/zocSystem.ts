@@ -123,6 +123,11 @@ export function getZoCMovementCost(
     return 0;
   }
 
+  // Hitrun T1 approach: ignore ZoC when moving toward an enemy to attack
+  if (doctrine?.ignoreZocOnApproachEnabled && blockers.length > 0) {
+    return 0;
+  }
+
   return blockers.length > 0 ? 1 : 0;
 }
 
@@ -151,6 +156,12 @@ export function entersEnemyZoC(
     if (fortZoC) {
       return !isOnFortAtHex(state, originHex); // already in fort = no ZoC entry
     }
+    return false;
+  }
+
+  // Hitrun T1 approach: ignore ZoC when moving toward an enemy
+  const targetBlockers = getZoCBlockers(targetHex, movingUnit.factionId, state, movingUnit);
+  if (doctrine?.ignoreZocOnApproachEnabled && targetBlockers.length > 0 && !fortZoC) {
     return false;
   }
 

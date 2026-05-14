@@ -232,7 +232,7 @@ const HITRUN_RESEARCH = buildResearchDomain({
     type: 'skirmish_step',
     description: 'Units that moved before attacking deal +15% damage on that attack and ignore zone-of-control on the approach hex.',
     nativeDescription: 'Steppe Riders can move-attack-MOVE in one turn (free repositioning after attack; no second attack).',
-    effect: { moveThenAttackBonus: 0.15, ignoreZocOnApproach: true }, // moveThenAttackBonus: wired; ignoreZocOnApproach: design
+    effect: { moveThenAttackBonus: 0.15, ignoreZocOnApproach: true }, // all: wired
   },
   t2: {
     name: 'Bloodtrail',
