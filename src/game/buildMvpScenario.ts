@@ -206,6 +206,7 @@ function initializeFaction(
     capabilities: createCapabilityState(factionConfig.capabilitySeeds),
     combatRecord: createCombatRecord(),
     nativeDomain: factionConfig.nativeDomain,
+    nativeDomains: factionConfig.nativeDomains ?? [factionConfig.nativeDomain],
     learnedDomains: Array.from(new Set([
       factionConfig.nativeDomain,
       ...(factionConfig.startingLearnedDomains ?? []),
@@ -217,9 +218,9 @@ function initializeFaction(
       Array.from(new Set([
         factionConfig.nativeDomain,
         ...(factionConfig.startingLearnedDomains ?? []),
-      ])).map((d) => [d, d === factionConfig.nativeDomain ? 'native' as const : 'sacrifice' as const]),
+      ])).map((d) => [d, (factionConfig.nativeDomains ?? [factionConfig.nativeDomain]).includes(d) ? 'native' as const : 'sacrifice' as const]),
     ),
-    synergyEligibleDomains: [factionConfig.nativeDomain],
+    synergyEligibleDomains: [...(factionConfig.nativeDomains ?? [factionConfig.nativeDomain])],
     homeCityId: cityId,
     bastionsBuilt: 0,
     maelstromsDeclared: 0,
@@ -341,7 +342,7 @@ function initializeFaction(
   }
 
   // Research, economy
-  const researchState = createResearchState(factionId, factionConfig.nativeDomain, factionConfig.researchRate);
+  const researchState = createResearchState(factionId, factionConfig.nativeDomain, factionConfig.researchRate, factionConfig.nativeDomains);
   if (factionConfig.startingCompletedResearchNodes?.length) {
     researchState.completedNodes = Array.from(new Set([
       ...researchState.completedNodes,

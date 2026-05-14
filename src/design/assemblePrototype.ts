@@ -11,7 +11,7 @@ import { calculatePrototypeStats } from './calculatePrototypeStats.js';
 export interface AssemblePrototypeOptions {
   capabilityLevels?: Record<string, number>;
   researchState?: ResearchState;
-  faction?: Pick<Faction, 'nativeDomain' | 'learnedDomains'>;
+  faction?: Pick<Faction, 'nativeDomain' | 'nativeDomains' | 'learnedDomains'>;
   validation?: PrototypeValidationOptions;
   id?: PrototypeId;
   name?: string;

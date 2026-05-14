@@ -48,7 +48,7 @@ export function extractTier(nodeId: string): number {
  * and tier-ordering (T2 before T3 within a domain).
  */
 export function getCandidateNodes(
-  faction: { nativeDomain: string; learnedDomains: string[] },
+  faction: { nativeDomain: string; nativeDomains?: string[]; learnedDomains: string[] },
   completedNodes: string[],
   registry: RulesRegistry,
 ): CandidateNode[] {
@@ -60,7 +60,7 @@ export function getCandidateNodes(
   for (const domain of registry.getAllResearchDomains()) {
     if (!learnedSet.has(domain.id)) continue;
 
-    const isNative = domain.id === faction.nativeDomain;
+    const isNative = (faction.nativeDomains ?? [faction.nativeDomain]).includes(domain.id);
 
     for (const node of Object.values(domain.nodes)) {
       if (completedSet.has(node.id)) continue;
@@ -264,19 +264,20 @@ export function scoreNormalTier3DepthFocus(
 
 export function scoreNormalBreadthPivot(
   candidate: CandidateNode,
-  faction: { nativeDomain: string; learnedDomains: string[] },
+  faction: { nativeDomain: string; nativeDomains?: string[]; learnedDomains: string[] },
   progression: ReturnType<typeof getDomainProgression>,
   domainsWithProgress: Set<string>,
   difficultyProfile: AiDifficultyProfile,
 ): number {
   if (!difficultyProfile.adaptiveAi) return 0;
 
-  const nativeT2Secured = progression.t2Domains.includes(faction.nativeDomain);
-  const nonNativeT2Count = progression.t2Domains.filter((domainId) => domainId !== faction.nativeDomain).length;
-  const activeBreadthCount = Array.from(domainsWithProgress).filter((domainId) => domainId !== faction.nativeDomain).length;
-  const isForeign = candidate.domainId !== faction.nativeDomain;
+  const nativeSet = new Set(faction.nativeDomains ?? [faction.nativeDomain]);
+  const nativeT2Secured = progression.t2Domains.some((domainId) => nativeSet.has(domainId));
+  const nonNativeT2Count = progression.t2Domains.filter((domainId) => !nativeSet.has(domainId)).length;
+  const activeBreadthCount = Array.from(domainsWithProgress).filter((domainId) => !nativeSet.has(domainId)).length;
+  const isForeign = !nativeSet.has(candidate.domainId);
   const isNewBreadthTier2 = candidate.tier === 2 && isForeign && !progression.t2Domains.includes(candidate.domainId);
-  const isNativeTier3 = candidate.tier === 3 && candidate.domainId === faction.nativeDomain;
+  const isNativeTier3 = candidate.tier === 3 && nativeSet.has(candidate.domainId);
 
   let score = 0;
   if (nativeT2Secured && isNewBreadthTier2) {

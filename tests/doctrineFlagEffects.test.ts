@@ -138,6 +138,7 @@ describe('R5: stealthCloakAuraEnabled - stealthed units cloak adjacent allies', 
     state.factions.set(lionsId as never, {
       ...state.factions.get(lionsId as never)!,
       nativeDomain: 'river_stealth',
+      nativeDomains: ['river_stealth'],
       learnedDomains: ['river_stealth'],
     });
     addResearchNodes(state, lionsId, ['river_stealth_t1', 'river_stealth_t2', 'river_stealth_t3']);
@@ -186,6 +187,7 @@ describe('combat cleanup', () => {
     state.factions.set(lionsId as never, {
       ...state.factions.get(lionsId as never)!,
       nativeDomain: 'hitrun',
+      nativeDomains: ['hitrun'],
       learnedDomains: ['hitrun'],
     });
     state.units.set(jungleUnitId, {
@@ -229,6 +231,7 @@ describe('R2: poisonBonusEnabled — +50% poison damage multiplier', () => {
     state.factions.set(jungleId as never, {
       ...faction,
       nativeDomain: 'fortress',
+      nativeDomains: ['fortress'],
       learnedDomains: ['fortress', 'venom'],
     });
     addResearchNodes(state, jungleId, ['venom_t3']);
@@ -301,6 +304,7 @@ describe('R3: toxicBulwarkEnabled — all units apply poison on hit', () => {
     state.factions.set(lionsId as never, {
       ...faction,
       nativeDomain: 'venom',
+      nativeDomains: ['venom'],
       learnedDomains: ['venom'],
     });
     addResearchNodes(state, lionsId, ['venom_t1', 'venom_t2', 'venom_t3']);

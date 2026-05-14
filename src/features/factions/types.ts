@@ -87,6 +87,7 @@ export interface Faction {
   combatRecord: CombatRecord;
   summonState?: SummonState;
   nativeDomain: string;
+  nativeDomains: string[];     // all domains treated as native for mechanical purposes
   learnedDomains: string[];
   activeTripleStack?: ActiveTripleStack;
   activeDoubleStack?: ActiveDoubleStack;    // native+foreign cross-pair (1 foreign domain eligible)

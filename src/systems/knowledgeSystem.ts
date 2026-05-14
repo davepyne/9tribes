@@ -38,7 +38,7 @@ export function getForeignT1Cost(assimilatedCount: number): number {
 // Native domain = 1.0x, 1st non-native = 1.33x, 2nd = 1.66x, 3rd = 1.99x, etc.
 // Position is derived from learnedDomains array (native always at index 0)
 export function getDomainCostMultiplier(faction: Faction, domainId: string): number {
-  if (domainId === faction.nativeDomain) return 1.0;
+  if ((faction.nativeDomains ?? [faction.nativeDomain]).includes(domainId)) return 1.0;
   const index = faction.learnedDomains.indexOf(domainId);
   const effectiveIndex = index >= 0 ? index : faction.learnedDomains.length;
   return 1 + (effectiveIndex * 0.33);
@@ -105,7 +105,7 @@ export function getDomainIdsByTags(tags: string[]): string[] {
  * Check if a domain is foreign to a faction (not native, not already learned).
  */
 export function isForeignDomain(faction: Faction, domainId: string): boolean {
-  return domainId !== faction.nativeDomain && !faction.learnedDomains.includes(domainId);
+  return !(faction.nativeDomains ?? [faction.nativeDomain]).includes(domainId) && !faction.learnedDomains.includes(domainId);
 }
 
 /**

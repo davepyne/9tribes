@@ -28,7 +28,7 @@ export function validatePrototype(
   registry: RulesRegistry,
   capabilityLevels: Record<string, number> = {},
   researchState?: ResearchState,
-  faction?: Pick<Faction, 'nativeDomain' | 'learnedDomains'>,
+  faction?: Pick<Faction, 'nativeDomain' | 'nativeDomains' | 'learnedDomains'>,
   options: PrototypeValidationOptions = {}
 ): ValidationResult {
   const errors: string[] = [];

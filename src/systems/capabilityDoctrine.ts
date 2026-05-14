@@ -126,6 +126,7 @@ type DoctrineCacheEntry = {
   completedNodesRef: readonly string[];
   learnedDomainsRef: readonly string[];
   nativeDomain: string;
+  nativeDomainsRef: readonly string[];
   bastionsBuilt: number;
   maelstromsDeclared: number;
   doctrine: ResearchDoctrine;
@@ -142,11 +143,12 @@ const doctrineCache = new Map<FactionId, DoctrineCacheEntry>();
  */
 export function resolveResearchDoctrine(
   researchState: ResearchState | undefined,
-  faction?: Pick<Faction, 'nativeDomain' | 'learnedDomains' | 'id' | 'bastionsBuilt' | 'maelstromsDeclared'>,
+  faction?: Pick<Faction, 'nativeDomain' | 'nativeDomains' | 'learnedDomains' | 'id' | 'bastionsBuilt' | 'maelstromsDeclared'>,
 ): ResearchDoctrine {
   const completedNodes = researchState?.completedNodes ?? [];
   const learnedDomains = faction?.learnedDomains ?? [];
   const nativeDomain = faction?.nativeDomain ?? '';
+  const nativeDomains = new Set(faction?.nativeDomains ?? [nativeDomain]);
   const factionId = faction?.id;
   const bastionsBuilt = faction?.bastionsBuilt ?? 0;
   const maelstromsDeclared = faction?.maelstromsDeclared ?? 0;
@@ -159,6 +161,7 @@ export function resolveResearchDoctrine(
       && cached.completedNodesRef === completedNodes
       && cached.learnedDomainsRef === learnedDomains
       && cached.nativeDomain === nativeDomain
+      && cached.nativeDomainsRef === (faction?.nativeDomains ?? [nativeDomain])
       && cached.bastionsBuilt === bastionsBuilt
       && cached.maelstromsDeclared === maelstromsDeclared
     ) {
@@ -188,16 +191,16 @@ export function resolveResearchDoctrine(
     riverCrossingEnabled: hasNode('tidal_warfare_t1'),
     marchingStaminaEnabled: false, // retired: hitrun_t1 reflavored to skirmish_step
     venomousStrikesEnabled: hasNode('venom_t1'),
-    poisonPersistenceEnabled: hasNode('venom_t1') && nativeDomain === 'venom',
+    poisonPersistenceEnabled: hasNode('venom_t1') && nativeDomains.has('venom'),
     forcedMarchEnabled: hasNode('charge_t1'),
-    firstAttackPerTargetEnabled: hasNode('charge_t1') && nativeDomain === 'charge',
+    firstAttackPerTargetEnabled: hasNode('charge_t1') && nativeDomains.has('charge'),
     rapidEntrenchEnabled: hasNode('fortress_t1') || hasNativeT3('fortress'),
 
     // Tier 2 qualitative effects
     canopyCoverEnabled: hasNode('nature_healing_t2'),
     elephantStampede2Enabled: hasNode('charge_t2'),
     routOnBigChargeEnabled: hasNode('charge_t2'),
-    stampedeOnRoutEnabled: hasNode('charge_t2') && nativeDomain === 'charge',
+    stampedeOnRoutEnabled: hasNode('charge_t2') && nativeDomains.has('charge'),
     amphibiousAssaultEnabled: hasNode('tidal_warfare_t2'),
     contaminateTerrainEnabled: hasNode('venom_t2'),
     zoCAuraEnabled: hasNode('fortress_t2'),
@@ -231,10 +234,10 @@ export function resolveResearchDoctrine(
     permanentStealthEnabled: hasNode('camel_adaptation_t2'),
     stealthRechargeEnabled: hasNode('river_stealth_t2'),
     predatorBleedEnabled: hasNode('river_stealth_t2'),
-    persistentStealthOnAttackEnabled: hasNode('river_stealth_t2') && nativeDomain === 'river_stealth',
+    persistentStealthOnAttackEnabled: hasNode('river_stealth_t2') && nativeDomains.has('river_stealth'),
     captureRetreatEnabled: hasNode('slaving_t2'),
     damageReflectionEnabled: hasNode('heavy_hitter_t2'),
-    nativeDamageReflectionEnabled: hasNode('heavy_hitter_t2') && nativeDomain === 'heavy_hitter',
+    nativeDamageReflectionEnabled: hasNode('heavy_hitter_t2') && nativeDomains.has('heavy_hitter'),
     hitAndRunEnabled: hasNode('hitrun_t2'),
     killChainEnabled: hasNode('hitrun_t3'),
     nativeKillChainEnabled: hasNativeT3('hitrun'),
@@ -284,6 +287,7 @@ export function resolveResearchDoctrine(
       completedNodesRef: completedNodes,
       learnedDomainsRef: learnedDomains,
       nativeDomain,
+      nativeDomainsRef: faction?.nativeDomains ?? [nativeDomain],
       bastionsBuilt,
       maelstromsDeclared,
       doctrine,

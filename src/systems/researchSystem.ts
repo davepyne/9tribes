@@ -14,10 +14,9 @@ import { includesResearchNode } from '../game/stateAccess.js';
  * Create initial research state for a new faction.
  * Native domain T1 is auto-completed.
  */
-export function createResearchState(factionId: FactionId, nativeDomain?: string, researchPerTurn?: number): ResearchState {
-  const completedNodes: ResearchNodeId[] = nativeDomain
-    ? [`${nativeDomain}_t1` as ResearchNodeId]
-    : [];
+export function createResearchState(factionId: FactionId, nativeDomain?: string, researchPerTurn?: number, nativeDomains?: string[]): ResearchState {
+  const domains = nativeDomains ?? (nativeDomain ? [nativeDomain] : []);
+  const completedNodes: ResearchNodeId[] = domains.map(d => `${d}_t1` as ResearchNodeId);
 
   return {
     factionId,

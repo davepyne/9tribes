@@ -140,6 +140,7 @@
     "terrainDependence": "dominant on coast and ocean, weak deep inland",
     "lateGameHybridPotential": "galley transports and captured slave armies",
     "nativeDomain": "slaving",
+    "nativeDomains": ["slaving", "tidal_warfare"],
     "startingLearnedDomains": ["tidal_warfare"]
   },
   "desert_nomads": {

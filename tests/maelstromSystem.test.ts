@@ -92,18 +92,17 @@ describe('maelstrom — doctrine flags', () => {
     expect(doctrine.canDeclareMaelstrom).toBe(true);
   });
 
-  it('sets foreign radius=3 and duration=3 for Pirate Lords (nativeDomain is slaving)', () => {
+  it('sets native radius=5 and duration=5 for Pirate Lords (dual native domain)', () => {
     const state = buildMvpScenario(42);
     addResearchNodes(state, PIRATE, ['tidal_warfare_t1', 'tidal_warfare_t2', 'tidal_warfare_t3']);
     const faction = state.factions.get(PIRATE)!;
     const research = state.research.get(PIRATE)!;
     const doctrine = resolveResearchDoctrine(research, faction);
-    // Pirate Lords' nativeDomain is 'slaving', so tidal_warfare T3 is foreign for them.
-    // The domain catalog lists nativeFaction: 'coral_people' for tidal_warfare,
-    // but the native-T3 distinction uses faction.nativeDomain, not the catalog entry.
-    expect(doctrine.maelstromRadius).toBe(3);
-    expect(doctrine.maelstromDuration).toBe(3);
-    expect(doctrine.maelstromAutoCaptureEnabled).toBe(false);
+    // Pirate Lords have nativeDomains: ['slaving', 'tidal_warfare'],
+    // so tidal_warfare T3 is native for them.
+    expect(doctrine.maelstromRadius).toBe(5);
+    expect(doctrine.maelstromDuration).toBe(5);
+    expect(doctrine.maelstromAutoCaptureEnabled).toBe(true);
   });
 
   it('sets foreign radius=3, duration=3, no auto-capture', () => {
@@ -142,10 +141,10 @@ describe('maelstrom — declaration', () => {
     const effects = [...result.state.zoneEffects.values()].filter((e) => e.type === 'maelstrom');
     expect(effects).toHaveLength(1);
     const m = effects[0];
-    expect(m.radius).toBe(3); // foreign (Pirate Lords' nativeDomain is slaving)
+    expect(m.radius).toBe(5); // native (Pirate Lords have dual native domain)
     expect(m.damagePerTurn).toBe(2);
     expect(m.movementPenalty).toBe(1);
-    expect(m.turnsRemaining).toBe(3); // foreign
+    expect(m.turnsRemaining).toBe(5); // native
     expect(m.ownerFactionId).toBe(PIRATE);
 
     const faction = result.state.factions.get(PIRATE)!;

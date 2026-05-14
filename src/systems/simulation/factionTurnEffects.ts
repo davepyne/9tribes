@@ -351,11 +351,13 @@ export function applyEcologyResearchPass(
   let updatedFaction = faction;
 
   // Sort ecology domains by priority: native > learned > foreign with progress
-  const nativeDomain = faction.nativeDomain ?? '';
+  const nativeDomains = new Set(faction.nativeDomains ?? [faction.nativeDomain ?? '']);
   const learnedSet = new Set(learnedDomains);
   const sortedDomains = [...allDomains].sort((a, b) => {
-    if (a === nativeDomain && b !== nativeDomain) return -1;
-    if (b === nativeDomain && a !== nativeDomain) return 1;
+    const aNative = nativeDomains.has(a);
+    const bNative = nativeDomains.has(b);
+    if (aNative && !bNative) return -1;
+    if (!aNative && bNative) return 1;
     // Learned domains before foreign
     const aLearned = learnedSet.has(a);
     const bLearned = learnedSet.has(b);
