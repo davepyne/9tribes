@@ -256,6 +256,9 @@ export function applyCombatAction(
     routed: preview.result.defenderRouted || preview.result.defenderFled,
     hillDugIn: false,
     digInStacks: 0,
+    // Preview-based status: marked 'spent' if the preview predicts a kill;
+    // the Last Stand block below reverts this to defender.status if a save
+    // fires, so the final state correctly reflects defenderActuallyDestroyed.
     status: preview.result.defenderDestroyed ? 'spent' : defender.status,
   };
 
@@ -284,9 +287,20 @@ export function applyCombatAction(
     && !defender.lastStandUsedThisTurn
     && !baseResolution.instantKillTriggered
   ) {
-    nextDefender = { ...nextDefender, hp: 1, lastStandUsedThisTurn: true };
+    // Restore HP + status. The 'spent' status was set above based on the
+    // preview's destroyed prediction; revert it so the saved defender is
+    // not mis-flagged as having acted/died.
+    nextDefender = { ...nextDefender, hp: 1, lastStandUsedThisTurn: true, status: defender.status };
     baseResolution.lastStandSaved = true;
   }
+
+  // After Last Stand has had a chance to fire, this is the canonical
+  // "did the defender actually die?" signal that all downstream logic
+  // (kill XP, learn-from-kill, transport destroy, killchain, post-kill
+  // effects, knockback, rout, etc.) should read. `preview.result.
+  // defenderDestroyed` reflects only the preview's prediction and is
+  // stale once a save mechanism fires.
+  const defenderActuallyDestroyed = preview.result.defenderDestroyed && !baseResolution.lastStandSaved;
 
   if (preview.attackerWasStealthed && attacker.isStealthed && nextAttacker.hp > 0) {
     const isDesertStealth = attackerDoctrine?.permanentStealthEnabled === true
@@ -311,7 +325,7 @@ export function applyCombatAction(
     preview.attackerWasStealthed
     && attackerDoctrine?.predatorBleedEnabled
     && nextDefender.hp > 0
-    && !preview.result.defenderDestroyed
+    && !defenderActuallyDestroyed
   ) {
     nextDefender = {
       ...nextDefender,
@@ -328,7 +342,7 @@ export function applyCombatAction(
     resolution: baseResolution,
   };
 
-  if (preview.result.defenderDestroyed && !preview.result.attackerDestroyed && nextAttacker.hp > 0) {
+  if (defenderActuallyDestroyed && !preview.result.attackerDestroyed && nextAttacker.hp > 0) {
     const learnResult = tryLearnFromKill(nextAttacker, defender, state, state.rngState, undefined, learnChanceScale);
     nextAttacker = learnResult.unit;
     if (learnResult.learned && learnResult.domainId) {
@@ -343,7 +357,7 @@ export function applyCombatAction(
   }
 
   if (nextAttacker.hp > 0) {
-    nextAttacker = awardCombatXP(nextAttacker, preview.result.defenderDestroyed, !preview.result.attackerDestroyed);
+    nextAttacker = awardCombatXP(nextAttacker, defenderActuallyDestroyed, !preview.result.attackerDestroyed);
     nextAttacker = tryPromoteUnit(nextAttacker, registry);
     nextAttacker = {
       ...nextAttacker,
@@ -461,7 +475,7 @@ export function applyCombatAction(
   let capturedOnKill = false;
   let retreatCaptured = false;
   if (
-    preview.result.defenderDestroyed
+    defenderActuallyDestroyed
     && nextAttacker.hp > 0
     && (hasCaptureAbility(attackerPrototype, registry) || isGreedyCoastal || autoCaptureAbility)
   ) {
@@ -484,7 +498,7 @@ export function applyCombatAction(
   // Phase A — Press gang capture (slaving_t1): capture chance on kill vs wounded
   let pressGangCaptured = false;
   if (
-    preview.result.defenderDestroyed
+    defenderActuallyDestroyed
     && !capturedOnKill
     && attackerDoctrine?.pressGangCaptureEnabled
     && nextAttacker.hp > 0
@@ -520,7 +534,7 @@ export function applyCombatAction(
 
   // Phase A — Greedy loot on kill (Pirate Lords passive)
   let greedyLootGained = 0;
-  if (preview.result.defenderDestroyed && nextAttacker.hp > 0) {
+  if (defenderActuallyDestroyed && nextAttacker.hp > 0) {
     const loot = getGreedyLootOnKill(attackerFaction);
     if (loot) {
       const attackerEconomy = current.economy.get(attacker.factionId);
@@ -539,7 +553,7 @@ export function applyCombatAction(
 
   // Phase A — Poison detonate (venom_t3 native): AoE poison on adjacent enemies after kill
   let poisonDetonated = false;
-  if (preview.result.defenderDestroyed && attackerDoctrine?.nativePoisonDetonateEnabled && nextAttacker.hp > 0) {
+  if (defenderActuallyDestroyed && attackerDoctrine?.nativePoisonDetonateEnabled && nextAttacker.hp > 0) {
     const detonateUnits = new Map(current.units);
     let detonateCount = 0;
     for (const adjHex of getNeighbors(defender.position)) {
@@ -566,7 +580,7 @@ export function applyCombatAction(
 
   // Phase A — Pursuit movement (foraging_riders): restore movement after kill
   let pursuitMovementRestored = 0;
-  if (preview.result.defenderDestroyed && nextAttacker.hp > 0) {
+  if (defenderActuallyDestroyed && nextAttacker.hp > 0) {
     const pursuitMoves = getPursuitMovementOnKill(attackerFaction);
     if (pursuitMoves > 0) {
       const pursuitUnit = current.units.get(preview.attackerId);
@@ -585,7 +599,7 @@ export function applyCombatAction(
 
   // Melee advance: melee attacker occupies defender's hex on kill (not capture)
   if (
-    preview.result.defenderDestroyed
+    defenderActuallyDestroyed
     && !attackerActuallyDestroyed
     && !capturedOnKill
     && !attackerIsRanged
@@ -603,7 +617,7 @@ export function applyCombatAction(
 
   // Hitrun T3 — Killing Chain: follow-up attack after kill
   if (
-    preview.result.defenderDestroyed
+    defenderActuallyDestroyed
     && !attackerActuallyDestroyed
     && (attackerDoctrine?.killChainEnabled || attackerDoctrine?.nativeKillChainEnabled)
   ) {
@@ -651,7 +665,7 @@ export function applyCombatAction(
     }
   }
 
-  if (!preview.result.defenderDestroyed && preview.result.defenderFled && nextAttacker.hp > 0 && (attackerDoctrine?.captureRetreatEnabled || preview.details.retreatCaptureChance > 0)) {
+  if (!defenderActuallyDestroyed && preview.result.defenderFled && nextAttacker.hp > 0 && (attackerDoctrine?.captureRetreatEnabled || preview.details.retreatCaptureChance > 0)) {
     const retreatChance = (attackerDoctrine?.captureRetreatEnabled ? 0.15 : 0) + preview.details.retreatCaptureChance;
     const retreatCapture = attemptNonCombatCapture(
       current,
@@ -669,7 +683,7 @@ export function applyCombatAction(
 
   let totalKnockbackDistance = 0;
   const effectiveKnockback = preview.details.totalKnockbackDistance + preview.details.heavyMassStacks;
-  if (effectiveKnockback > 0 && !preview.result.defenderDestroyed && !retreatCaptured) {
+  if (effectiveKnockback > 0 && !defenderActuallyDestroyed && !retreatCaptured) {
     const knockbackResult = applyKnockbackDistance(current, preview.attackerId, preview.defenderId, effectiveKnockback);
     current = knockbackResult.state;
     totalKnockbackDistance = knockbackResult.appliedDistance;
@@ -680,7 +694,7 @@ export function applyCombatAction(
   let stampedeDamageApplied = 0;
   if (
     preview.details.isChargeAttack
-    && !preview.result.defenderDestroyed
+    && !defenderActuallyDestroyed
     && !retreatCaptured
     && attackerDoctrine?.routOnBigChargeEnabled
     && preview.result.defenderDamage > defender.maxHp * 0.5
@@ -717,7 +731,7 @@ export function applyCombatAction(
     }
   }
 
-  if (preview.result.defenderDestroyed && !capturedOnKill) {
+  if (defenderActuallyDestroyed && !capturedOnKill) {
     current = destroyTransportIfApplicable(current, preview.defenderId, registry);
   }
   if (attackerActuallyDestroyed) {
@@ -735,7 +749,7 @@ export function applyCombatAction(
   }
   current = unlockHybridRecipes(current, attacker.factionId, registry);
 
-  if (preview.result.defenderDestroyed && !capturedOnKill) {
+  if (defenderActuallyDestroyed && !capturedOnKill) {
     current = updateCombatRecordOnWin(current, attacker.factionId as FactionId, current.round);
     current = updateCombatRecordOnLoss(current, defender.factionId as FactionId, current.round);
   } else if (attackerActuallyDestroyed) {
@@ -745,7 +759,7 @@ export function applyCombatAction(
 
   const hitAndRunEligible =
     attackerDoctrine?.universalHitAndRunEnabled
-    || (attackerDoctrine?.hitAndRunEnabled && preview.result.defenderDestroyed);
+    || (attackerDoctrine?.hitAndRunEnabled && defenderActuallyDestroyed);
   if (hitAndRunEligible) {
     const retreatingAttacker = current.units.get(preview.attackerId);
     if (retreatingAttacker && retreatingAttacker.hp > 0) {
@@ -774,12 +788,12 @@ export function applyCombatAction(
     updatedAttacker = recordBattleFought(
       updatedAttacker,
       defender.id,
-      preview.result.defenderDestroyed,
+      defenderActuallyDestroyed,
       preview.result.attackerDamage,
       preview.result.defenderDamage,
       state.round,
     );
-    if (preview.result.defenderDestroyed) {
+    if (defenderActuallyDestroyed) {
       updatedAttacker = recordEnemyKilled(updatedAttacker, defender.id, state.round);
     }
     if (updatedAttacker.veteranLevel !== attacker.veteranLevel) {
@@ -795,7 +809,7 @@ export function applyCombatAction(
     || (attackerDoctrine?.toxicBulwarkEnabled === true)
     || (attackerDoctrine?.venomousStrikesEnabled === true);
   let poisonApplied = false;
-  if (!preview.result.defenderDestroyed && preview.result.defenderDamage > 0 && canInflictPoison && updatedDefender) {
+  if (!defenderActuallyDestroyed && preview.result.defenderDamage > 0 && canInflictPoison && updatedDefender) {
     updatedDefender = applyPoisonDoT(
       updatedDefender,
       attackerDoctrine?.poisonStacksOnHit ?? 1,
@@ -808,7 +822,7 @@ export function applyCombatAction(
   }
 
   // Phase 3A — Synergy poison stacks (separate from tag-based poison)
-  if (preview.details.poisonStacks > 0 && !preview.result.defenderDestroyed && updatedDefender) {
+  if (preview.details.poisonStacks > 0 && !defenderActuallyDestroyed && updatedDefender) {
     updatedDefender = current.units.get(preview.defenderId);
     if (updatedDefender && updatedDefender.hp > 0) {
       updatedDefender = applyPoisonDoT(updatedDefender, preview.details.poisonStacks, 1, 3);
@@ -819,7 +833,7 @@ export function applyCombatAction(
   }
 
   // Jungle Stalkers passive: extra poison stacks in native terrain (stacks with venom_t1)
-  if (!preview.result.defenderDestroyed) {
+  if (!defenderActuallyDestroyed) {
     const junglePoison = getPoisonOnAttack(attackerFaction, attackerTerrainId);
     if (junglePoison && junglePoison.stacks > 0) {
       updatedDefender = current.units.get(preview.defenderId);
@@ -833,7 +847,7 @@ export function applyCombatAction(
   }
 
   let contaminatedHexApplied = false;
-  if (preview.result.defenderDestroyed && attackerDoctrine?.contaminateTerrainEnabled) {
+  if (defenderActuallyDestroyed && attackerDoctrine?.contaminateTerrainEnabled) {
     const contaminatedHexes = new Set(current.contaminatedHexes);
     contaminatedHexes.add(hexToKey(defender.position));
     current = { ...current, contaminatedHexes };
@@ -847,7 +861,7 @@ export function applyCombatAction(
     current = writeUnitToState(current, rotateUnitToward(updatedAttacker, defender.position));
   }
   updatedAttacker = current.units.get(preview.attackerId);
-  if (updatedDefender && !preview.result.defenderDestroyed) {
+  if (updatedDefender && !defenderActuallyDestroyed) {
     current = writeUnitToState(
       current,
       rotateUnitToward(updatedDefender, updatedAttacker?.position ?? attacker.position),
@@ -988,7 +1002,7 @@ export function applyCombatAction(
 
   updatedDefender = current.units.get(preview.defenderId);
   let sandstormTargetsHit = 0;
-  if (preview.details.sandstormDamage > 0 && updatedDefender && !preview.result.defenderDestroyed && !retreatCaptured) {
+  if (preview.details.sandstormDamage > 0 && updatedDefender && !defenderActuallyDestroyed && !retreatCaptured) {
     const sandstormUnits = new Map(current.units);
     for (const adjHex of getNeighbors(updatedDefender.position)) {
       const adjUnitId = getUnitAtHex(current, adjHex);
@@ -1009,7 +1023,7 @@ export function applyCombatAction(
 
   // Phase 3C — Synergy AoE damage (multiplier_stack, etc.)
   updatedDefender = current.units.get(preview.defenderId);
-  if (preview.details.aoeDamage > 0 && updatedDefender && !preview.result.defenderDestroyed && !retreatCaptured) {
+  if (preview.details.aoeDamage > 0 && updatedDefender && !defenderActuallyDestroyed && !retreatCaptured) {
     const aoeUnits = new Map(current.units);
     let aoeHit = 0;
     for (const adjHex of getNeighbors(updatedDefender.position)) {
@@ -1028,7 +1042,7 @@ export function applyCombatAction(
   }
 
   updatedDefender = current.units.get(preview.defenderId);
-  if (preview.details.contaminateActive && updatedDefender && !preview.result.defenderDestroyed && !retreatCaptured) {
+  if (preview.details.contaminateActive && updatedDefender && !defenderActuallyDestroyed && !retreatCaptured) {
     const contaminatedHexes = new Set(current.contaminatedHexes);
     contaminatedHexes.add(hexToKey(updatedDefender.position));
     current = { ...current, contaminatedHexes };
@@ -1037,7 +1051,7 @@ export function applyCombatAction(
 
   updatedDefender = current.units.get(preview.defenderId);
   let frostbiteApplied = false;
-  if (preview.details.frostbiteColdDoT > 0 && updatedDefender && !preview.result.defenderDestroyed && !retreatCaptured) {
+  if (preview.details.frostbiteColdDoT > 0 && updatedDefender && !defenderActuallyDestroyed && !retreatCaptured) {
     frostbiteApplied = true;
     current = writeUnitToState(current, {
       ...updatedDefender,
@@ -1050,7 +1064,7 @@ export function applyCombatAction(
 
   // Phase 3A — Stun: reduce defender moves for N turns
   updatedDefender = current.units.get(preview.defenderId);
-  if (preview.details.stunDuration > 0 && updatedDefender && !preview.result.defenderDestroyed && updatedDefender.hp > 0) {
+  if (preview.details.stunDuration > 0 && updatedDefender && !defenderActuallyDestroyed && updatedDefender.hp > 0) {
     current = writeUnitToState(current, {
       ...updatedDefender,
       stunDuration: preview.details.stunDuration,
@@ -1060,7 +1074,7 @@ export function applyCombatAction(
   }
 
   // Phase 3A — Formation Crush: apply crush stacks to defender
-  if (preview.details.formationCrushStacks > 0 && updatedDefender && !preview.result.defenderDestroyed && updatedDefender.hp > 0) {
+  if (preview.details.formationCrushStacks > 0 && updatedDefender && !defenderActuallyDestroyed && updatedDefender.hp > 0) {
     current = writeUnitToState(current, {
       ...updatedDefender,
       formationCrushStacks: (updatedDefender.formationCrushStacks ?? 0) + preview.details.formationCrushStacks,
@@ -1070,7 +1084,7 @@ export function applyCombatAction(
 
   // Phase 3C — Sandstorm aura: accuracy debuff on adjacent enemies
   updatedDefender = current.units.get(preview.defenderId);
-  if (preview.details.sandstormAuraRadius > 0 && updatedDefender && !preview.result.defenderDestroyed && updatedDefender.hp > 0) {
+  if (preview.details.sandstormAuraRadius > 0 && updatedDefender && !defenderActuallyDestroyed && updatedDefender.hp > 0) {
     const auraUnits = new Map(current.units);
     for (const adjHex of getNeighbors(updatedDefender.position)) {
       const adjUnitId = getUnitAtHex(current, adjHex);
@@ -1104,7 +1118,7 @@ export function applyCombatAction(
   }
 
   // Phase 3C — Withering reduction: apply debuff to defender's healing
-  if (preview.details.witheringReduction > 0 && updatedDefender && !preview.result.defenderDestroyed && updatedDefender.hp > 0) {
+  if (preview.details.witheringReduction > 0 && updatedDefender && !defenderActuallyDestroyed && updatedDefender.hp > 0) {
     current = writeUnitToState(current, {
       ...updatedDefender,
       witherReduction: preview.details.witheringReduction,
@@ -1164,7 +1178,7 @@ export function applyCombatAction(
   if (reflectionDamageApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Reflection', `Defender reflected ${reflectionDamageApplied} damage back to the attacker.`, 'aftermath');
   }
-  if (totalKnockbackDistance > 0 && !preview.result.defenderDestroyed) {
+  if (totalKnockbackDistance > 0 && !defenderActuallyDestroyed) {
     pushCombatEffect(triggeredEffects, 'Knockback', `Defender was displaced ${totalKnockbackDistance} hex${totalKnockbackDistance === 1 ? '' : 'es'}.`, 'aftermath');
   }
   if (bigChargeRoutTriggered) {
