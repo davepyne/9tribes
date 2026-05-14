@@ -6,6 +6,7 @@ import type { GameState } from '../game/types.js';
 import type { RulesRegistry, ResearchNodeDef } from '../data/registry/types.js';
 import type { FactionId } from '../types.js';
 import type { FactionStrategy } from './factionStrategy.js';
+import { getNativeDomains } from '../features/factions/types.js';
 import { scoreResearchCandidate } from './aiPersonality.js';
 import type { AiDifficultyProfile } from './aiDifficulty.js';
 import { getDomainProgression } from './domainProgression.js';
@@ -60,7 +61,7 @@ export function getCandidateNodes(
   for (const domain of registry.getAllResearchDomains()) {
     if (!learnedSet.has(domain.id)) continue;
 
-    const isNative = (faction.nativeDomains ?? [faction.nativeDomain]).includes(domain.id);
+    const isNative = getNativeDomains(faction).includes(domain.id);
 
     for (const node of Object.values(domain.nodes)) {
       if (completedSet.has(node.id)) continue;
@@ -271,7 +272,7 @@ export function scoreNormalBreadthPivot(
 ): number {
   if (!difficultyProfile.adaptiveAi) return 0;
 
-  const nativeSet = new Set(faction.nativeDomains ?? [faction.nativeDomain]);
+  const nativeSet = new Set(getNativeDomains(faction));
   const nativeT2Secured = progression.t2Domains.some((domainId) => nativeSet.has(domainId));
   const nonNativeT2Count = progression.t2Domains.filter((domainId) => !nativeSet.has(domainId)).length;
   const activeBreadthCount = Array.from(domainsWithProgress).filter((domainId) => !nativeSet.has(domainId)).length;

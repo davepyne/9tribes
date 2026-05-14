@@ -4,7 +4,7 @@
  */
 
 import type { GameState, Unit, UnitId } from '../../../../src/game/types.js';
-import type { HexCoord } from '../../../../src/types.js';
+import type { HexCoord, FactionId } from '../../../../src/types.js';
 import { createImprovementId } from '../../../../src/core/ids.js';
 import { resolveCapabilityDoctrine } from '../../../../src/systems/capabilityDoctrine.js';
 import { updateFogState } from '../../../../src/systems/fogSystem.js';

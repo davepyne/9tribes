@@ -8,6 +8,7 @@ import { createImprovementId, createUnitId } from '../../core/ids.js';
 import { hexToKey, hexDistance, getNeighbors, getHexesInRange } from '../../core/grid.js';
 import { isHexOccupied } from '../occupancySystem.js';
 import { resolveResearchDoctrine, prototypeHasComponent } from '../capabilityDoctrine.js';
+import { getNativeDomains } from '../../features/factions/types.js';
 import { addResearchProgress, addResearchProgressToNode, getNextResearchNodeForDomain, startResearch } from '../researchSystem.js';
 import { unlockHybridRecipes } from '../hybridSystem.js';
 import { deriveResourceIncome, getSupplyDeficit, advanceCaptureTimers } from '../economySystem.js';
@@ -351,7 +352,7 @@ export function applyEcologyResearchPass(
   let updatedFaction = faction;
 
   // Sort ecology domains by priority: native > learned > foreign with progress
-  const nativeDomains = new Set(faction.nativeDomains ?? [faction.nativeDomain ?? '']);
+  const nativeDomains = new Set(getNativeDomains(faction));
   const learnedSet = new Set(learnedDomains);
   const sortedDomains = [...allDomains].sort((a, b) => {
     const aNative = nativeDomains.has(a);

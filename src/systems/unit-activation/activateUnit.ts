@@ -49,13 +49,14 @@ import {
   BASTION_DECISION_SCORE,
   BASTION_ATTACK_MARGIN,
 } from './bastion.js';
-import { getMaelstromOpportunity, declareMaelstromIfEligible, MAELSTROM_DECISION_SCORE } from './maelstrom.js';
+import { getMaelstromOpportunity, MAELSTROM_DECISION_SCORE } from './maelstrom.js';
 import { findBestTargetChoice, findBestRangedTarget } from './targeting.js';
 import { performStrategicMovement } from './movement.js';
 import { RENDEZVOUS_READY_DISTANCE } from '../strategic-ai/rendezvous.js';
 import { isSettlerPrototype, getAvailableProductionPrototypes, getPrototypeQueueCost, queueUnit } from '../productionSystem.js';
 import { canSacrifice, performSacrifice } from '../sacrificeSystem.js';
 import { createCityId } from '../../core/ids.js';
+import { declareMaelstrom } from '../maelstromSystem.js';
 import { createCitySiteBonuses, findBestCitySiteForFaction, getSettlementOccupancyBlocker } from '../citySiteSystem.js';
 import { syncFactionSettlementIds } from '../factionOwnershipSystem.js';
 
@@ -449,7 +450,11 @@ export function activateUnit(
     && bestImmediateAttackScore < BASTION_ATTACK_MARGIN
   ) {
     const effectCount = current.zoneEffects.size;
-    current = declareMaelstromIfEligible(current, factionId, unitId, registry);
+    const activeUnitForMaelstrom = current.units.get(unitId)!;
+    const maelstromResult = declareMaelstrom(current, factionId, activeUnitForMaelstrom.position);
+    if (maelstromResult.declared) {
+      current = maelstromResult.state;
+    }
     if (current.zoneEffects.size > effectCount) {
       log(trace, `${faction.name} ${prototype.name} declared a Maelstrom (${maelstromOpportunity.reason})`);
       return { state: setUnitActivated(current, unitId), pendingCombat: null };

@@ -1,6 +1,7 @@
 import type { FactionId, ResearchNodeId, ComponentId } from '../types.js';
 import type { ResearchState } from '../features/research/types.js';
 import type { Faction } from '../features/factions/types.js';
+import { getNativeDomains } from '../features/factions/types.js';
 import type { HybridRecipeDef } from '../data/registry/types.js';
 import type { Prototype } from '../features/prototypes/types.js';
 import { getDomainProgression } from './domainProgression.js';
@@ -148,7 +149,7 @@ export function resolveResearchDoctrine(
   const completedNodes = researchState?.completedNodes ?? [];
   const learnedDomains = faction?.learnedDomains ?? [];
   const nativeDomain = faction?.nativeDomain ?? '';
-  const nativeDomains = new Set(faction?.nativeDomains ?? [nativeDomain]);
+  const nativeDomains = new Set(getNativeDomains(faction ?? { nativeDomain: '' }));
   const factionId = faction?.id;
   const bastionsBuilt = faction?.bastionsBuilt ?? 0;
   const maelstromsDeclared = faction?.maelstromsDeclared ?? 0;
@@ -161,7 +162,7 @@ export function resolveResearchDoctrine(
       && cached.completedNodesRef === completedNodes
       && cached.learnedDomainsRef === learnedDomains
       && cached.nativeDomain === nativeDomain
-      && cached.nativeDomainsRef === (faction?.nativeDomains ?? [nativeDomain])
+      && cached.nativeDomainsRef === faction?.nativeDomains
       && cached.bastionsBuilt === bastionsBuilt
       && cached.maelstromsDeclared === maelstromsDeclared
     ) {
@@ -287,7 +288,7 @@ export function resolveResearchDoctrine(
       completedNodesRef: completedNodes,
       learnedDomainsRef: learnedDomains,
       nativeDomain,
-      nativeDomainsRef: faction?.nativeDomains ?? [nativeDomain],
+      nativeDomainsRef: faction?.nativeDomains,
       bastionsBuilt,
       maelstromsDeclared,
       doctrine,

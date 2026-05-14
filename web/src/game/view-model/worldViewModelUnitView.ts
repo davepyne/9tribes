@@ -78,19 +78,11 @@ export function buildUnitView(
   const isInfantryOrRanged = prototype
     ? (thisChassisMovementClass(prototype?.chassisId, registry) === 'infantry' || prototype?.derivedStats?.role === 'ranged')
     : false;
-  const hasFortressT3 = unitFaction?.nativeDomain === 'fortress'
-    && (state.research.get(unit.factionId)?.completedNodes?.includes('fortress_t3' as ResearchNodeId) ?? false);
-  const underBastionCap = (unitFaction?.bastionsBuilt ?? 0) < 3;
-  const canBuildBastion = !!isHillClan && !!unitFaction && atFullMoves && !hasExistingImprovement
-    && isInfantryOrRanged && hasFortressT3 && underBastionCap;
+  const canBuildBastion = !!factionDoctrine?.canBuildBastion
+    && !!isHillClan && atFullMoves && !hasExistingImprovement && isInfantryOrRanged;
 
-  // Precompute Maelstrom declaration eligibility — faction has tidal_warfare T3,
-  // hasn't declared yet this game, and unit is on water terrain.
-  const hasTidalT3 = state.research.get(unit.factionId)
-    ?.completedNodes.includes('tidal_warfare_t3' as ResearchNodeId) ?? false;
-  const isOnWater = isWaterTerrain(tileTerrain);
-  const canDeclareMaelstrom = !!unitFaction && isOnWater && hasTidalT3
-    && (unitFaction.maelstromsDeclared ?? 0) < 1 && unit.status === 'ready' && unit.hp > 0;
+  const canDeclareMaelstrom = !!factionDoctrine?.canDeclareMaelstrom
+    && isWaterTerrain(tileTerrain) && unit.status === 'ready' && unit.hp > 0;
 
   const canDestroyFort = !!isHillClan && atFullMoves && improvementBonus > 0
     && !!prototype?.tags?.includes('engineer');

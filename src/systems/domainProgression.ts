@@ -1,4 +1,5 @@
 import type { Faction } from '../features/factions/types.js';
+import { getNativeDomains } from '../features/factions/types.js';
 import type { ResearchState } from '../features/research/types.js';
 
 export interface DomainProgression {
@@ -55,7 +56,7 @@ export function getDomainProgression(
 ): DomainProgression {
   const learnedDomains = Array.from(new Set(faction.learnedDomains ?? []));
   const completedNodes = getCompletedNodesSet(researchState);
-  const nativeSet = new Set(faction.nativeDomains ?? [faction.nativeDomain]);
+  const nativeSet = new Set(getNativeDomains(faction));
   const t1Domains: string[] = [];
   const t2Domains: string[] = [];
   const t3Domains: string[] = [];

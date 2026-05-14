@@ -108,3 +108,7 @@ export interface Faction {
 
 export type DomainAcquisitionMethod = 'native' | 'sacrifice' | 'ecology' | 'exposure' | 'absorption';
 
+export function getNativeDomains(faction: { nativeDomain: string; nativeDomains?: string[] }): string[] {
+  return faction.nativeDomains ?? [faction.nativeDomain];
+}
+
