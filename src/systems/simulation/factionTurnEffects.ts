@@ -1055,6 +1055,15 @@ export function processFactionPhases(
       (currentTerrainId === 'tundra' || currentTerrainId === 'hill')
         ? 1
         : 0;
+    // Nature Healing T1 regen + forest override
+    if (doctrine.natureHealingRegenBonus > 0) {
+      if (doctrine.forestRegenBonus > 0 && (terrainId === 'forest' || terrainId === 'jungle')) {
+        healRate += doctrine.forestRegenBonus;
+      } else {
+        healRate += doctrine.natureHealingRegenBonus;
+      }
+    }
+
     const poisonMovePenalty = unit.poisoned ? doctrine.poisonMovePenalty : 0;
     const staggerPenalty = unit.nextTurnMovePenalty ?? 0;
     const harshTerrainBonus = doctrine.heatResistanceEnabled && (currentTerrainId === 'desert' || currentTerrainId === 'tundra') ? 1 : 0;

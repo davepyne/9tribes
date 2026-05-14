@@ -75,6 +75,7 @@ export interface ResearchDoctrine {
   heavyTranscendenceEnabled: boolean;   // native heavy_hitter_t3 - 100% armor penetration
   armorPenetrationEnabled: boolean;     // foreign heavy_hitter_t3 - ignore 50% armor, units cannot be displaced
   natureHealingRegenBonus: number;    // nature_healing_t1/T3 - +1 HP/turn, or +3 HP/turn for native T3
+  forestRegenBonus: number;           // nature_healing_t1 - +3 regen on forest/jungle instead of +1
 }
 
 /**
@@ -235,6 +236,7 @@ export function resolveResearchDoctrine(
       : hasNode('nature_healing_t1')
         ? 1
         : 0,
+    forestRegenBonus: hasNode('nature_healing_t1') ? 3 : 0,
   };
 
   // Store in cache (auto-evict oldest if full)

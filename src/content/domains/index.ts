@@ -193,7 +193,7 @@ const NATURE_HEALING_RESEARCH = buildResearchDomain({
     type: 'forest_ambush',
     description: 'All friendly units regen +1 HP/turn; units ending turn on forest/jungle regen +3 HP instead. First-strike in forest terrain.',
     nativeDescription: 'Druid units also cleanse 1 poison stack per turn and shed 1 morale damage per turn.',
-    effect: { hpRegenerationBonus: 1, forestFirstStrike: true, forestRegenBonus: 3 }, // first two: wired; forestRegenBonus: design
+    effect: { hpRegenerationBonus: 1, forestFirstStrike: true, forestRegenBonus: 3 }, // all: wired
   },
   t2: {
     name: 'Living Forest',
