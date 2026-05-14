@@ -248,8 +248,8 @@ const HITRUN_RESEARCH = buildResearchDomain({
     nativeDescription: 'Steppe Killing Stride has NO damage penalty on chained attacks and may chain up to 3 kills in a single turn, so long as each link is a kill.',
     effect: {
       hitAndRunIgnoresZoc: true, // wired
-      killChainEnabled: true, // design
-      killChainDamageMultiplier: 0.6, // design (foreign = 60% damage on chained shots; native = 100%)
+      killChainEnabled: true, // wired
+      killChainDamageMultiplier: 0.6, // wired (foreign = 60% damage on chained shots; native = 100%)
       universalHitAndRunEnabled: true, // wired (legacy flag still used)
     },
   },

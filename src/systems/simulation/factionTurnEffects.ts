@@ -1084,6 +1084,7 @@ export function processFactionPhases(
       nextTurnMovePenalty: undefined,
       attackedTargetsThisTurn: [],
       lastStandUsedThisTurn: undefined,
+      killChainCountThisTurn: undefined,
     };
 
     let stealthUpdatedUnit = tickStealthCooldown(refreshedUnit);

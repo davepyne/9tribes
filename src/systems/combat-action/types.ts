@@ -148,6 +148,7 @@ export interface CombatActionResolution {
   emergentUndyingSaved: boolean;
   lastStandSaved: boolean;
   bleedApplied: boolean;
+  killChainApplied: boolean;
   emergentManyFacedStance: string;
   // Phase 3A/3B/3C: synergy effect resolution
   instantKillTriggered: boolean;

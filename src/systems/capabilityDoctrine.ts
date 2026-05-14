@@ -55,6 +55,8 @@ export interface ResearchDoctrine {
   damageReflectionEnabled: boolean;  // heavy_hitter_t2 - reflect 25% damage back to attackers
   nativeDamageReflectionEnabled: boolean; // heavy_hitter_t2 native - reflect 50% + stagger attacker
   hitAndRunEnabled: boolean;         // hitrun_t2 - cavalry can attack then retreat in same turn
+  killChainEnabled: boolean;         // hitrun_t3 foreign - follow-up attack at 60% damage after kill
+  nativeKillChainEnabled: boolean;   // hitrun_t3 native - follow-up at 100% damage, chain up to 3 kills
 
   // Phase 2 — Tribe Identity flags
   wetlandStealthEnabled: boolean;    // river_stealth_t1 - stealth on wetland end-of-turn
@@ -217,6 +219,8 @@ export function resolveResearchDoctrine(
     damageReflectionEnabled: hasNode('heavy_hitter_t2'),
     nativeDamageReflectionEnabled: hasNode('heavy_hitter_t2') && nativeDomain === 'heavy_hitter',
     hitAndRunEnabled: hasNode('hitrun_t2'),
+    killChainEnabled: hasNode('hitrun_t3'),
+    nativeKillChainEnabled: hasNativeT3('hitrun'),
 
     // Phase 2 — Tribe Identity flags
     wetlandStealthEnabled: hasNode('river_stealth_t1'),

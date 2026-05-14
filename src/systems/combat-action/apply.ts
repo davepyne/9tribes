@@ -121,6 +121,7 @@ export function applyCombatAction(
     emergentUndyingSaved: false,
     lastStandSaved: false,
     bleedApplied: false,
+    killChainApplied: false,
     emergentManyFacedStance: '',
     instantKillTriggered: false,
     stunApplied: 0,
@@ -597,6 +598,56 @@ export function applyCombatAction(
         position: defender.position,
       });
       current = { ...current, units: advancedUnits };
+    }
+  }
+
+  // Hitrun T3 — Killing Chain: follow-up attack after kill
+  if (
+    preview.result.defenderDestroyed
+    && !attackerActuallyDestroyed
+    && (attackerDoctrine?.killChainEnabled || attackerDoctrine?.nativeKillChainEnabled)
+  ) {
+    const chainUnit = current.units.get(preview.attackerId);
+    if (chainUnit && chainUnit.hp > 0) {
+      const attackRange = attackerPrototype.derivedStats.range ?? 1;
+      const maxChains = attackerDoctrine.nativeKillChainEnabled ? 3 : 1;
+      const currentChainCount = chainUnit.killChainCountThisTurn ?? 0;
+      if (currentChainCount < maxChains) {
+        // Find nearest enemy within attack range (excluding the already-killed defender)
+        let nearestEnemy: Unit | null = null;
+        let nearestDist = Infinity;
+        for (const [uid, u] of current.units) {
+          if (u.factionId === attacker.factionId || u.hp <= 0 || uid === preview.defenderId) continue;
+          const dist = hexDistance(chainUnit.position, u.position);
+          if (dist <= attackRange && dist < nearestDist) {
+            nearestDist = dist;
+            nearestEnemy = u;
+          }
+        }
+        if (nearestEnemy) {
+          const damageMultiplier = attackerDoctrine.nativeKillChainEnabled ? 1.0 : 0.6;
+          const chainDamage = Math.max(1, Math.floor(preview.result.defenderDamage * damageMultiplier));
+          const newHp = Math.max(0, nearestEnemy.hp - chainDamage);
+          const chainUnits = new Map(current.units);
+          chainUnits.set(nearestEnemy.id, { ...nearestEnemy, hp: newHp });
+          // If the chain killed the target, remove from factions
+          if (newHp <= 0) {
+            chainUnits.delete(nearestEnemy.id);
+            current = { ...current, units: chainUnits, factions: removeDeadUnitsFromFactions(current.factions, chainUnits) };
+          } else {
+            current = { ...current, units: chainUnits };
+          }
+          // Increment chain counter on attacker
+          const updatedChainUnit = current.units.get(preview.attackerId);
+          if (updatedChainUnit) {
+            current = writeUnitToState(current, {
+              ...updatedChainUnit,
+              killChainCountThisTurn: (updatedChainUnit.killChainCountThisTurn ?? 0) + 1,
+            });
+          }
+          baseResolution.killChainApplied = true;
+        }
+      }
     }
   }
 
@@ -1161,6 +1212,9 @@ export function applyCombatAction(
   if (pursuitMovementRestored > 0) {
     pushCombatEffect(triggeredEffects, 'Pursuit Movement', `Foraging riders pushed forward for +${pursuitMovementRestored} movement after the kill.`, 'aftermath');
   }
+  if (baseResolution.killChainApplied) {
+    pushCombatEffect(triggeredEffects, 'Killing Chain', 'Skirmisher chained a follow-up attack after the kill.', 'ability');
+  }
   if (emergentSustainHealApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Paladin Sustain', `Attacker recovered ${emergentSustainHealApplied} HP from damage dealt.`, 'aftermath');
   }
@@ -1230,6 +1284,7 @@ export function applyCombatAction(
       emergentUndyingSaved: baseResolution.emergentUndyingSaved,
       lastStandSaved: baseResolution.lastStandSaved,
       bleedApplied: baseResolution.bleedApplied,
+      killChainApplied: baseResolution.killChainApplied,
       emergentManyFacedStance: baseResolution.emergentManyFacedStance,
       instantKillTriggered: baseResolution.instantKillTriggered,
       stunApplied: baseResolution.stunApplied,

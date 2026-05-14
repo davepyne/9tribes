@@ -47,6 +47,7 @@ function resetFactionUnitsMoves(
         nextTurnMovePenalty: undefined,
         attackedTargetsThisTurn: [],
         lastStandUsedThisTurn: undefined,
+        killChainCountThisTurn: undefined,
       });
     }
   }

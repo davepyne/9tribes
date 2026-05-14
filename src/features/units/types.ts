@@ -67,6 +67,7 @@ export interface Unit {
   lastStandUsedThisTurn?: boolean;
   bleeding?: boolean;
   bleedTurnsRemaining?: number;
+  killChainCountThisTurn?: number;
   // Learn-by-kill system: abilities learned from killing enemy faction units
   learnedAbilities: LearnedAbility[];
   // Multi-turn move queue target; undefined = no active queue
