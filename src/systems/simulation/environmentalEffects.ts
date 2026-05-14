@@ -184,6 +184,18 @@ export function applyEnvironmentalDamage(
       died = updatedUnit.hp <= 0;
     }
 
+    if (!died && updatedUnit.bleeding && (updatedUnit.bleedTurnsRemaining ?? 0) > 0) {
+      updatedUnit = { ...updatedUnit, hp: Math.max(0, updatedUnit.hp - 1) };
+      const remaining = (updatedUnit.bleedTurnsRemaining ?? 1) - 1;
+      if (remaining <= 0) {
+        updatedUnit = { ...updatedUnit, bleeding: false, bleedTurnsRemaining: 0 };
+      } else {
+        updatedUnit = { ...updatedUnit, bleedTurnsRemaining: remaining };
+      }
+      log(trace, `${faction.name} ${current.prototypes.get(unit.prototypeId)?.name ?? 'unit'} suffers bleed (1 dmg, ${remaining} turns left)`);
+      died = updatedUnit.hp <= 0;
+    }
+
     if (!died && updatedUnit.frozen && (updatedUnit.frostbiteDoTDuration ?? 0) > 0 && (updatedUnit.frostbiteStacks ?? 0) > 0) {
       updatedUnit = { ...updatedUnit, hp: Math.max(0, updatedUnit.hp - (updatedUnit.frostbiteStacks ?? 0)) };
       const newDuration = (updatedUnit.frostbiteDoTDuration ?? 0) - 1;

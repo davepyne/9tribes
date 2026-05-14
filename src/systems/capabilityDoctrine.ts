@@ -47,6 +47,8 @@ export interface ResearchDoctrine {
   damageBonusVsElevationEnabled: boolean; // heavy_hitter_t1 - +20% damage vs enemies on hill/mountain
   permanentStealthEnabled: boolean;  // camel_adaptation_t2 - permanent stealth in desert/tundra
   stealthRechargeEnabled: boolean;   // river_stealth_t2 - re-enter stealth after attacking
+  predatorBleedEnabled: boolean;     // river_stealth_t2 - first attack from stealth applies bleed
+  persistentStealthOnAttackEnabled: boolean; // river_stealth_t2 native - attacks don't break stealth
   captureRetreatEnabled: boolean;    // slaving_t2 - 15% chance to capture wounded enemies on retreat
   damageReflectionEnabled: boolean;  // heavy_hitter_t2 - reflect 25% damage back to attackers
   nativeDamageReflectionEnabled: boolean; // heavy_hitter_t2 native - reflect 50% + stagger attacker
@@ -205,6 +207,8 @@ export function resolveResearchDoctrine(
     damageBonusVsElevationEnabled: hasNode('heavy_hitter_t1'),
     permanentStealthEnabled: hasNode('camel_adaptation_t2'),
     stealthRechargeEnabled: hasNode('river_stealth_t2'),
+    predatorBleedEnabled: hasNode('river_stealth_t2'),
+    persistentStealthOnAttackEnabled: hasNode('river_stealth_t2') && nativeDomain === 'river_stealth',
     captureRetreatEnabled: hasNode('slaving_t2'),
     damageReflectionEnabled: hasNode('heavy_hitter_t2'),
     nativeDamageReflectionEnabled: hasNode('heavy_hitter_t2') && nativeDomain === 'heavy_hitter',

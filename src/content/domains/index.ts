@@ -447,7 +447,7 @@ const RIVER_STEALTH_RESEARCH = buildResearchDomain({
     type: 'terrain_stealth',
     description: 'After attacking from rough terrain, the attacker re-enters stealth. First attack from stealth deals +50% damage and applies Bleed (-1 HP/turn for 3 turns).',
     nativeDescription: 'River People attacks from stealth DO NOT break stealth — the predator stays invisible.',
-    effect: { stealthInRoughTerrain: true, predatorStanceBleed: true, persistentStealthOnAttack: true }, // first: wired; rest: design
+    effect: { stealthInRoughTerrain: true, predatorStanceBleed: true, persistentStealthOnAttack: true }, // all: wired
   },
   t3: {
     name: 'Drowning Wake',

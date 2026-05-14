@@ -120,6 +120,7 @@ export function applyCombatAction(
     emergentSmiteApplied: 0,
     emergentUndyingSaved: false,
     lastStandSaved: false,
+    bleedApplied: false,
     emergentManyFacedStance: '',
     instantKillTriggered: false,
     stunApplied: 0,
@@ -292,7 +293,8 @@ export function applyCombatAction(
     const isEmergentTerrainStealth = preview.details.emergentPermanentStealthTerrains.length > 0
       && preview.details.emergentPermanentStealthTerrains.includes(preview.details.attackerTerrainId);
     const isRiverTerrainStealth = isUnitRiverStealthed(attackerFactionForDoctrine, preview.details.attackerTerrainId);
-    if (!isDesertStealth && !isEmergentTerrainStealth && !isRiverTerrainStealth) {
+    const isPersistentStealth = attackerDoctrine?.persistentStealthOnAttackEnabled === true;
+    if (!isDesertStealth && !isEmergentTerrainStealth && !isRiverTerrainStealth && !isPersistentStealth) {
       nextAttacker = { ...nextAttacker, isStealthed: false, turnsSinceStealthBreak: 1 };
     }
   }
@@ -301,6 +303,21 @@ export function applyCombatAction(
   }
   if (preview.braceTriggered && nextDefender.preparedAbility) {
     nextDefender = clearPreparedAbility(nextDefender);
+  }
+
+  // River Stealth T2 — Predator bleed: first attack from stealth applies bleed
+  if (
+    preview.attackerWasStealthed
+    && attackerDoctrine?.predatorBleedEnabled
+    && nextDefender.hp > 0
+    && !preview.result.defenderDestroyed
+  ) {
+    nextDefender = {
+      ...nextDefender,
+      bleeding: true,
+      bleedTurnsRemaining: 3,
+    };
+    baseResolution.bleedApplied = true;
   }
 
   let feedback: CombatActionFeedback = {
@@ -1048,6 +1065,9 @@ export function applyCombatAction(
   if (poisonApplied && updatedDefender) {
     pushCombatEffect(triggeredEffects, 'Poisoned', `Defender was poisoned for ${updatedDefender.poisonStacks} stack damage over time.`, 'aftermath');
   }
+  if (baseResolution.bleedApplied) {
+    pushCombatEffect(triggeredEffects, 'Predator Bleed', 'Stealth attack inflicted bleed (1 dmg/turn for 3 turns).', 'ability');
+  }
   if (reflectionDamageApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Reflection', `Defender reflected ${reflectionDamageApplied} damage back to the attacker.`, 'aftermath');
   }
@@ -1161,6 +1181,7 @@ export function applyCombatAction(
       emergentSmiteApplied: baseResolution.emergentSmiteApplied,
       emergentUndyingSaved: baseResolution.emergentUndyingSaved,
       lastStandSaved: baseResolution.lastStandSaved,
+      bleedApplied: baseResolution.bleedApplied,
       emergentManyFacedStance: baseResolution.emergentManyFacedStance,
       instantKillTriggered: baseResolution.instantKillTriggered,
       stunApplied: baseResolution.stunApplied,

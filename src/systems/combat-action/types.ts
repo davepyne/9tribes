@@ -147,6 +147,7 @@ export interface CombatActionResolution {
   emergentSmiteApplied: number;
   emergentUndyingSaved: boolean;
   lastStandSaved: boolean;
+  bleedApplied: boolean;
   emergentManyFacedStance: string;
   // Phase 3A/3B/3C: synergy effect resolution
   instantKillTriggered: boolean;
