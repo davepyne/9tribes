@@ -97,9 +97,11 @@ export function meetsRecipeResearchRequirements(
   return true;
 }
 
-// Module-level cache for resolveResearchDoctrine.
-// In production, completedNodes and learnedDomains are replaced via spread on mutation,
-// so reference equality is a valid invalidation signal.
+// Bounded cache for resolveResearchDoctrine.
+// Keyed by FactionId with reference-equality invalidation on completedNodes/learnedDomains.
+// Auto-evicts when full — bounded to 16 entries (well above the 9-faction game max),
+// so production never evicts, while test-created factions naturally cycle out.
+const MAX_CACHE_SIZE = 16;
 type DoctrineCacheEntry = {
   completedNodesRef: readonly string[];
   learnedDomainsRef: readonly string[];
@@ -107,11 +109,6 @@ type DoctrineCacheEntry = {
   doctrine: ResearchDoctrine;
 };
 const doctrineCache = new Map<FactionId, DoctrineCacheEntry>();
-
-/** Clear the doctrine cache. For use in test setup to prevent cross-test contamination. */
-export function clearDoctrineCache(): void {
-  doctrineCache.clear();
-}
 
 /**
  * Resolve the research doctrine for a faction based on completed research nodes.
@@ -224,8 +221,12 @@ export function resolveResearchDoctrine(
         : 0,
   };
 
-  // Store in cache
+  // Store in cache (auto-evict oldest if full)
   if (factionId) {
+    if (doctrineCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = doctrineCache.keys().next().value;
+      if (firstKey !== undefined) doctrineCache.delete(firstKey);
+    }
     doctrineCache.set(factionId, {
       completedNodesRef: completedNodes,
       learnedDomainsRef: learnedDomains,

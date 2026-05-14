@@ -4,11 +4,9 @@ import { previewCombatAction } from '../src/systems/combat-action/preview';
 import { applyCombatAction } from '../src/systems/combatActionSystem';
 import { applyEnvironmentalDamage } from '../src/systems/simulation/environmentalEffects';
 import { createResearchState } from '../src/systems/researchSystem';
-import { resolveResearchDoctrine, clearDoctrineCache } from '../src/systems/capabilityDoctrine';
+import { resolveResearchDoctrine } from '../src/systems/capabilityDoctrine';
 import { hexToKey } from '../src/core/grid';
 import type { GameState } from '../src/game/types';
-
-beforeEach(() => clearDoctrineCache());
 
 const registry = loadRulesRegistry();
 

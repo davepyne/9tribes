@@ -10,16 +10,13 @@ import pairSynergiesData from '../content/base/pair-synergies.json' with { type:
 import abilityDomainsData from '../content/base/ability-domains.json' with { type: 'json' };
 import emergentRulesData from '../content/base/emergent-rules.json' with { type: 'json' };
 
-let synergyEngine: SynergyEngine | null = null;
+const synergyEngine: SynergyEngine = new SynergyEngine(
+  pairSynergiesData.pairSynergies as PairSynergyConfig[],
+  emergentRulesData.rules as EmergentRuleConfig[],
+  Object.values(abilityDomainsData.domains) as DomainConfig[],
+);
 
 export function getSynergyEngine(): SynergyEngine {
-  if (!synergyEngine) {
-    synergyEngine = new SynergyEngine(
-      pairSynergiesData.pairSynergies as PairSynergyConfig[],
-      emergentRulesData.rules as EmergentRuleConfig[],
-      Object.values(abilityDomainsData.domains) as DomainConfig[],
-    );
-  }
   return synergyEngine;
 }
 
