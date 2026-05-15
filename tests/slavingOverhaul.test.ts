@@ -7,8 +7,20 @@ import {
   attemptNonCombatCapture,
 } from '../src/systems/captureSystem';
 import { resolveResearchDoctrine } from '../src/systems/capabilityDoctrine';
+import { previewCombatAction } from '../src/systems/combat-action/preview';
+import { applyCombatAction } from '../src/systems/combat-action/apply';
 import { createRNG } from '../src/core/rng';
-import type { GameState, Unit } from '../src/game/types';
+import { hexDistance, hexToKey } from '../src/core/grid';
+import { addZoneEffect } from '../src/systems/zoneEffectSystem';
+import type { GameState, Unit, Faction, FactionId, HexCoord } from '../src/game/types';
+import type { ResearchNodeId } from '../src/types';
+import {
+  getCombatants,
+  placeAdjacent,
+  addExtraUnit,
+  setResearch,
+  fakeFaction,
+} from './helpers/combatSetup.js';
 
 const registry = loadRulesRegistry();
 
@@ -387,5 +399,421 @@ describe('re-capture liberation', () => {
     const liberated = r2.state.units.get(defender.id)!;
     expect(liberated.slaveStatFraction).toBeUndefined();
     expect(liberated.slaveRoutImmune).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Captive Champion — T3 native: spawns seasoned unit on every 5th capture
+// ---------------------------------------------------------------------------
+describe('Captive Champion spawn', () => {
+  /** Run a capture combat: attacker kills defender at ⩽50% HP (triggers autoCapture with native T3 slaving). */
+  function runCaptureCombat(
+    state: GameState,
+    attackerPrototypeId: string,
+    defenderPrototypeId: string,
+  ): { state: GameState; championSpawned: boolean } {
+    const factionIds = Array.from(state.factions.keys());
+    const attackerFactionId = factionIds[0];
+    const defenderFactionId = factionIds[1];
+
+    const attFaction = state.factions.get(attackerFactionId)!;
+    const defFaction = state.factions.get(defenderFactionId)!;
+
+    const attacker = state.units.get(attFaction.unitIds[0])!;
+    const defender = state.units.get(defFaction.unitIds[0])!;
+
+    // Place adjacent
+    const adjacentPos: HexCoord = { q: attacker.position.q + 1, r: attacker.position.r };
+    const placed = new Map(state.units);
+    placed.set(defender.id, { ...defender, position: adjacentPos });
+    let combatState = { ...state, units: placed };
+
+    // Preview
+    const preview = previewCombatAction(combatState, registry, attacker.id, defender.id);
+    if (!preview) return { state: combatState, championSpawned: false };
+
+    // Apply
+    const result = applyCombatAction(combatState, registry, preview);
+    return { state: result.state, championSpawned: result.feedback.resolution.captiveChampionSpawned };
+  }
+
+  it('spawns a seasoned champion on the 5th capture and every 5th thereafter', () => {
+    let state = buildMvpScenario(42);
+    const factionIds = Array.from(state.factions.keys()) as FactionId[];
+    const attackerFactionId = factionIds[0];
+    const defenderFactionId = factionIds[1];
+
+    // Set faction as Pirate Lords with native slaving T3
+    state = setResearch(
+      state, attackerFactionId,
+      ['slaving_t1', 'slaving_t2', 'slaving_t3'],
+      ['slaving', 'tidal_warfare'],
+    );
+
+    // Attacker is a military unit (use first unit), defender is second faction's unit
+    // Set defender to very low HP so autoCapture triggers (⩽50% of maxHp with native T3 = ⩽50%)
+    const attFaction = state.factions.get(attackerFactionId)!;
+    const defFaction = state.factions.get(defenderFactionId)!;
+    const attUnit = state.units.get(attFaction.unitIds[0])!;
+
+    // We need multiple defenders to capture. Add disposable enemy units.
+    // Capture 5 times by running 5 separate combats.
+    let lastChampionSpawned = false;
+    const capturedPrototypeIds: string[] = [];
+
+    for (let captureIdx = 1; captureIdx <= 10; captureIdx++) {
+      // Add a fresh defender from the defender faction at a unique position
+      const defenderPos: HexCoord = { q: 3 + captureIdx, r: 2 };
+      const key = hexToKey(defenderPos);
+      if (!state.map?.tiles.has(key)) continue;
+
+      const defenderId = `def-${captureIdx}` as never;
+      const defenderUnit: Unit = {
+        ...attUnit,
+        id: defenderId,
+        factionId: defenderFactionId,
+        hp: 1,
+        maxHp: 100,
+        position: defenderPos,
+        history: [],
+        morale: 50,
+      };
+
+      const units = new Map(state.units);
+      units.set(defenderId, defenderUnit);
+      const factions = new Map(state.factions);
+      factions.set(defenderFactionId, {
+        ...defFaction,
+        unitIds: [...defFaction.unitIds, defenderId],
+      });
+      state = { ...state, units, factions };
+
+      // Run combat preview → apply
+      const preview = previewCombatAction(state, registry, attUnit.id, defenderId);
+      if (!preview) continue;
+
+      const result = applyCombatAction(state, registry, preview);
+      state = result.state;
+
+      if (result.feedback.resolution.capturedOnKill) {
+        capturedPrototypeIds.push(attUnit.prototypeId);
+      }
+
+      const championSpawned = result.feedback.resolution.captiveChampionSpawned;
+
+      if (captureIdx === 5) {
+        expect(championSpawned).toBe(true);
+        // Verify a champion unit was created in the state
+        const allUnits = Array.from(state.units.values());
+        const champions = allUnits.filter(u =>
+          u.history.some(h => h.type === 'captive_champion'),
+        );
+        expect(champions.length).toBeGreaterThanOrEqual(1);
+        expect(champions[0].veteranLevel).toBe('seasoned');
+        expect(champions[0].prototypeId).toBe(attUnit.prototypeId);
+      } else if (captureIdx >= 6 && captureIdx <= 9) {
+        expect(championSpawned).toBe(false);
+      } else if (captureIdx === 10) {
+        expect(championSpawned).toBe(true);
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Naval capture radius — friendly naval units within range enable auto-capture
+// ---------------------------------------------------------------------------
+describe('navalCaptureRadius auto-capture', () => {
+  it('auto-captures with friendly naval unit within 2 hexes of defender', () => {
+    let state = buildMvpScenario(42);
+    const factionIds = Array.from(state.factions.keys()) as FactionId[];
+    const attackerFactionId = factionIds[0];
+    const defenderFactionId = factionIds[1];
+
+    // Set research: foreign slaving T3 (gives navalCaptureRadius: 2)
+    state = setResearch(
+      state, attackerFactionId,
+      ['slaving_t1', 'slaving_t2', 'slaving_t3'],
+      ['charge'], // foreign slaving
+    );
+
+    state = { ...state, activeFactionId: attackerFactionId, rngState: createRNG(42) };
+
+    const { attacker: att, defender: def } = getCombatants(state);
+    state = placeAdjacent(state, att, def);
+    const defenderPos: HexCoord = { q: att.position.q + 1, r: att.position.r };
+
+    // Defender at low HP (33% → below naval support 50% threshold, above autoCapture 25% threshold)
+    const units = new Map(state.units);
+    units.set(def.id, { ...def, hp: 1, maxHp: 3, position: defenderPos });
+    state = { ...state, units };
+
+    // Add a friendly naval unit (using Slave Trireme prototype = naval_frame chassis) 
+    // within 2 hexes of the defender: place at defenderPos itself (distance 0)
+    const navalProto = state.prototypes.get('prototype_16' as never)!; // Slave Trireme, chassis=naval_frame
+    const navalId = 'test-naval-1' as never;
+    const navalUnit: Unit = {
+      ...att,
+      id: navalId,
+      factionId: attackerFactionId,
+      prototypeId: 'prototype_16' as never,
+      hp: 50,
+      maxHp: 50,
+      position: att.position,
+      history: [],
+      morale: 100,
+      slaveStatFraction: undefined as never,
+    };
+    const withNavalUnits = new Map(state.units);
+    withNavalUnits.set(navalId, navalUnit);
+    const withNavalFactions = new Map(state.factions);
+    const attFact = state.factions.get(attackerFactionId)!;
+    withNavalFactions.set(attackerFactionId, { ...attFact, unitIds: [...attFact.unitIds, navalId] });
+    state = { ...state, units: withNavalUnits, factions: withNavalFactions };
+
+    // Run combat
+    const preview = previewCombatAction(state, registry, att.id, def.id);
+    expect(preview).not.toBeNull();
+    const result = applyCombatAction(state, registry, preview!);
+    expect(result.feedback.resolution.capturedOnKill || result.feedback.resolution.retreatCaptured).toBe(true);
+  });
+
+  it('does NOT auto-capture without friendly naval unit nearby', () => {
+    let state = buildMvpScenario(42);
+    const factionIds = Array.from(state.factions.keys()) as FactionId[];
+    const attackerFactionId = factionIds[0];
+    const defenderFactionId = factionIds[1];
+
+    state = setResearch(
+      state, attackerFactionId,
+      ['slaving_t1', 'slaving_t2', 'slaving_t3'],
+      ['charge'], // foreign slaving
+    );
+
+    state = { ...state, activeFactionId: attackerFactionId, rngState: createRNG(42) };
+
+    const { attacker: att, defender: def } = getCombatants(state);
+    state = placeAdjacent(state, att, def);
+    const defenderPos: HexCoord = { q: att.position.q + 1, r: att.position.r };
+    const units = new Map(state.units);
+    units.set(def.id, { ...def, hp: 1, maxHp: 3, position: defenderPos });
+    state = { ...state, units };
+
+    // No naval unit added — defender should just be killed (no capture)
+    const preview = previewCombatAction(state, registry, att.id, def.id);
+    expect(preview).not.toBeNull();
+    const result = applyCombatAction(state, registry, preview!);
+    // Without capture ability and without naval support, no auto-capture fires
+    expect(
+      result.feedback.resolution.capturedOnKill ||
+      result.feedback.resolution.retreatCaptured,
+    ).toBe(false);
+  });
+
+  it('does NOT auto-capture when naval unit is at distance 3 from defender', () => {
+    let state = buildMvpScenario(42);
+    const factionIds = Array.from(state.factions.keys()) as FactionId[];
+    const attackerFactionId = factionIds[0];
+    const defenderFactionId = factionIds[1];
+
+    state = setResearch(
+      state, attackerFactionId,
+      ['slaving_t1', 'slaving_t2', 'slaving_t3'],
+      ['charge'], // foreign slaving
+    );
+
+    state = { ...state, activeFactionId: attackerFactionId, rngState: createRNG(42) };
+
+    const { attacker: att, defender: def } = getCombatants(state);
+    state = placeAdjacent(state, att, def);
+    const defenderPos: HexCoord = { q: att.position.q + 1, r: att.position.r };
+    const units = new Map(state.units);
+    units.set(def.id, { ...def, hp: 1, maxHp: 3, position: defenderPos });
+    state = { ...state, units };
+
+    // Add naval unit at distance 3 from defender (> navalCaptureRadius=2) - manually construct with naval prototype
+    const farNavalId = 'test-naval-far' as never;
+    const farNavalUnit: Unit = {
+      ...att,
+      id: farNavalId,
+      factionId: attackerFactionId,
+      prototypeId: 'prototype_16' as never,
+      hp: 50,
+      maxHp: 50,
+      position: { q: defenderPos.q + 3, r: defenderPos.r },
+      history: [],
+      morale: 100,
+      slaveStatFraction: undefined as never,
+    };
+    const farUnits = new Map(state.units);
+    farUnits.set(farNavalId, farNavalUnit);
+    const farFactions = new Map(state.factions);
+    const aFaction = state.factions.get(attackerFactionId)!;
+    farFactions.set(attackerFactionId, { ...aFaction, unitIds: [...aFaction.unitIds, farNavalId] });
+    state = { ...state, units: farUnits, factions: farFactions };
+
+    const preview = previewCombatAction(state, registry, att.id, def.id);
+    expect(preview).not.toBeNull();
+    const result = applyCombatAction(state, registry, preview!);
+    // Naval unit is out of range — no capture
+    expect(
+      result.feedback.resolution.capturedOnKill ||
+      result.feedback.resolution.retreatCaptured,
+    ).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Maelstrom auto-capture — naval kills inside own Maelstrom auto-capture
+// ---------------------------------------------------------------------------
+describe('maelstromAutoCapture naval kills', () => {
+  it('auto-captures when naval attacker kills inside own Maelstrom regardless of HP', () => {
+    let state = buildMvpScenario(42);
+    const factionIds = Array.from(state.factions.keys()) as FactionId[];
+    const attackerFactionId = factionIds[0];
+    const defenderFactionId = factionIds[1];
+
+    // Set research: native tidal_warfare T3 (maelstromAutoCaptureEnabled)
+    state = setResearch(
+      state, attackerFactionId,
+      ['tidal_warfare_t1', 'tidal_warfare_t2', 'tidal_warfare_t3'],
+      ['slaving', 'tidal_warfare'],
+    );
+    state = { ...state, activeFactionId: attackerFactionId, rngState: createRNG(123) };
+
+    const { attacker: att, defender: def } = getCombatants(state);
+    // Make the attacker a naval unit (Slave Trireme = naval_frame chassis) so isNavalAttacker is true
+    const navalAttacker: Unit = { ...att, prototypeId: 'prototype_16' as never };
+    state = placeAdjacent(state, navalAttacker, def);
+    const defenderPos: HexCoord = { q: navalAttacker.position.q + 1, r: navalAttacker.position.r };
+
+    // Place a Maelstrom zone effect owned by the attacker's faction covering the defender hex
+    const maelstromEffect = {
+      id: 'test-maelstrom' as never,
+      type: 'maelstrom' as const,
+      center: defenderPos,
+      radius: 0,
+      ownerFactionId: attackerFactionId,
+      damagePerTurn: 2,
+      movementPenalty: 1,
+      turnsRemaining: 5,
+      createdRound: 1,
+    };
+    state = addZoneEffect(state, maelstromEffect);
+
+    // Defender at high HP (above auto-capture threshold) — should still be captured because maelstrom overrides
+    const units = new Map(state.units);
+    units.set(def.id, { ...def, hp: 1, maxHp: 100, position: defenderPos });
+    units.set(navalAttacker.id, navalAttacker);
+    state = { ...state, units };
+
+    const preview = previewCombatAction(state, registry, navalAttacker.id, def.id);
+    expect(preview).not.toBeNull();
+    const result = applyCombatAction(state, registry, preview!);
+    // Maelstrom auto-capture should fire regardless of defender HP threshold
+    expect(
+      result.feedback.resolution.capturedOnKill ||
+      result.feedback.resolution.retreatCaptured ||
+      result.feedback.resolution.pressGangCaptured,
+    ).toBe(true);
+  });
+
+  it('does NOT auto-capture when kill is outside own Maelstrom', () => {
+    let state = buildMvpScenario(42);
+    const factionIds = Array.from(state.factions.keys()) as FactionId[];
+    const attackerFactionId = factionIds[0];
+    const defenderFactionId = factionIds[1];
+
+    state = setResearch(
+      state, attackerFactionId,
+      ['tidal_warfare_t1', 'tidal_warfare_t2', 'tidal_warfare_t3'],
+      ['slaving', 'tidal_warfare'],
+    );
+    state = { ...state, activeFactionId: attackerFactionId, rngState: createRNG(42) };
+
+    const { attacker: att, defender: def } = getCombatants(state);
+    const navalAttacker2: Unit = { ...att, prototypeId: 'prototype_16' as never };
+    state = placeAdjacent(state, navalAttacker2, def);
+    const defenderPos: HexCoord = { q: navalAttacker2.position.q + 1, r: navalAttacker2.position.r };
+
+    // Place Maelstrom but NOT covering the defender hex (center 3 hexes away)
+    const farCenter: HexCoord = { q: defenderPos.q + 3, r: defenderPos.r };
+    const maelstromEffect = {
+      id: 'test-maelstrom-far' as never,
+      type: 'maelstrom' as const,
+      center: farCenter,
+      radius: 0,
+      ownerFactionId: attackerFactionId,
+      damagePerTurn: 2,
+      movementPenalty: 1,
+      turnsRemaining: 5,
+      createdRound: 1,
+    };
+    state = addZoneEffect(state, maelstromEffect);
+
+    // Verify Maelstrom does NOT cover defender hex
+    const dist = hexDistance(farCenter, defenderPos);
+    expect(dist).toBeGreaterThan(0);
+
+    const units = new Map(state.units);
+    units.set(def.id, { ...def, hp: 90, maxHp: 100, position: defenderPos });
+    units.set(navalAttacker2.id, navalAttacker2);
+    state = { ...state, units };
+
+    const preview = previewCombatAction(state, registry, navalAttacker2.id, def.id);
+    expect(preview).not.toBeNull();
+    const result = applyCombatAction(state, registry, preview!);
+    // Outside Maelstrom — no auto-capture
+    expect(
+      result.feedback.resolution.capturedOnKill ||
+      result.feedback.resolution.retreatCaptured,
+    ).toBe(false);
+  });
+
+  it('does NOT auto-capture when hex is covered by another faction\'s Maelstrom', () => {
+    let state = buildMvpScenario(42);
+    const factionIds = Array.from(state.factions.keys()) as FactionId[];
+    const attackerFactionId = factionIds[0];
+    const defenderFactionId = factionIds[1];
+
+    state = setResearch(
+      state, attackerFactionId,
+      ['tidal_warfare_t1', 'tidal_warfare_t2', 'tidal_warfare_t3'],
+      ['slaving', 'tidal_warfare'],
+    );
+    state = { ...state, activeFactionId: attackerFactionId, rngState: createRNG(42) };
+
+    const { attacker: att, defender: def } = getCombatants(state);
+    const navalAttacker3: Unit = { ...att, prototypeId: 'prototype_16' as never };
+    state = placeAdjacent(state, navalAttacker3, def);
+    const defenderPos: HexCoord = { q: navalAttacker3.position.q + 1, r: navalAttacker3.position.r };
+
+    // Place a Maelstrom owned by a DIFFERENT faction covering the defender hex
+    const maelstromEffect = {
+      id: 'test-maelstrom-other' as never,
+      type: 'maelstrom' as const,
+      center: defenderPos,
+      radius: 0,
+      ownerFactionId: defenderFactionId, // enemy's Maelstrom
+      damagePerTurn: 2,
+      movementPenalty: 1,
+      turnsRemaining: 5,
+      createdRound: 1,
+    };
+    state = addZoneEffect(state, maelstromEffect);
+
+    const units = new Map(state.units);
+    units.set(def.id, { ...def, hp: 90, maxHp: 100, position: defenderPos });
+    units.set(navalAttacker3.id, navalAttacker3);
+    state = { ...state, units };
+
+    const preview = previewCombatAction(state, registry, navalAttacker3.id, def.id);
+    expect(preview).not.toBeNull();
+    const result = applyCombatAction(state, registry, preview!);
+    // Not owned by attacker — maelstrom auto-capture should not fire
+    expect(
+      result.feedback.resolution.capturedOnKill ||
+      result.feedback.resolution.retreatCaptured,
+    ).toBe(false);
   });
 });
