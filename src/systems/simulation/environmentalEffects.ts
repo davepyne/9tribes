@@ -6,7 +6,7 @@ import { getHealingBonus } from '../factionIdentitySystem.js';
 import { getHexOwner } from '../territorySystem.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { pruneDeadUnits } from '../combatActionSystem.js';
-import { getZoneEffectDamageOnHex } from '../zoneEffectSystem.js';
+import { getZoneEffectDamageOnHex, getZoneEffectsAtHex } from '../zoneEffectSystem.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { SimulationTrace } from './traceTypes.js';
 import { log } from './traceRecorder.js';
@@ -189,7 +189,11 @@ export function applyEnvironmentalDamage(
       const zoneDamage = getZoneEffectDamageOnHex(current, unit.position, faction.id);
       if (zoneDamage > 0) {
         updatedUnit = { ...updatedUnit, hp: Math.max(0, updatedUnit.hp - zoneDamage) };
-        log(trace, `${faction.name} ${current.prototypes.get(unit.prototypeId)?.name ?? 'unit'} suffers Toxic Bloom (${zoneDamage} dmg)`);
+        const effects = getZoneEffectsAtHex(current, unit.position)
+          .filter(e => e.ownerFactionId !== faction.id)
+          .map(e => e.type === 'toxic_bloom' ? 'Toxic Bloom' : 'Maelstrom');
+        const label = effects.length === 1 ? effects[0] : effects.join(' + ');
+        log(trace, `${faction.name} ${current.prototypes.get(unit.prototypeId)?.name ?? 'unit'} suffers ${label} (${zoneDamage} dmg)`);
         died = updatedUnit.hp <= 0;
       }
     }
