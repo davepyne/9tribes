@@ -114,12 +114,11 @@ function primitiveToResultFields(p: Record<string, unknown>): string[] {
       switch (p.status) {
         case 'poison': return ['poisonStacks'];
         case 'stun': return ['stunDuration'];
-        case 'formationCrush': return ['formationCrushStacks'];
-        case 'frostbite': return ['frostbiteStacks', 'frostbiteColdDoT', 'frostbiteSlow'];
+        case 'frostbite': return [];
         case 'armorBroken': return ['armorPiercing'];
         case 'stealth':
           return p.duration === 'permanent'
-            ? ['emergentPermanentStealth', 'emergentPermanentStealthTerrains']
+            ? ['emergentPermanentStealthTerrains']
             : [];
         default: return [];
       }
@@ -168,15 +167,6 @@ function primitiveToResultFields(p: Record<string, unknown>): string[] {
       const f: string[] = [verb];  // verb itself is always added to result.verbs
       switch (verb) {
         case 'positionSwap': f.push('positionSwapAvailable'); break;
-        case 'secondCharge':
-        case 'waiveChargeCooldown': f.push('chargeCooldownWaived'); break;
-        case 'retreatThroughImpassable': f.push('ghostPassActive'); break;
-        case 'opportunityStrikeOnDisengage': f.push('fightingRetreatFreeStrike'); break;
-        case 'fortUp': f.push('mobileStrongholdFortUp'); break;
-        case 'carryCaptured': f.push('caravanPassengerActive'); break;
-        case 'retreatToWater': f.push('beachRaidRetreatToWater'); break;
-        case 'reEnterStealth': f.push('reEnterStealthAfterCombat'); break;
-        case 'redeployOnKill': f.push('emergentKillChainRedeployRange'); break;
       }
       return f;
     }

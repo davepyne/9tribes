@@ -343,10 +343,6 @@ export function previewCombatAction(
   const synergyDefenseModifier = calculateSynergyDefenseBonus(defenderSynergyResult);
   situationalAttackModifier += synergyAttackModifier + attackerSynergyResult.getStat('damage');
   situationalDefenseModifier += synergyDefenseModifier + defenderSynergyResult.getStat('defense');
-  const coastalNomadDefense = attackerSynergyResult.getStat('coastalNomadDefense');
-  if (coastalNomadDefense > 0 && ['coast', 'river'].includes(attackerTerrainId)) {
-    situationalDefenseModifier += coastalNomadDefense;
-  }
   const beachRaidDamageBonus = attackerSynergyResult.getStat('beachRaidDamageBonus');
   if (beachRaidDamageBonus > 0 && isWaterTerrain(attackerTerrainId)) {
     situationalAttackModifier += beachRaidDamageBonus;
@@ -563,10 +559,6 @@ export function previewCombatAction(
   const aoeDamage = attackerSynergyResult.getStat('aoeDamage');
   if (aoeDamage > 0) {
     pushCombatEffect(triggeredEffects, 'AoE Burst', `Synergy area damage: ${aoeDamage} to adjacent enemies.`, 'synergy');
-  }
-  const formationCrushStacks = attackerSynergyResult.getStat('formationCrushStacks');
-  if (formationCrushStacks > 0) {
-    pushCombatEffect(triggeredEffects, 'Formation Crush', `Synergy adds ${formationCrushStacks} crush stack(s).`, 'synergy');
   }
   const sandstormAuraRadius = attackerSynergyResult.getStat('sandstormAuraRadius');
   if (sandstormAuraRadius > 0) {

@@ -11,18 +11,17 @@
 export type StatName =
   | 'damage' | 'defense' | 'knockbackDistance' | 'poisonStacks'
   | 'armorPiercing' | 'stunDuration' | 'damageReflection'
-  | 'healOnRetreatAmount' | 'sandstormDamage'
+  | 'sandstormDamage'
   | 'sandstormAccuracyDebuff' | 'aoeDamage' | 'witheringReduction'
   | 'poisonTrapDamage' | 'poisonTrapSlow' | 'chargeCaptureChance'
   | 'retreatCaptureChance' | 'navalCaptureBonus' | 'stealthCaptureBonus'
-  | 'coastalNomadDefense'
-  | 'heavyNavalRamDamage' | 'slaveHealAmount'
+  | 'heavyNavalRamDamage'
   | 'heavyRegenPercent' | 'sandstormAuraRadius'
-  | 'sandstormAuraDebuff' | 'slaveArmyDamageBonus'
-  | 'slaveArmyDefensePenalty' | 'slaveCoercionDamageBonus'
-  | 'heavyMassStacks' | 'multiplierStackValue' | 'dugInDefense'
-  | 'auraOverlapDefense' | 'stealthChargeMultiplier'
-  | 'formationCrushStacks' | 'formationFocusBonus'
+  | 'sandstormAuraDebuff'
+  | 'slaveCoercionDamageBonus'
+  | 'multiplierStackValue' | 'dugInDefense'
+  | 'stealthChargeMultiplier'
+  | 'formationFocusBonus'
   | 'formationChainBonus' | 'bloomPulseHeal' | 'bloomPulseSelfHeal'
   | 'bloomPulseAuraRadius' | 'bloomPulseMovementBonus'
   | 'bombardmentRange' | 'bombardmentDamageMultiplier'
@@ -37,22 +36,16 @@ export type StatName =
   | 'slaveHordeDamageBonus' | 'slaveHordeDefensePenalty'
   | 'capturePoisonDamage' | 'capturePoisonStacks'
   | 'slaveDamageBonus' | 'slaveHealPenalty'
-  // Status-derived numeric scalars (written by dispatchApplyStatus)
-  | 'frostbiteStacks' | 'frostbiteColdDoT' | 'frostbiteSlow'
   // Heal-primitive accumulators (written by dispatchHeal)
   | 'synergyFlatHeal' | 'synergyPercentHealMaxHp'
   // Emergent stat fields
   | 'emergentSustainHealPercent' | 'emergentSustainMinHp'
   | 'emergentSmiteBonus' | 'emergentCaptureBonus'
-  | 'emergentDesertCaptureBonus' | 'emergentPoisonPerHit'
+  | 'emergentPoisonPerHit'
   | 'emergentDamageReflection' | 'emergentKnockbackOnKill'
-  | 'emergentDamageBehindPercent' | 'emergentFreeReposition'
+  | 'emergentFreeReposition'
   | 'emergentArmorPierce' | 'emergentCaptureBelowHpPercent'
-  | 'emergentBonusDamageAdjacentWater' | 'emergentCrushZoneRadius'
-  | 'emergentCrushZoneMovementPenalty' | 'emergentManyFacedDefense'
-  | 'emergentManyFacedReflection' | 'emergentManyFacedDamage'
-  | 'emergentManyFacedRangeBonus' | 'emergentManyFacedMovementBonus'
-  | 'emergentKillChainRedeployRange'
+  | 'emergentBonusDamageAdjacentWater'
   | 'lethalAmbushPoison';
 
 export type FlagName =
@@ -63,14 +56,14 @@ export type FlagName =
   | 'fightingRetreatFreeStrike' | 'caravanPassengerActive'
   | 'mobileStrongholdFortUp' | 'formationFocusIgnoresDefense'
   | 'emergentUndying' | 'emergentIgnoreZoc'
-  | 'emergentPermanentStealth' | 'emergentPoisonCloudPreventsHealing'
+  | 'emergentPoisonCloudPreventsHealing'
   | 'reEnterStealthAfterCombat'
   | 'countsAsCity' | 'transportedTroopsStealth';
 
 export type StatusName =
   | 'poison' | 'stun' | 'slow' | 'stealth' | 'bleed'
   | 'armorBroken' | 'rage' | 'corruptionAura' | 'cleanse'
-  | 'decoy' | 'frostbite' | 'formationCrush';
+  | 'decoy' | 'frostbite';
 
 export type ActionName =
   | 'displacement' | 'retreat' | 'attackSource' | 'zoc'
@@ -80,13 +73,7 @@ export type ActionName =
   | 'revealNetworkOnKill' | 'heal';
 
 export type VerbName =
-  | 'secondCharge' | 'positionSwap' | 'reEnterStealth'
-  | 'retreatThroughImpassable' | 'waiveChargeCooldown'
-  | 'fortUp' | 'decamp' | 'terraform' | 'submerge'
-  | 'declareOasis' | 'carryCaptured' | 'relayMarch'
-  | 'phase' | 'redeployOnKill' | 'repositionAfterKill'
-  | 'opportunityStrikeOnDisengage' | 'shareVision'
-  | 'retreatToWater' | 'instantRetreatWithCaptive';
+  | 'positionSwap';
 
 export type EffectTypeName =
   | 'poisonTrap' | 'sandstorm' | 'contamination' | 'decoy'

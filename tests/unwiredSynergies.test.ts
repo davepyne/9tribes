@@ -74,7 +74,7 @@ describe('Unwired synergy dispatch verification', () => {
     it('hitrun+tidal_warfare (Coastal Raid) sets beachRaid fields', () => {
       const syn = makeSynergy('hitrun+tidal_warfare', [
         { kind: 'statMod', stat: 'beachRaidDamageBonus', op: 'set', value: 0.25 },
-        { kind: 'grantVerb', verb: 'retreatToWater' },
+        { kind: 'setFlag', flag: 'beachRaidRetreatToWater' },
         { kind: 'statMod', stat: 'damage', op: 'set', value: 0.25 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
@@ -225,7 +225,7 @@ describe('Unwired synergy dispatch verification', () => {
 
     it('camel_adaptation+slaving (Desert Slave Train) sets caravanPassengerActive', () => {
       const syn = makeSynergy('camel_adaptation+slaving', [
-        { kind: 'grantVerb', verb: 'carryCaptured' },
+        { kind: 'setFlag', flag: 'caravanPassengerActive' },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
       expect(result.hasFlag('caravanPassengerActive')).toBe(true);

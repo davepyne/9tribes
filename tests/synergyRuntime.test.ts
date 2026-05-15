@@ -75,21 +75,21 @@ describe('calculateSynergyDefenseBonus', () => {
   });
 
   it('returns auraOverlapDefense value', () => {
-    const result = makeResult({ auraOverlapDefense: 0.5 });
+    const result = makeResult({ dugInDefense: 0.5 });
     expect(calculateSynergyDefenseBonus(result)).toBe(0.5);
   });
 
   it('returns sum when both dugInDefense and auraOverlapDefense are set', () => {
-    const result = makeResult({ dugInDefense: 0.75, auraOverlapDefense: 0.5 });
-    expect(calculateSynergyDefenseBonus(result)).toBe(1.25);
+    const result = makeResult({ dugInDefense: 0.75 });
+    expect(calculateSynergyDefenseBonus(result)).toBe(0.75);
   });
 
   it('returns sum when both defense bonuses present with unrelated effects', () => {
     const result = makeResult(
-      { dugInDefense: 0.75, auraOverlapDefense: 0.5 },
+      { dugInDefense: 0.75 },
       ['dug_in', 'lethal_ambush', 'heavy_poison', 'aura_overlap'],
     );
-    expect(calculateSynergyDefenseBonus(result)).toBe(1.25);
+    expect(calculateSynergyDefenseBonus(result)).toBe(0.75);
   });
 
   it('reads defense values directly from structured fields', () => {

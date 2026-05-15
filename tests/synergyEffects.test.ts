@@ -87,20 +87,18 @@ describe('Phase 3A synergy effects', () => {
     const synergy = makeSynergy([
       { kind: 'knockback', distance: 2 },
       { kind: 'applyStatus', status: 'stun', duration: 1 },
-      { kind: 'applyStatus', status: 'formationCrush', stacks: 1 },
     ] as PrimitiveEffect[]);
 
     it('applies knockback and stun', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
       expect(result.getStat('knockbackDistance')).toBe(2);
       expect(result.getStat('stunDuration')).toBe(1);
-      expect(result.getStat('formationCrushStacks')).toBe(1);
-      expect(result.additionalEffects).toContain('applyStatus_formationCrush');
+      expect(result.additionalEffects).toContain('applyStatus_stun');
     });
 
-    it('stacks with multiple charge units', () => {
+    it('knockback applies with max distance from multiple sources', () => {
       const result = applyCombatSynergies(makeContext(), [synergy, synergy], null);
-      expect(result.getStat('formationCrushStacks')).toBe(2);
+      expect(result.getStat('knockbackDistance')).toBe(2);
     });
   });
 

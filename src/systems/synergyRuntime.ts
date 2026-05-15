@@ -48,5 +48,5 @@ export function calculateSynergyAttackBonus(result: SynergyCombatResult): number
 }
 
 export function calculateSynergyDefenseBonus(result: SynergyCombatResult): number {
-  return result.getStat('dugInDefense') + result.getStat('auraOverlapDefense');
+  return result.getStat('dugInDefense');
 }

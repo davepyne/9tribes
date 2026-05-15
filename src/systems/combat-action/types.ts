@@ -69,9 +69,7 @@ export interface CombatActionResolution {
   combatHealingApplied: number;
   sandstormTargetsHit: number;
   contaminatedHexApplied: boolean;
-  frostbiteApplied: boolean;
   hitAndRunTriggered: boolean;
-  healOnRetreatApplied: number;
   totalKnockbackDistance: number;
   pursuitDamageApplied: number;
   // Phase 4: emergent rule resolution
@@ -88,11 +86,9 @@ export interface CombatActionResolution {
   // Phase 3A/3B/3C: synergy effect resolution
   instantKillTriggered: boolean;
   stunApplied: number;
-  formationCrushApplied: number;
   synergyReflectionDamage: number;
   aoeTargetsHit: number;
   heavyRegenApplied: number;
-  slaveHealApplied: number;
   captureEscapePrevented: boolean;
   synergyCaptureBonus: number;
   chargeSplashTargetsHit: number;

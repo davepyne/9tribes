@@ -65,20 +65,13 @@ function dispatchApplyStatus(p: ApplyStatus, context: CombatContext, result: Syn
     case 'stun':
       maxStat(result, 'stunDuration', dur);
       break;
-    case 'formationCrush':
-      addToStat(result, 'formationCrushStacks', stacks);
-      break;
     case 'frostbite':
-      addToStat(result, 'frostbiteStacks', stacks);
-      addToStat(result, 'frostbiteColdDoT', stacks);
-      addToStat(result, 'frostbiteSlow', dur);
       break;
     case 'armorBroken':
       maxStat(result, 'armorPiercing', 1);
       break;
     case 'stealth':
       if (p.duration === 'permanent') {
-        result.flags.add('emergentPermanentStealth');
         const terrains = (p.fields?.terrains as string[] | undefined) ?? EMERGENT_PARAMS.terrain_assassin.terrainTypes;
         const existing = (result.data.get('emergentPermanentStealthTerrains') as string[] | undefined) ?? [];
         const merged = [...existing];
@@ -217,39 +210,6 @@ function dispatchGrantVerb(p: GrantVerb, context: CombatContext, result: Synergy
   switch (p.verb) {
     case 'positionSwap':
       result.flags.add('positionSwapAvailable');
-      break;
-    case 'secondCharge':
-    case 'waiveChargeCooldown':
-      result.flags.add('chargeCooldownWaived');
-      break;
-    case 'retreatThroughImpassable':
-      result.flags.add('ghostPassActive');
-      break;
-    case 'opportunityStrikeOnDisengage':
-      result.flags.add('fightingRetreatFreeStrike');
-      break;
-    case 'fortUp':
-      result.flags.add('mobileStrongholdFortUp');
-      break;
-    case 'carryCaptured':
-      result.flags.add('caravanPassengerActive');
-      break;
-    case 'retreatToWater':
-      result.flags.add('beachRaidRetreatToWater');
-      break;
-    case 'reEnterStealth':
-      result.flags.add('reEnterStealthAfterCombat');
-      break;
-    // Activation-phase verbs — recorded as granted but no combat-phase write
-    case 'submerge':
-    case 'declareOasis':
-    case 'relayMarch':
-    case 'repositionAfterKill':
-    case 'shareVision':
-    case 'instantRetreatWithCaptive':
-      break;
-    case 'redeployOnKill':
-      result.stats.set('emergentKillChainRedeployRange', p.range ?? EMERGENT_PARAMS.ghost_army.killChainRedeployRange);
       break;
   }
   result.additionalEffects.push(`grantVerb_${p.verb}`);

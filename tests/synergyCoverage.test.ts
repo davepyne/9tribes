@@ -15,9 +15,9 @@ import { runAudit } from '../scripts/auditSynergyCoverage.js';
  * grows.
  */
 const EXPECTED_COUNTS = {
-  dead: 13,
-  vestigial: 15,
-  orphan: 12,
+  dead: 0,
+  vestigial: 0,
+  orphan: 0,
   live: 92,
 } as const;
 

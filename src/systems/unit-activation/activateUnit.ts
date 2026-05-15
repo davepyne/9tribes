@@ -817,7 +817,7 @@ export function activateUnit(
     const carryTags = prototype?.tags ?? [];
     const carrySynergies = resolveEffectiveSynergies(faction, carryTags);
     const canCarry = carrySynergies.some(s =>
-      s.effects.some(e => e.kind === 'grantVerb' && (e as { verb: string }).verb === 'carryCaptured')
+      s.effects.some(e => e.kind === 'setFlag' && (e as { flag: string }).flag === 'caravanPassengerActive')
     );
     if (canCarry) {
       // Move slave units that were adjacent to the unit's pre-move position to be adjacent to the new position

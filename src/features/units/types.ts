@@ -54,11 +54,8 @@ export interface Unit {
   frostbiteStacks?: number;
   frostbiteDoTDuration?: number;
   stunDuration?: number;
-  formationCrushStacks?: number;
   accuracyDebuff?: number;
   witherReduction?: number;
-  slaveArmyDamageBonus?: number;
-  slaveArmyDefensePenalty?: number;
   slaveDamageBonus?: number;
   slaveHealPenalty?: number;
   captureEscapePrevented?: boolean;

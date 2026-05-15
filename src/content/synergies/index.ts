@@ -338,7 +338,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     domains: ['charge', 'hitrun'],
     requiredTags: ['elephant', 'skirmish'],
     effects: [
-      { kind: 'grantVerb', verb: 'secondCharge' },
+      { kind: 'setFlag', flag: 'chargeCooldownWaived' },
     ],
     description:
       'Units with charge can charge, retreat, and charge again in the same turn if they have enough movement points',
@@ -383,7 +383,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     requiredTags: ['elephant', 'stealth'],
     effects: [
       { kind: 'statMod', stat: 'damage', op: 'set', value: 0.5, condition: 'isCharge AND isStealthAttack' },
-      { kind: 'grantVerb', verb: 'waiveChargeCooldown', condition: 'isCharge AND isStealthAttack' },
+      { kind: 'setFlag', flag: 'chargeCooldownWaived', condition: 'isCharge AND isStealthAttack' },
     ],
     description:
       'Units with charge can initiate a charge from stealth. The charge deals +50% damage from surprise, but the attacker is revealed until their next turn',
@@ -465,7 +465,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     requiredTags: ['skirmish', 'naval'],
     effects: [
       { kind: 'statMod', stat: 'beachRaidDamageBonus', op: 'set', value: 0.25 },
-      { kind: 'grantVerb', verb: 'retreatToWater' },
+      { kind: 'setFlag', flag: 'beachRaidRetreatToWater' },
       { kind: 'statMod', stat: 'damage', op: 'set', value: 0.25 },
     ],
     description:
@@ -494,7 +494,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     domains: ['hitrun', 'river_stealth'],
     requiredTags: ['skirmish', 'stealth'],
     effects: [
-      { kind: 'grantVerb', verb: 'reEnterStealth', condition: 'isRetreat' },
+      { kind: 'setFlag', flag: 'reEnterStealthAfterCombat', condition: 'isRetreat' },
     ],
     description:
       'Stealth hit-and-run: after attacking from stealth, the unit automatically re-enters stealth at the retreat hex (no cooldown)',
@@ -535,7 +535,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     domains: ['hitrun', 'heavy_hitter'],
     requiredTags: ['skirmish', 'heavy'],
     effects: [
-      { kind: 'grantVerb', verb: 'opportunityStrikeOnDisengage' },
+      { kind: 'setFlag', flag: 'fightingRetreatFreeStrike' },
       { kind: 'statMod', stat: 'fightingRetreatDamageMultiplier', op: 'set', value: 1.0 },
     ],
     description:
@@ -780,7 +780,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Desert Slave Train',
     domains: ['camel_adaptation', 'slaving'],
     requiredTags: ['camel', 'capture'],
-    effects: [{ kind: 'grantVerb', verb: 'carryCaptured' }],
+    effects: [{ kind: 'setFlag', flag: 'caravanPassengerActive' }],
     description:
       'Captured units ride as passengers; the raider may release them anywhere along their path as instant slaves at home cities.',
     friendlyFlavor:
@@ -979,7 +979,6 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       { kind: 'statMod', stat: 'emergentPoisonPerHit', op: 'set', value: 1, condition: 'domain:venom' },
       { kind: 'statMod', stat: 'emergentDamageReflection', op: 'add', value: 0.3, condition: 'domain:fortress' },
       { kind: 'statMod', stat: 'emergentKnockbackOnKill', op: 'set', value: 1, condition: 'domain:charge' },
-      { kind: 'statMod', stat: 'emergentDamageBehindPercent', op: 'set', value: 0.5, condition: 'domain:charge' },
       { kind: 'statMod', stat: 'emergentFreeReposition', op: 'set', value: 1, condition: 'domain:hitrun' },
       { kind: 'statMod', stat: 'emergentArmorPierce', op: 'set', value: 0.5, condition: 'domain:heavy_hitter' },
       { kind: 'statMod', stat: 'emergentCaptureBelowHpPercent', op: 'set', value: 0.25, condition: 'domain:slaving' },
@@ -1058,8 +1057,6 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       '2-hex crushing zone deals 2 damage/turn and -1 movement to enemies inside. 50% damage reflection. Cannot be displaced. Ignores zone of control.',
     effects: [
       { kind: 'statMod', stat: 'damageReflection', op: 'set', value: 0.5 },
-      { kind: 'statMod', stat: 'emergentCrushZoneRadius', op: 'set', value: 3 },
-      { kind: 'statMod', stat: 'emergentCrushZoneMovementPenalty', op: 'set', value: 1 },
       { kind: 'preventAction', action: 'displacement' },
       { kind: 'setFlag', flag: 'emergentIgnoreZoc' },
     ],
@@ -1081,18 +1078,13 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
         collectMode: 'pickOne',
         modes: {
           bulwark: [
-            { kind: 'statMod', stat: 'emergentManyFacedDefense', op: 'set', value: 0.4 },
-            { kind: 'statMod', stat: 'emergentManyFacedReflection', op: 'set', value: 0.25 },
             { kind: 'statMod', stat: 'defense', op: 'add', value: 0.4 },
             { kind: 'statMod', stat: 'damageReflection', op: 'add', value: 0.25 },
           ],
           predator: [
-            { kind: 'statMod', stat: 'emergentManyFacedDamage', op: 'set', value: 0.4 },
-            { kind: 'statMod', stat: 'emergentManyFacedRangeBonus', op: 'set', value: 1 },
             { kind: 'statMod', stat: 'damage', op: 'multiply', value: 1.4 },
           ],
           phantom: [
-            { kind: 'statMod', stat: 'emergentManyFacedMovementBonus', op: 'set', value: 1 },
             { kind: 'setFlag', flag: 'emergentIgnoreZoc' },
           ],
         },

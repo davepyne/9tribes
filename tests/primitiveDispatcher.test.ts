@@ -144,9 +144,9 @@ describe('applyStatus', () => {
     expect(r.getStat('stunDuration')).toBe(1);
   });
 
-  it('applies formation crush stacks', () => {
-    const r = resolve([{ kind: 'applyStatus', status: 'formationCrush', stacks: 1 }]);
-    expect(r.getStat('formationCrushStacks')).toBe(1);
+  it('applies frostbite status', () => {
+    const r = resolve([{ kind: 'applyStatus', status: 'frostbite', stacks: 2 }]);
+    expect(r.statuses).toEqual([expect.objectContaining({ name: 'frostbite', stacks: 2 })]);
   });
 
   it('respects condition: isStealthAttack', () => {
@@ -269,8 +269,8 @@ describe('grantVerb', () => {
     expect(r.hasVerb('positionSwap')).toBe(true);
   });
 
-  it('grants waiveChargeCooldown', () => {
-    const r = resolve([{ kind: 'grantVerb', verb: 'waiveChargeCooldown' }]);
+  it('setFlag sets chargeCooldownWaived', () => {
+    const r = resolve([{ kind: 'setFlag', flag: 'chargeCooldownWaived' }]);
     expect(r.hasFlag('chargeCooldownWaived')).toBe(true);
   });
 });

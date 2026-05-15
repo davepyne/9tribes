@@ -157,9 +157,7 @@ export function applyCombatAction(
     combatHealingApplied: 0,
     sandstormTargetsHit: 0,
     contaminatedHexApplied: false,
-    frostbiteApplied: false,
     hitAndRunTriggered: false,
-    healOnRetreatApplied: 0,
     totalKnockbackDistance: 0,
     pursuitDamageApplied: 0,
     emergentSustainHealApplied: 0,
@@ -174,11 +172,9 @@ export function applyCombatAction(
     emergentManyFacedStance: '',
     instantKillTriggered: false,
     stunApplied: 0,
-    formationCrushApplied: 0,
     synergyReflectionDamage: 0,
     aoeTargetsHit: 0,
     heavyRegenApplied: 0,
-    slaveHealApplied: 0,
     captureEscapePrevented: false,
     synergyCaptureBonus: 0,
     chargeSplashTargetsHit: 0,
@@ -616,9 +612,8 @@ export function applyCombatAction(
     && defender.hp <= defender.maxHp * emergentCaptureBelowHpPercent
     ? { greedyCaptureChance: 1, greedyCaptureCooldown: 0, greedyCaptureHpFraction: emergentCaptureBelowHpPercent }
     : null;
-  // E3/E4 — emergent capture bonus from Slave Empire (+0.20) and Desert Raider (+0.30 in desert)
-  const emergentCaptureBonus = atk.getStat('emergentCaptureBonus')
-    + (preview.details.defenderTerrainId === 'desert' ? atk.getStat('emergentDesertCaptureBonus') : 0);
+  // E3/E4 — emergent capture bonus from Slave Empire (+0.20)
+  const emergentCaptureBonus = atk.getStat('emergentCaptureBonus');
   // Phase 3B — synergy capture bonuses
   let synergyCaptureBonus = 0;
   if (preview.details.isChargeAttack) synergyCaptureBonus += atk.getStat('chargeCaptureChance');
@@ -978,7 +973,7 @@ export function applyCombatAction(
 
   let totalKnockbackDistance = 0;
   let knockbackCollisionDamage = 0;
-  const effectiveKnockback = preview.details.totalKnockbackDistance + atk.getStat('heavyMassStacks');
+  const effectiveKnockback = preview.details.totalKnockbackDistance;
   const collisionDmg = atk.getStat('formationPinballCollisionDamage');
   if (effectiveKnockback > 0 && !defenderActuallyDestroyed && !retreatCaptured) {
     const knockbackResult = applyKnockbackDistance(current, preview.attackerId, preview.defenderId, effectiveKnockback, collisionDmg);
@@ -1106,19 +1101,6 @@ export function applyCombatAction(
           hitAndRunRetreat: { unitId: repositionAttacker.id, to: retreatHex },
         };
       }
-    }
-  }
-
-  // Ghost army kill-chain redeploy: after a kill, attacker can reposition anywhere
-  if (atk.getStat('emergentKillChainRedeployRange') > 0 && defenderActuallyDestroyed) {
-    const redeployAttacker = current.units.get(preview.attackerId);
-    if (redeployAttacker && redeployAttacker.hp > 0) {
-      current = writeUnitToState(current, {
-        ...redeployAttacker,
-        movesRemaining: redeployAttacker.maxMoves,
-        attacksRemaining: Math.max(redeployAttacker.attacksRemaining, 1),
-        status: 'ready',
-      });
     }
   }
 
@@ -1415,17 +1397,6 @@ export function applyCombatAction(
     }
   }
   updatedAttacker = current.units.get(preview.attackerId);
-  let healOnRetreatApplied = 0;
-  const healOnRetreatAmount = atk.getStat('healOnRetreatAmount');
-  if (hitAndRunTriggered && healOnRetreatAmount > 0 && updatedAttacker) {
-    healOnRetreatApplied = healOnRetreatAmount;
-    current = writeUnitToState(current, {
-      ...updatedAttacker,
-      hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + healOnRetreatApplied),
-    });
-  }
-
-  updatedAttacker = current.units.get(preview.attackerId);
   let combatHealingApplied = 0;
   const combatHealingEffect = atk.additionalEffects.find((effectCode) => effectCode.includes('combat_healing'));
   if (combatHealingEffect && updatedAttacker) {
@@ -1455,17 +1426,6 @@ export function applyCombatAction(
       });
       baseResolution.heavyRegenApplied = regenAmount;
     }
-  }
-
-  // Phase 3C — Slave healing: flat heal from slave synergy
-  updatedAttacker = current.units.get(preview.attackerId);
-  const slaveHealAmount = atk.getStat('slaveHealAmount');
-  if (slaveHealAmount > 0 && updatedAttacker && updatedAttacker.hp > 0) {
-    current = writeUnitToState(current, {
-      ...updatedAttacker,
-      hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + slaveHealAmount),
-    });
-    baseResolution.slaveHealApplied = slaveHealAmount;
   }
 
   updatedDefender = current.units.get(preview.defenderId);
@@ -1520,19 +1480,6 @@ export function applyCombatAction(
   }
 
   updatedDefender = current.units.get(preview.defenderId);
-  let frostbiteApplied = false;
-  const frostbiteColdDoT = atk.getStat('frostbiteColdDoT');
-  const frostbiteSlow = atk.getStat('frostbiteSlow');
-  if (frostbiteColdDoT > 0 && updatedDefender && !defenderActuallyDestroyed && !retreatCaptured) {
-    frostbiteApplied = true;
-    current = writeUnitToState(current, {
-      ...updatedDefender,
-      frozen: true,
-      frostbiteStacks: frostbiteColdDoT,
-      frostbiteDoTDuration: 3,
-      movesRemaining: Math.max(0, updatedDefender.movesRemaining - frostbiteSlow),
-    });
-  }
 
   // Phase 3A — Stun: reduce defender moves for N turns
   updatedDefender = current.units.get(preview.defenderId);
@@ -1544,16 +1491,6 @@ export function applyCombatAction(
       movesRemaining: 0,
     });
     baseResolution.stunApplied = stunDuration;
-  }
-
-  // Phase 3A — Formation Crush: apply crush stacks to defender
-  const formationCrushStacks = atk.getStat('formationCrushStacks');
-  if (formationCrushStacks > 0 && updatedDefender && !defenderActuallyDestroyed && updatedDefender.hp > 0) {
-    current = writeUnitToState(current, {
-      ...updatedDefender,
-      formationCrushStacks: (updatedDefender.formationCrushStacks ?? 0) + formationCrushStacks,
-    });
-    baseResolution.formationCrushApplied = formationCrushStacks;
   }
 
   // Phase 3C — Sandstorm aura: accuracy debuff on adjacent enemies
@@ -1596,27 +1533,6 @@ export function applyCombatAction(
       ...updatedDefender,
       witherReduction: witheringReduction,
     });
-  }
-
-  // Phase 3C — Slave Army: buff nearby allied units with damage bonus / defense penalty
-  updatedAttacker = current.units.get(preview.attackerId);
-  const slaveArmyDamageBonus = atk.getStat('slaveArmyDamageBonus');
-  const slaveArmyDefensePenalty = atk.getStat('slaveArmyDefensePenalty');
-  if (updatedAttacker && (slaveArmyDamageBonus > 0 || slaveArmyDefensePenalty > 0)) {
-    const armyUnits = new Map(current.units);
-    for (const adjHex of getNeighbors(updatedAttacker.position)) {
-      const adjUnitId = getUnitAtHex(current, adjHex);
-      if (!adjUnitId) continue;
-      const adjUnit = armyUnits.get(adjUnitId);
-      if (adjUnit && adjUnit.factionId === attacker.factionId && adjUnit.hp > 0) {
-        armyUnits.set(adjUnitId, {
-          ...adjUnit,
-          slaveArmyDamageBonus: (adjUnit.slaveArmyDamageBonus ?? 0) + slaveArmyDamageBonus,
-          slaveArmyDefensePenalty: (adjUnit.slaveArmyDefensePenalty ?? 0) + slaveArmyDefensePenalty,
-        });
-      }
-    }
-    current = { ...current, units: armyUnits };
   }
 
   // Synergy heal primitives (flat + % max HP)
@@ -1748,17 +1664,11 @@ export function applyCombatAction(
   if (contaminatedHexApplied) {
     pushCombatEffect(triggeredEffects, 'Contamination', 'The defender hex became contaminated after the strike.', 'aftermath');
   }
-  if (frostbiteApplied) {
-    pushCombatEffect(triggeredEffects, 'Frostbite', `Defender took ${frostbiteColdDoT} cold DoT and ${frostbiteSlow} slow.`, 'aftermath');
-  }
   if (hitAndRunTriggered && poisonTrapPositionsRaw.length > 0) {
     pushCombatEffect(triggeredEffects, 'Poison Trap', 'Attacker left a poison trap on the retreat path.', 'aftermath');
   }
   if (hitAndRunTriggered) {
     pushCombatEffect(triggeredEffects, 'Hit And Run', 'Attacker disengaged after combat to avoid being pinned.', 'aftermath');
-  }
-  if (healOnRetreatApplied > 0) {
-    pushCombatEffect(triggeredEffects, 'Retreat Heal', `Attacker recovered ${healOnRetreatApplied} HP while withdrawing.`, 'aftermath');
   }
   if (pursuitDamageApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Pursuit', `Skirmisher pressed the advantage for +${pursuitDamageApplied} bonus damage.`, 'aftermath');
@@ -1831,9 +1741,6 @@ export function applyCombatAction(
   if (baseResolution.stunApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Stun', `Synergy stunned the defender for ${baseResolution.stunApplied} turn(s).`, 'synergy');
   }
-  if (baseResolution.formationCrushApplied > 0) {
-    pushCombatEffect(triggeredEffects, 'Formation Crush', `Synergy applied ${baseResolution.formationCrushApplied} crush stack(s).`, 'synergy');
-  }
   if (baseResolution.synergyReflectionDamage > 0) {
     pushCombatEffect(triggeredEffects, 'Synergy Reflection', `Synergy reflected ${baseResolution.synergyReflectionDamage} damage.`, 'synergy');
   }
@@ -1842,9 +1749,6 @@ export function applyCombatAction(
   }
   if (baseResolution.heavyRegenApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Heavy Regeneration', `Synergy regenerated ${baseResolution.heavyRegenApplied} HP.`, 'synergy');
-  }
-  if (baseResolution.slaveHealApplied > 0) {
-    pushCombatEffect(triggeredEffects, 'Slave Healing', `Synergy healed ${baseResolution.slaveHealApplied} HP.`, 'synergy');
   }
 
   if (baseResolution.saplingApplied) {
@@ -1871,9 +1775,7 @@ export function applyCombatAction(
       combatHealingApplied,
       sandstormTargetsHit,
       contaminatedHexApplied,
-      frostbiteApplied,
       hitAndRunTriggered,
-      healOnRetreatApplied,
       totalKnockbackDistance,
       pursuitDamageApplied,
       emergentSustainHealApplied: baseResolution.emergentSustainHealApplied,
@@ -1888,11 +1790,9 @@ export function applyCombatAction(
       emergentManyFacedStance: baseResolution.emergentManyFacedStance,
       instantKillTriggered: baseResolution.instantKillTriggered,
       stunApplied: baseResolution.stunApplied,
-      formationCrushApplied: baseResolution.formationCrushApplied,
       synergyReflectionDamage: baseResolution.synergyReflectionDamage,
       aoeTargetsHit: baseResolution.aoeTargetsHit,
       heavyRegenApplied: baseResolution.heavyRegenApplied,
-      slaveHealApplied: baseResolution.slaveHealApplied,
       captureEscapePrevented: baseResolution.captureEscapePrevented,
       synergyCaptureBonus: baseResolution.synergyCaptureBonus,
       chargeSplashTargetsHit: baseResolution.chargeSplashTargetsHit,
