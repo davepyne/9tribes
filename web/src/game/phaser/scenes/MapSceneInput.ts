@@ -216,6 +216,7 @@ export class MapSceneInput {
 
   handleHexClick(state: ClientState, q: number, r: number, pointer?: Phaser.Input.Pointer): void {
     if (this.isAnimating()) return;
+    if (state.playFeedback?.aiProcessing) return;
     if (MapSceneInput.isRightClick(pointer)) return;
 
     if (MapSceneInput.isCtrlClick(pointer)) {
@@ -255,6 +256,7 @@ export class MapSceneInput {
 
   handleUnitSelection(state: ClientState, unitId: string, pointer?: Phaser.Input.Pointer): void {
     if (this.isAnimating()) return;
+    if (state.playFeedback?.aiProcessing) return;
 
     const unit = state.world.units.find((entry) => entry.id === unitId);
     if (!unit) {
@@ -291,6 +293,7 @@ export class MapSceneInput {
 
   handleCitySelection(state: ClientState, cityId: string, pointer?: Phaser.Input.Pointer): void {
     if (this.isAnimating()) return;
+    if (state.playFeedback?.aiProcessing) return;
 
     const city = state.world.cities.find((entry) => entry.id === cityId);
     if (!city) {

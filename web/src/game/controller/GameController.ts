@@ -479,8 +479,9 @@ export class GameController {
     if (next) {
       this.combatPendingListener?.(next);
     } else {
-      // AI fully done — re-emit so any view-model state that depends on
-      // aiProcessing/activeFactionId refreshes for the human turn.
+      // AI fully done — clear any stale selection from AI turn, then re-emit
+      // so view-model state refreshes for the human turn.
+      this.clearSelectionIfInactive();
       this.emit();
     }
   }
