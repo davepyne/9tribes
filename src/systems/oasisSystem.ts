@@ -13,7 +13,7 @@ import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import { setTerrainInRadius } from './terrainMutationSystem.js';
 import { isLandTerrain } from './terrainUtils.js';
 
-const OASIS_RADIUS = 2;
+export const OASIS_RADIUS = 2;
 
 export interface DeclareOasisResult {
   state: GameState;

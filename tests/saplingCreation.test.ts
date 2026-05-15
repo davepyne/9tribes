@@ -1,4 +1,3 @@
-// Tests for Nature Healing T3 native Sapling Creation mechanic
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
 import { previewCombatAction } from '../src/systems/combat-action/preview';
@@ -7,20 +6,18 @@ import { resolveResearchDoctrine } from '../src/systems/capabilityDoctrine';
 import { createRNG } from '../src/core/rng';
 import type { FactionId } from '../src/game/types';
 import type { ResearchNodeId } from '../src/types';
-import { getCombatants, placeAdjacent, setResearch } from './helpers/combatSetup';
+import { fakeFaction, getCombatants, placeAdjacent, setResearch } from './helpers/combatSetup';
 import { hexToKey } from '../src/core/grid';
+import { setTerrainAt } from '../src/systems/terrainMutationSystem';
 import type { HistoryEntry } from '../src/features/units/types';
 
 const registry = loadRulesRegistry();
 
-// ---------------------------------------------------------------------------
-// Doctrine resolution
-// ---------------------------------------------------------------------------
 describe('sapling creation doctrine flags', () => {
   it('nature_healing T3 native enables saplingOnKillEnabled', () => {
     const doctrine = resolveResearchDoctrine(
       { completedNodes: ['nature_healing_t1', 'nature_healing_t2', 'nature_healing_t3'] as ResearchNodeId[], activeNodeId: undefined },
-      { nativeDomain: 'nature_healing', nativeDomains: ['nature_healing'], learnedDomains: ['nature_healing'], id: 'test' as FactionId, bastionsBuilt: 0, maelstromsDeclared: 0, slaveCaptureCount: 0 },
+      fakeFaction(['nature_healing']),
     );
     expect(doctrine.saplingOnKillEnabled).toBe(true);
   });
@@ -28,7 +25,7 @@ describe('sapling creation doctrine flags', () => {
   it('nature_healing T3 foreign does NOT enable saplingOnKillEnabled', () => {
     const doctrine = resolveResearchDoctrine(
       { completedNodes: ['nature_healing_t1', 'nature_healing_t2', 'nature_healing_t3'] as ResearchNodeId[], activeNodeId: undefined },
-      { nativeDomain: 'charge', nativeDomains: ['charge'], learnedDomains: ['charge', 'nature_healing'], id: 'test' as FactionId, bastionsBuilt: 0, maelstromsDeclared: 0, slaveCaptureCount: 0 },
+      fakeFaction(['charge']),
     );
     expect(doctrine.saplingOnKillEnabled).toBe(false);
   });
@@ -36,35 +33,20 @@ describe('sapling creation doctrine flags', () => {
   it('no nature_healing T3 — flag false', () => {
     const doctrine = resolveResearchDoctrine(
       { completedNodes: ['nature_healing_t1', 'nature_healing_t2'] as ResearchNodeId[], activeNodeId: undefined },
-      { nativeDomain: 'nature_healing', nativeDomains: ['nature_healing'], learnedDomains: ['nature_healing'], id: 'test' as FactionId, bastionsBuilt: 0, maelstromsDeclared: 0, slaveCaptureCount: 0 },
+      fakeFaction(['nature_healing']),
     );
     expect(doctrine.saplingOnKillEnabled).toBe(false);
   });
 });
 
-// ---------------------------------------------------------------------------
-// Helper: set terrain at a position
-// ---------------------------------------------------------------------------
-function setTerrainAt(state: ReturnType<typeof buildMvpScenario>, pos: { q: number; r: number }, terrain: string) {
-  const tiles = new Map(state.map!.tiles);
-  const key = hexToKey(pos);
-  tiles.set(key, { ...tiles.get(key)!, terrain });
-  return { ...state, map: { ...state.map!, tiles } };
-}
-
-// ---------------------------------------------------------------------------
-// Combat behavior
-// ---------------------------------------------------------------------------
 describe('sapling creation combat behavior', () => {
   function setupKillCombat(extraSetup?: (state: ReturnType<typeof buildMvpScenario>, attackerFactionId: FactionId, defenderFactionId: FactionId) => ReturnType<typeof buildMvpScenario>) {
     let state = buildMvpScenario(42);
     const { attacker, defender, attackerFactionId, defenderFactionId } = getCombatants(state);
     state = placeAdjacent(state, attacker, defender);
 
-    // Enable nature_healing T3 native for attacker
     state = setResearch(state, attackerFactionId, ['nature_healing_t1', 'nature_healing_t2', 'nature_healing_t3'], ['nature_healing']);
 
-    // Set defender to low HP so attacker kills it
     const updatedDefender = state.units.get(defender.id)!;
     const units = new Map(state.units);
     units.set(updatedDefender.id, { ...updatedDefender, hp: 1 });
@@ -77,19 +59,22 @@ describe('sapling creation combat behavior', () => {
   }
 
   it('kill converts defender hex to forest', () => {
-    const { state, defenderFactionId } = setupKillCombat();
+    const { state, defenderFactionId } = setupKillCombat((s, _afid, dfid) => {
+      const units = Array.from(s.units.values());
+      const defenderUnit = units.find(u => u.factionId === dfid)!;
+      const defKey = hexToKey(defenderUnit.position);
+      const tile = s.map!.tiles.get(defKey)!;
+      if (tile.terrain === 'forest') {
+        return setTerrainAt(s, defenderUnit.position, 'plains');
+      }
+      return s;
+    });
     const units = Array.from(state.units.values());
     const attackerUnit = units.find(u => u.factionId !== defenderFactionId)!;
     const defenderUnit = units.find(u => u.factionId === defenderFactionId)!;
 
-    // Ensure defender hex is not already forest
     const defKey = hexToKey(defenderUnit.position);
-    const tileBefore = state.map!.tiles.get(defKey)!;
-    if (tileBefore.terrain === 'forest') {
-      const tiles = new Map(state.map!.tiles);
-      tiles.set(defKey, { ...tileBefore, terrain: 'plains' });
-      // mutate state reference directly since we already captured it
-    }
+    expect(state.map!.tiles.get(defKey)!.terrain).not.toBe('forest');
 
     const preview = previewCombatAction(state, registry, attackerUnit.id, defenderUnit.id);
     expect(preview).not.toBeNull();
@@ -110,23 +95,19 @@ describe('sapling creation combat behavior', () => {
 
     const units = Array.from(state.units.values());
     const attackerUnit = units.find(u => u.factionId !== defenderFactionId)!;
-    const defenderUnit = units.find(u => u.factionId === defenderFactionId)!;
 
-    const preview = previewCombatAction(state, registry, attackerUnit.id, defenderUnit.id);
+    const preview = previewCombatAction(state, registry, attackerUnit.id, units.find(u => u.factionId === defenderFactionId)!.id);
     const result = applyCombatAction(state, registry, preview!);
 
-    // HP bonus still applies even though terrain was already forest
     expect(result.feedback.resolution.saplingApplied).toBe(true);
     expect(result.feedback.resolution.saplingMaxHpBonus).toBe(1);
 
     const updatedAttacker = result.state.units.get(attackerUnit.id);
     expect(updatedAttacker!.maxHp).toBe(attackerUnit.maxHp + 1);
-    // HP is post-combat (attacker may have taken damage), but maxHp definitely increased
     expect(updatedAttacker!.hp).toBeGreaterThan(0);
   });
 
   it('HP bonus capped at +3 lifetime', () => {
-    // Pre-seed attacker with 3 sapling kills in history
     const { state, defenderFactionId } = setupKillCombat((s, afid, _dfid) => {
       const units = new Map(s.units);
       const attacker = Array.from(units.values()).find(u => u.factionId === afid)!;
@@ -146,13 +127,11 @@ describe('sapling creation combat behavior', () => {
     const preview = previewCombatAction(state, registry, attackerUnit.id, defenderUnit.id);
     const result = applyCombatAction(state, registry, preview!);
 
-    // Sapling terrain conversion still fires
     expect(result.feedback.resolution.saplingApplied).toBe(true);
-    // But no HP bonus (already at cap)
     expect(result.feedback.resolution.saplingMaxHpBonus).toBe(0);
 
     const updatedAttacker = result.state.units.get(attackerUnit.id);
-    expect(updatedAttacker!.maxHp).toBe(attackerUnit.maxHp); // unchanged
+    expect(updatedAttacker!.maxHp).toBe(attackerUnit.maxHp);
   });
 
   it('does not trigger for foreign T3', () => {
@@ -160,7 +139,6 @@ describe('sapling creation combat behavior', () => {
     const { attacker, defender, attackerFactionId, defenderFactionId } = getCombatants(state);
     state = placeAdjacent(state, attacker, defender);
 
-    // Enable nature_healing T3 as FOREIGN (native domain is 'charge', not 'nature_healing')
     state = setResearch(state, attackerFactionId, ['nature_healing_t1', 'nature_healing_t2', 'nature_healing_t3'], ['charge']);
 
     const updatedDefender = state.units.get(defender.id)!;
@@ -186,7 +164,6 @@ describe('sapling creation combat behavior', () => {
 
     state = setResearch(state, attackerFactionId, ['nature_healing_t1', 'nature_healing_t2', 'nature_healing_t3'], ['nature_healing']);
 
-    // Set attacker to 1 HP so it dies in combat
     const updatedAttacker = state.units.get(attacker.id)!;
     const units = new Map(state.units);
     units.set(updatedAttacker.id, { ...updatedAttacker, hp: 1 });
@@ -198,7 +175,6 @@ describe('sapling creation combat behavior', () => {
 
     const preview = previewCombatAction(state, registry, attackerUnit.id, defenderUnit.id);
 
-    // Only test if attacker actually dies
     if (preview?.result.attackerDestroyed) {
       const result = applyCombatAction(state, registry, preview!);
       expect(result.feedback.resolution.saplingApplied).toBe(false);

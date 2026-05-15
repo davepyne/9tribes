@@ -1,6 +1,7 @@
 import { buildMvpScenario } from '../../../../src/game/buildMvpScenario.js';
 import { MVP_SCENARIO_CONFIG } from '../../../../src/game/scenarios/mvp.js';
 import type { GameState, UnitId } from '../../../../src/game/types.js';
+import type { HexCoord } from '../../../../src/types.js';
 import { createCityId } from '../../../../src/core/ids.js';
 import { hexDistance, hexToKey } from '../../../../src/core/grid.js';
 import { loadRulesRegistry } from '../../../../src/data/loader/loadRulesRegistry.js';
@@ -33,7 +34,7 @@ import { buildPendingCombat, type PendingCombat } from './combatSession.js';
 export type { PendingCombat } from './combatSession.js';
 import { clearMoveQueueOnUnit, executeQueuedMovesForUnit } from './moveQueueSession.js';
 import { buildReachableMoves } from './movementExplorer.js';
-import { refreshFogForAllFactions, updateSiegeState, getBastionBuildEligibility, buildBastionAtUnit, getFortDestroyEligibility, destroyFortAtUnit, getPrototypeCost, getAiUnitIds, getPrototypeName, getActiveFactionName, hasCaptureAbility, canPriestSummon, attemptPriestSummon, getMaelstromDeclareEligibility, declareMaelstromAtUnit, getOasisDeclareEligibility, declareOasisAtUnit } from './sessionUtils.js';
+import { refreshFogForAllFactions, updateSiegeState, getBastionBuildEligibility, buildBastionAtUnit, getFortDestroyEligibility, destroyFortAtUnit, getPrototypeCost, getAiUnitIds, getPrototypeName, getActiveFactionName, hasCaptureAbility, canPriestSummon, attemptPriestSummon, getMaelstromDeclareEligibility, declareMaelstromAtUnit, getOasisDeclareEligibility, declareOasisAtUnit, executeSubmergeAtUnit } from './sessionUtils.js';
 import type { GameAction, EnemySynergyIntelMap } from '../types/clientState';
 import pairSynergiesData from '../../../../src/content/base/pair-synergies.json';
 import type { ReplayCombatEvent } from '../types/replay';
@@ -377,6 +378,10 @@ export class GameSession {
       case 'declare_oasis':
         this.takeUndoSnapshot();
         this.applyDeclareOasis(action.unitId);
+        return;
+      case 'submerge':
+        this.takeUndoSnapshot();
+        this.applySubmerge(action.unitId, action.destination);
         return;
       case 'destroy_fort':
         this.takeUndoSnapshot();
@@ -1104,6 +1109,18 @@ export class GameSession {
     this.feedback.lastMove = null;
     this.feedback.lastTurnChange = null;
     this.record('turn', `${getPrototypeName(this.state, unit.prototypeId)} proclaimed an Oasis at ${unit.position.q},${unit.position.r}.`);
+  }
+
+  private applySubmerge(unitId: string, destination: HexCoord) {
+    const unit = this.state.units.get(unitId as UnitId);
+    if (!unit || !this.state.activeFactionId || unit.factionId !== this.state.activeFactionId) {
+      return;
+    }
+
+    this.state = executeSubmergeAtUnit(this.state, unit, destination);
+    this.feedback.lastMove = { unitId, destination };
+    this.feedback.lastTurnChange = null;
+    this.record('turn', `${getPrototypeName(this.state, unit.prototypeId)} Submerged to ${destination.q},${destination.r}.`);
   }
 
   private applyDestroyFort(unitId: string) {

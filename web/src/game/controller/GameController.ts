@@ -8,6 +8,7 @@ import { getVictoryStatus, getAliveFactions, isFactionEliminated } from '../../.
 import { findPath } from '../../../../src/systems/pathfinder.js';
 import { getUnit, getFaction, hasUnit, asUnitId, asFactionId } from '../stateAccess.js';
 import { getValidDisembarkHexes, isTransportUnit } from '../../../../src/systems/transportSystem.js';
+import { getConnectedWaterway } from '../../../../src/systems/submergeSystem.js';
 
 type Listener = () => void;
 
@@ -25,7 +26,7 @@ export class GameController {
   private combatPendingListener: ((pending: PendingCombat) => void) | null = null;
   private selected: ClientSelection = null;
   private focusedUnitId: string | null = null;
-  private targetingMode: 'move' | 'attack' | 'disembark' = 'move';
+  private targetingMode: 'move' | 'attack' | 'disembark' | 'submerge' = 'move';
   private hoveredKey: string | null = null;
   private zoom = 1.1;
   private productionPopupCityId: string | null = null;
@@ -140,6 +141,7 @@ export class GameController {
       case 'build_bastion':
       case 'declare_maelstrom':
       case 'declare_oasis':
+      case 'submerge':
       case 'destroy_fort':
       case 'summon_unit':
         if (this.session) {
@@ -308,6 +310,16 @@ export class GameController {
       }
     }
 
+    const submergeHexes = (() => {
+      if (this.targetingMode !== 'submerge' || !activeUnitId) return [];
+      const unit = getUnit(sessionState, activeUnitId);
+      if (!unit) return [];
+      return getConnectedWaterway(sessionState, unit.position).map(h => ({
+        key: `${h.q},${h.r}`, q: h.q, r: h.r,
+        cost: 1, movesRemainingAfterMove: 0, path: [{ q: h.q, r: h.r }],
+      }));
+    })();
+
     const world = buildWorldViewModel({
       kind: 'play',
       state: sessionState,
@@ -316,6 +328,7 @@ export class GameController {
       reachableHexes: this.targetingMode === 'move' ? legalMoves : [],
       attackHexes: this.targetingMode === 'attack' ? attackTargets : [],
       disembarkHexes: this.targetingMode === 'disembark' ? disembarkHexes : [],
+      submergeHexes,
       pathPreview,
       queuedPath: queuedPathDisplay,
       lastMove: feedback.lastMove,
@@ -337,6 +350,7 @@ export class GameController {
         legalMoves,
         attackTargets,
         disembarkHexes: this.targetingMode === 'disembark' ? disembarkHexes : [],
+        submergeHexes: this.targetingMode === 'submerge' ? submergeHexes : [],
         pathPreview,
         canEndTurn: Boolean(sessionState.activeFactionId),
         interactionHint: describePlayHint(world, activeUnitId, this.targetingMode, legalMoves.length, attackTargets.length),
@@ -519,7 +533,7 @@ function buildPathPreview(
 function describePlayHint(
   world: ClientState['world'],
   selectedUnitId: string | null,
-  targetingMode: 'move' | 'attack' | 'disembark',
+  targetingMode: 'move' | 'attack' | 'disembark' | 'submerge',
   legalMoveCount: number,
   attackTargetCount: number,
 ) {
@@ -538,6 +552,10 @@ function describePlayHint(
 
   if (targetingMode === 'disembark') {
     return 'Disembark mode. Click a highlighted hex to land one unit. Press Esc to cancel.';
+  }
+
+  if (targetingMode === 'submerge') {
+    return 'Submerge mode. Right-click a highlighted water hex to teleport in stealth. Press Esc to cancel.';
   }
 
   if (targetingMode === 'attack') {

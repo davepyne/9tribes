@@ -52,6 +52,8 @@ import {
 import { getMaelstromOpportunity, MAELSTROM_DECISION_SCORE } from './maelstrom.js';
 import { getOasisOpportunity, OASIS_DECISION_SCORE } from './oasis.js';
 import { declareOasis } from '../oasisSystem.js';
+import { getSubmergeOpportunity, SUBMERGE_DECISION_SCORE } from './submerge.js';
+import { executeSubmerge } from '../submergeSystem.js';
 import { findBestTargetChoice, findBestRangedTarget } from './targeting.js';
 import { performStrategicMovement } from './movement.js';
 import { RENDEZVOUS_READY_DISTANCE } from '../strategic-ai/rendezvous.js';
@@ -475,6 +477,21 @@ export function activateUnit(
     if (oasisResult.declared) {
       current = oasisResult.state;
       log(trace, `${faction.name} ${prototype.name} proclaimed an Oasis (${oasisOpportunity.reason})`);
+      return { state: setUnitActivated(current, unitId), pendingCombat: null };
+    }
+  }
+
+  // Submerge: River Stealth T3 native — teleport to connected waterway hex in stealth.
+  const submergeOpp = getSubmergeOpportunity(current, factionId, unitId, registry);
+  if (
+    submergeOpp
+    && submergeOpp.score >= SUBMERGE_DECISION_SCORE
+    && bestImmediateAttackScore < BASTION_ATTACK_MARGIN
+  ) {
+    const submergeResult = executeSubmerge(current, factionId, unitId, submergeOpp.destination);
+    if (submergeResult.submerged) {
+      current = submergeResult.state;
+      log(trace, `${faction.name} ${prototype.name} Submerged to ${submergeOpp.destination.q},${submergeOpp.destination.r} (${submergeOpp.reason})`);
       return { state: setUnitActivated(current, unitId), pendingCombat: null };
     }
   }

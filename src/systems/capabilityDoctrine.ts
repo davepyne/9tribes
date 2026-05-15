@@ -91,6 +91,7 @@ export interface ResearchDoctrine {
   healingAuraUpgradeEnabled: boolean; // foreign nature_healing_t3 - healing aura range doubled to 2 hexes
   roughTerrainDefenseEnabled: boolean; // foreign camel_adaptation_t3 - units in rough terrain gain +20% defense
   navalCoastalBonusEnabled: boolean;  // foreign tidal_warfare_t3 - naval units gain +25% attack in coastal hexes
+  submergeEnabled: boolean;           // native river_stealth_t3 - unit may teleport to a connected waterway hex and enter stealth
   stealthCloakAuraEnabled: boolean;   // native river_stealth_t3 - stealthed units cloak adjacent allies, who also gain sneak attack
   stealthRevealEnabled: boolean;      // foreign river_stealth_t3 - stealth units reveal stealthed enemies within 2 hexes
   autoCaptureEnabled: boolean;        // foreign slaving_t3 - wounded enemies below 25% HP are auto-captured
@@ -296,6 +297,7 @@ export function resolveResearchDoctrine(
     healingAuraUpgradeEnabled: hasForeignT3('nature_healing'),
     roughTerrainDefenseEnabled: hasForeignT3('camel_adaptation'),
     navalCoastalBonusEnabled: hasForeignT3('tidal_warfare'),
+    submergeEnabled: hasNativeT3('river_stealth'),
     stealthCloakAuraEnabled: hasNativeT3('river_stealth'),
     stealthRevealEnabled: hasForeignT3('river_stealth'),
     autoCaptureEnabled: hasForeignT3('slaving'),

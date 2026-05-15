@@ -7,6 +7,7 @@ import { resolveResearchDoctrine } from '../capabilityDoctrine.js';
 import { isLandTerrain } from '../terrainUtils.js';
 import { hexToKey } from '../../core/grid.js';
 import { countFriendlyUnitsNearHex, countEnemyUnitsNearHex } from './helpers.js';
+import { OASIS_RADIUS } from '../oasisSystem.js';
 
 interface OasisOpportunity {
   score: number;
@@ -14,7 +15,6 @@ interface OasisOpportunity {
 }
 
 const OASIS_DECISION_SCORE = 8;
-const OASIS_RADIUS = 2;
 
 export { OASIS_DECISION_SCORE };
 
@@ -26,10 +26,15 @@ export function getOasisOpportunity(
 ): OasisOpportunity | null {
   const faction = state.factions.get(factionId);
   const unit = state.units.get(unitId);
+
+  if (!faction || faction.oasisDeclared > 0 || !unit) {
+    return null;
+  }
+
   const research = state.research.get(factionId);
   const doctrine = resolveResearchDoctrine(research, faction);
 
-  if (!faction || !unit || !doctrine.canDeclareOasis) {
+  if (!doctrine.canDeclareOasis) {
     return null;
   }
   if (unit.hp <= 0 || unit.status !== 'ready') {

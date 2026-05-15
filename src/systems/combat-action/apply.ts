@@ -31,7 +31,6 @@ import {
   updateCombatRecordOnLoss,
   updateCombatRecordOnWin,
   addHistoryEntry,
-  getHistoryByType,
 } from '../historySystem.js';
 
 import { setTerrainAt } from '../terrainMutationSystem.js';
@@ -1180,7 +1179,7 @@ export function applyCombatAction(
     }
   }
 
-  // Sapling (Nature Healing T3 native): kill converts defender hex to forest, attacker gains +1 maxHp (cap 3)
+  // Sapling: Nature Healing T3 native — cap +3 lifetime
   let saplingMaxHpBonus = 0;
   if (
     defenderActuallyDestroyed
@@ -1188,15 +1187,15 @@ export function applyCombatAction(
     && nextAttacker.hp > 0
   ) {
     current = setTerrainAt(current, defender.position, 'forest');
-    updatedAttacker = current.units.get(preview.attackerId);
-    if (updatedAttacker) {
-      const saplingKills = getHistoryByType(updatedAttacker, 'sapling_kill').length;
-      if (saplingKills < 3) {
-        updatedAttacker = addHistoryEntry(updatedAttacker, 'sapling_kill', { hex: defender.position }, current.round);
-        updatedAttacker = { ...updatedAttacker, maxHp: updatedAttacker.maxHp + 1, hp: updatedAttacker.hp + 1 };
-        current = writeUnitToState(current, updatedAttacker);
-        saplingMaxHpBonus = 1;
-      }
+    let saplingKillCount = 0;
+    for (const entry of nextAttacker.history ?? []) {
+      if (entry.type === 'sapling_kill' && ++saplingKillCount >= 3) break;
+    }
+    if (saplingKillCount < 3) {
+      updatedAttacker = addHistoryEntry(nextAttacker, 'sapling_kill', { hex: defender.position }, current.round);
+      updatedAttacker = { ...updatedAttacker, maxHp: updatedAttacker.maxHp + 1, hp: updatedAttacker.hp + 1 };
+      current = writeUnitToState(current, updatedAttacker);
+      saplingMaxHpBonus = 1;
     }
     baseResolution.saplingApplied = true;
     baseResolution.saplingMaxHpBonus = saplingMaxHpBonus;

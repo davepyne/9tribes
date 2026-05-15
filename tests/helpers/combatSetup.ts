@@ -83,5 +83,6 @@ export const fakeFaction = (nativeDomains: string[]): Faction => ({
   learnedDomains: nativeDomains,
   bastionsBuilt: 0,
   maelstromsDeclared: 0,
+  oasisDeclared: 0,
   slaveCaptureCount: 0,
 } as Faction);

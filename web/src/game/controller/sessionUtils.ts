@@ -15,6 +15,7 @@ import { hasCaptureAbility } from '../../../../src/systems/captureSystem.js';
 import { canPriestSummon, attemptPriestSummon } from '../../../../src/systems/summonSystem.js';
 import { declareMaelstrom } from '../../../../src/systems/maelstromSystem.js';
 import { declareOasis } from '../../../../src/systems/oasisSystem.js';
+import { executeSubmerge } from '../../../../src/systems/submergeSystem.js';
 import type { RulesRegistry } from '../../../../src/data/registry/types.js';
 
 // ---------------------------------------------------------------------------
@@ -207,6 +208,15 @@ export function declareOasisAtUnit(
   unit: Unit,
 ): GameState {
   const result = declareOasis(state, unit.factionId as import('../../../../src/types.js').FactionId, unit.position);
+  return result.state;
+}
+
+export function executeSubmergeAtUnit(
+  state: GameState,
+  unit: Unit,
+  destination: HexCoord,
+): GameState {
+  const result = executeSubmerge(state, unit.factionId as import('../../../../src/types.js').FactionId, unit.id as import('../../../../src/types.js').UnitId, destination);
   return result.state;
 }
 

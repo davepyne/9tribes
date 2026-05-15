@@ -10,13 +10,14 @@ type CommandTrayProps = {
   onBuildBastion?: (unitId: string) => void;
   onDeclareMaelstrom?: (unitId: string) => void;
   onDeclareOasis?: (unitId: string) => void;
+  onSubmerge?: (unitId: string) => void;
   onDestroyFort?: (unitId: string) => void;
   onBuildCity?: (unitId: string) => void;
   onSummon?: (unitId: string) => void;
   onSacrifice?: (unitId: string) => void;
 };
 
-export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildBastion, onDeclareMaelstrom, onDeclareOasis, onDestroyFort, onBuildCity, onSummon, onSacrifice }: CommandTrayProps) {
+export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildBastion, onDeclareMaelstrom, onDeclareOasis, onSubmerge, onDestroyFort, onBuildCity, onSummon, onSacrifice }: CommandTrayProps) {
   const selectedUnitId = state.selected?.type === 'unit' ? state.selected.unitId : state.actions.selectedUnitId;
   const selectedUnit = selectedUnitId
     ? state.world.units.find((u) => u.id === selectedUnitId)
@@ -27,6 +28,7 @@ export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, o
   const canBuildBastion = selectedUnit?.canBuildBastion ?? false;
   const canDeclareMaelstrom = selectedUnit?.canDeclareMaelstrom ?? false;
   const canDeclareOasis = selectedUnit?.canDeclareOasis ?? false;
+  const canSubmerge = selectedUnit?.canSubmerge ?? false;
   const canDestroyFort = selectedUnit?.canDestroyFort ?? false;
   const canSacrifice = selectedUnit?.canSacrifice ?? false;
 
@@ -115,6 +117,16 @@ export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, o
                 title="Proclaim Oasis — Desert Nomads' native camel capstone (once per game)"
               >
                 Proclaim Oasis
+              </button>
+            ) : null}
+            {canSubmerge ? (
+              <button
+                type="button"
+                className="ct-mode-btn"
+                onClick={() => onSubmerge?.(selectedUnitId!)}
+                title="Submerge — River People's native capstone: teleport to a connected waterway hex in stealth"
+              >
+                Submerge
               </button>
             ) : null}
             {canDestroyFort ? (

@@ -4,6 +4,7 @@ import { declareOasis } from '../src/systems/oasisSystem';
 import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { createResearchState } from '../src/systems/researchSystem';
 import { resolveResearchDoctrine } from '../src/systems/capabilityDoctrine';
+import { getOasisOpportunity } from '../src/systems/unit-activation/oasis';
 import type { GameState, Unit } from '../src/game/types';
 import type { FactionId, UnitId } from '../src/types';
 import { hexToKey } from '../src/core/grid';
@@ -229,8 +230,7 @@ describe('oasis — declaration', () => {
 });
 
 describe('oasis — AI heuristic', () => {
-  it('scores opportunity when friendly units are in radius', async () => {
-    const { getOasisOpportunity } = await import('../src/systems/unit-activation/oasis');
+  it('scores opportunity when friendly units are in radius', () => {
     let state = buildMvpScenario(42);
     state = clearUnits(state);
     addResearchNodes(state, DESERT_NOMADS, [
@@ -252,8 +252,7 @@ describe('oasis — AI heuristic', () => {
     expect(opportunity!.reason).toContain('friendlies=3');
   });
 
-  it('returns null when too few friendly units are nearby', async () => {
-    const { getOasisOpportunity } = await import('../src/systems/unit-activation/oasis');
+  it('returns null when too few friendly units are nearby', () => {
     let state = buildMvpScenario(42);
     state = clearUnits(state);
     addResearchNodes(state, DESERT_NOMADS, [
@@ -270,8 +269,7 @@ describe('oasis — AI heuristic', () => {
     expect(opportunity).toBeNull();
   });
 
-  it('returns null on water terrain', async () => {
-    const { getOasisOpportunity } = await import('../src/systems/unit-activation/oasis');
+  it('returns null on water terrain', () => {
     let state = buildMvpScenario(42);
     state = clearUnits(state);
     addResearchNodes(state, DESERT_NOMADS, [

@@ -74,6 +74,8 @@ export type UnitView = {
   canBuildBastion?: boolean;
   canDeclareMaelstrom?: boolean;
   canDeclareOasis?: boolean;
+  canSubmerge?: boolean;
+  submergeHexes?: HexCoord[];
   canDestroyFort?: boolean;
   canSacrifice?: boolean;
   canBrace?: boolean;
@@ -181,6 +183,7 @@ export type WorldViewModel = {
     reachableHexes: ReachableHexView[];
     attackHexes: AttackTargetView[];
     disembarkHexes: ReachableHexView[];
+    submergeHexes: ReachableHexView[];
     pathPreview: PathPreviewNodeView[];
     queuedPath: PathPreviewNodeView[];
     lastMove:
