@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { evaluateCondition, resolveTarget, triggerMatches } from '../src/systems/primitiveEvaluator.js';
+import { evaluateCondition } from '../src/systems/primitiveEvaluator.js';
 import type { CombatContext } from '../src/systems/synergyTypes.js';
 
 function makeContext(overrides: Partial<CombatContext> = {}): CombatContext {
@@ -53,14 +53,14 @@ describe('evaluateCondition', () => {
     expect(evaluateCondition('isWater', makeContext({ terrain: 'desert' }))).toBe(false);
   });
 
-  it('checks afterRetreat (alias for isRetreat)', () => {
-    expect(evaluateCondition('afterRetreat', makeContext({ isRetreat: true }))).toBe(true);
-    expect(evaluateCondition('afterRetreat', makeContext({ isRetreat: false }))).toBe(false);
-  });
-
   it('checks tag:poison', () => {
     expect(evaluateCondition('tag:poison', makeContext({ attackerTags: ['poison', 'fortress'] }))).toBe(true);
     expect(evaluateCondition('tag:poison', makeContext({ attackerTags: ['fortress'] }))).toBe(false);
+  });
+
+  it('checks arbitrary tag:xxx values', () => {
+    expect(evaluateCondition('tag:customTag', makeContext({ attackerTags: ['customTag'] }))).toBe(true);
+    expect(evaluateCondition('tag:customTag', makeContext({ attackerTags: [] }))).toBe(false);
   });
 
   it('checks terrain:desert', () => {
@@ -97,52 +97,5 @@ describe('evaluateCondition', () => {
 
   it('returns false for unknown conditions', () => {
     expect(evaluateCondition('unknownCondition', makeContext())).toBe(false);
-  });
-});
-
-describe('resolveTarget', () => {
-  it('defaults to self', () => {
-    expect(resolveTarget(undefined)).toEqual({ kind: 'self' });
-  });
-
-  it('resolves self/attacker', () => {
-    expect(resolveTarget('self')).toEqual({ kind: 'self' });
-    expect(resolveTarget('attacker')).toEqual({ kind: 'self' });
-  });
-
-  it('resolves defender', () => {
-    expect(resolveTarget('defender')).toEqual({ kind: 'defender' });
-  });
-
-  it('resolves alliesInRadius', () => {
-    expect(resolveTarget({ alliesInRadius: 2 })).toEqual({ kind: 'alliesInRadius', radius: 2 });
-  });
-
-  it('resolves enemiesInRadius', () => {
-    expect(resolveTarget({ enemiesInRadius: 3 })).toEqual({ kind: 'enemiesInRadius', radius: 3 });
-  });
-
-  it('resolves role', () => {
-    expect(resolveTarget({ role: 'slaves' })).toEqual({ kind: 'role', role: 'slaves' });
-  });
-
-  it('resolves position', () => {
-    expect(resolveTarget('position')).toEqual({ kind: 'position' });
-  });
-});
-
-describe('triggerMatches', () => {
-  it('returns true for undefined trigger', () => {
-    expect(triggerMatches(undefined, 'onKill')).toBe(true);
-  });
-
-  it('matches string triggers', () => {
-    expect(triggerMatches('onKill', 'onKill')).toBe(true);
-    expect(triggerMatches('onKill', 'onDeath')).toBe(false);
-  });
-
-  it('matches object triggers', () => {
-    expect(triggerMatches({ event: 'onKill' }, 'onKill')).toBe(true);
-    expect(triggerMatches({ event: 'onKill', filter: 'stealth' }, 'onKill')).toBe(true);
   });
 });

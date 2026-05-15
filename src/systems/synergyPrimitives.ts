@@ -2,11 +2,8 @@
 // 9 Tribes — Composable Synergy Primitives
 // ---------------------------------------------------------------------------
 //
-// 12 primitive effect types that replace the 69 SynergyEffect variants and
-// 11 EmergentEffect variants. Future synergies are declarative records, not
+// 12 primitive effect types. Future synergies are declarative records, not
 // new discriminated-union branches.
-//
-// See docs/synergy-primitives-design.md for the full design rationale.
 // ---------------------------------------------------------------------------
 
 // --- String literal unions ---
@@ -49,7 +46,8 @@ export type StatName =
   | 'emergentBonusDamageAdjacentWater' | 'emergentCrushZoneRadius'
   | 'emergentCrushZoneMovementPenalty' | 'emergentManyFacedDefense'
   | 'emergentManyFacedReflection' | 'emergentManyFacedDamage'
-  | 'emergentManyFacedRangeBonus' | 'emergentManyFacedMovementBonus';
+  | 'emergentManyFacedRangeBonus' | 'emergentManyFacedMovementBonus'
+  | 'lethalAmbushPoison';
 
 export type FlagName =
   | 'chargeShield' | 'antiDisplacement' | 'contaminateActive'
@@ -58,8 +56,7 @@ export type FlagName =
   | 'beachRaidRetreatToWater' | 'ghostPassActive'
   | 'fightingRetreatFreeStrike' | 'caravanPassengerActive'
   | 'mobileStrongholdFortUp' | 'formationFocusIgnoresDefense'
-  | 'emergentUndying' | 'emergentIgnoreZoc'
-  | 'stealthChargeMultiplier';
+  | 'emergentUndying' | 'emergentIgnoreZoc';
 
 export type StatusName =
   | 'poison' | 'stun' | 'slow' | 'stealth' | 'bleed'

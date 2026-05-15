@@ -26,7 +26,6 @@ import type {
   PairSynergyConfig,
   EmergentRuleConfig,
 } from '../../systems/synergyTypes.js';
-import type { PrimitiveEffect } from '../../systems/synergyPrimitives.js';
 
 // Re-export so consumers can import types and data from a single module.
 export type { PairSynergyConfig, EmergentRuleConfig } from '../../systems/synergyTypes.js';
@@ -41,7 +40,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Toxic Bulwark',
     domains: ['venom', 'fortress'],
     requiredTags: ['poison', 'fortress'],
-    effects: [{ kind: 'applyStatus', status: 'poison', stacks: 2 }] as PrimitiveEffect[],
+    effects: [{ kind: 'applyStatus', status: 'poison', stacks: 2 }],
     description:
       'Fortress units radiate a poison zone: enemies within 2 hexes of a fortress-tagged unit take 2 poison damage per turn. Poisoned enemies cannot attack the source unit.',
     friendlyFlavor:
@@ -57,7 +56,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'statMod', stat: 'multiplierStackValue', op: 'set', value: 2 },
       { kind: 'statMod', stat: 'damage', op: 'multiply', value: 2 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Charge attacks inflict double poison duration. Knockback leaves enemies poisoned in their new position',
     friendlyFlavor:
@@ -74,7 +73,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
       { kind: 'statMod', stat: 'poisonTrapDamage', op: 'set', value: 2 },
       { kind: 'statMod', stat: 'poisonTrapSlow', op: 'set', value: 1 },
       { kind: 'spawnOnMap', effectType: 'poisonTrap', position: 'attacker', condition: 'isRetreat' },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'After retreating, the unit leaves a poison trap on the hex it vacated',
     friendlyFlavor:
@@ -87,7 +86,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Venomous Tide',
     domains: ['venom', 'tidal_warfare'],
     requiredTags: ['poison', 'naval'],
-    effects: [{ kind: 'setFlag', flag: 'contaminateActive' }] as PrimitiveEffect[],
+    effects: [{ kind: 'setFlag', flag: 'contaminateActive' }],
     description:
       'Naval units with poison contaminate coastal hexes for 3 turns. Enemies on contaminated coast hexes take 2 poison damage/turn. Stacks up to 6.',
     friendlyFlavor:
@@ -100,7 +99,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Regenerative Venom',
     domains: ['venom', 'nature_healing'],
     requiredTags: ['poison', 'druid'],
-    effects: [{ kind: 'statMod', stat: 'witheringReduction', op: 'set', value: 1.0 }] as PrimitiveEffect[],
+    effects: [{ kind: 'statMod', stat: 'witheringReduction', op: 'set', value: 1.0 }],
     description:
       'Poisoned enemies cannot heal at all (100% healing reduction). Deals 1 corruption damage to any enemy healer attempting to heal a poisoned target.',
     friendlyFlavor:
@@ -117,7 +116,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
       { kind: 'instantKill', condition: 'isStealthAttack' },
       { kind: 'statMod', stat: 'lethalAmbushPoison', op: 'set', value: 2, condition: 'isStealthAttack' },
       { kind: 'applyStatus', status: 'poison', stacks: 2, condition: 'isStealthAttack' },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Stealth ambushes with poison deal double damage, apply 2 poison stacks instantly, and cost enemies 1 action point to respond',
     friendlyFlavor:
@@ -130,7 +129,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Desert Viper',
     domains: ['venom', 'camel_adaptation'],
     requiredTags: ['poison', 'camel'],
-    effects: [{ kind: 'applyStatus', status: 'poison', stacks: 2 }] as PrimitiveEffect[],
+    effects: [{ kind: 'applyStatus', status: 'poison', stacks: 2 }],
     description:
       'Camel units with venom apply poison through difficult terrain. Enemies in rough terrain near them take passive poison damage and cannot retreat.',
     friendlyFlavor:
@@ -148,7 +147,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
       { kind: 'statMod', stat: 'capturePoisonStacks', op: 'set', value: 3 },
       { kind: 'statMod', stat: 'slaveDamageBonus', op: 'set', value: 0.25 },
       { kind: 'statMod', stat: 'slaveHealPenalty', op: 'set', value: 0.5 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Captured units are poisoned and slowly weakened (3 damage/turn). Slave armies deal +25% damage but heal at half the normal rate. Mercy-killing a captive triggers a 5-stack poison burst in 1-hex radius.',
     friendlyFlavor:
@@ -164,7 +163,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'applyStatus', status: 'poison', stacks: 1 },
       { kind: 'statMod', stat: 'armorPiercing', op: 'add', value: 0.5 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Heavy strikes ignore 50% of enemy armor when attacking poisoned targets. Each poison stack adds 25% armor piercing (cap 100%). Full poison = stun.',
     friendlyFlavor:
@@ -180,7 +179,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'statMod', stat: 'toxicSpreadTransferStacks', op: 'set', value: 1 },
       { kind: 'statMod', stat: 'toxicSpreadTransferRadius', op: 'set', value: 1 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'When a poisoned enemy dies, poison transfers (1 stack) to all adjacent enemies. Cascading kills sweep formations.',
     friendlyFlavor:
@@ -193,7 +192,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Fortress Charge',
     domains: ['fortress', 'charge'],
     requiredTags: ['fortress', 'elephant'],
-    effects: [{ kind: 'setFlag', flag: 'chargeShield' }] as PrimitiveEffect[],
+    effects: [{ kind: 'setFlag', flag: 'chargeShield' }],
     description:
       'Charging units adjacent to fortress units get a charge shield: first hit after charging deals 0 damage to the charger. Charging adjacent to a fortress grants +50% damage bonus.',
     friendlyFlavor:
@@ -209,7 +208,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'statMod', stat: 'defense', op: 'add', value: 0.75 },
       { kind: 'statMod', stat: 'dugInDefense', op: 'add', value: 0.75 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       "After hit-and-run retreat, the unit gains a 1-turn 'dug in' bonus: +75% defense until next action. Dug-in counter-attacks deal +50% damage.",
     friendlyFlavor:
@@ -227,7 +226,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
       { kind: 'statMod', stat: 'bombardmentDamageMultiplier', op: 'set', value: 0.5 },
       { kind: 'statMod', stat: 'bombardmentLandAuraDefense', op: 'set', value: 0.25 },
       { kind: 'statMod', stat: 'defense', op: 'add', value: 0.25 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Ships bombard land targets within 3 hexes for 50% damage. Allied land units within 2 hexes gain +25% defense.',
     friendlyFlavor:
@@ -240,7 +239,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Citadel',
     domains: ['fortress', 'nature_healing'],
     requiredTags: ['fortress', 'druid'],
-    effects: [] as PrimitiveEffect[],
+    effects: [],
     description:
       'Units with both fortress and healing create a 2-hex healing aura. The unit counts as a city for defense purposes and generates 1 resource per turn.',
     friendlyFlavor:
@@ -253,7 +252,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Hidden Fortress',
     domains: ['fortress', 'river_stealth'],
     requiredTags: ['fortress', 'stealth'],
-    effects: [] as PrimitiveEffect[],
+    effects: [],
     description:
       'Stealth fortress units are invisible until they attack or an enemy enters an adjacent hex. First attack from stealth has 2x critical multiplier. Can creep 1 hex while hidden.',
     friendlyFlavor:
@@ -272,7 +271,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
       { kind: 'statMod', stat: 'mobileStrongholdAlliedDefenseBonus', op: 'set', value: 0.25 },
       { kind: 'statMod', stat: 'defense', op: 'add', value: 0.75 },
       { kind: 'preventAction', action: 'displacement' },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Toggle Fort Up (+75% defense, 2-hex aura at +25% ally def) / Decamp (free action). Mobile fortress.',
     friendlyFlavor:
@@ -288,7 +287,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'statMod', stat: 'defense', op: 'add', value: 0.5 },
       { kind: 'preventAction', action: 'captureEscape' },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Fortress units guarding slaves gain +50% defense. Counter-attack damage scales with HP lost (25%). Prisoners provide +1 garrison bonus.',
     friendlyFlavor:
@@ -304,7 +303,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'statMod', stat: 'damageReflection', op: 'add', value: 0.25 },
       { kind: 'preventAction', action: 'displacement' },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Heavy units in fortress formation reflect 25% damage back to attackers (scaling to 50% at 5+ damage). Adjacent allies are immune to knockback.',
     friendlyFlavor:
@@ -320,7 +319,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'setFlag', flag: 'formationWallActive' },
       { kind: 'statMod', stat: 'formationWallRangedReduction', op: 'set', value: 0.5 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Two adjacent fortress units form an impassable line — enemies cannot move through hexes between them. Ranged attacks crossing the wall halve their range.',
     friendlyFlavor:
@@ -333,7 +332,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Endless Charge',
     domains: ['charge', 'hitrun'],
     requiredTags: ['elephant', 'skirmish'],
-    effects: [] as PrimitiveEffect[],
+    effects: [],
     description:
       'Units with charge can charge, retreat, and charge again in the same turn if they have enough movement points',
     friendlyFlavor:
@@ -346,7 +345,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Tsunami Charge',
     domains: ['charge', 'tidal_warfare'],
     requiredTags: ['elephant', 'naval'],
-    effects: [{ kind: 'knockback', distance: 1 }] as PrimitiveEffect[],
+    effects: [{ kind: 'knockback', distance: 1 }],
     description:
       'Naval charge: ships can ram enemy naval units, dealing massive damage with +75% ram bonus and knocking them 1-2 hexes in a random drift direction.',
     friendlyFlavor:
@@ -359,7 +358,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Charging Growth',
     domains: ['charge', 'nature_healing'],
     requiredTags: ['elephant', 'druid'],
-    effects: [] as PrimitiveEffect[],
+    effects: [],
     description:
       'Charging units adjacent to healing units regenerate after a charge. Successful charges restore 1 movement point.',
     friendlyFlavor:
@@ -375,7 +374,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'statMod', stat: 'damage', op: 'multiply', value: 1.5, condition: 'isCharge AND isStealthAttack' },
       { kind: 'grantVerb', verb: 'waiveChargeCooldown', condition: 'isCharge AND isStealthAttack' },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Units with charge can initiate a charge from stealth. The charge deals +50% damage from surprise, but the attacker is revealed until their next turn',
     friendlyFlavor:
@@ -393,7 +392,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
       { kind: 'statMod', stat: 'sandstormAccuracyDebuff', op: 'set', value: 0.25 },
       { kind: 'statMod', stat: 'aoeDamage', op: 'set', value: 2 },
       { kind: 'knockback', distance: 1 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Camel charge: camel units charge through desert terrain dealing AoE damage. Desert charges raise a sandstorm that persists for 2 turns with -25% accuracy.',
     friendlyFlavor:
@@ -409,7 +408,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'capture', chanceBonus: 0.30, condition: 'isCharge' },
       { kind: 'knockback', distance: 2, condition: 'isCharge' },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Charge attacks have 30% chance to capture enemy units. Captured units are converted to your faction',
     friendlyFlavor:
@@ -425,7 +424,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'applyStatus', status: 'stun', duration: 1 },
       { kind: 'knockback', distance: 0, extendMultiplier: 1.5, condition: 'isCharge' },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Heavy charges deal massive knockback and stun enemies for 1 turn. Each hex of run-up adds +5% damage (cap +50%).',
     friendlyFlavor:
@@ -441,7 +440,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'statMod', stat: 'formationPinballCollisionDamage', op: 'set', value: 4 },
       { kind: 'applyStatus', status: 'stun', duration: 1 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       "Knockback victims collide with whatever's behind them for +4 damage and 1-turn stun.",
     friendlyFlavor:
@@ -458,7 +457,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
       { kind: 'statMod', stat: 'beachRaidDamageBonus', op: 'set', value: 0.25 },
       { kind: 'grantVerb', verb: 'retreatToWater' },
       { kind: 'statMod', stat: 'damage', op: 'multiply', value: 1.25 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Attack from water with +25% damage. After attacking, retreat to any water within 2 hexes. Land units cannot pursue.',
     friendlyFlavor:
@@ -471,7 +470,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Healing Retreat',
     domains: ['hitrun', 'nature_healing'],
     requiredTags: ['skirmish', 'druid'],
-    effects: [{ kind: 'statMod', stat: 'vampiricStrikeHealPercent', op: 'set', value: 1.0 }] as PrimitiveEffect[],
+    effects: [{ kind: 'statMod', stat: 'vampiricStrikeHealPercent', op: 'set', value: 1.0 }],
     description:
       'Hit-and-run attacks heal for 100% of damage dealt. Full vampiric lifesteal on retreat.',
     friendlyFlavor:
@@ -484,7 +483,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Shadow Step',
     domains: ['hitrun', 'river_stealth'],
     requiredTags: ['skirmish', 'stealth'],
-    effects: [] as PrimitiveEffect[],
+    effects: [],
     description:
       'Stealth hit-and-run: after attacking from stealth, the unit automatically re-enters stealth at the retreat hex (no cooldown)',
     friendlyFlavor:
@@ -497,7 +496,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Desert Ghost',
     domains: ['hitrun', 'camel_adaptation'],
     requiredTags: ['skirmish', 'camel', 'cavalry'],
-    effects: [{ kind: 'setFlag', flag: 'ghostPassActive', condition: 'isRetreat' }] as PrimitiveEffect[],
+    effects: [{ kind: 'setFlag', flag: 'ghostPassActive', condition: 'isRetreat' }],
     description:
       'Retreat through impassable terrain. After passing through impassable, gain +1 movement and re-enter stealth.',
     friendlyFlavor:
@@ -510,7 +509,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Raid Retreat',
     domains: ['hitrun', 'slaving'],
     requiredTags: ['skirmish', 'capture'],
-    effects: [{ kind: 'capture', chanceBonus: 0.15, condition: 'isRetreat' }] as PrimitiveEffect[],
+    effects: [{ kind: 'capture', chanceBonus: 0.15, condition: 'isRetreat' }],
     description:
       'Hit-and-run attacks have 15% chance to capture wounded enemies (below 50% HP), rising to 40% below 25 HP. Instant retreat with captive.',
     friendlyFlavor:
@@ -526,7 +525,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'grantVerb', verb: 'opportunityStrikeOnDisengage', condition: 'isRetreat' },
       { kind: 'statMod', stat: 'fightingRetreatDamageMultiplier', op: 'set', value: 1.0, condition: 'isRetreat' },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Free opportunity strike at full damage when disengaging. Heavy skirmishers hit back on the way out.',
     friendlyFlavor:
@@ -543,7 +542,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
       { kind: 'statMod', stat: 'formationFocusBonus', op: 'set', value: 0.3 },
       { kind: 'setFlag', flag: 'formationFocusIgnoresDefense' },
       { kind: 'statMod', stat: 'damage', op: 'multiply', value: 1.3 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       "When 2+ hitrun units attack the same target in one turn, each subsequent attacker deals +30% damage and ignores defender's defense bonuses.",
     friendlyFlavor:
@@ -556,7 +555,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Tidal Restoration',
     domains: ['tidal_warfare', 'nature_healing'],
     requiredTags: ['naval', 'druid'],
-    effects: [{ kind: 'statMod', stat: 'tidalCleanseHealPerTurn', op: 'set', value: 4 }] as PrimitiveEffect[],
+    effects: [{ kind: 'statMod', stat: 'tidalCleanseHealPerTurn', op: 'set', value: 4 }],
     description:
       '2-hex aura heals 4 HP/turn. Cleanses poison, stun, and slow from allies in range each turn.',
     friendlyFlavor:
@@ -569,7 +568,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Silent Landing',
     domains: ['tidal_warfare', 'river_stealth'],
     requiredTags: ['naval', 'stealth'],
-    effects: [] as PrimitiveEffect[],
+    effects: [],
     description:
       'Stealth naval units can make amphibious landings without breaking stealth. First attack after landing deals +50% damage. Transported troops gain stealth.',
     friendlyFlavor:
@@ -582,7 +581,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Shoreline Nomads',
     domains: ['tidal_warfare', 'camel_adaptation'],
     requiredTags: ['naval', 'camel'],
-    effects: [{ kind: 'statMod', stat: 'amphibiousMovementBonus', op: 'set', value: 1 }] as PrimitiveEffect[],
+    effects: [{ kind: 'statMod', stat: 'amphibiousMovementBonus', op: 'set', value: 1 }],
     description:
       'Full movement on coast, desert, and shallow water. +1 movement bonus in all three terrains.',
     friendlyFlavor:
@@ -595,7 +594,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Naval Slave Raid',
     domains: ['tidal_warfare', 'slaving'],
     requiredTags: ['naval', 'capture'],
-    effects: [{ kind: 'capture', chanceBonus: 0.3, condition: 'isWater' }] as PrimitiveEffect[],
+    effects: [{ kind: 'capture', chanceBonus: 0.3, condition: 'isWater' }],
     description:
       'Capture from 1 hex away on water. Instant embark captured units. Delivering slaves to a city counts double.',
     friendlyFlavor:
@@ -608,7 +607,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Ironclad Tide',
     domains: ['tidal_warfare', 'heavy_hitter'],
     requiredTags: ['naval', 'heavy'],
-    effects: [{ kind: 'statMod', stat: 'heavyNavalRamDamage', op: 'set', value: 2, condition: 'isWater' }] as PrimitiveEffect[],
+    effects: [{ kind: 'statMod', stat: 'heavyNavalRamDamage', op: 'set', value: 2, condition: 'isWater' }],
     description:
       '+50% damage on water. Treats coast hexes as water for movement. Ram attacks deal 2 bonus damage.',
     friendlyFlavor:
@@ -621,7 +620,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Armada',
     domains: ['tidal_warfare', 'tidal_warfare'],
     requiredTags: ['naval', 'naval'],
-    effects: [{ kind: 'statMod', stat: 'formationChainBonus', op: 'set', value: 1 }] as PrimitiveEffect[],
+    effects: [{ kind: 'statMod', stat: 'formationChainBonus', op: 'set', value: 1 }],
     description:
       'Naval units within 2 hexes chain attacks — when one ship attacks, every chained ship contributes +1 damage to that attack (cap +4).',
     friendlyFlavor:
@@ -634,7 +633,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: "Nature's Veil",
     domains: ['nature_healing', 'river_stealth'],
     requiredTags: ['druid', 'stealth'],
-    effects: [{ kind: 'statMod', stat: 'stealthAuraShareRadius', op: 'set', value: 1 }] as PrimitiveEffect[],
+    effects: [{ kind: 'statMod', stat: 'stealthAuraShareRadius', op: 'set', value: 1 }],
     description:
       'Adjacent allies share stealth state. If this unit is stealthed, adjacent allies gain stealth too.',
     friendlyFlavor:
@@ -647,7 +646,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Oasis',
     domains: ['nature_healing', 'camel_adaptation'],
     requiredTags: ['druid', 'camel'],
-    effects: [] as PrimitiveEffect[],
+    effects: [],
     description:
       "Camel units with healing create an 'oasis' effect: the hex they occupy and all adjacent hexes count as neutral terrain for movement purposes. Units at full HP are fully restored at turn end (5-turn cooldown).",
     friendlyFlavor:
@@ -663,7 +662,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'statMod', stat: 'slaveEconomyHealPerTurn', op: 'set', value: 4 },
       { kind: 'statMod', stat: 'slaveEconomyResourceBonus', op: 'set', value: 1 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Slaves heal 4 HP/turn. Slaves at full HP produce +1 resource. Requires adjacent healer unit.',
     friendlyFlavor:
@@ -676,7 +675,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Berserker Regen',
     domains: ['nature_healing', 'heavy_hitter'],
     requiredTags: ['druid', 'heavy'],
-    effects: [{ kind: 'statMod', stat: 'heavyRegenPercent', op: 'set', value: 0.3 }] as PrimitiveEffect[],
+    effects: [{ kind: 'statMod', stat: 'heavyRegenPercent', op: 'set', value: 0.3 }],
     description:
       'Heavy units regenerate 30% of damage dealt as HP. Killing an enemy heals 50% of max HP.',
     friendlyFlavor:
@@ -694,7 +693,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
       { kind: 'statMod', stat: 'bloomPulseSelfHeal', op: 'set', value: 6 },
       { kind: 'statMod', stat: 'bloomPulseAuraRadius', op: 'set', value: 3 },
       { kind: 'statMod', stat: 'bloomPulseMovementBonus', op: 'set', value: 1 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       '3-hex aura, +4/+6 HP/turn. Every 3rd turn, instantly heals all allies in radius for +8 HP and grants them +1 movement.',
     friendlyFlavor:
@@ -707,7 +706,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Mirage',
     domains: ['river_stealth', 'camel_adaptation'],
     requiredTags: ['stealth', 'camel'],
-    effects: [] as PrimitiveEffect[],
+    effects: [],
     description:
       'Camel stealth units in desert terrain are permanently stealthed. Moving in desert spawns a phantom decoy that lasts 2 turns.',
     friendlyFlavor:
@@ -720,7 +719,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Ambush Captors',
     domains: ['river_stealth', 'slaving'],
     requiredTags: ['stealth', 'capture'],
-    effects: [{ kind: 'capture', chanceBonus: 0.4, condition: 'isStealthAttack' }] as PrimitiveEffect[],
+    effects: [{ kind: 'capture', chanceBonus: 0.4, condition: 'isStealthAttack' }],
     description:
       "Stealth attacks have 40% chance to capture enemies instead of killing them. Silent capture doesn't alert nearby enemies. Gain 1 free movement hex after capture.",
     friendlyFlavor:
@@ -733,7 +732,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: "Assassin's Blow",
     domains: ['river_stealth', 'heavy_hitter'],
     requiredTags: ['stealth', 'heavy'],
-    effects: [{ kind: 'statMod', stat: 'armorPiercing', op: 'set', value: 1.0, condition: 'isStealthAttack' }] as PrimitiveEffect[],
+    effects: [{ kind: 'statMod', stat: 'armorPiercing', op: 'set', value: 1.0, condition: 'isStealthAttack' }],
     description:
       'Heavy attacks from stealth permanently shred 100% of enemy armor. This is your elite assassin specialist combo',
     friendlyFlavor:
@@ -746,7 +745,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Shadow Network',
     domains: ['river_stealth', 'river_stealth'],
     requiredTags: ['stealth', 'stealth'],
-    effects: [{ kind: 'grantVerb', verb: 'positionSwap' }] as PrimitiveEffect[],
+    effects: [{ kind: 'grantVerb', verb: 'positionSwap' }],
     description:
       "Stealth units within 3 hexes can swap positions as a free action once per turn. Killing one doesn't reveal others.",
     friendlyFlavor:
@@ -759,7 +758,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Desert Slave Train',
     domains: ['camel_adaptation', 'slaving'],
     requiredTags: ['camel', 'capture'],
-    effects: [{ kind: 'grantVerb', verb: 'carryCaptured' }] as PrimitiveEffect[],
+    effects: [{ kind: 'grantVerb', verb: 'carryCaptured' }],
     description:
       'Captured units ride as passengers; the raider may release them anywhere along their path as instant slaves at home cities.',
     friendlyFlavor:
@@ -776,7 +775,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
       { kind: 'statMod', stat: 'sandstormAuraRadius', op: 'set', value: 2, condition: 'terrain:desert' },
       { kind: 'statMod', stat: 'sandstormAuraDebuff', op: 'set', value: 0.2, condition: 'terrain:desert' },
       { kind: 'statMod', stat: 'sandstormAccuracyDebuff', op: 'add', value: 0.2, condition: 'terrain:desert' },
-    ] as PrimitiveEffect[],
+    ],
     description:
       '2-hex sandstorm aura at -20% accuracy. Applies everywhere, not just desert.',
     friendlyFlavor:
@@ -789,7 +788,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Nomad Network',
     domains: ['camel_adaptation', 'camel_adaptation'],
     requiredTags: ['camel', 'cavalry'],
-    effects: [{ kind: 'statMod', stat: 'caravanRelayVisionRange', op: 'set', value: 3 }] as PrimitiveEffect[],
+    effects: [{ kind: 'statMod', stat: 'caravanRelayVisionRange', op: 'set', value: 3 }],
     description:
       'Camel units within 3 hexes share vision. Once per turn, one moves full distance, then any network member makes a free 1-hex move into the vacated hex.',
     friendlyFlavor:
@@ -807,7 +806,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
       { kind: 'statMod', stat: 'slaveHordeDefensePenalty', op: 'set', value: 0.3 },
       { kind: 'statMod', stat: 'damage', op: 'multiply', value: 1.5 },
       { kind: 'statMod', stat: 'defense', op: 'add', value: -0.3 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       '+50% damage, -30% defense. Groups of 3+ ignore ZoC. When one slave dies, adjacent slaves gain +1 movement that turn.',
     friendlyFlavor:
@@ -820,7 +819,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: "Overseer's Rule",
     domains: ['slaving', 'heavy_hitter'],
     requiredTags: ['capture', 'heavy'],
-    effects: [{ kind: 'statMod', stat: 'slaveCoercionDamageBonus', op: 'set', value: 0.5 }] as PrimitiveEffect[],
+    effects: [{ kind: 'statMod', stat: 'slaveCoercionDamageBonus', op: 'set', value: 0.5 }],
     description:
       'Heavy units commanding slaves increase slave damage by 50%. Slaves adjacent to an overseer gain +1 attack range. Executing an enemy triggers rage in nearby slaves.',
     friendlyFlavor:
@@ -836,7 +835,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'statMod', stat: 'formationPinballCollisionDamage', op: 'set', value: 4 },
       { kind: 'applyStatus', status: 'stun', duration: 1 },
-    ] as PrimitiveEffect[],
+    ],
     description:
       'Knockback persists; victims colliding with other heavy units or terrain edges take +4 damage and 1-turn stun.',
     friendlyFlavor:
@@ -870,7 +869,7 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
     },
     effects: [
       { kind: 'statMod', stat: 'damage', op: 'multiply', value: 1.5, condition: 'isCharge' },
-    ] as PrimitiveEffect[],
+    ],
     friendlyFlavor:
       "Your armies become the land's true masters. The terrain bends to your will — you reshape it, charge through it, and weaponize it like no force before you.",
     enemyFlavor:
@@ -897,7 +896,7 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       { kind: 'statMod', stat: 'emergentSustainHealPercent', op: 'set', value: 0.5 },
       { kind: 'statMod', stat: 'emergentSustainMinHp', op: 'set', value: 1 },
       { kind: 'statMod', stat: 'emergentSmiteBonus', op: 'set', value: 1.0 },
-    ] as PrimitiveEffect[],
+    ],
     friendlyFlavor:
       'Your champions are touched by the divine — their wounds seal as they deal death, and at full strength they unleash radiant fury that annihilates anything it touches.',
     enemyFlavor:
@@ -918,7 +917,7 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       description:
         'Attacks from stealth in matching terrain type are permanent stealth — enemies never detect you regardless of proximity',
     },
-    effects: [] as PrimitiveEffect[],
+    effects: [],
     friendlyFlavor:
       'Your assassins become one with the terrain — invisible forever in their chosen environment. They kill without revealing themselves, over and over, until nothing remains.',
     enemyFlavor:
@@ -952,7 +951,7 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       { kind: 'statMod', stat: 'defense', op: 'add', value: 0.3 },
       { kind: 'preventAction', action: 'displacement' },
       { kind: 'statMod', stat: 'emergentCaptureBonus', op: 'set', value: 0 },
-    ] as PrimitiveEffect[],
+    ],
     friendlyFlavor:
       'Your standing stones anchor the battlefield. In stillness, you are immovable — healing, shielding, and punishing all who approach. In motion, your protective aura marches with you.',
     enemyFlavor:
@@ -971,7 +970,7 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       description:
         'Phase: teleport up to 3 hexes through anything (0 movement cost, must be outside enemy vision). On kill: re-stealth + re-emerge near any ally. Adjacent allies gain +2 movement when this unit phases.',
     },
-    effects: [] as PrimitiveEffect[],
+    effects: [],
     friendlyFlavor:
       'Your phantom soldiers phase through the battlefield like smoke — teleporting, killing, and vanishing to re-emerge beside any ally. Their presence alone quickens your entire force.',
     enemyFlavor:
@@ -1001,7 +1000,7 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
     effects: [
       { kind: 'setFlag', flag: 'emergentUndying' },
       { kind: 'setFlag', flag: 'emergentIgnoreZoc' },
-    ] as PrimitiveEffect[],
+    ],
     friendlyFlavor:
       'Your juggernauts collect the essence of every combat art they master. They cannot be stopped by a single blow, cannot be contained by formation, and carry the fury of three warriors in one body.',
     enemyFlavor:
@@ -1024,7 +1023,7 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       description:
         'Fortress zones (2-hex radius) auto-capture wounded enemies below 25% HP. Captured slaves produce +50% resources. Heavy enforcers make slaves immune to rout.',
     },
-    effects: [{ kind: 'statMod', stat: 'emergentCaptureBonus', op: 'set', value: 0.2 }] as PrimitiveEffect[],
+    effects: [{ kind: 'statMod', stat: 'emergentCaptureBonus', op: 'set', value: 0.2 }],
     friendlyFlavor:
       'Your empire runs on chains. Fortress zones drag in the wounded automatically, your slaves produce at double efficiency, and your heavy enforcers ensure no captives ever break free.',
     enemyFlavor:
@@ -1051,7 +1050,7 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       description:
         'Each turn, place a Raid Camp within 5 hexes. Allies entering gain +2 movement and stealth for 1 turn. Enemies within 3 hexes of a camp on hostile territory suffer -25% defense. Capture chance +30%. Camp persists 2 turns.',
     },
-    effects: [{ kind: 'statMod', stat: 'emergentCaptureBonus', op: 'set', value: 0.3 }] as PrimitiveEffect[],
+    effects: [{ kind: 'statMod', stat: 'emergentCaptureBonus', op: 'set', value: 0.3 }],
     friendlyFlavor:
       'Your raiders establish forward camps that turn any position into an ambush point. Allies surge with speed and stealth while enemies falter under the shadow of your presence.',
     enemyFlavor:
@@ -1078,7 +1077,7 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       { kind: 'applyStatus', status: 'poison', stacks: 3, condition: 'isStealthAttack' },
       { kind: 'spawnOnMap', effectType: 'poisonCloud', position: 'attacker', condition: 'isRetreat' },
       { kind: 'statMod', stat: 'poisonTrapDamage', op: 'set', value: 2, condition: 'isRetreat' },
-    ] as PrimitiveEffect[],
+    ],
     friendlyFlavor:
       'Your shadow-venom assassins are the nightmare your enemies never wake from. Strike from darkness with triple venom, then retreat into a cloud of poison that chokes the life from anyone who dares follow.',
     enemyFlavor:
@@ -1109,7 +1108,7 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       { kind: 'statMod', stat: 'emergentCrushZoneMovementPenalty', op: 'set', value: 1 },
       { kind: 'preventAction', action: 'displacement' },
       { kind: 'setFlag', flag: 'emergentIgnoreZoc' },
-    ] as PrimitiveEffect[],
+    ],
     friendlyFlavor:
       'Your iron turtles are immovable juggernauts that crush everything nearby. They reflect pain, grind down opposition, and walk through enemy formations as if they weren\'t there.',
     enemyFlavor:
@@ -1152,7 +1151,7 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
           ],
         },
       },
-    ] as PrimitiveEffect[],
+    ],
     friendlyFlavor:
       'Your many-faced warriors adapt to every moment of battle. They are shield when struck, blade when striking, and shadow when moving — ever shifting, never the same twice.',
     enemyFlavor:

@@ -1,7 +1,6 @@
 // Primitive dispatcher: resolves PrimitiveEffect[] → SynergyCombatResult.
-// Replaces the 69-entry synergyEffectHandlers Map and 11-entry emergentEffectHandlers Map.
 
-import type { CombatContext, HealingContext, SynergyCombatResult } from './synergyTypes.js';
+import type { CombatContext, SynergyCombatResult } from './synergyTypes.js';
 import type {
   PrimitiveEffect, StatMod, SetFlag, ApplyStatus, Knockback, Heal,
   ProjectAura, Capture, PreventAction, SpawnOnMap, GrantVerb, InstantKill,
@@ -16,14 +15,6 @@ import { evaluateCondition } from './primitiveEvaluator.js';
 type NumericField = { [K in keyof SynergyCombatResult]: SynergyCombatResult[K] extends number ? K : never }[keyof SynergyCombatResult];
 type BooleanField = { [K in keyof SynergyCombatResult]: SynergyCombatResult[K] extends boolean ? K : never }[keyof SynergyCombatResult];
 
-function writeNumeric(result: SynergyCombatResult, key: NumericField, value: number): void {
-  result[key] = value;
-}
-
-function readNumeric(result: SynergyCombatResult, key: NumericField): number {
-  return result[key];
-}
-
 function writeBoolean(result: SynergyCombatResult, key: BooleanField, value: boolean): void {
   result[key] = value;
 }
@@ -33,10 +24,8 @@ function writeBoolean(result: SynergyCombatResult, key: BooleanField, value: boo
 // ---------------------------------------------------------------------------
 
 function applyStatModOp(result: SynergyCombatResult, stat: StatName, op: StatMod['op'], value: number): void {
-  // Only numeric fields can be modified via statMod
-  const current = (result as unknown as Record<string, unknown>)[stat];
-  if (typeof current !== 'number') return;
-  const n = current;
+  const key = stat as NumericField;
+  const n = result[key];
   let next: number;
   switch (op) {
     case 'add':      next = n + value; break;
@@ -45,7 +34,7 @@ function applyStatModOp(result: SynergyCombatResult, stat: StatName, op: StatMod
     case 'min':      next = Math.min(n, value); break;
     case 'max':      next = Math.max(n, value); break;
   }
-  (result as unknown as Record<string, number>)[stat] = next;
+  result[key] = next;
 }
 
 // ---------------------------------------------------------------------------
@@ -60,28 +49,8 @@ function dispatchStatMod(p: StatMod, context: CombatContext, result: SynergyComb
 
 function dispatchSetFlag(p: SetFlag, context: CombatContext, result: SynergyCombatResult): void {
   if (!evaluateCondition(p.condition, context)) return;
-  const flag = p.flag;
-  // Type-safe boolean field write
-  switch (flag) {
-    case 'chargeShield':               result.chargeShield = true; break;
-    case 'antiDisplacement':           result.antiDisplacement = true; break;
-    case 'contaminateActive':          result.contaminateActive = true; break;
-    case 'instantKill':                result.instantKill = true; break;
-    case 'chargeCooldownWaived':       result.chargeCooldownWaived = true; break;
-    case 'captureEscapePrevented':     result.captureEscapePrevented = true; break;
-    case 'formationWallActive':        result.formationWallActive = true; break;
-    case 'positionSwapAvailable':      result.positionSwapAvailable = true; break;
-    case 'beachRaidRetreatToWater':    result.beachRaidRetreatToWater = true; break;
-    case 'ghostPassActive':            result.ghostPassActive = true; break;
-    case 'fightingRetreatFreeStrike':  result.fightingRetreatFreeStrike = true; break;
-    case 'caravanPassengerActive':     result.caravanPassengerActive = true; break;
-    case 'mobileStrongholdFortUp':     result.mobileStrongholdFortUp = true; break;
-    case 'formationFocusIgnoresDefense': result.formationFocusIgnoresDefense = true; break;
-    case 'emergentUndying':            result.emergentUndying = true; break;
-    case 'emergentIgnoreZoc':          result.emergentIgnoreZoc = true; break;
-    case 'stealthChargeMultiplier':    writeBoolean(result, 'stealthChargeMultiplier' as BooleanField, true); break;
-  }
-  result.additionalEffects.push(`setFlag_${flag}`);
+  writeBoolean(result, p.flag as BooleanField, true);
+  result.additionalEffects.push(`setFlag_${p.flag}`);
 }
 
 function dispatchApplyStatus(p: ApplyStatus, context: CombatContext, result: SynergyCombatResult): void {
@@ -130,15 +99,9 @@ function dispatchHeal(p: Heal, context: CombatContext, result: SynergyCombatResu
 function dispatchCapture(p: Capture, context: CombatContext, result: SynergyCombatResult): void {
   if (!evaluateCondition(p.condition, context)) return;
   if (p.chanceBonus !== undefined) {
-    if (context.isCharge) {
-      result.chargeCaptureChance = p.chanceBonus;
-    } else if (context.isRetreat) {
-      result.retreatCaptureChance = p.chanceBonus;
-    } else if (context.isStealthAttack) {
-      result.stealthCaptureBonus = p.chanceBonus;
-    } else {
-      result.navalCaptureBonus = p.chanceBonus;
-    }
+    if (context.isCharge) result.chargeCaptureChance = p.chanceBonus;
+    else if (context.isRetreat) result.retreatCaptureChance = p.chanceBonus;
+    else if (context.isStealthAttack) result.stealthCaptureBonus = p.chanceBonus;
   }
   if (p.hpThreshold !== undefined) {
     result.emergentCaptureBelowHpPercent = p.hpThreshold;
@@ -293,26 +256,3 @@ export function resolvePrimitives(
   }
 }
 
-export function resolveHealingPrimitives(
-  effects: PrimitiveEffect[],
-  context: HealingContext,
-): number {
-  let bonus = 0;
-  for (const p of effects) {
-    if (p.kind === 'heal') {
-      switch (p.mode) {
-        case 'flat':
-          bonus += p.amount;
-          break;
-        case 'percentMaxHp':
-        case 'percentDamage':
-          bonus += Math.floor(context.baseHeal * p.amount);
-          break;
-      }
-    }
-    if (p.kind === 'statMod' && p.stat === 'heavyRegenPercent') {
-      bonus += Math.max(1, Math.floor(context.baseHeal * p.value));
-    }
-  }
-  return bonus;
-}
