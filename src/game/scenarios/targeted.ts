@@ -5,9 +5,9 @@ import type { Unit } from '../../features/units/types.js';
 import type { Prototype } from '../../features/prototypes/types.js';
 import { assemblePrototype } from '../../design/assemblePrototype.js';
 import { createUnitId } from '../../core/ids.js';
+import { createFreshUnit } from '../../features/units/createUnit.js';
 import { recordUnitCreated } from '../../systems/historySystem.js';
 import { hexToKey } from '../../core/grid.js';
-import type { VeteranLevel } from '../../core/enums.js';
 
 export interface UnitPlacement {
   chassisId: string;
@@ -50,31 +50,7 @@ function spawnUnit(
   faction.prototypeIds.push(prototype.id);
 
   const unitId = createUnitId();
-  let unit: Unit = {
-    id: unitId,
-    factionId,
-    position,
-    facing: 0,
-    hp: prototype.derivedStats.hp,
-    maxHp: prototype.derivedStats.hp,
-    movesRemaining: prototype.derivedStats.moves + (prototype.movesBonus ?? 0),
-    maxMoves: prototype.derivedStats.moves + (prototype.movesBonus ?? 0),
-    attacksRemaining: 1,
-    xp: 0,
-    veteranLevel: 'green' as VeteranLevel,
-    status: 'ready',
-    prototypeId: prototype.id,
-    history: [],
-    morale: 100,
-    routed: false,
-    poisoned: false,
-    enteredZoCThisActivation: false,
-    poisonStacks: 0,
-    poisonTurnsRemaining: 0,
-    isStealthed: false,
-    turnsSinceStealthBreak: 0,
-    learnedAbilities: [],
-  };
+  let unit = createFreshUnit(factionId, position, prototype, unitId);
   unit = recordUnitCreated(unit, factionId, prototype.id, state.round);
   units.set(unitId, unit);
   faction.unitIds.push(unitId);

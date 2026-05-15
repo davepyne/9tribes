@@ -6,11 +6,10 @@ import type { RulesRegistry } from '../data/registry/types.js';
 import type { FactionId, CityId, PrototypeId, VillageId } from '../types.js';
 import type { City, ProductionItem, CurrentProduction, ProductionCostType } from '../features/cities/types.js';
 import type { Unit } from '../features/units/types.js';
-import type { HistoryEntry } from '../features/units/types.js';
 import type { Prototype } from '../features/prototypes/types.js';
-import type { VeteranLevel, UnitStatus } from '../core/enums.js';
 import { createUnitId } from '../core/ids.js';
 import { getNeighbors, hexDistance, hexToKey, getHexesInRange } from '../core/grid.js';
+import { createFreshUnit } from '../features/units/createUnit.js';
 import { recordUnitCreated } from './historySystem.js';
 import { getPrototype } from '../game/stateAccess.js';
 import { isHexOccupied } from './occupancySystem.js';
@@ -200,31 +199,7 @@ export function completeProduction(
 
   // Create the unit
   const unitId = createUnitId();
-  let unit: Unit = {
-    id: unitId,
-    factionId: city.factionId,
-    position: spawnHex,
-    facing: 0,
-    hp: prototype.derivedStats.hp,
-    maxHp: prototype.derivedStats.hp,
-    movesRemaining: prototype.derivedStats.moves,
-    maxMoves: prototype.derivedStats.moves,
-    attacksRemaining: 1,
-    xp: 0,
-    veteranLevel: 'green' as VeteranLevel,
-    status: 'ready' as UnitStatus,
-    prototypeId: prototype.id,
-    history: [] as HistoryEntry[],
-    morale: 100,
-    routed: false,
-    poisoned: false,
-    enteredZoCThisActivation: false,
-    poisonStacks: 0,
-    poisonTurnsRemaining: 0,
-    isStealthed: false,
-    turnsSinceStealthBreak: 0,
-    learnedAbilities: [],
-  };
+  let unit = createFreshUnit(city.factionId, spawnHex, prototype, unitId);
 
   unit = recordUnitCreated(unit, city.factionId, prototype.id, state.round);
 

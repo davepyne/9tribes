@@ -455,6 +455,12 @@ export function applyCombatAction(
       ...nextAttacker,
       attackedTargetsThisTurn: [...(nextAttacker.attackedTargetsThisTurn ?? []), preview.defenderId],
     };
+
+    // Slayer bonus: killing a cyclops promotes directly to Elite
+    if (preview.result.defenderDestroyed && defenderPrototype?.tags?.includes('cyclops')) {
+      const eliteThreshold = registry.getVeteranLevel('elite')?.xpThreshold ?? 120;
+      nextAttacker = { ...nextAttacker, xp: eliteThreshold, veteranLevel: 'elite' };
+    }
   }
 
   const nextUnits = new Map(state.units);

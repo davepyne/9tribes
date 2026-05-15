@@ -71,6 +71,7 @@ import { getTerrainAt, occupiesFriendlySettlement, applyEnvironmentalDamage, get
 import { isWetlandTerrain } from '../terrainUtils.js';
 import { isPassiveWetlandStealth } from '../factionIdentitySystem.js';
 import { addZoneEffect, removeZoneEffectsByOwner } from '../zoneEffectSystem.js';
+import { isWildFaction, CYCLOPS_REGEN_PER_ROUND } from '../wildCyclopsConstants.js';
 
 function findMeatiestUnit(state: GameState, factionId: FactionId): Unit | undefined {
   const faction = state.factions.get(factionId);
@@ -791,6 +792,27 @@ function applyIronTurtleCrushingZone(state: GameState, factionId: FactionId): Ga
   });
 }
 
+function processWildFactionPhases(state: GameState, factionId: FactionId): GameState {
+  const faction = state.factions.get(factionId);
+  if (!faction) return state;
+
+  const newUnits = new Map(state.units);
+  for (const uid of faction.unitIds) {
+    const unit = newUnits.get(uid);
+    if (!unit || unit.hp <= 0) continue;
+    newUnits.set(uid, {
+      ...unit,
+      movesRemaining: unit.maxMoves,
+      attacksRemaining: 1,
+      status: 'ready',
+      activatedThisRound: false,
+      enteredZoCThisActivation: false,
+      hp: Math.min(unit.maxHp, unit.hp + CYCLOPS_REGEN_PER_ROUND),
+    });
+  }
+  return { ...state, units: newUnits };
+}
+
 export function processFactionPhases(
   state: GameState,
   factionId: FactionId,
@@ -801,6 +823,10 @@ export function processFactionPhases(
   const faction = state.factions.get(factionId);
   if (!faction || !state.map) {
     return state;
+  }
+
+  if (isWildFaction(factionId)) {
+    return processWildFactionPhases(state, factionId);
   }
 
   let current = state;

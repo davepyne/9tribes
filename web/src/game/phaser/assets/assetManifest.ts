@@ -74,6 +74,7 @@ export const assetManifest = [
   { kind: 'image', key: TEXTURES.frostIceDefenders, path: `${PLAYTEST_UNITS_ROOT}/frost_ice_defenders.png` },
   { kind: 'image', key: TEXTURES.frostPriest, path: `${PLAYTEST_UNITS_ROOT}/frost_priest.png` },
   { kind: 'image', key: TEXTURES.frostPolarBear, path: `${PLAYTEST_UNITS_ROOT}/frost_polar_bear.png` },
+  { kind: 'image', key: TEXTURES.cyclops, path: `${PLAYTEST_UNITS_ROOT}/cyclops.png` },
   // Rear-facing (flipped) sprites
   { kind: 'image', key: TEXTURES.druidSpearInfantryRear, path: `${PLAYTEST_UNITS_ROOT}/druid_spear_infantry_flipped.png` },
   { kind: 'image', key: TEXTURES.druidArcherRear, path: `${PLAYTEST_UNITS_ROOT}/druid_archer_flipped.png` },
@@ -121,4 +122,5 @@ export const assetManifest = [
   { kind: 'image', key: TEXTURES.frostIceDefendersRear, path: `${PLAYTEST_UNITS_ROOT}/frost_ice_defenders_flipped.png` },
   { kind: 'image', key: TEXTURES.frostPriestRear, path: `${PLAYTEST_UNITS_ROOT}/frost_priest_flipped.png` },
   { kind: 'image', key: TEXTURES.frostPolarBearRear, path: `${PLAYTEST_UNITS_ROOT}/frost_polar_bear_flipped.png` },
+  { kind: 'image', key: TEXTURES.cyclopsRear, path: `${PLAYTEST_UNITS_ROOT}/cyclops_flipped.png` },
 ] as const;

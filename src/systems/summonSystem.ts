@@ -2,12 +2,13 @@ import type { GameState, Unit, HexCoord } from '../game/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
 import type { FactionId, UnitId, PrototypeId, ChassisId } from '../types.js';
 import type { Prototype } from '../features/prototypes/types.js';
-import type { VeteranLevel, UnitStatus } from '../core/enums.js';
+import type { UnitStatus } from '../core/enums.js';
 import { getNeighbors } from '../core/grid.js';
 import { hexToKey } from '../core/grid.js';
 import { isHexOccupied } from './occupancySystem.js';
 import { getTerrainAt } from './abilitySystem.js';
 import { createUnitId } from '../core/ids.js';
+import { createFreshUnit } from '../features/units/createUnit.js';
 
 export interface PriestSummonCheck {
   canSummon: boolean;
@@ -150,35 +151,9 @@ export function attemptPriestSummon(
   }
 
   const chassisDef = registry.getChassis(summonConfig.chassisId);
-  const summonHp = chassisDef?.baseHp ?? 10;
-  const summonMoves = chassisDef?.baseMoves ?? 2;
-
   const summonUnitId = createUnitId() as UnitId;
-  const summonUnit: Unit = {
-    id: summonUnitId,
-    factionId: priestUnit.factionId,
-    position: spawnHex,
-    facing: 0,
-    hp: summonHp,
-    maxHp: summonHp,
-    movesRemaining: summonMoves,
-    maxMoves: summonMoves,
-    attacksRemaining: 1,
-    xp: 0,
-    veteranLevel: 'green' as VeteranLevel,
-    status: 'ready' as UnitStatus,
-    prototypeId: prototypeId,
-    history: [],
-    morale: 100,
-    routed: false,
-    poisoned: false,
-    enteredZoCThisActivation: false,
-    poisonStacks: 0,
-    poisonTurnsRemaining: 0,
-    isStealthed: false,
-    turnsSinceStealthBreak: 0,
-    learnedAbilities: [],
-  };
+  const summonPrototype = current.prototypes.get(prototypeId)!;
+  const summonUnit = createFreshUnit(priestUnit.factionId, spawnHex, summonPrototype, summonUnitId);
 
   const units = new Map(current.units);
   units.set(summonUnitId, summonUnit);
