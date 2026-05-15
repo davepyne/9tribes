@@ -31,6 +31,7 @@ import {
   updateCombatRecordOnLoss,
   updateCombatRecordOnWin,
   addHistoryEntry,
+  getHistoryByType,
 } from '../historySystem.js';
 
 import { setTerrainAt } from '../terrainMutationSystem.js';
@@ -1187,10 +1188,7 @@ export function applyCombatAction(
     && nextAttacker.hp > 0
   ) {
     current = setTerrainAt(current, defender.position, 'forest');
-    let saplingKillCount = 0;
-    for (const entry of nextAttacker.history ?? []) {
-      if (entry.type === 'sapling_kill' && ++saplingKillCount >= 3) break;
-    }
+    const saplingKillCount = getHistoryByType(nextAttacker, 'sapling_kill').length;
     if (saplingKillCount < 3) {
       updatedAttacker = addHistoryEntry(nextAttacker, 'sapling_kill', { hex: defender.position }, current.round);
       updatedAttacker = { ...updatedAttacker, maxHp: updatedAttacker.maxHp + 1, hp: updatedAttacker.hp + 1 };

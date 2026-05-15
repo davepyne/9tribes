@@ -1,14 +1,8 @@
-// Submerge System — River Stealth T3 native mechanic.
-//
-// River People units may spend their action on a water hex to teleport
-// to any other hex in the connected waterway, arriving in stealth.
-// Costs all remaining moves and attacks.
-
 import type { GameState } from '../game/types.js';
 import type { FactionId, HexCoord, UnitId } from '../types.js';
 import { getNeighbors, hexToKey } from '../core/grid.js';
 import { resolveResearchDoctrine } from './capabilityDoctrine.js';
-import { getUnitAtHex } from './occupancySystem.js';
+import { buildOccupancyMap } from './occupancySystem.js';
 import { isWaterTerrain } from './terrainUtils.js';
 
 export const SUBMERGE_MAX_RANGE = 8;
@@ -20,7 +14,6 @@ export interface SubmergeResult {
   destination?: HexCoord;
 }
 
-/** BFS flood-fill through water tiles from origin, returning valid unoccupied destinations. */
 export function getConnectedWaterway(
   state: GameState,
   origin: HexCoord,
@@ -29,20 +22,20 @@ export function getConnectedWaterway(
   const originKey = hexToKey(origin);
   const visited = new Set<string>();
   const result: HexCoord[] = [];
-  // Queue entries: [hex, distance from origin]
   const queue: [HexCoord, number][] = [[origin, 0]];
+  const occupied = buildOccupancyMap(state);
   visited.add(originKey);
+  let head = 0;
 
-  while (queue.length > 0) {
-    const [current, dist] = queue.shift()!;
+  while (head < queue.length) {
+    const [current, dist] = queue[head++];
     const key = hexToKey(current);
     const tile = state.map?.tiles.get(key);
     if (!tile) continue;
 
     if (!isWaterTerrain(tile.terrain)) continue;
 
-    // Include as destination if unoccupied and not the origin
-    if (key !== originKey && !getUnitAtHex(state, current)) {
+    if (key !== originKey && !occupied.has(key)) {
       result.push(current);
     }
 
@@ -107,7 +100,6 @@ export function executeSubmerge(
     return { state, submerged: false, reason: 'destination not in connected waterway or occupied' };
   }
 
-  // Teleport the unit
   const updatedUnit = {
     ...unit,
     position: destination,

@@ -3,8 +3,8 @@
  * None of these depend on `this` — they take explicit state and return new state.
  */
 
-import type { GameState, Unit, UnitId } from '../../../../src/game/types.js';
-import type { HexCoord, FactionId } from '../../../../src/types.js';
+import type { GameState, Unit } from '../../../../src/game/types.js';
+import type { HexCoord, FactionId, UnitId } from '../../../../src/types.js';
 import { createImprovementId } from '../../../../src/core/ids.js';
 import { resolveCapabilityDoctrine } from '../../../../src/systems/capabilityDoctrine.js';
 import { updateFogState } from '../../../../src/systems/fogSystem.js';
@@ -182,7 +182,7 @@ export function declareMaelstromAtUnit(
   state: GameState,
   unit: Unit,
 ): GameState {
-  const result = declareMaelstrom(state, unit.factionId as import('../../../../src/types.js').FactionId, unit.position);
+  const result = declareMaelstrom(state, unit.factionId as FactionId, unit.position);
   return result.state;
 }
 
@@ -207,7 +207,7 @@ export function declareOasisAtUnit(
   state: GameState,
   unit: Unit,
 ): GameState {
-  const result = declareOasis(state, unit.factionId as import('../../../../src/types.js').FactionId, unit.position);
+  const result = declareOasis(state, unit.factionId as FactionId, unit.position);
   return result.state;
 }
 
@@ -216,7 +216,7 @@ export function executeSubmergeAtUnit(
   unit: Unit,
   destination: HexCoord,
 ): GameState {
-  const result = executeSubmerge(state, unit.factionId as import('../../../../src/types.js').FactionId, unit.id as import('../../../../src/types.js').UnitId, destination);
+  const result = executeSubmerge(state, unit.factionId as FactionId, unit.id as UnitId, destination);
   return result.state;
 }
 

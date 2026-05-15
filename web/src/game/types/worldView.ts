@@ -75,7 +75,6 @@ export type UnitView = {
   canDeclareMaelstrom?: boolean;
   canDeclareOasis?: boolean;
   canSubmerge?: boolean;
-  submergeHexes?: HexCoord[];
   canDestroyFort?: boolean;
   canSacrifice?: boolean;
   canBrace?: boolean;

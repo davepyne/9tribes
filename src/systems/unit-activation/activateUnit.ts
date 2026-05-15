@@ -481,7 +481,6 @@ export function activateUnit(
     }
   }
 
-  // Submerge: River Stealth T3 native — teleport to connected waterway hex in stealth.
   const submergeOpp = getSubmergeOpportunity(current, factionId, unitId, registry);
   if (
     submergeOpp

@@ -14,7 +14,6 @@ import { getSpriteKeyForUnit, inferChassisId } from './spriteKeys.js';
 import { hexToKey, hexDistance, getNeighbors } from '../../../../src/core/grid.js';
 import { getImprovementBonus } from '../../../../src/systems/combat-action/helpers.js';
 import { isWaterTerrain, isLandTerrain } from '../../../../src/systems/terrainUtils.js';
-import { getConnectedWaterway } from '../../../../src/systems/submergeSystem.js';
 
 function thisChassisMovementClass(chassisId: string | undefined, registry: RulesRegistry): string | undefined {
   return chassisId ? registry.getChassis(chassisId)?.movementClass : undefined;
@@ -88,9 +87,8 @@ export function buildUnitView(
   const canDeclareOasis = !!factionDoctrine?.canDeclareOasis
     && isLandTerrain(tileTerrain) && unit.status === 'ready' && unit.hp > 0;
 
-  const submergeEligible = !!factionDoctrine?.submergeEnabled
+  const canSubmergeFlag = !!factionDoctrine?.submergeEnabled
     && isWaterTerrain(tileTerrain) && unit.status === 'ready' && unit.hp > 0;
-  const submergeHexes = submergeEligible ? getConnectedWaterway(state, unit.position) : [];
 
   const canDestroyFort = !!isHillClan && atFullMoves && improvementBonus > 0
     && !!prototype?.tags?.includes('engineer');
@@ -153,8 +151,7 @@ export function buildUnitView(
     canBuildBastion: canBuildBastion || undefined,
     canDeclareMaelstrom: canDeclareMaelstrom || undefined,
     canDeclareOasis: canDeclareOasis || undefined,
-    canSubmerge: (submergeEligible && submergeHexes.length > 0) || undefined,
-    submergeHexes: submergeHexes.length > 0 ? submergeHexes : undefined,
+    canSubmerge: canSubmergeFlag || undefined,
     canDestroyFort: canDestroyFort || undefined,
     canSacrifice: canSacrifice || undefined,
     ...(() => {
