@@ -77,13 +77,20 @@ export function domainBenefit(domainId: string): string {
   return getAbilityDomainById(domainId)?.baseEffect.description ?? '';
 }
 
-function buildTierDescriptions(domainId: string, capabilities: CapabilityPipViewModel[]): TierDescriptions {
+function buildTierDescriptions(domainId: string, capabilities: CapabilityPipViewModel[], nativeDomain: string): TierDescriptions {
   const nodes = RESEARCH_DOMAINS[domainId]?.nodes;
   const cap = capabilities.find((c) => c.domainId === domainId);
+  const isNative = domainId === nativeDomain;
+  const readDesc = (nodeId: string) => {
+    const effect = nodes?.[nodeId]?.qualitativeEffect;
+    if (!effect) return '';
+    if (isNative && effect.nativeDescription) return effect.nativeDescription;
+    return effect.description ?? '';
+  };
   return {
-    t1: nodes?.[`${domainId}_t1`]?.qualitativeEffect?.description ?? '',
-    t2: nodes?.[`${domainId}_t2`]?.qualitativeEffect?.description ?? '',
-    t3: nodes?.[`${domainId}_t3`]?.qualitativeEffect?.description ?? '',
+    t1: readDesc(`${domainId}_t1`),
+    t2: readDesc(`${domainId}_t2`),
+    t3: readDesc(`${domainId}_t3`),
     t1Complete: cap?.t1Ready ?? false,
     t2Complete: cap?.t2Ready ?? false,
     t3Complete: (cap?.level ?? 0) >= 3,
@@ -200,7 +207,7 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
         key: `solo-${d}`,
         kind: 'solo',
         synergy: buildSoloSynergyData(d),
-        tierDescriptions: buildTierDescriptions(d, capabilities),
+        tierDescriptions: buildTierDescriptions(d, capabilities, nativeDomain),
       });
     }
 
@@ -241,7 +248,7 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
     }
 
     return cards;
-  }, [learnedDomains, capabilities, hasActiveTriple, activeTriplePairIds, activeTripleEmergentRuleId, activeNativePairId, activeDoubleStackPairIds]);
+  }, [learnedDomains, capabilities, hasActiveTriple, activeTriplePairIds, activeTripleEmergentRuleId, activeNativePairId, activeDoubleStackPairIds, nativeDomain]);
 
   return (
     <div className="syn-chip-wrap" onClick={handleClick}>

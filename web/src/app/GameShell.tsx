@@ -127,6 +127,7 @@ function KnowledgeGainedShellContent({
   useTechDiscoveryDetector(
     state.playFeedback?.lastResearchCompletion ?? null,
     showTechDiscovery,
+    state.world.factions.find((f) => f.id === state.activeFactionId)?.nativeDomain,
   );
 
   useSynergyUnlockDetector(

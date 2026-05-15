@@ -9,6 +9,7 @@ type TechDiscoveryEvent = {
   nodeName: string;
   tier: number;
   effectDescription: string | null;
+  isNative: boolean;
 };
 
 // The catalog is a TypeScript module owned by the backend (src/content/domains).
@@ -21,9 +22,12 @@ const TIER_LABELS: Record<number, string> = {
   3: 'Transcendence',
 };
 
-function lookupEffectDescription(nodeId: string): string | null {
+function lookupEffectDescription(nodeId: string, isNative: boolean): string | null {
   const domainId = nodeId.split('_t')[0];
-  return RESEARCH_DOMAINS[domainId]?.nodes[nodeId]?.qualitativeEffect?.description ?? null;
+  const effect = RESEARCH_DOMAINS[domainId]?.nodes[nodeId]?.qualitativeEffect;
+  if (!effect) return null;
+  if (isNative && effect.nativeDescription) return effect.nativeDescription;
+  return effect.description ?? null;
 }
 
 // ── Context ──
@@ -45,6 +49,7 @@ export function useTechDiscoveryModal() {
 export function useTechDiscoveryDetector(
   lastResearchCompletion: { nodeId: string; nodeName: string; tier: number } | null | undefined,
   onDetect: (event: TechDiscoveryEvent) => void,
+  nativeDomain: string | undefined,
 ) {
   const prevKeyRef = useRef<string | null>(null);
 
@@ -54,11 +59,15 @@ export function useTechDiscoveryDetector(
     if (key === prevKeyRef.current) return;
     prevKeyRef.current = key;
 
+    const domainId = lastResearchCompletion.nodeId.split('_t')[0];
+    const isNative = domainId === nativeDomain;
+
     onDetect({
       ...lastResearchCompletion,
-      effectDescription: lookupEffectDescription(lastResearchCompletion.nodeId),
+      effectDescription: lookupEffectDescription(lastResearchCompletion.nodeId, isNative),
+      isNative,
     });
-  }, [lastResearchCompletion, onDetect]);
+  }, [lastResearchCompletion, onDetect, nativeDomain]);
 }
 
 // ── Provider ──
