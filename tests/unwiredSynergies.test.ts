@@ -45,8 +45,8 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'statMod', stat: 'toxicSpreadTransferRadius', op: 'set', value: 1 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.toxicSpreadTransferStacks).toBe(1);
-      expect(result.toxicSpreadTransferRadius).toBe(1);
+      expect(result.getStat('toxicSpreadTransferStacks')).toBe(1);
+      expect(result.getStat('toxicSpreadTransferRadius')).toBe(1);
     });
 
     it('charge+charge (Stampede Horde) sets formationPinballCollisionDamage', () => {
@@ -55,8 +55,8 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'applyStatus', status: 'stun', duration: 1 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.formationPinballCollisionDamage).toBe(4);
-      expect(result.stunDuration).toBe(1);
+      expect(result.getStat('formationPinballCollisionDamage')).toBe(4);
+      expect(result.getStat('stunDuration')).toBe(1);
     });
 
     it('heavy_hitter+heavy_hitter (Crushing Weight) sets formationPinballCollisionDamage', () => {
@@ -65,8 +65,8 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'applyStatus', status: 'stun', duration: 1 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.formationPinballCollisionDamage).toBe(4);
-      expect(result.stunDuration).toBe(1);
+      expect(result.getStat('formationPinballCollisionDamage')).toBe(4);
+      expect(result.getStat('stunDuration')).toBe(1);
     });
   });
 
@@ -78,9 +78,9 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'statMod', stat: 'damage', op: 'set', value: 0.25 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.beachRaidDamageBonus).toBe(0.25);
-      expect(result.beachRaidRetreatToWater).toBe(true);
-      expect(result.damage).toBe(0.25);
+      expect(result.getStat('beachRaidDamageBonus')).toBe(0.25);
+      expect(result.hasFlag('beachRaidRetreatToWater')).toBe(true);
+      expect(result.getStat('damage')).toBe(0.25);
     });
 
     it('hitrun+camel_adaptation (Desert Ghost) sets ghostPassActive on retreat', () => {
@@ -88,7 +88,7 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'setFlag', flag: 'ghostPassActive', condition: 'isRetreat' },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext({ isRetreat: true }), [syn], null);
-      expect(result.ghostPassActive).toBe(true);
+      expect(result.hasFlag('ghostPassActive')).toBe(true);
     });
 
     it('Desert Ghost does NOT set ghostPassActive when not retreating', () => {
@@ -96,7 +96,7 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'setFlag', flag: 'ghostPassActive', condition: 'isRetreat' },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext({ isRetreat: false }), [syn], null);
-      expect(result.ghostPassActive).toBe(false);
+      expect(result.hasFlag('ghostPassActive')).toBe(false);
     });
   });
 
@@ -107,8 +107,8 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'statMod', stat: 'formationWallRangedReduction', op: 'set', value: 0.5 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.formationWallActive).toBe(true);
-      expect(result.formationWallRangedReduction).toBe(0.5);
+      expect(result.hasFlag('formationWallActive')).toBe(true);
+      expect(result.getStat('formationWallRangedReduction')).toBe(0.5);
     });
 
     it('fortress+camel_adaptation (Desert Stronghold) sets mobileStronghold fields', () => {
@@ -120,11 +120,11 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'preventAction', action: 'displacement' },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.mobileStrongholdFortUp).toBe(true);
-      expect(result.mobileStrongholdDefenseBonus).toBe(0.75);
-      expect(result.mobileStrongholdAlliedDefenseBonus).toBe(0.25);
-      expect(result.defense).toBe(0.75);
-      expect(result.antiDisplacement).toBe(true);
+      expect(result.hasFlag('mobileStrongholdFortUp')).toBe(true);
+      expect(result.getStat('mobileStrongholdDefenseBonus')).toBe(0.75);
+      expect(result.getStat('mobileStrongholdAlliedDefenseBonus')).toBe(0.25);
+      expect(result.getStat('defense')).toBe(0.75);
+      expect(result.hasFlag('antiDisplacement')).toBe(true);
     });
 
     it('fortress+nature_healing (Citadel) sets countsAsCity and heals', () => {
@@ -136,9 +136,9 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'statMod', stat: 'defense', op: 'add', value: 0.5 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.countsAsCity).toBe(true);
-      expect(result.defense).toBe(0.5);
-      expect(result.synergyFlatHeal).toBe(3);
+      expect(result.hasFlag('countsAsCity')).toBe(true);
+      expect(result.getStat('defense')).toBe(0.5);
+      expect(result.getStat('synergyFlatHeal')).toBe(3);
     });
   });
 
@@ -148,7 +148,7 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'statMod', stat: 'tidalCleanseHealPerTurn', op: 'set', value: 4 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.tidalCleanseHealPerTurn).toBe(4);
+      expect(result.getStat('tidalCleanseHealPerTurn')).toBe(4);
     });
 
     it('nature_healing+nature_healing (Life Bloom) sets bloom pulse fields', () => {
@@ -159,10 +159,10 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'statMod', stat: 'bloomPulseMovementBonus', op: 'set', value: 1 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.bloomPulseHeal).toBe(4);
-      expect(result.bloomPulseSelfHeal).toBe(6);
-      expect(result.bloomPulseAuraRadius).toBe(3);
-      expect(result.bloomPulseMovementBonus).toBe(1);
+      expect(result.getStat('bloomPulseHeal')).toBe(4);
+      expect(result.getStat('bloomPulseSelfHeal')).toBe(6);
+      expect(result.getStat('bloomPulseAuraRadius')).toBe(3);
+      expect(result.getStat('bloomPulseMovementBonus')).toBe(1);
     });
 
     it('nature_healing+slaving (Forced Labor) sets slaveEconomy fields', () => {
@@ -171,8 +171,8 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'statMod', stat: 'slaveEconomyResourceBonus', op: 'set', value: 1 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.slaveEconomyHealPerTurn).toBe(4);
-      expect(result.slaveEconomyResourceBonus).toBe(1);
+      expect(result.getStat('slaveEconomyHealPerTurn')).toBe(4);
+      expect(result.getStat('slaveEconomyResourceBonus')).toBe(1);
     });
   });
 
@@ -182,7 +182,7 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'statMod', stat: 'stealthAuraShareRadius', op: 'set', value: 1 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.stealthAuraShareRadius).toBe(1);
+      expect(result.getStat('stealthAuraShareRadius')).toBe(1);
     });
 
     it('tidal_warfare+river_stealth (Silent Landing) sets transportedTroopsStealth', () => {
@@ -191,8 +191,8 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'setFlag', flag: 'transportedTroopsStealth' },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext({ isStealthAttack: true }), [syn], null);
-      expect(result.transportedTroopsStealth).toBe(true);
-      expect(result.stealthChargeMultiplier).toBe(0.5);
+      expect(result.hasFlag('transportedTroopsStealth')).toBe(true);
+      expect(result.getStat('stealthChargeMultiplier')).toBe(0.5);
     });
 
     it('camel_adaptation+camel_adaptation (Nomad Network) sets caravanRelayVisionRange', () => {
@@ -200,7 +200,7 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'statMod', stat: 'caravanRelayVisionRange', op: 'set', value: 3 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.caravanRelayVisionRange).toBe(3);
+      expect(result.getStat('caravanRelayVisionRange')).toBe(3);
     });
   });
 
@@ -210,7 +210,7 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'statMod', stat: 'amphibiousMovementBonus', op: 'set', value: 1 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.amphibiousMovementBonus).toBe(1);
+      expect(result.getStat('amphibiousMovementBonus')).toBe(1);
     });
   });
 
@@ -220,7 +220,7 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'grantVerb', verb: 'positionSwap' },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.positionSwapAvailable).toBe(true);
+      expect(result.hasFlag('positionSwapAvailable')).toBe(true);
     });
 
     it('camel_adaptation+slaving (Desert Slave Train) sets caravanPassengerActive', () => {
@@ -228,38 +228,38 @@ describe('Unwired synergy dispatch verification', () => {
         { kind: 'grantVerb', verb: 'carryCaptured' },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [syn], null);
-      expect(result.caravanPassengerActive).toBe(true);
+      expect(result.hasFlag('caravanPassengerActive')).toBe(true);
     });
   });
 });
 
 describe('makeEmptyResult defaults', () => {
-  it('all 17 unwired fields default to zero/false', () => {
+  it('all unwired stat/flag entries default to zero/false', () => {
     const result = makeEmptyResult();
-    expect(result.toxicSpreadTransferRadius).toBe(0);
-    expect(result.toxicSpreadTransferStacks).toBe(0);
-    expect(result.formationPinballCollisionDamage).toBe(0);
-    expect(result.beachRaidDamageBonus).toBe(0);
-    expect(result.beachRaidRetreatToWater).toBe(false);
-    expect(result.ghostPassActive).toBe(false);
-    expect(result.formationWallActive).toBe(false);
-    expect(result.formationWallRangedReduction).toBe(0);
-    expect(result.mobileStrongholdFortUp).toBe(false);
-    expect(result.mobileStrongholdDefenseBonus).toBe(0);
-    expect(result.mobileStrongholdAlliedDefenseBonus).toBe(0);
-    expect(result.countsAsCity).toBe(false);
-    expect(result.tidalCleanseHealPerTurn).toBe(0);
-    expect(result.bloomPulseHeal).toBe(0);
-    expect(result.bloomPulseSelfHeal).toBe(0);
-    expect(result.bloomPulseAuraRadius).toBe(0);
-    expect(result.bloomPulseMovementBonus).toBe(0);
-    expect(result.slaveEconomyHealPerTurn).toBe(0);
-    expect(result.slaveEconomyResourceBonus).toBe(0);
-    expect(result.stealthAuraShareRadius).toBe(0);
-    expect(result.transportedTroopsStealth).toBe(false);
-    expect(result.caravanRelayVisionRange).toBe(0);
-    expect(result.amphibiousMovementBonus).toBe(0);
-    expect(result.positionSwapAvailable).toBe(false);
-    expect(result.caravanPassengerActive).toBe(false);
+    expect(result.getStat('toxicSpreadTransferRadius')).toBe(0);
+    expect(result.getStat('toxicSpreadTransferStacks')).toBe(0);
+    expect(result.getStat('formationPinballCollisionDamage')).toBe(0);
+    expect(result.getStat('beachRaidDamageBonus')).toBe(0);
+    expect(result.hasFlag('beachRaidRetreatToWater')).toBe(false);
+    expect(result.hasFlag('ghostPassActive')).toBe(false);
+    expect(result.hasFlag('formationWallActive')).toBe(false);
+    expect(result.getStat('formationWallRangedReduction')).toBe(0);
+    expect(result.hasFlag('mobileStrongholdFortUp')).toBe(false);
+    expect(result.getStat('mobileStrongholdDefenseBonus')).toBe(0);
+    expect(result.getStat('mobileStrongholdAlliedDefenseBonus')).toBe(0);
+    expect(result.hasFlag('countsAsCity')).toBe(false);
+    expect(result.getStat('tidalCleanseHealPerTurn')).toBe(0);
+    expect(result.getStat('bloomPulseHeal')).toBe(0);
+    expect(result.getStat('bloomPulseSelfHeal')).toBe(0);
+    expect(result.getStat('bloomPulseAuraRadius')).toBe(0);
+    expect(result.getStat('bloomPulseMovementBonus')).toBe(0);
+    expect(result.getStat('slaveEconomyHealPerTurn')).toBe(0);
+    expect(result.getStat('slaveEconomyResourceBonus')).toBe(0);
+    expect(result.getStat('stealthAuraShareRadius')).toBe(0);
+    expect(result.hasFlag('transportedTroopsStealth')).toBe(false);
+    expect(result.getStat('caravanRelayVisionRange')).toBe(0);
+    expect(result.getStat('amphibiousMovementBonus')).toBe(0);
+    expect(result.hasFlag('positionSwapAvailable')).toBe(false);
+    expect(result.hasFlag('caravanPassengerActive')).toBe(false);
   });
 });

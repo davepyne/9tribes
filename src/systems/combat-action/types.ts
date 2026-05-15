@@ -1,5 +1,5 @@
-import type { HexCoord } from '../../types.js';
 import type { CombatResult } from '../combatSystem.js';
+import type { SynergyCombatResult } from '../synergyTypes.js';
 import type { UnitId } from '../../game/types.js';
 
 export type CombatActionEffectCategory = 'positioning' | 'ability' | 'synergy' | 'aftermath';
@@ -25,6 +25,10 @@ export interface CombatActionPreview {
   details: CombatActionPreviewDetails;
 }
 
+// Per-combat computed fields that are NOT synergy-derived.
+// All synergy effects are read off `attackerSynergy` / `defenderSynergy` via
+// the SynergyCombatResult helper API (`getStat`, `hasFlag`, etc.). Adding a
+// new synergy never adds a named field here.
 export interface CombatActionPreviewDetails {
   attackerTerrainId: string;
   defenderTerrainId: string;
@@ -37,125 +41,10 @@ export interface CombatActionPreviewDetails {
   improvementDefenseBonus: number;
   wallDefenseBonus: number;
   totalKnockbackDistance: number;
-  poisonTrapPositions: HexCoord[];
-  poisonTrapDamage: number;
-  poisonTrapSlow: number;
-  healOnRetreatAmount: number;
-  sandstormDamage: number;
-  contaminateActive: boolean;
-  frostbiteColdDoT: number;
-  frostbiteSlow: number;
-  attackerSynergyEffects: string[];
-  defenderSynergyEffects: string[];
   sneakAttackTriggered: boolean;
   stampedeTriggered: boolean;
-  // Phase 4: emergent rule fields
-  emergentSustainHealPercent: number;
-  emergentSustainMinHp: number;
-  emergentSmiteBonus: number;
-  emergentPermanentStealthTerrains: string[];
-  emergentCaptureBonus: number;
-  emergentDesertCaptureBonus: number;
-  // Juggernaut per-domain signature fields
-  emergentPoisonPerHit: number;
-  emergentDamageReflection: number;
-  emergentKnockbackOnKill: number;
-  emergentDamageBehindPercent: number;
-  emergentFreeReposition: number;
-  emergentArmorPierce: number;
-  emergentCaptureBelowHpPercent: number;
-  emergentBonusDamageAdjacentWater: number;
-  emergentUndying: boolean;
-  emergentIgnoreZoc: boolean;
-  // Iron Turtle expanded
-  emergentCrushZoneRadius: number;
-  emergentCrushZoneMovementPenalty: number;
-  // Many-Faced stance
-  emergentManyFacedStance: string;
-  emergentManyFacedDefense: number;
-  emergentManyFacedReflection: number;
-  emergentManyFacedDamage: number;
-  emergentManyFacedRangeBonus: number;
-  emergentManyFacedMovementBonus: number;
-  // Phase 3A: direct combat effects
-  instantKill: boolean;
-  lethalAmbushPoison: number;
-  chargeCooldownWaived: boolean;
-  formationCrushStacks: number;
-  stunDuration: number;
-  armorPiercing: number;
-  // Phase 3B: capture synergy modifiers
-  capturePoisonDamage: number;
-  capturePoisonStacks: number;
-  slaveDamageBonus: number;
-  slaveHealPenalty: number;
-  chargeCaptureChance: number;
-  retreatCaptureChance: number;
-  navalCaptureBonus: number;
-  stealthCaptureBonus: number;
-  // Phase 3C: buff/aura/retreat effects
-  captureEscapePrevented: boolean;
-  coastalNomadDefense: number;
-  heavyNavalRamDamage: number;
-  slaveHealAmount: number;
-  heavyRegenPercent: number;
-  sandstormAuraRadius: number;
-  sandstormAuraDebuff: number;
-  slaveArmyDamageBonus: number;
-  slaveArmyDefensePenalty: number;
-  slaveCoercionDamageBonus: number;
-  heavyMassStacks: number;
-  // Top-level synergy modifiers
-  synergyDamageBonus: number;
-  synergyDefenseBonus: number;
-  poisonStacks: number;
-  damageReflection: number;
-  aoeDamage: number;
-  witheringReduction: number;
-  // Heal primitive wiring
-  synergyFlatHeal: number;
-  synergyPercentHealMaxHp: number;
-  // Post-combat re-stealth
-  reEnterStealthAfterCombat: boolean;
-  // Pair synergy fields
-  vampiricStrikeHealPercent: number;
-  bombardmentRange: number;
-  bombardmentDamageMultiplier: number;
-  bombardmentLandAuraDefense: number;
-  mobileStrongholdFortUp: boolean;
-  mobileStrongholdDefenseBonus: number;
-  mobileStrongholdAlliedDefenseBonus: number;
-  beachRaidDamageBonus: number;
-  beachRaidRetreatToWater: boolean;
-  ghostPassActive: boolean;
-  fightingRetreatFreeStrike: boolean;
-  fightingRetreatDamageMultiplier: number;
-  tidalCleanseHealPerTurn: number;
-  amphibiousMovementBonus: number;
-  stealthAuraShareRadius: number;
-  slaveEconomyHealPerTurn: number;
-  slaveEconomyResourceBonus: number;
-  caravanPassengerActive: boolean;
-  countsAsCity: boolean;
-  transportedTroopsStealth: boolean;
-  positionSwapAvailable: boolean;
-  caravanRelayVisionRange: number;
-  formationWallActive: boolean;
-  formationWallRangedReduction: number;
-  formationPinballCollisionDamage: number;
-  formationFocusBonus: number;
-  formationFocusIgnoresDefense: boolean;
-  formationChainBonus: number;
-  bloomPulseHeal: number;
-  bloomPulseSelfHeal: number;
-  bloomPulseAuraRadius: number;
-  bloomPulseMovementBonus: number;
-  toxicSpreadTransferRadius: number;
-  toxicSpreadTransferStacks: number;
-  // New emergent wiring fields
-  emergentPermanentStealth: boolean;
-  emergentKillChainRedeployRange: number;
-  emergentPoisonCloudPreventsHealing: boolean;
+  attackerSynergy: SynergyCombatResult;
+  defenderSynergy: SynergyCombatResult;
 }
 
 export interface CombatActionFeedback {

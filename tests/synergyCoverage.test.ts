@@ -4,15 +4,21 @@ import { runAudit } from '../scripts/auditSynergyCoverage.js';
 /**
  * Synergy Coverage Guard (Phase 1 of synergy-primitives cleanup plan).
  *
- * These counts start at today's actual values. Every subsequent phase that
- * fixes fields should decrement the relevant constant. CI fails if the count
- * grows — meaning a new vestigial/dead/orphan field was introduced.
+ * After Phase 3, the audit operates on StatName/FlagName/VerbName unions
+ * (the contract surface of the generic SynergyCombatResult). Each entry is
+ * classified as live/dead/vestigial/orphan based on whether the dispatcher
+ * writes it (via content primitives) and whether any consumer reads it via
+ * the helper API (getStat/hasFlag/hasVerb/data.get/getList).
+ *
+ * The counts below start at the post-Phase-3 actuals. Subsequent phases that
+ * fix entries should decrement the relevant constant; CI fails if a count
+ * grows.
  */
 const EXPECTED_COUNTS = {
-  dead: 0,
-  vestigial: 11,
-  orphan: 14,
-  live: 90,
+  dead: 13,
+  vestigial: 15,
+  orphan: 12,
+  live: 92,
 } as const;
 
 describe('synergy coverage audit', () => {

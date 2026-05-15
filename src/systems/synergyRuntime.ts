@@ -40,12 +40,13 @@ export function resolveEffectiveSynergies(
 }
 
 export function calculateSynergyAttackBonus(result: SynergyCombatResult): number {
-  if (result.multiplierStackValue > 0) {
-    return result.multiplierStackValue - 1;
+  const mult = result.getStat('multiplierStackValue');
+  if (mult > 0) {
+    return mult - 1;
   }
   return 0;
 }
 
 export function calculateSynergyDefenseBonus(result: SynergyCombatResult): number {
-  return result.dugInDefense + result.auraOverlapDefense;
+  return result.getStat('dugInDefense') + result.getStat('auraOverlapDefense');
 }

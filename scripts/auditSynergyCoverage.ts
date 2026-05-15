@@ -3,8 +3,13 @@
 // Synergy Coverage Audit — Phase 1 of synergy-primitives cleanup plan
 // ============================================================================
 //
-// Enumerates SynergyCombatResult fields, classifies each as
-// live/dead/vestigial/orphan, and reports trigger/target/scaling usage.
+// Enumerates StatName / FlagName / VerbName entries (the contract surface of
+// SynergyCombatResult) and classifies each as live/dead/vestigial/orphan, and
+// reports trigger/target/scaling usage.
+//
+// After Phase 3, SynergyCombatResult is a generic container (Map<StatName,
+// number>, Set<FlagName>, etc.); the audit operates on the string-literal
+// unions rather than interface fields.
 //
 // Usage: node --import=tsx scripts/auditSynergyCoverage.ts
 //
@@ -28,10 +33,11 @@ const SRC = path.join(ROOT, 'src');
 // ---------------------------------------------------------------------------
 
 type Classification = 'live' | 'dead' | 'vestigial' | 'orphan';
+type Kind = 'stat' | 'flag' | 'verb' | 'data';
 
 export interface FieldClassification {
   field: string;
-  type: string;
+  kind: Kind;
   writtenByContent: boolean;
   dispatcherWriteBranch: boolean;
   readByConsumer: boolean;
@@ -52,43 +58,22 @@ export interface AuditResult {
 }
 
 // ---------------------------------------------------------------------------
-// Excluded paths for consumer-read checks (mechanical copies, not consumption)
+// Excluded paths for consumer-read checks
 // ---------------------------------------------------------------------------
-
+//
+// These files implement the dispatch pipeline itself; their references to
+// stat/flag/verb names are writes (or mechanical re-exports), not consumer
+// reads.
 const EXCLUDED_SUFFIXES = [
   '/systems/synergyTypes.ts',
   '/systems/synergyEffects.ts',
+  '/systems/synergyPrimitives.ts',
   '/systems/primitiveDispatcher.ts',
-  '/systems/combat-action/types.ts',
-  '/systems/combat-action/preview.ts',
-  '/systems/combat-action/labeling.ts',
+  '/systems/labeling.ts',
 ];
 
 // ---------------------------------------------------------------------------
-// 1. Parse SynergyCombatResult fields (TS Compiler API — no regex)
-// ---------------------------------------------------------------------------
-
-function parseInterfaceFields(filePath: string, interfaceName: string): Map<string, string> {
-  const source = fs.readFileSync(filePath, 'utf-8');
-  const sf = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true);
-  const fields = new Map<string, string>();
-
-  function visit(node: ts.Node) {
-    if (ts.isInterfaceDeclaration(node) && node.name.text === interfaceName) {
-      for (const member of node.members) {
-        if (ts.isPropertySignature(member) && member.name && ts.isIdentifier(member.name)) {
-          fields.set(member.name.text, member.type ? member.type.getText(sf) : 'unknown');
-        }
-      }
-    }
-    ts.forEachChild(node, visit);
-  }
-  ts.forEachChild(sf, visit);
-  return fields;
-}
-
-// ---------------------------------------------------------------------------
-// 2. Parse string-literal unions (StatName, FlagName)
+// 1. Parse string-literal unions (StatName, FlagName, VerbName)
 // ---------------------------------------------------------------------------
 
 function parseStringUnion(filePath: string, typeName: string): string[] {
@@ -116,7 +101,7 @@ function parseStringUnion(filePath: string, typeName: string): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Map primitive → result fields (mirrors primitiveDispatcher.ts logic)
+// 2. Map primitive → result keys it writes (mirrors primitiveDispatcher.ts)
 // ---------------------------------------------------------------------------
 
 function primitiveToResultFields(p: Record<string, unknown>): string[] {
@@ -178,20 +163,23 @@ function primitiveToResultFields(p: Record<string, unknown>): string[] {
         case 'contamination': return ['contaminateActive'];
         default: return [];
       }
-    case 'grantVerb':
-      switch (p.verb) {
-        case 'positionSwap': return ['positionSwapAvailable'];
+    case 'grantVerb': {
+      const verb = p.verb as string;
+      const f: string[] = [verb];  // verb itself is always added to result.verbs
+      switch (verb) {
+        case 'positionSwap': f.push('positionSwapAvailable'); break;
         case 'secondCharge':
-        case 'waiveChargeCooldown': return ['chargeCooldownWaived'];
-        case 'retreatThroughImpassable': return ['ghostPassActive'];
-        case 'opportunityStrikeOnDisengage': return ['fightingRetreatFreeStrike'];
-        case 'fortUp': return ['mobileStrongholdFortUp'];
-        case 'carryCaptured': return ['caravanPassengerActive'];
-        case 'retreatToWater': return ['beachRaidRetreatToWater'];
-        case 'reEnterStealth': return ['reEnterStealthAfterCombat'];
-        case 'redeployOnKill': return ['emergentKillChainRedeployRange'];
-        default: return [];
+        case 'waiveChargeCooldown': f.push('chargeCooldownWaived'); break;
+        case 'retreatThroughImpassable': f.push('ghostPassActive'); break;
+        case 'opportunityStrikeOnDisengage': f.push('fightingRetreatFreeStrike'); break;
+        case 'fortUp': f.push('mobileStrongholdFortUp'); break;
+        case 'carryCaptured': f.push('caravanPassengerActive'); break;
+        case 'retreatToWater': f.push('beachRaidRetreatToWater'); break;
+        case 'reEnterStealth': f.push('reEnterStealthAfterCombat'); break;
+        case 'redeployOnKill': f.push('emergentKillChainRedeployRange'); break;
       }
+      return f;
+    }
     case 'instantKill':
       return ['instantKill'];
     case 'projectAura':
@@ -216,7 +204,7 @@ function walkEffects(effects: Record<string, unknown>[]): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Walk content data — collect written fields + trigger/target/scaling
+// 3. Walk content data — collect written fields + trigger/target/scaling
 // ---------------------------------------------------------------------------
 
 interface ContentWalkResult {
@@ -263,8 +251,16 @@ function walkContent(
 }
 
 // ---------------------------------------------------------------------------
-// 5. Consumer-read check (grep .ts files outside excluded paths)
+// 4. Consumer-read check
 // ---------------------------------------------------------------------------
+//
+// After the Phase 3 collapse, consumers read via the helper API:
+//   result.getStat('name')   — for stats
+//   result.hasFlag('name')   — for flags
+//   result.hasVerb('name')   — for verbs
+//   result.data.get('name')  — for misc data lists
+//   result.getList('name')   — alternative for string lists
+// The audit looks for these patterns rather than direct field access.
 
 function getAllTsFiles(dir: string, files: string[] = []): string[] {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -292,7 +288,13 @@ function buildConsumerReadMap(fieldNames: string[], tsFiles: string[]): Map<stri
   }
 
   for (const field of fieldNames) {
-    const re = new RegExp(`\\.${field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+    const escaped = field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Match: getStat('name') | hasFlag('name') | hasVerb('name') | data.get('name') | getList('name')
+    // Also accept double-quoted forms.
+    const re = new RegExp(
+      `(getStat|hasFlag|hasVerb|getList)\\(\\s*['"\`]${escaped}['"\`]`
+      + `|data\\.get\\(\\s*['"\`]${escaped}['"\`]`,
+    );
     let found = false;
     for (const [, content] of fileContents) {
       if (re.test(content)) { found = true; break; }
@@ -303,7 +305,7 @@ function buildConsumerReadMap(fieldNames: string[], tsFiles: string[]): Map<stri
 }
 
 // ---------------------------------------------------------------------------
-// 6. Parse content data statically (TS Compiler API)
+// 5. Parse content data statically (TS Compiler API)
 // ---------------------------------------------------------------------------
 
 function parseContentData(contentPath: string): { pairSynergies: any[]; emergentRules: any[] } {
@@ -316,7 +318,6 @@ function parseContentData(contentPath: string): { pairSynergies: any[]; emergent
   };
 
   function visit(node: ts.Node) {
-    // Look for variable declarations of PAIR_SYNERGIES_DATA and EMERGENT_RULES_DATA
     if (ts.isVariableDeclaration(node) && node.name.getText(sf)) {
       const name = node.name.getText(sf);
       if ((name === 'PAIR_SYNERGIES_DATA' || name === 'EMERGENT_RULES_DATA') && node.initializer) {
@@ -360,20 +361,29 @@ function extractValue(node: ts.Node, sf: ts.SourceFile): any {
 }
 
 // ---------------------------------------------------------------------------
-// 7. Main audit function
+// 6. Main audit function
 // ---------------------------------------------------------------------------
 
-export function runAudit(): AuditResult {
-  // Parse SynergyCombatResult fields
-  const fields = parseInterfaceFields(
-    path.join(SRC, 'systems', 'synergyTypes.ts'),
-    'SynergyCombatResult',
-  );
+// Extra non-union names produced by specific dispatcher branches (lists / map
+// spawns / data-bag entries that aren't members of StatName/FlagName/VerbName
+// but are still part of the result contract).
+const DATA_FIELDS: { name: string; kind: Kind }[] = [
+  { name: 'poisonTrapPositions', kind: 'data' },
+  { name: 'emergentPermanentStealthTerrains', kind: 'data' },
+];
 
-  // Parse string-literal unions
+export function runAudit(): AuditResult {
   const primitivesPath = path.join(SRC, 'systems', 'synergyPrimitives.ts');
-  const statNames = new Set(parseStringUnion(primitivesPath, 'StatName'));
-  const flagNames = new Set(parseStringUnion(primitivesPath, 'FlagName'));
+  const statNames = parseStringUnion(primitivesPath, 'StatName');
+  const flagNames = parseStringUnion(primitivesPath, 'FlagName');
+  const verbNames = parseStringUnion(primitivesPath, 'VerbName');
+
+  // The contract surface: every key that a consumer might query.
+  const fieldKinds = new Map<string, Kind>();
+  for (const n of statNames) fieldKinds.set(n, 'stat');
+  for (const n of flagNames) fieldKinds.set(n, 'flag');
+  for (const n of verbNames) fieldKinds.set(n, 'verb');
+  for (const d of DATA_FIELDS) fieldKinds.set(d.name, d.kind);
 
   // Parse content data
   const contentPath = path.join(SRC, 'content', 'synergies', 'index.ts');
@@ -383,48 +393,19 @@ export function runAudit(): AuditResult {
   const pairWalk = walkContent(pairSynergies);
   const emergentWalk = walkContent(emergentRules);
   const writtenFields = new Set([...pairWalk.writtenFields, ...emergentWalk.writtenFields]);
-  // additionalEffects is always written by every dispatch function
-  writtenFields.add('additionalEffects');
   const ttsUsages = [...pairWalk.ttsUsages, ...emergentWalk.ttsUsages];
 
-  // Dispatcher-write-branch: a field is writable if:
-  //   - it's a StatName (dispatchStatMod uses dynamic key), or
-  //   - it's a FlagName (dispatchSetFlag uses dynamic key), or
-  //   - a specific dispatch branch writes to it
-  const specificDispatchFields = new Set([
-    // applyStatus
-    'poisonStacks', 'stunDuration', 'formationCrushStacks',
-    'frostbiteStacks', 'frostbiteColdDoT', 'frostbiteSlow', 'armorPiercing',
-    'emergentPermanentStealth', 'emergentPermanentStealthTerrains',
-    // knockback
-    'knockbackDistance', 'formationPinballCollisionDamage',
-    // heal
-    'synergyFlatHeal', 'synergyPercentHealMaxHp',
-    // capture
-    'chargeCaptureChance', 'retreatCaptureChance', 'stealthCaptureBonus', 'navalCaptureBonus',
-    'emergentCaptureBelowHpPercent',
-    // preventAction
-    'antiDisplacement', 'emergentUndying', 'emergentIgnoreZoc', 'captureEscapePrevented',
-    'ghostPassActive',
-    // spawnOnMap
-    'poisonTrapPositions', 'emergentPoisonCloudPreventsHealing', 'sandstormDamage', 'contaminateActive',
-    // grantVerb
-    'positionSwapAvailable', 'chargeCooldownWaived', 'fightingRetreatFreeStrike',
-    'mobileStrongholdFortUp', 'caravanPassengerActive', 'beachRaidRetreatToWater',
-    'reEnterStealthAfterCombat',
-    'emergentKillChainRedeployRange',
-    // instantKill
-    'instantKill',
-    // always written by every dispatch
-    'additionalEffects',
+  // Dispatcher-write-branch: a key is writable by the dispatcher if its
+  // primitive branch can produce it. For stats/flags/verbs, that's any name in
+  // the union (since dispatch is dynamic). For data fields, only the named
+  // spawn/stealth branches write them.
+  const dispatcherWriteSet = new Set<string>([
+    ...statNames, ...flagNames, ...verbNames,
+    ...DATA_FIELDS.map(d => d.name),
   ]);
 
-  function hasDispatcherBranch(field: string): boolean {
-    return statNames.has(field) || flagNames.has(field) || specificDispatchFields.has(field);
-  }
-
   // Consumer-read check
-  const fieldNames = [...fields.keys()];
+  const fieldNames = [...fieldKinds.keys()];
   const tsFiles = [
     ...getAllTsFiles(path.join(ROOT, 'src')),
     ...getAllTsFiles(path.join(ROOT, 'tests')),
@@ -435,9 +416,9 @@ export function runAudit(): AuditResult {
   const classifications: FieldClassification[] = [];
   const counts: Record<Classification, number> = { live: 0, dead: 0, vestigial: 0, orphan: 0 };
 
-  for (const [field, type] of fields) {
+  for (const [field, kind] of fieldKinds) {
     const w = writtenFields.has(field);
-    const d = hasDispatcherBranch(field);
+    const d = dispatcherWriteSet.has(field);
     const r = consumerReads.get(field) ?? false;
 
     let cls: Classification;
@@ -447,20 +428,25 @@ export function runAudit(): AuditResult {
     else cls = 'orphan'; // !w && r
 
     counts[cls]++;
-    classifications.push({ field, type, writtenByContent: w, dispatcherWriteBranch: d, readByConsumer: r, classification: cls });
+    classifications.push({
+      field, kind,
+      writtenByContent: w,
+      dispatcherWriteBranch: d,
+      readByConsumer: r,
+      classification: cls,
+    });
   }
 
   return { fields: classifications, counts, triggerTargetScaling: ttsUsages };
 }
 
 // ---------------------------------------------------------------------------
-// 8. CLI output
+// 7. CLI output
 // ---------------------------------------------------------------------------
 
 function printReport(result: AuditResult): void {
   const { fields, counts, triggerTargetScaling } = result;
 
-  // Header
   console.log('\n=== Synergy Coverage Audit ===\n');
   console.log(`Total fields: ${fields.length}`);
   console.log(`  live:       ${counts.live}`);
@@ -468,22 +454,20 @@ function printReport(result: AuditResult): void {
   console.log(`  vestigial:  ${counts.vestigial}`);
   console.log(`  orphan:     ${counts.orphan}`);
 
-  // Table
   const w = (s: string, n: number) => s.padEnd(n);
-  const col = [38, 8, 8, 8, 8, 12];
-  console.log(`\n${w('FIELD', col[0])} ${w('TYPE', col[1])} ${w('WRITTEN', col[2])} ${w('DISP', col[3])} ${w('READ', col[4])} ${w('CLASS', col[5])}`);
+  const col = [38, 6, 8, 8, 8, 12];
+  console.log(`\n${w('FIELD', col[0])} ${w('KIND', col[1])} ${w('WRITTEN', col[2])} ${w('DISP', col[3])} ${w('READ', col[4])} ${w('CLASS', col[5])}`);
   console.log('-'.repeat(col.reduce((a, b) => a + b + 1, 0)));
 
   const byClass = (cls: Classification) => fields.filter(f => f.classification === cls);
   for (const cls of ['dead', 'orphan', 'vestigial', 'live'] as Classification[]) {
     for (const f of byClass(cls)) {
       console.log(
-        `${w(f.field, col[0])} ${w(f.type.substring(0, 6), col[1])} ${w(f.writtenByContent ? 'yes' : 'no', col[2])} ${w(f.dispatcherWriteBranch ? 'yes' : 'no', col[3])} ${w(f.readByConsumer ? 'yes' : 'no', col[4])} ${w(f.classification, col[5])}`,
+        `${w(f.field, col[0])} ${w(f.kind, col[1])} ${w(f.writtenByContent ? 'yes' : 'no', col[2])} ${w(f.dispatcherWriteBranch ? 'yes' : 'no', col[3])} ${w(f.readByConsumer ? 'yes' : 'no', col[4])} ${w(f.classification, col[5])}`,
       );
     }
   }
 
-  // Trigger/target/scaling report
   if (triggerTargetScaling.length > 0) {
     console.log(`\n=== trigger/target/scaling usage (${triggerTargetScaling.length}) ===\n`);
     for (const u of triggerTargetScaling) {
@@ -503,19 +487,16 @@ function printReport(result: AuditResult): void {
 async function main() {
   const result = runAudit();
 
-  // Write JSON
   const slimDir = path.join(ROOT, '.slim');
   if (!fs.existsSync(slimDir)) fs.mkdirSync(slimDir, { recursive: true });
   const outPath = path.join(slimDir, 'synergy-coverage.json');
   fs.writeFileSync(outPath, JSON.stringify(result, null, 2) + '\n');
 
-  // Print report
   printReport(result);
 
   console.log(`Wrote ${outPath}\n`);
 }
 
-// Run when executed directly
 if (process.argv[1]?.endsWith('auditSynergyCoverage.ts')) {
   main().catch(err => { console.error(err); process.exit(1); });
 }

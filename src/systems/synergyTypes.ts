@@ -2,7 +2,9 @@
 // Extracted from synergyEngine.ts and synergyEffects.ts to break circular deps
 // and provide a single import site for all synergy-related types.
 
-import type { PrimitiveEffect } from './synergyPrimitives.js';
+import type {
+  PrimitiveEffect, StatName, FlagName, VerbName, StatusName, EffectTypeName,
+} from './synergyPrimitives.js';
 
 // --- From synergyEngine.ts ---
 
@@ -57,7 +59,7 @@ export interface ActiveTripleStack {
   name: string;
 }
 
-// --- From synergyEffects.ts (renamed CombatResult → SynergyCombatResult) ---
+// --- Combat context ---
 
 export interface CombatContext {
   attackerId: string;
@@ -77,138 +79,73 @@ export interface CombatContext {
   attackerLearnedDomains: string[];
 }
 
-export interface SynergyCombatResult {
-  damage: number;
-  defense: number;
-  knockbackDistance: number;
-  poisonStacks: number;
-  frostbiteStacks: number;
-  poisonTrapPositions: { x: number; y: number }[];
-  additionalEffects: string[];
-  chargeShield: boolean;
-  antiDisplacement: boolean;
-  healOnRetreatAmount: number;
+// --- Result containers ---
 
-  sandstormDamage: number;
-  sandstormAccuracyDebuff: number;
-  witheringReduction: number;
-  poisonTrapDamage: number;
-  poisonTrapSlow: number;
-  contaminateActive: boolean;
-  frostbiteColdDoT: number;
-  frostbiteSlow: number;
-  stealthChargeMultiplier: number;
+export interface AppliedStatus {
+  name: StatusName;
+  stacks: number;
+  duration: number;
+  fields?: Record<string, unknown>;
+}
 
-  aoeDamage: number;
-  damageReflection: number;
-  instantKill: boolean;
-  lethalAmbushPoison: number;
-  chargeCooldownWaived: boolean;
-  formationCrushStacks: number;
-  stunDuration: number;
-  armorPiercing: number;
-  capturePoisonDamage: number;
-  capturePoisonStacks: number;
-  slaveDamageBonus: number;
-  slaveHealPenalty: number;
-  chargeCaptureChance: number;
-  retreatCaptureChance: number;
-  navalCaptureBonus: number;
-  stealthCaptureBonus: number;
-  captureEscapePrevented: boolean;
+export interface MapSpawn {
+  effectType: EffectTypeName;
+  position: { x: number; y: number };
+  radius?: number;
+  duration?: number;
+  fields?: Record<string, unknown>;
+}
 
-  coastalNomadDefense: number;
+// Generic synergy combat result.
+//
+// All synergy effects accumulate into a fixed set of containers:
+//   - stats:  numeric scalars keyed by StatName
+//   - flags:  boolean toggles keyed by FlagName
+//   - verbs:  granted action verbs keyed by VerbName
+//   - statuses, spawns: discrete effect records
+//   - data:   misc non-numeric/non-boolean entries (string lists, etc.)
+//   - additionalEffects: dispatch trace for log lines / debugging
+//
+// Consumers MUST go through helper methods (getStat/hasFlag/...).
+// Adding a new synergy never adds a named field anywhere — only entries
+// in these containers.
+export class SynergyCombatResult {
+  readonly stats = new Map<StatName, number>();
+  readonly flags = new Set<FlagName>();
+  readonly verbs = new Set<VerbName>();
+  readonly statuses: AppliedStatus[] = [];
+  readonly spawns: MapSpawn[] = [];
+  readonly data = new Map<string, unknown>();
+  readonly additionalEffects: string[] = [];
 
-  heavyNavalRamDamage: number;
-  slaveHealAmount: number;
-  heavyRegenPercent: number;
+  getStat(name: StatName, dflt = 0): number {
+    return this.stats.get(name) ?? dflt;
+  }
 
-  sandstormAuraRadius: number;
-  sandstormAuraDebuff: number;
-  slaveArmyDamageBonus: number;
-  slaveArmyDefensePenalty: number;
-  slaveCoercionDamageBonus: number;
-  heavyMassStacks: number;
-  // Emergent combat result fields
-  emergentSustainHealPercent: number;
-  emergentSustainMinHp: number;
-  emergentSmiteBonus: number;
-  emergentPermanentStealthTerrains: string[];
-  emergentCaptureBonus: number;
-  emergentDesertCaptureBonus: number;
-  // Juggernaut per-domain signature fields
-  emergentPoisonPerHit: number;
-  emergentDamageReflection: number;
-  emergentKnockbackOnKill: number;
-  emergentDamageBehindPercent: number;
-  emergentFreeReposition: number;
-  emergentArmorPierce: number;
-  emergentCaptureBelowHpPercent: number;
-  emergentBonusDamageAdjacentWater: number;
-  emergentUndying: boolean;
-  emergentIgnoreZoc: boolean;
-  // Iron Turtle expanded
-  emergentCrushZoneRadius: number;
-  emergentCrushZoneMovementPenalty: number;
-  // Many-Faced stance
-  emergentManyFacedStance: string;
-  emergentManyFacedDefense: number;
-  emergentManyFacedReflection: number;
-  emergentManyFacedDamage: number;
-  emergentManyFacedRangeBonus: number;
-  emergentManyFacedMovementBonus: number;
-  // Structured fields for synergyRuntime bonus calculations (4e)
-  multiplierStackValue: number;
-  dugInDefense: number;
-  auraOverlapDefense: number;
-  // Phase 4-6 pair result fields
-  toxicSpreadTransferRadius: number;
-  toxicSpreadTransferStacks: number;
-  formationWallActive: boolean;
-  formationWallRangedReduction: number;
-  formationPinballCollisionDamage: number;
-  formationFocusBonus: number;
-  formationFocusIgnoresDefense: boolean;
-  formationChainBonus: number;
-  bloomPulseHeal: number;
-  bloomPulseSelfHeal: number;
-  bloomPulseAuraRadius: number;
-  bloomPulseMovementBonus: number;
-  positionSwapAvailable: boolean;
-  caravanRelayVisionRange: number;
-  slaveHordeDamageBonus: number;
-  slaveHordeDefensePenalty: number;
+  setStat(name: StatName, value: number): void {
+    this.stats.set(name, value);
+  }
 
-  bombardmentRange: number;
-  bombardmentDamageMultiplier: number;
-  bombardmentLandAuraDefense: number;
-  mobileStrongholdFortUp: boolean;
-  mobileStrongholdDefenseBonus: number;
-  mobileStrongholdAlliedDefenseBonus: number;
-  beachRaidDamageBonus: number;
-  beachRaidRetreatToWater: boolean;
-  vampiricStrikeHealPercent: number;
-  ghostPassActive: boolean;
-  fightingRetreatFreeStrike: boolean;
-  fightingRetreatDamageMultiplier: number;
-  tidalCleanseHealPerTurn: number;
+  hasFlag(name: FlagName): boolean {
+    return this.flags.has(name);
+  }
 
-  amphibiousMovementBonus: number;
-  stealthAuraShareRadius: number;
-  slaveEconomyHealPerTurn: number;
-  slaveEconomyResourceBonus: number;
-  caravanPassengerActive: boolean;
-  countsAsCity: boolean;
-  transportedTroopsStealth: boolean;
-  // Heal primitive wiring
-  synergyFlatHeal: number;
-  synergyPercentHealMaxHp: number;
-  // Post-combat re-stealth
-  reEnterStealthAfterCombat: boolean;
-  // New emergent wiring fields
-  emergentPermanentStealth: boolean;
-  emergentKillChainRedeployRange: number;
-  emergentPoisonCloudPreventsHealing: boolean;
+  hasVerb(name: VerbName): boolean {
+    return this.verbs.has(name);
+  }
+
+  findStatus(name: StatusName): AppliedStatus | undefined {
+    return this.statuses.find(s => s.name === name);
+  }
+
+  getList(key: string): readonly string[] {
+    const v = this.data.get(key);
+    return Array.isArray(v) ? (v as string[]) : [];
+  }
+
+  getSpawns(effectType?: EffectTypeName): readonly MapSpawn[] {
+    return effectType ? this.spawns.filter(s => s.effectType === effectType) : this.spawns;
+  }
 }
 
 export interface HealingContext {

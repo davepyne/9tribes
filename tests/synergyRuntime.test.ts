@@ -2,70 +2,20 @@ import {
   calculateSynergyAttackBonus,
   calculateSynergyDefenseBonus,
 } from '../src/systems/synergyRuntime';
-import type { CombatResult } from '../src/systems/synergyEffects';
+import { makeEmptyResult, type CombatResult } from '../src/systems/synergyEffects';
+import type { StatName } from '../src/systems/synergyPrimitives';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeResult(overrides: Partial<CombatResult> = {}): CombatResult {
-  return {
-    damage: 0,
-    defense: 0,
-    knockbackDistance: 0,
-    poisonStacks: 0,
-    frostbiteStacks: 0,
-    poisonTrapPositions: [],
-    additionalEffects: [],
-    chargeShield: false,
-    antiDisplacement: false,
-    healOnRetreatAmount: 0,
-    sandstormDamage: 0,
-    sandstormAccuracyDebuff: 0,
-    witheringReduction: 0,
-    poisonTrapDamage: 0,
-    poisonTrapSlow: 0,
-    contaminateActive: false,
-    frostbiteColdDoT: 0,
-    frostbiteSlow: 0,
-    stealthChargeMultiplier: 0,
-    aoeDamage: 0,
-    damageReflection: 0,
-    instantKill: false,
-    lethalAmbushPoison: 0,
-    chargeCooldownWaived: false,
-    formationCrushStacks: 0,
-    stunDuration: 0,
-    armorPiercing: 0,
-    capturePoisonDamage: 0,
-    capturePoisonStacks: 0,
-    slaveDamageBonus: 0,
-    slaveHealPenalty: 0,
-    chargeCaptureChance: 0,
-    retreatCaptureChance: 0,
-    navalCaptureBonus: 0,
-    stealthCaptureBonus: 0,
-    captureEscapePrevented: false,
-    coastalNomadDefense: 0,
-    heavyNavalRamDamage: 0,
-    slaveHealAmount: 0,
-    heavyRegenPercent: 0,
-    sandstormAuraRadius: 0,
-    sandstormAuraDebuff: 0,
-    slaveArmyDamageBonus: 0,
-    slaveArmyDefensePenalty: 0,
-    slaveCoercionDamageBonus: 0,
-    heavyMassStacks: 0,
-    emergentSustainHealPercent: 0,
-    emergentSustainMinHp: 0,
-    emergentPermanentStealthTerrains: [],
-    emergentCaptureBonus: 0,
-    emergentDesertCaptureBonus: 0,
-    multiplierStackValue: 0,
-    dugInDefense: 0,
-    auraOverlapDefense: 0,
-    ...overrides,
-  };
+function makeResult(stats: Partial<Record<StatName, number>> = {}, additionalEffects: string[] = []): CombatResult {
+  const r = makeEmptyResult();
+  for (const [k, v] of Object.entries(stats)) {
+    if (typeof v === 'number') r.stats.set(k as StatName, v);
+  }
+  for (const e of additionalEffects) r.additionalEffects.push(e);
+  return r;
 }
 
 // ---------------------------------------------------------------------------
@@ -115,9 +65,7 @@ describe('calculateSynergyDefenseBonus', () => {
   });
 
   it('returns 0 when only unrelated fields are set', () => {
-    const result = makeResult({
-      additionalEffects: ['charge_shield', 'lethal_ambush', 'heavy_poison'],
-    });
+    const result = makeResult({}, ['charge_shield', 'lethal_ambush', 'heavy_poison']);
     expect(calculateSynergyDefenseBonus(result)).toBe(0);
   });
 
@@ -137,11 +85,10 @@ describe('calculateSynergyDefenseBonus', () => {
   });
 
   it('returns sum when both defense bonuses present with unrelated effects', () => {
-    const result = makeResult({
-      dugInDefense: 0.75,
-      auraOverlapDefense: 0.5,
-      additionalEffects: ['dug_in', 'lethal_ambush', 'heavy_poison', 'aura_overlap'],
-    });
+    const result = makeResult(
+      { dugInDefense: 0.75, auraOverlapDefense: 0.5 },
+      ['dug_in', 'lethal_ambush', 'heavy_poison', 'aura_overlap'],
+    );
     expect(calculateSynergyDefenseBonus(result)).toBe(1.25);
   });
 

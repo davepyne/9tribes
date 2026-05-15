@@ -19,6 +19,7 @@ function makeContext(overrides: Partial<CombatContext> = {}): CombatContext {
     position: { x: 0, y: 0 },
     attackerPosition: { x: 0, y: 0 },
     defenderPosition: { x: 1, y: 1 },
+    attackerLearnedDomains: [],
     ...overrides,
   };
 }

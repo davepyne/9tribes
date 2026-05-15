@@ -18,6 +18,7 @@ function makeContext(overrides: Partial<CombatContext> = {}): CombatContext {
     position: { x: 0, y: 0 },
     attackerPosition: { x: 0, y: 0 },
     defenderPosition: { x: 1, y: 0 },
+    attackerLearnedDomains: [],
     ...overrides,
   };
 }
@@ -42,17 +43,17 @@ describe('Phase 3A synergy effects', () => {
     it('triggers instant kill on stealth attack', () => {
       const ctx = makeContext({ isStealthAttack: true });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.instantKill).toBe(true);
-      expect(result.lethalAmbushPoison).toBe(2);
-      expect(result.poisonStacks).toBe(2);
+      expect(result.hasFlag('instantKill')).toBe(true);
+      expect(result.getStat('lethalAmbushPoison')).toBe(2);
+      expect(result.getStat('poisonStacks')).toBe(2);
       expect(result.additionalEffects).toContain('instantKill');
     });
 
     it('does NOT trigger when not a stealth attack', () => {
       const ctx = makeContext({ isStealthAttack: false });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.instantKill).toBe(false);
-      expect(result.lethalAmbushPoison).toBe(0);
+      expect(result.hasFlag('instantKill')).toBe(false);
+      expect(result.getStat('lethalAmbushPoison')).toBe(0);
       expect(result.additionalEffects).not.toContain('instantKill');
     });
   });
@@ -65,20 +66,20 @@ describe('Phase 3A synergy effects', () => {
     it('waives cooldown on stealth charge', () => {
       const ctx = makeContext({ isCharge: true, isStealthAttack: true });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.chargeCooldownWaived).toBe(true);
+      expect(result.hasFlag('chargeCooldownWaived')).toBe(true);
       expect(result.additionalEffects).toContain('setFlag_chargeCooldownWaived');
     });
 
     it('does NOT trigger without stealth', () => {
       const ctx = makeContext({ isCharge: true, isStealthAttack: false });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.chargeCooldownWaived).toBe(false);
+      expect(result.hasFlag('chargeCooldownWaived')).toBe(false);
     });
 
     it('does NOT trigger without charge', () => {
       const ctx = makeContext({ isCharge: false, isStealthAttack: true });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.chargeCooldownWaived).toBe(false);
+      expect(result.hasFlag('chargeCooldownWaived')).toBe(false);
     });
   });
 
@@ -91,15 +92,15 @@ describe('Phase 3A synergy effects', () => {
 
     it('applies knockback and stun', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.knockbackDistance).toBe(2);
-      expect(result.stunDuration).toBe(1);
-      expect(result.formationCrushStacks).toBe(1);
+      expect(result.getStat('knockbackDistance')).toBe(2);
+      expect(result.getStat('stunDuration')).toBe(1);
+      expect(result.getStat('formationCrushStacks')).toBe(1);
       expect(result.additionalEffects).toContain('applyStatus_formationCrush');
     });
 
     it('stacks with multiple charge units', () => {
       const result = applyCombatSynergies(makeContext(), [synergy, synergy], null);
-      expect(result.formationCrushStacks).toBe(2);
+      expect(result.getStat('formationCrushStacks')).toBe(2);
     });
   });
 
@@ -111,26 +112,26 @@ describe('Phase 3A synergy effects', () => {
     it('sets armor piercing on stealth attack', () => {
       const ctx = makeContext({ isStealthAttack: true });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.armorPiercing).toBe(1.0);
+      expect(result.getStat('armorPiercing')).toBe(1.0);
       expect(result.additionalEffects).toContain('statMod_armorPiercing_add_1');
     });
 
     it('does NOT trigger without stealth', () => {
       const ctx = makeContext({ isStealthAttack: false });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.armorPiercing).toBe(0);
+      expect(result.getStat('armorPiercing')).toBe(0);
     });
   });
 
   describe('Phase 3A defaults', () => {
     it('returns zero/false defaults when no synergies active', () => {
       const result = applyCombatSynergies(makeContext(), [], null);
-      expect(result.instantKill).toBe(false);
-      expect(result.lethalAmbushPoison).toBe(0);
-      expect(result.chargeCooldownWaived).toBe(false);
-      expect(result.formationCrushStacks).toBe(0);
-      expect(result.stunDuration).toBe(0);
-      expect(result.armorPiercing).toBe(0);
+      expect(result.hasFlag('instantKill')).toBe(false);
+      expect(result.getStat('lethalAmbushPoison')).toBe(0);
+      expect(result.hasFlag('chargeCooldownWaived')).toBe(false);
+      expect(result.getStat('formationCrushStacks')).toBe(0);
+      expect(result.getStat('stunDuration')).toBe(0);
+      expect(result.getStat('armorPiercing')).toBe(0);
     });
   });
 });
@@ -146,19 +147,19 @@ describe('Phase 3B capture synergy effects', () => {
 
     it('applies capture poison and slave modifiers', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.capturePoisonDamage).toBe(3);
-      expect(result.capturePoisonStacks).toBe(3);
-      expect(result.slaveDamageBonus).toBe(0.25);
-      expect(result.slaveHealPenalty).toBe(0.50);
+      expect(result.getStat('capturePoisonDamage')).toBe(3);
+      expect(result.getStat('capturePoisonStacks')).toBe(3);
+      expect(result.getStat('slaveDamageBonus')).toBe(0.25);
+      expect(result.getStat('slaveHealPenalty')).toBe(0.50);
       expect(result.additionalEffects).toContain('statMod_capturePoisonDamage_set_3');
     });
 
     it('does NOT affect results when synergy inactive', () => {
       const result = applyCombatSynergies(makeContext(), [], null);
-      expect(result.capturePoisonDamage).toBe(0);
-      expect(result.capturePoisonStacks).toBe(0);
-      expect(result.slaveDamageBonus).toBe(0);
-      expect(result.slaveHealPenalty).toBe(0);
+      expect(result.getStat('capturePoisonDamage')).toBe(0);
+      expect(result.getStat('capturePoisonStacks')).toBe(0);
+      expect(result.getStat('slaveDamageBonus')).toBe(0);
+      expect(result.getStat('slaveHealPenalty')).toBe(0);
     });
   });
 
@@ -171,15 +172,15 @@ describe('Phase 3B capture synergy effects', () => {
     it('sets charge capture chance and knockback on charge', () => {
       const ctx = makeContext({ isCharge: true });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.chargeCaptureChance).toBe(0.30);
-      expect(result.knockbackDistance).toBe(2);
+      expect(result.getStat('chargeCaptureChance')).toBe(0.30);
+      expect(result.getStat('knockbackDistance')).toBe(2);
       expect(result.additionalEffects).toContain('capture');
     });
 
     it('does NOT trigger without charge', () => {
       const ctx = makeContext({ isCharge: false });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.chargeCaptureChance).toBe(0);
+      expect(result.getStat('chargeCaptureChance')).toBe(0);
       expect(result.additionalEffects).not.toContain('capture');
     });
   });
@@ -192,14 +193,14 @@ describe('Phase 3B capture synergy effects', () => {
     it('sets retreat capture chance on retreat', () => {
       const ctx = makeContext({ isRetreat: true });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.retreatCaptureChance).toBe(0.15);
+      expect(result.getStat('retreatCaptureChance')).toBe(0.15);
       expect(result.additionalEffects).toContain('capture');
     });
 
     it('does NOT trigger without retreat', () => {
       const ctx = makeContext({ isRetreat: false });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.retreatCaptureChance).toBe(0);
+      expect(result.getStat('retreatCaptureChance')).toBe(0);
       expect(result.additionalEffects).not.toContain('capture');
     });
   });
@@ -212,20 +213,20 @@ describe('Phase 3B capture synergy effects', () => {
     it('sets naval capture bonus on coast terrain', () => {
       const ctx = makeContext({ terrain: 'coast' });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.navalCaptureBonus).toBe(0.30);
+      expect(result.getStat('navalCaptureBonus')).toBe(0.30);
       expect(result.additionalEffects).toContain('statMod_navalCaptureBonus_set_0.3');
     });
 
     it('sets naval capture bonus on river terrain', () => {
       const ctx = makeContext({ terrain: 'river' });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.navalCaptureBonus).toBe(0.30);
+      expect(result.getStat('navalCaptureBonus')).toBe(0.30);
     });
 
     it('does NOT trigger on non-water terrain', () => {
       const ctx = makeContext({ terrain: 'plains' });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.navalCaptureBonus).toBe(0);
+      expect(result.getStat('navalCaptureBonus')).toBe(0);
       expect(result.additionalEffects).not.toContain('statMod_navalCaptureBonus_set_0.3');
     });
   });
@@ -238,14 +239,14 @@ describe('Phase 3B capture synergy effects', () => {
     it('sets stealth capture bonus on stealth attack', () => {
       const ctx = makeContext({ isStealthAttack: true });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.stealthCaptureBonus).toBe(0.40);
+      expect(result.getStat('stealthCaptureBonus')).toBe(0.40);
       expect(result.additionalEffects).toContain('capture');
     });
 
     it('does NOT trigger without stealth attack', () => {
       const ctx = makeContext({ isStealthAttack: false });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.stealthCaptureBonus).toBe(0);
+      expect(result.getStat('stealthCaptureBonus')).toBe(0);
       expect(result.additionalEffects).not.toContain('capture');
     });
   });
@@ -253,14 +254,14 @@ describe('Phase 3B capture synergy effects', () => {
   describe('Phase 3B defaults', () => {
     it('returns zero defaults when no synergies active', () => {
       const result = applyCombatSynergies(makeContext(), [], null);
-      expect(result.capturePoisonDamage).toBe(0);
-      expect(result.capturePoisonStacks).toBe(0);
-      expect(result.slaveDamageBonus).toBe(0);
-      expect(result.slaveHealPenalty).toBe(0);
-      expect(result.chargeCaptureChance).toBe(0);
-      expect(result.retreatCaptureChance).toBe(0);
-      expect(result.navalCaptureBonus).toBe(0);
-      expect(result.stealthCaptureBonus).toBe(0);
+      expect(result.getStat('capturePoisonDamage')).toBe(0);
+      expect(result.getStat('capturePoisonStacks')).toBe(0);
+      expect(result.getStat('slaveDamageBonus')).toBe(0);
+      expect(result.getStat('slaveHealPenalty')).toBe(0);
+      expect(result.getStat('chargeCaptureChance')).toBe(0);
+      expect(result.getStat('retreatCaptureChance')).toBe(0);
+      expect(result.getStat('navalCaptureBonus')).toBe(0);
+      expect(result.getStat('stealthCaptureBonus')).toBe(0);
     });
   });
 });
@@ -274,8 +275,8 @@ describe('Phase 3C lower-value synergy effects', () => {
 
     it('applies +1 poison stack and armor piercing', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.poisonStacks).toBe(1);
-      expect(result.armorPiercing).toBe(0.5);
+      expect(result.getStat('poisonStacks')).toBe(1);
+      expect(result.getStat('armorPiercing')).toBe(0.5);
       expect(result.additionalEffects).toContain('applyStatus_poison');
     });
 
@@ -284,7 +285,7 @@ describe('Phase 3C lower-value synergy effects', () => {
         { kind: 'applyStatus', status: 'poison', stacks: 2 },
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [poisonAura, synergy], null);
-      expect(result.poisonStacks).toBe(3);
+      expect(result.getStat('poisonStacks')).toBe(3);
     });
   });
 
@@ -296,14 +297,14 @@ describe('Phase 3C lower-value synergy effects', () => {
 
     it('adds defense and prevents capture escape', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.defense).toBe(0.50);
-      expect(result.captureEscapePrevented).toBe(true);
+      expect(result.getStat('defense')).toBe(0.50);
+      expect(result.hasFlag('captureEscapePrevented')).toBe(true);
       expect(result.additionalEffects).toContain('setFlag_captureEscapePrevented');
     });
 
     it('does NOT trigger without synergy', () => {
       const result = applyCombatSynergies(makeContext(), [], null);
-      expect(result.captureEscapePrevented).toBe(false);
+      expect(result.hasFlag('captureEscapePrevented')).toBe(false);
     });
   });
 
@@ -315,8 +316,8 @@ describe('Phase 3C lower-value synergy effects', () => {
 
     it('reflects damage and prevents displacement', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.damageReflection).toBe(0.25);
-      expect(result.antiDisplacement).toBe(true);
+      expect(result.getStat('damageReflection')).toBe(0.25);
+      expect(result.hasFlag('antiDisplacement')).toBe(true);
       expect(result.additionalEffects).toContain('setFlag_antiDisplacement');
     });
   });
@@ -329,7 +330,7 @@ describe('Phase 3C lower-value synergy effects', () => {
 
     it('applies stun unconditionally', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.stunDuration).toBe(1);
+      expect(result.getStat('stunDuration')).toBe(1);
       expect(result.additionalEffects).toContain('applyStatus_stun');
     });
 
@@ -339,7 +340,7 @@ describe('Phase 3C lower-value synergy effects', () => {
       ] as PrimitiveEffect[]);
       const ctx = makeContext({ isCharge: true });
       const result = applyCombatSynergies(ctx, [ramAttack, synergy], null);
-      expect(result.knockbackDistance).toBe(3); // ceil(2 * 1.5) = 3
+      expect(result.getStat('knockbackDistance')).toBe(3); // ceil(2 * 1.5) = 3
     });
 
     it('does NOT amplify knockback without charge', () => {
@@ -348,7 +349,7 @@ describe('Phase 3C lower-value synergy effects', () => {
       ] as PrimitiveEffect[]);
       const ctx = makeContext({ isCharge: false });
       const result = applyCombatSynergies(ctx, [ramAttack, synergy], null);
-      expect(result.knockbackDistance).toBe(2);
+      expect(result.getStat('knockbackDistance')).toBe(2);
     });
   });
 
@@ -361,21 +362,21 @@ describe('Phase 3C lower-value synergy effects', () => {
     it('grants defense on coast terrain', () => {
       const ctx = makeContext({ terrain: 'coast' });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.coastalNomadDefense).toBe(0.25);
-      expect(result.defense).toBe(0.25);
+      expect(result.getStat('coastalNomadDefense')).toBe(0.25);
+      expect(result.getStat('defense')).toBe(0.25);
       expect(result.additionalEffects).toContain('statMod_coastalNomadDefense_set_0.25');
     });
 
     it('grants defense and speed on coast terrain', () => {
       const ctx = makeContext({ terrain: 'coast' });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.coastalNomadDefense).toBe(0.25);
+      expect(result.getStat('coastalNomadDefense')).toBe(0.25);
     });
 
     it('does NOT trigger on plains', () => {
       const ctx = makeContext({ terrain: 'plains' });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.coastalNomadDefense).toBe(0);
+      expect(result.getStat('coastalNomadDefense')).toBe(0);
       expect(result.additionalEffects).not.toContain('statMod_coastalNomadDefense_set_0.25');
     });
   });
@@ -388,20 +389,20 @@ describe('Phase 3C lower-value synergy effects', () => {
     it('applies ram damage on coast terrain', () => {
       const ctx = makeContext({ terrain: 'coast' });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.heavyNavalRamDamage).toBe(2);
+      expect(result.getStat('heavyNavalRamDamage')).toBe(2);
       expect(result.additionalEffects).toContain('statMod_heavyNavalRamDamage_set_2');
     });
 
     it('applies ram damage on coast terrain', () => {
       const ctx = makeContext({ terrain: 'coast' });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.heavyNavalRamDamage).toBe(2);
+      expect(result.getStat('heavyNavalRamDamage')).toBe(2);
     });
 
     it('does NOT trigger on plains', () => {
       const ctx = makeContext({ terrain: 'plains' });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.heavyNavalRamDamage).toBe(0);
+      expect(result.getStat('heavyNavalRamDamage')).toBe(0);
     });
   });
 
@@ -413,7 +414,7 @@ describe('Phase 3C lower-value synergy effects', () => {
 
     it('stores slave heal amount in combat result', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.slaveHealAmount).toBe(2);
+      expect(result.getStat('slaveHealAmount')).toBe(2);
       expect(result.additionalEffects).toContain('statMod_slaveHealAmount_set_2');
     });
 
@@ -422,7 +423,7 @@ describe('Phase 3C lower-value synergy effects', () => {
         unitId: 'unit-1',
         unitTags: ['capture'],
         baseHeal: 1,
-        position: { x: 0, y: 0 },
+        position: { q: 0, r: 0 },
         adjacentAllies: [],
         isStealthed: false,
       };
@@ -438,7 +439,7 @@ describe('Phase 3C lower-value synergy effects', () => {
 
     it('stores regen percent in combat result', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.heavyRegenPercent).toBe(0.30);
+      expect(result.getStat('heavyRegenPercent')).toBe(0.30);
       expect(result.additionalEffects).toContain('statMod_heavyRegenPercent_set_0.3');
     });
 
@@ -447,7 +448,7 @@ describe('Phase 3C lower-value synergy effects', () => {
         unitId: 'unit-1',
         unitTags: ['heavy'],
         baseHeal: 0,
-        position: { x: 0, y: 0 },
+        position: { q: 0, r: 0 },
         adjacentAllies: [],
         isStealthed: false,
       };
@@ -466,16 +467,16 @@ describe('Phase 3C lower-value synergy effects', () => {
     it('creates sandstorm aura on desert terrain', () => {
       const ctx = makeContext({ terrain: 'desert' });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.sandstormAuraRadius).toBe(2);
-      expect(result.sandstormAuraDebuff).toBe(0.30);
-      expect(result.sandstormAccuracyDebuff).toBe(0.30);
+      expect(result.getStat('sandstormAuraRadius')).toBe(2);
+      expect(result.getStat('sandstormAuraDebuff')).toBe(0.30);
+      expect(result.getStat('sandstormAccuracyDebuff')).toBe(0.30);
       expect(result.additionalEffects).toContain('statMod_sandstormAuraRadius_set_2');
     });
 
     it('does NOT trigger on non-desert terrain', () => {
       const ctx = makeContext({ terrain: 'plains' });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.sandstormAuraRadius).toBe(0);
+      expect(result.getStat('sandstormAuraRadius')).toBe(0);
     });
   });
 
@@ -487,8 +488,8 @@ describe('Phase 3C lower-value synergy effects', () => {
 
     it('stores slave army damage bonus and defense penalty', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.slaveArmyDamageBonus).toBe(0.25);
-      expect(result.slaveArmyDefensePenalty).toBe(0.15);
+      expect(result.getStat('slaveArmyDamageBonus')).toBe(0.25);
+      expect(result.getStat('slaveArmyDefensePenalty')).toBe(0.15);
       expect(result.additionalEffects).toContain('statMod_slaveArmyDamageBonus_set_0.25');
     });
   });
@@ -500,7 +501,7 @@ describe('Phase 3C lower-value synergy effects', () => {
 
     it('stores coercion damage bonus', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.slaveCoercionDamageBonus).toBe(0.50);
+      expect(result.getStat('slaveCoercionDamageBonus')).toBe(0.50);
       expect(result.additionalEffects).toContain('statMod_slaveCoercionDamageBonus_set_0.5');
     });
   });
@@ -513,15 +514,15 @@ describe('Phase 3C lower-value synergy effects', () => {
 
     it('applies knockback and increments stacks', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.knockbackDistance).toBe(1);
-      expect(result.heavyMassStacks).toBe(1);
+      expect(result.getStat('knockbackDistance')).toBe(1);
+      expect(result.getStat('heavyMassStacks')).toBe(1);
       expect(result.additionalEffects).toContain('statMod_heavyMassStacks_add_1');
     });
 
     it('stacks with multiple heavy units', () => {
       const result = applyCombatSynergies(makeContext(), [synergy, synergy], null);
-      expect(result.heavyMassStacks).toBe(2);
-      expect(result.knockbackDistance).toBe(1);
+      expect(result.getStat('heavyMassStacks')).toBe(2);
+      expect(result.getStat('knockbackDistance')).toBe(1);
       // Each synergy instance pushes its own statMod entry
       const stackEntries = result.additionalEffects.filter(e => e === 'statMod_heavyMassStacks_add_1');
       expect(stackEntries).toHaveLength(2);
@@ -531,17 +532,17 @@ describe('Phase 3C lower-value synergy effects', () => {
   describe('Phase 3C defaults', () => {
     it('returns zero/false defaults when no synergies active', () => {
       const result = applyCombatSynergies(makeContext(), [], null);
-      expect(result.captureEscapePrevented).toBe(false);
-      expect(result.coastalNomadDefense).toBe(0);
-      expect(result.heavyNavalRamDamage).toBe(0);
-      expect(result.slaveHealAmount).toBe(0);
-      expect(result.heavyRegenPercent).toBe(0);
-      expect(result.sandstormAuraRadius).toBe(0);
-      expect(result.sandstormAuraDebuff).toBe(0);
-      expect(result.slaveArmyDamageBonus).toBe(0);
-      expect(result.slaveArmyDefensePenalty).toBe(0);
-      expect(result.slaveCoercionDamageBonus).toBe(0);
-      expect(result.heavyMassStacks).toBe(0);
+      expect(result.hasFlag('captureEscapePrevented')).toBe(false);
+      expect(result.getStat('coastalNomadDefense')).toBe(0);
+      expect(result.getStat('heavyNavalRamDamage')).toBe(0);
+      expect(result.getStat('slaveHealAmount')).toBe(0);
+      expect(result.getStat('heavyRegenPercent')).toBe(0);
+      expect(result.getStat('sandstormAuraRadius')).toBe(0);
+      expect(result.getStat('sandstormAuraDebuff')).toBe(0);
+      expect(result.getStat('slaveArmyDamageBonus')).toBe(0);
+      expect(result.getStat('slaveArmyDefensePenalty')).toBe(0);
+      expect(result.getStat('slaveCoercionDamageBonus')).toBe(0);
+      expect(result.getStat('heavyMassStacks')).toBe(0);
     });
   });
 });
@@ -555,8 +556,8 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('sets toxic spread transfer stacks and radius', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.toxicSpreadTransferStacks).toBe(1);
-      expect(result.toxicSpreadTransferRadius).toBe(1);
+      expect(result.getStat('toxicSpreadTransferStacks')).toBe(1);
+      expect(result.getStat('toxicSpreadTransferRadius')).toBe(1);
       expect(result.additionalEffects).toContain('statMod_toxicSpreadTransferStacks_set_1');
     });
   });
@@ -569,8 +570,8 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('activates formation wall and sets ranged reduction', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.formationWallActive).toBe(true);
-      expect(result.formationWallRangedReduction).toBe(0.5);
+      expect(result.hasFlag('formationWallActive')).toBe(true);
+      expect(result.getStat('formationWallRangedReduction')).toBe(0.5);
       expect(result.additionalEffects).toContain('setFlag_formationWallActive');
     });
   });
@@ -582,8 +583,8 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('sets collision damage and stun duration', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.formationPinballCollisionDamage).toBe(4);
-      expect(result.stunDuration).toBe(1);
+      expect(result.getStat('formationPinballCollisionDamage')).toBe(4);
+      expect(result.getStat('stunDuration')).toBe(1);
       expect(result.additionalEffects).toContain('knockback_0');
     });
   });
@@ -597,8 +598,8 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('sets focus bonus and multiplies damage by 1.30', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.formationFocusBonus).toBe(0.30);
-      expect(result.formationFocusIgnoresDefense).toBe(true);
+      expect(result.getStat('formationFocusBonus')).toBe(0.30);
+      expect(result.hasFlag('formationFocusIgnoresDefense')).toBe(true);
       // damage starts at 0, so floor(0 * 1.30) = 0 — verify the multiplier side effect
       expect(result.additionalEffects).toContain('statMod_formationFocusBonus_set_0.3');
     });
@@ -607,7 +608,7 @@ describe('Phase 4-6 new pair synergy effects', () => {
       // Damage is 0 by default in makeEmptyResult; formation_focus does floor(damage * 1.30)
       // We verify the formula by checking a baseline result's damage field
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.damage).toBe(0); // 0 * 1.30 floored = 0, but the multiplier is applied
+      expect(result.getStat('damage')).toBe(0); // 0 * 1.30 floored = 0, but the multiplier is applied
     });
   });
 
@@ -618,7 +619,7 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('sets chain bonus and pushes chain effect', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.formationChainBonus).toBe(1);
+      expect(result.getStat('formationChainBonus')).toBe(1);
       expect(result.additionalEffects).toContain('statMod_formationChainBonus_set_1');
     });
   });
@@ -633,10 +634,10 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('sets bloom pulse heal, self heal, aura radius, and movement bonus', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.bloomPulseHeal).toBe(4);
-      expect(result.bloomPulseSelfHeal).toBe(6);
-      expect(result.bloomPulseAuraRadius).toBe(3);
-      expect(result.bloomPulseMovementBonus).toBe(1);
+      expect(result.getStat('bloomPulseHeal')).toBe(4);
+      expect(result.getStat('bloomPulseSelfHeal')).toBe(6);
+      expect(result.getStat('bloomPulseAuraRadius')).toBe(3);
+      expect(result.getStat('bloomPulseMovementBonus')).toBe(1);
     });
   });
 
@@ -647,7 +648,7 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('enables position swap', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.positionSwapAvailable).toBe(true);
+      expect(result.hasFlag('positionSwapAvailable')).toBe(true);
       expect(result.additionalEffects).toContain('setFlag_positionSwapAvailable');
     });
   });
@@ -659,7 +660,7 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('sets caravan relay vision range', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.caravanRelayVisionRange).toBe(3);
+      expect(result.getStat('caravanRelayVisionRange')).toBe(3);
       expect(result.additionalEffects).toContain('statMod_caravanRelayVisionRange_set_3');
     });
   });
@@ -674,11 +675,11 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('sets damage bonus and defense penalty, multiplies damage and reduces defense', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.slaveHordeDamageBonus).toBe(0.50);
-      expect(result.slaveHordeDefensePenalty).toBe(0.30);
+      expect(result.getStat('slaveHordeDamageBonus')).toBe(0.50);
+      expect(result.getStat('slaveHordeDefensePenalty')).toBe(0.30);
       // damage = floor(0 * 1.5) = 0; defense starts at 0, max(0, 0 + -0.30) = -0.3
-      expect(result.damage).toBe(0);
-      expect(result.defense).toBe(-0.3);
+      expect(result.getStat('damage')).toBe(0);
+      expect(result.getStat('defense')).toBe(-0.3);
     });
 
     it('multiplies non-zero damage by 1.5 and subtracts from defense', () => {
@@ -688,7 +689,7 @@ describe('Phase 4-6 new pair synergy effects', () => {
       ] as PrimitiveEffect[]);
       const result = applyCombatSynergies(makeContext(), [fortress, synergy], null);
       // fortress adds 1.0 defense, slave_horde subtracts 0.30: 1.0 - 0.30 = 0.70
-      expect(result.defense).toBe(0.70);
+      expect(result.getStat('defense')).toBe(0.70);
     });
   });
 
@@ -699,7 +700,7 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('activates caravan passenger', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.caravanPassengerActive).toBe(true);
+      expect(result.hasFlag('caravanPassengerActive')).toBe(true);
       expect(result.additionalEffects).toContain('setFlag_caravanPassengerActive');
     });
   });
@@ -714,10 +715,10 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('sets bombardment range, damage multiplier, and adds aura defense', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.bombardmentRange).toBe(3);
-      expect(result.bombardmentDamageMultiplier).toBe(0.50);
-      expect(result.bombardmentLandAuraDefense).toBe(0.25);
-      expect(result.defense).toBe(0.25);
+      expect(result.getStat('bombardmentRange')).toBe(3);
+      expect(result.getStat('bombardmentDamageMultiplier')).toBe(0.50);
+      expect(result.getStat('bombardmentLandAuraDefense')).toBe(0.25);
+      expect(result.getStat('defense')).toBe(0.25);
       expect(result.additionalEffects).toContain('statMod_bombardmentRange_set_3');
     });
   });
@@ -732,10 +733,10 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('enables fort up, adds defense bonus, sets anti-displacement', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.mobileStrongholdFortUp).toBe(true);
-      expect(result.mobileStrongholdDefenseBonus).toBe(0.75);
-      expect(result.defense).toBe(0.75);
-      expect(result.antiDisplacement).toBe(true);
+      expect(result.hasFlag('mobileStrongholdFortUp')).toBe(true);
+      expect(result.getStat('mobileStrongholdDefenseBonus')).toBe(0.75);
+      expect(result.getStat('defense')).toBe(0.75);
+      expect(result.hasFlag('antiDisplacement')).toBe(true);
       expect(result.additionalEffects).toContain('statMod_mobileStrongholdDefenseBonus_set_0.75');
     });
   });
@@ -749,10 +750,10 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('sets damage bonus and retreat to water, multiplies damage by 1.25', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.beachRaidDamageBonus).toBe(0.25);
-      expect(result.beachRaidRetreatToWater).toBe(true);
+      expect(result.getStat('beachRaidDamageBonus')).toBe(0.25);
+      expect(result.hasFlag('beachRaidRetreatToWater')).toBe(true);
       // damage = floor(0 * 1.25) = 0
-      expect(result.damage).toBe(0);
+      expect(result.getStat('damage')).toBe(0);
       expect(result.additionalEffects).toContain('statMod_beachRaidDamageBonus_set_0.25');
     });
   });
@@ -765,14 +766,14 @@ describe('Phase 4-6 new pair synergy effects', () => {
     it('pushes effect on retreat (hit-and-run)', () => {
       const ctx = makeContext({ isRetreat: true });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.vampiricStrikeHealPercent).toBe(1.0);
+      expect(result.getStat('vampiricStrikeHealPercent')).toBe(1.0);
       expect(result.additionalEffects).toContain('statMod_vampiricStrikeHealPercent_set_1');
     });
 
     it('pushes effect even when not retreating (triggerOnHitRunOnly gating is external)', () => {
       const ctx = makeContext({ isRetreat: false });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.vampiricStrikeHealPercent).toBe(1.0);
+      expect(result.getStat('vampiricStrikeHealPercent')).toBe(1.0);
       expect(result.additionalEffects).toContain('statMod_vampiricStrikeHealPercent_set_1');
     });
   });
@@ -785,14 +786,14 @@ describe('Phase 4-6 new pair synergy effects', () => {
     it('activates on retreat', () => {
       const ctx = makeContext({ isRetreat: true });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.ghostPassActive).toBe(true);
+      expect(result.hasFlag('ghostPassActive')).toBe(true);
       expect(result.additionalEffects).toContain('setFlag_ghostPassActive');
     });
 
     it('does NOT activate when not retreating', () => {
       const ctx = makeContext({ isRetreat: false });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.ghostPassActive).toBe(false);
+      expect(result.hasFlag('ghostPassActive')).toBe(false);
       expect(result.additionalEffects).not.toContain('setFlag_ghostPassActive');
     });
   });
@@ -806,16 +807,16 @@ describe('Phase 4-6 new pair synergy effects', () => {
     it('triggers on retreat', () => {
       const ctx = makeContext({ isRetreat: true });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.fightingRetreatFreeStrike).toBe(true);
-      expect(result.fightingRetreatDamageMultiplier).toBe(1.0);
+      expect(result.hasFlag('fightingRetreatFreeStrike')).toBe(true);
+      expect(result.getStat('fightingRetreatDamageMultiplier')).toBe(1.0);
       expect(result.additionalEffects).toContain('setFlag_fightingRetreatFreeStrike');
     });
 
     it('does NOT trigger when not retreating', () => {
       const ctx = makeContext({ isRetreat: false });
       const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.fightingRetreatFreeStrike).toBe(false);
-      expect(result.fightingRetreatDamageMultiplier).toBe(0);
+      expect(result.hasFlag('fightingRetreatFreeStrike')).toBe(false);
+      expect(result.getStat('fightingRetreatDamageMultiplier')).toBe(0);
       expect(result.additionalEffects).not.toContain('setFlag_fightingRetreatFreeStrike');
     });
   });
@@ -827,7 +828,7 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('sets heal per turn', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.tidalCleanseHealPerTurn).toBe(4);
+      expect(result.getStat('tidalCleanseHealPerTurn')).toBe(4);
       expect(result.additionalEffects).toContain('statMod_tidalCleanseHealPerTurn_set_4');
     });
   });
@@ -839,7 +840,7 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('sets amphibious movement bonus', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.amphibiousMovementBonus).toBe(1);
+      expect(result.getStat('amphibiousMovementBonus')).toBe(1);
       expect(result.additionalEffects).toContain('statMod_amphibiousMovementBonus_set_1');
     });
   });
@@ -851,7 +852,7 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('sets stealth aura share radius', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.stealthAuraShareRadius).toBe(1);
+      expect(result.getStat('stealthAuraShareRadius')).toBe(1);
       expect(result.additionalEffects).toContain('statMod_stealthAuraShareRadius_set_1');
     });
   });
@@ -864,8 +865,8 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
     it('sets slave economy heal and resource bonus', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.slaveEconomyHealPerTurn).toBe(4);
-      expect(result.slaveEconomyResourceBonus).toBe(1);
+      expect(result.getStat('slaveEconomyHealPerTurn')).toBe(4);
+      expect(result.getStat('slaveEconomyResourceBonus')).toBe(1);
       expect(result.additionalEffects).toContain('statMod_slaveEconomyHealPerTurn_set_4');
     });
   });
@@ -873,40 +874,40 @@ describe('Phase 4-6 new pair synergy effects', () => {
   describe('Phase 4-6 defaults', () => {
     it('returns zero/false/empty defaults when no synergies active', () => {
       const result = applyCombatSynergies(makeContext(), [], null);
-      expect(result.toxicSpreadTransferStacks).toBe(0);
-      expect(result.toxicSpreadTransferRadius).toBe(0);
-      expect(result.formationWallActive).toBe(false);
-      expect(result.formationWallRangedReduction).toBe(0);
-      expect(result.formationPinballCollisionDamage).toBe(0);
-      expect(result.formationFocusBonus).toBe(0);
-      expect(result.formationFocusIgnoresDefense).toBe(false);
-      expect(result.formationChainBonus).toBe(0);
-      expect(result.bloomPulseHeal).toBe(0);
-      expect(result.bloomPulseSelfHeal).toBe(0);
-      expect(result.bloomPulseAuraRadius).toBe(0);
-      expect(result.bloomPulseMovementBonus).toBe(0);
-      expect(result.positionSwapAvailable).toBe(false);
-      expect(result.caravanRelayVisionRange).toBe(0);
-      expect(result.slaveHordeDamageBonus).toBe(0);
-      expect(result.slaveHordeDefensePenalty).toBe(0);
-      expect(result.bombardmentRange).toBe(0);
-      expect(result.bombardmentDamageMultiplier).toBe(0);
-      expect(result.bombardmentLandAuraDefense).toBe(0);
-      expect(result.mobileStrongholdFortUp).toBe(false);
-      expect(result.mobileStrongholdDefenseBonus).toBe(0);
-      expect(result.mobileStrongholdAlliedDefenseBonus).toBe(0);
-      expect(result.beachRaidDamageBonus).toBe(0);
-      expect(result.beachRaidRetreatToWater).toBe(false);
-      expect(result.vampiricStrikeHealPercent).toBe(0);
-      expect(result.ghostPassActive).toBe(false);
-      expect(result.fightingRetreatFreeStrike).toBe(false);
-      expect(result.fightingRetreatDamageMultiplier).toBe(0);
-      expect(result.tidalCleanseHealPerTurn).toBe(0);
-      expect(result.amphibiousMovementBonus).toBe(0);
-      expect(result.stealthAuraShareRadius).toBe(0);
-      expect(result.slaveEconomyHealPerTurn).toBe(0);
-      expect(result.slaveEconomyResourceBonus).toBe(0);
-      expect(result.caravanPassengerActive).toBe(false);
+      expect(result.getStat('toxicSpreadTransferStacks')).toBe(0);
+      expect(result.getStat('toxicSpreadTransferRadius')).toBe(0);
+      expect(result.hasFlag('formationWallActive')).toBe(false);
+      expect(result.getStat('formationWallRangedReduction')).toBe(0);
+      expect(result.getStat('formationPinballCollisionDamage')).toBe(0);
+      expect(result.getStat('formationFocusBonus')).toBe(0);
+      expect(result.hasFlag('formationFocusIgnoresDefense')).toBe(false);
+      expect(result.getStat('formationChainBonus')).toBe(0);
+      expect(result.getStat('bloomPulseHeal')).toBe(0);
+      expect(result.getStat('bloomPulseSelfHeal')).toBe(0);
+      expect(result.getStat('bloomPulseAuraRadius')).toBe(0);
+      expect(result.getStat('bloomPulseMovementBonus')).toBe(0);
+      expect(result.hasFlag('positionSwapAvailable')).toBe(false);
+      expect(result.getStat('caravanRelayVisionRange')).toBe(0);
+      expect(result.getStat('slaveHordeDamageBonus')).toBe(0);
+      expect(result.getStat('slaveHordeDefensePenalty')).toBe(0);
+      expect(result.getStat('bombardmentRange')).toBe(0);
+      expect(result.getStat('bombardmentDamageMultiplier')).toBe(0);
+      expect(result.getStat('bombardmentLandAuraDefense')).toBe(0);
+      expect(result.hasFlag('mobileStrongholdFortUp')).toBe(false);
+      expect(result.getStat('mobileStrongholdDefenseBonus')).toBe(0);
+      expect(result.getStat('mobileStrongholdAlliedDefenseBonus')).toBe(0);
+      expect(result.getStat('beachRaidDamageBonus')).toBe(0);
+      expect(result.hasFlag('beachRaidRetreatToWater')).toBe(false);
+      expect(result.getStat('vampiricStrikeHealPercent')).toBe(0);
+      expect(result.hasFlag('ghostPassActive')).toBe(false);
+      expect(result.hasFlag('fightingRetreatFreeStrike')).toBe(false);
+      expect(result.getStat('fightingRetreatDamageMultiplier')).toBe(0);
+      expect(result.getStat('tidalCleanseHealPerTurn')).toBe(0);
+      expect(result.getStat('amphibiousMovementBonus')).toBe(0);
+      expect(result.getStat('stealthAuraShareRadius')).toBe(0);
+      expect(result.getStat('slaveEconomyHealPerTurn')).toBe(0);
+      expect(result.getStat('slaveEconomyResourceBonus')).toBe(0);
+      expect(result.hasFlag('caravanPassengerActive')).toBe(false);
     });
   });
 });

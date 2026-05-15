@@ -37,6 +37,10 @@ export type StatName =
   | 'slaveHordeDamageBonus' | 'slaveHordeDefensePenalty'
   | 'capturePoisonDamage' | 'capturePoisonStacks'
   | 'slaveDamageBonus' | 'slaveHealPenalty'
+  // Status-derived numeric scalars (written by dispatchApplyStatus)
+  | 'frostbiteStacks' | 'frostbiteColdDoT' | 'frostbiteSlow'
+  // Heal-primitive accumulators (written by dispatchHeal)
+  | 'synergyFlatHeal' | 'synergyPercentHealMaxHp'
   // Emergent stat fields
   | 'emergentSustainHealPercent' | 'emergentSustainMinHp'
   | 'emergentSmiteBonus' | 'emergentCaptureBonus'
@@ -48,6 +52,7 @@ export type StatName =
   | 'emergentCrushZoneMovementPenalty' | 'emergentManyFacedDefense'
   | 'emergentManyFacedReflection' | 'emergentManyFacedDamage'
   | 'emergentManyFacedRangeBonus' | 'emergentManyFacedMovementBonus'
+  | 'emergentKillChainRedeployRange'
   | 'lethalAmbushPoison';
 
 export type FlagName =
@@ -58,6 +63,8 @@ export type FlagName =
   | 'fightingRetreatFreeStrike' | 'caravanPassengerActive'
   | 'mobileStrongholdFortUp' | 'formationFocusIgnoresDefense'
   | 'emergentUndying' | 'emergentIgnoreZoc'
+  | 'emergentPermanentStealth' | 'emergentPoisonCloudPreventsHealing'
+  | 'reEnterStealthAfterCombat'
   | 'countsAsCity' | 'transportedTroopsStealth';
 
 export type StatusName =
