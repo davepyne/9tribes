@@ -74,6 +74,7 @@ export interface CombatContext {
   position: { x: number; y: number };
   attackerPosition: { x: number; y: number };
   defenderPosition: { x: number; y: number };
+  attackerLearnedDomains: string[];
 }
 
 export interface SynergyCombatResult {
@@ -203,6 +204,17 @@ export interface SynergyCombatResult {
   caravanPassengerActive: boolean;
   countsAsCity: boolean;
   transportedTroopsStealth: boolean;
+  // Heal primitive wiring
+  synergyFlatHeal: number;
+  synergyPercentHealMaxHp: number;
+  // Post-combat re-stealth
+  reEnterStealthAfterCombat: boolean;
+  // New emergent wiring fields
+  emergentPermanentStealth: boolean;
+  emergentTerraformCharges: number;
+  emergentPhaseDistance: number;
+  emergentKillChainRedeployRange: number;
+  emergentPoisonCloudPreventsHealing: boolean;
 }
 
 export interface HealingContext {

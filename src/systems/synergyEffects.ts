@@ -138,12 +138,16 @@ export function makeEmptyResult(): SynergyCombatResult {
     caravanPassengerActive: false,
     countsAsCity: false,
     transportedTroopsStealth: false,
+    synergyFlatHeal: 0,
+    synergyPercentHealMaxHp: 0,
+    reEnterStealthAfterCombat: false,
+    // New emergent wiring fields
+    emergentPermanentStealth: false,
+    emergentTerraformCharges: 0,
+    emergentPhaseDistance: 0,
+    emergentKillChainRedeployRange: 0,
+    emergentPoisonCloudPreventsHealing: false,
   };
-}
-
-/** Reset an existing SynergyCombatResult to its zero values in-place (avoids GC pressure). */
-export function resetSynergyResult(result: SynergyCombatResult): void {
-  Object.assign(result, makeEmptyResult());
 }
 
 // --- Public API ---

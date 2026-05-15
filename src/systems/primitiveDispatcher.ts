@@ -7,6 +7,7 @@ import type {
   ModeSelect, StatName,
 } from './synergyPrimitives.js';
 import { evaluateCondition } from './primitiveEvaluator.js';
+import { EMERGENT_PARAMS } from './emergentRuleParams.js';
 
 // ---------------------------------------------------------------------------
 // Type-safe dynamic field writer
@@ -79,6 +80,16 @@ function dispatchApplyStatus(p: ApplyStatus, context: CombatContext, result: Syn
       result.armorPiercing = Math.max(result.armorPiercing, 1);
       break;
     case 'stealth':
+      if (p.duration === 'permanent') {
+        result.emergentPermanentStealth = true;
+        const terrains = (p.fields?.terrains as string[] | undefined) ?? EMERGENT_PARAMS.terrain_assassin.terrainTypes;
+        for (const t of terrains) {
+          if (!result.emergentPermanentStealthTerrains.includes(t)) {
+            result.emergentPermanentStealthTerrains.push(t);
+          }
+        }
+      }
+      break;
     case 'bleed':
     case 'rage':
     case 'corruptionAura':
@@ -106,6 +117,17 @@ function dispatchKnockback(p: Knockback, context: CombatContext, result: Synergy
 
 function dispatchHeal(p: Heal, context: CombatContext, result: SynergyCombatResult): void {
   if (!evaluateCondition(p.condition, context)) return;
+  switch (p.mode) {
+    case 'flat':
+      result.synergyFlatHeal += p.amount;
+      break;
+    case 'percentMaxHp':
+      result.synergyPercentHealMaxHp += p.amount;
+      break;
+    case 'percentDamage':
+      // Stored as label; applied downstream where actual damage is known
+      break;
+  }
   result.additionalEffects.push(`heal_${p.mode}_${p.amount}`);
 }
 
@@ -115,6 +137,7 @@ function dispatchCapture(p: Capture, context: CombatContext, result: SynergyComb
     if (context.isCharge) result.chargeCaptureChance = p.chanceBonus;
     else if (context.isRetreat) result.retreatCaptureChance = p.chanceBonus;
     else if (context.isStealthAttack) result.stealthCaptureBonus = p.chanceBonus;
+    else result.navalCaptureBonus = (result.navalCaptureBonus ?? 0) + p.chanceBonus;
   }
   if (p.hpThreshold !== undefined) {
     result.emergentCaptureBelowHpPercent = p.hpThreshold;
@@ -142,6 +165,7 @@ function dispatchPreventAction(p: PreventAction, context: CombatContext, result:
     case 'movementThrough':
     case 'pursue':
     case 'terrainPenalty':
+      break;
     case 'retaliation':
       result.noRetaliation = true;
       break;
@@ -163,9 +187,10 @@ function dispatchSpawnOnMap(p: SpawnOnMap, context: CombatContext, result: Syner
     case 'poisonTrap':
     case 'poisonCloud':
       result.poisonTrapPositions.push(pos);
+      result.emergentPoisonCloudPreventsHealing = true;
       break;
     case 'sandstorm':
-      result.sandstormDamage = (p.fields?.damage as number) ?? result.sandstormDamage;
+      if (typeof p.fields?.damage === 'number') result.sandstormDamage = p.fields.damage;
       break;
     case 'contamination':
       result.contaminateActive = true;
@@ -203,16 +228,24 @@ function dispatchGrantVerb(p: GrantVerb, context: CombatContext, result: Synergy
       result.beachRaidRetreatToWater = true;
       break;
     case 'reEnterStealth':
+      result.reEnterStealthAfterCombat = true;
+      break;
     case 'decamp':
     case 'terraform':
+      result.emergentTerraformCharges = p.uses === 'unlimited' ? 99 : (typeof p.uses === 'number' ? p.uses : EMERGENT_PARAMS.terrain_lord.terraformCharges);
+      break;
     case 'submerge':
     case 'declareOasis':
     case 'relayMarch':
-    case 'phase':
-    case 'redeployOnKill':
     case 'repositionAfterKill':
     case 'shareVision':
     case 'instantRetreatWithCaptive':
+      break;
+    case 'phase':
+      result.emergentPhaseDistance = p.range ?? EMERGENT_PARAMS.ghost_army.phaseDistance;
+      break;
+    case 'redeployOnKill':
+      result.emergentKillChainRedeployRange = p.range ?? EMERGENT_PARAMS.ghost_army.killChainRedeployRange;
       break;
   }
   result.additionalEffects.push(`grantVerb_${p.verb}`);

@@ -1,6 +1,6 @@
 import { getEffectiveXpCost } from '../knowledgeSystem.js';
 import { isWaterTerrain } from '../terrainUtils.js';
-import { getZoneEffectsAtHex } from '../zoneEffectSystem.js';
+import { getZoneEffectsAtHex, addZoneEffect } from '../zoneEffectSystem.js';
 import { getNeighbors, hexDistance, hexToKey } from '../../core/grid.js';
 import { createUnitId } from '../../core/ids.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
@@ -35,6 +35,8 @@ import {
 } from '../historySystem.js';
 
 import { setTerrainAt } from '../terrainMutationSystem.js';
+import { createZoneEffectId } from '../../core/ids.js';
+import { EMERGENT_PARAMS } from '../emergentRuleParams.js';
 
 import type {
   CombatActionApplyResult,
@@ -599,6 +601,12 @@ export function applyCombatAction(
   const navalSupportCapture = hasNavalSupport && defender.hp <= defender.maxHp * 0.5
     ? { greedyCaptureChance: 1, greedyCaptureCooldown: 0, greedyCaptureHpFraction: 0.5 }
     : null;
+  // Juggernaut slaving signature: auto-capture below HP threshold
+  const juggernautSlavingCapture = preview.details.emergentCaptureBelowHpPercent > 0
+    && !autoCaptureAbility && !maelstromAutoCapture && !navalSupportCapture
+    && defender.hp <= defender.maxHp * preview.details.emergentCaptureBelowHpPercent
+    ? { greedyCaptureChance: 1, greedyCaptureCooldown: 0, greedyCaptureHpFraction: preview.details.emergentCaptureBelowHpPercent }
+    : null;
   // E3/E4 — emergent capture bonus from Slave Empire (+0.20) and Desert Raider (+0.30 in desert)
   const emergentCaptureBonus = preview.details.emergentCaptureBonus
     + (preview.details.defenderTerrainId === 'desert' ? preview.details.emergentDesertCaptureBonus : 0);
@@ -619,7 +627,7 @@ export function applyCombatAction(
   if (
     defenderActuallyDestroyed
     && nextAttacker.hp > 0
-    && (hasCaptureAbility(attackerPrototype, registry) || isGreedyCoastal || autoCaptureAbility || maelstromAutoCapture || navalSupportCapture)
+    && (hasCaptureAbility(attackerPrototype, registry) || isGreedyCoastal || autoCaptureAbility || maelstromAutoCapture || navalSupportCapture || juggernautSlavingCapture)
   ) {
     const captureResult = attemptCapture(
       current,
@@ -629,6 +637,7 @@ export function applyCombatAction(
       autoCaptureAbility
         ?? maelstromAutoCapture
         ?? navalSupportCapture
+        ?? juggernautSlavingCapture
         ?? (isGreedyCoastal && !hasCaptureAbility(attackerPrototype, registry)
           ? registry.getSignatureAbility(attacker.factionId)
           : null),
@@ -965,6 +974,14 @@ export function applyCombatAction(
     totalKnockbackDistance = knockbackResult.appliedDistance;
   }
 
+  // Juggernaut charge signature: knockback on kill
+  if (preview.details.emergentKnockbackOnKill > 0 && defenderActuallyDestroyed) {
+    // Push surviving units behind the defender
+    const knockbackResult = applyKnockbackDistance(current, preview.attackerId, preview.defenderId, preview.details.emergentKnockbackOnKill);
+    current = knockbackResult.state;
+    totalKnockbackDistance += knockbackResult.appliedDistance;
+  }
+
   // Charge T2 — Rout on big charge + Stampede
   let bigChargeRoutTriggered = false;
   let stampedeDamageApplied = 0;
@@ -1057,6 +1074,42 @@ export function applyCombatAction(
     }
   }
 
+  // Juggernaut hitrun signature: free reposition after kill
+  if (preview.details.emergentFreeReposition > 0 && defenderActuallyDestroyed && !hitAndRunEligible) {
+    const repositionAttacker = current.units.get(preview.attackerId);
+    if (repositionAttacker && repositionAttacker.hp > 0) {
+      const retreatHex = findRetreatHex(repositionAttacker, current);
+      if (retreatHex) {
+        const unitsAfterRepos = new Map(current.units);
+        unitsAfterRepos.set(repositionAttacker.id, {
+          ...repositionAttacker,
+          position: retreatHex,
+          status: 'ready',
+        });
+        current = { ...current, units: unitsAfterRepos };
+        feedback = {
+          ...feedback,
+          hitAndRunRetreat: { unitId: repositionAttacker.id, to: retreatHex },
+        };
+      }
+    }
+  }
+
+  // Ghost army kill-chain redeploy: after a kill, attacker can reposition anywhere
+  if (preview.details.emergentKillChainRedeployRange > 0 && defenderActuallyDestroyed) {
+    const redeployAttacker = current.units.get(preview.attackerId);
+    if (redeployAttacker && redeployAttacker.hp > 0) {
+      const unitsAfterRedeploy = new Map(current.units);
+      unitsAfterRedeploy.set(redeployAttacker.id, {
+        ...redeployAttacker,
+        movesRemaining: redeployAttacker.maxMoves,
+        attacksRemaining: Math.max(redeployAttacker.attacksRemaining, 1),
+        status: 'ready',
+      });
+      current = { ...current, units: unitsAfterRedeploy };
+    }
+  }
+
   let updatedAttacker = current.units.get(preview.attackerId);
   let updatedDefender = current.units.get(preview.defenderId);
 
@@ -1102,6 +1155,17 @@ export function applyCombatAction(
     updatedDefender = current.units.get(preview.defenderId);
     if (updatedDefender && updatedDefender.hp > 0) {
       updatedDefender = applyPoisonDoT(updatedDefender, preview.details.poisonStacks, 1, 3);
+      updatedDefender = { ...updatedDefender, poisonedBy: attacker.factionId } as Unit;
+      current = writeUnitToState(current, updatedDefender);
+      poisonApplied = true;
+    }
+  }
+
+  // Juggernaut venom signature: extra poison per hit
+  if (preview.details.emergentPoisonPerHit > 0 && !defenderActuallyDestroyed) {
+    updatedDefender = current.units.get(preview.defenderId);
+    if (updatedDefender && updatedDefender.hp > 0) {
+      updatedDefender = applyPoisonDoT(updatedDefender, preview.details.emergentPoisonPerHit, 1, 3);
       updatedDefender = { ...updatedDefender, poisonedBy: attacker.factionId } as Unit;
       current = writeUnitToState(current, updatedDefender);
       poisonApplied = true;
@@ -1226,9 +1290,10 @@ export function applyCombatAction(
     current = writeUnitToState(current, updatedAttacker);
   }
 
-  // Phase 3C — Synergy damage reflection (heavy_fortress, iron_turtle)
-  if (preview.details.damageReflection > 0 && preview.result.defenderDamage > 0 && updatedAttacker) {
-    const synergyReflectedDmg = Math.max(1, Math.floor(preview.result.defenderDamage * preview.details.damageReflection));
+  // Phase 3C — Synergy damage reflection (heavy_fortress, iron_turtle, juggernaut fortress sig)
+  const totalReflection = preview.details.damageReflection + preview.details.emergentDamageReflection;
+  if (totalReflection > 0 && preview.result.defenderDamage > 0 && updatedAttacker) {
+    const synergyReflectedDmg = Math.max(1, Math.floor(preview.result.defenderDamage * totalReflection));
     updatedAttacker = { ...updatedAttacker, hp: Math.max(0, updatedAttacker.hp - synergyReflectedDmg) };
     current = writeUnitToState(current, updatedAttacker);
     reflectionDamageApplied += synergyReflectedDmg;
@@ -1293,6 +1358,23 @@ export function applyCombatAction(
       });
     }
     current = { ...current, poisonTraps };
+
+    // Poison Shadow: create a poison_cloud zone effect that prevents healing
+    if (preview.details.emergentPoisonCloudPreventsHealing || preview.details.attackerSynergyEffects.includes('spawnOnMap_poisonCloud')) {
+      const cloudCenter = preview.details.poisonTrapPositions[0] ?? attacker.position;
+      current = addZoneEffect(current, {
+        id: createZoneEffectId(),
+        type: 'poison_cloud',
+        center: { q: cloudCenter.q, r: cloudCenter.r },
+        radius: 2,
+        ownerFactionId: attacker.factionId,
+        damagePerTurn: EMERGENT_PARAMS.poison_shadow.poisonCloudDamage,
+        movementPenalty: 0,
+        turnsRemaining: 3,
+        createdRound: current.round,
+        preventsHealing: true,
+      });
+    }
   }
   updatedAttacker = current.units.get(preview.attackerId);
   let healOnRetreatApplied = 0;
@@ -1484,6 +1566,64 @@ export function applyCombatAction(
     current = { ...current, units: armyUnits };
   }
 
+  // Synergy heal primitives (flat + % max HP)
+  updatedAttacker = current.units.get(preview.attackerId);
+  if (updatedAttacker && updatedAttacker.hp > 0) {
+    let healed = false;
+    if (preview.details.synergyFlatHeal > 0) {
+      updatedAttacker = { ...updatedAttacker, hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + preview.details.synergyFlatHeal) };
+      combatHealingApplied += preview.details.synergyFlatHeal;
+      healed = true;
+    }
+    if (preview.details.synergyPercentHealMaxHp > 0) {
+      const pctHeal = Math.floor(updatedAttacker.maxHp * preview.details.synergyPercentHealMaxHp);
+      if (pctHeal > 0) {
+        updatedAttacker = { ...updatedAttacker, hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + pctHeal) };
+        combatHealingApplied += pctHeal;
+        healed = true;
+      }
+    }
+    if (healed) current = writeUnitToState(current, updatedAttacker);
+  }
+
+  // Vampiric Strike (hitrun+nature_healing): heal attacker for % of damage dealt
+  updatedAttacker = current.units.get(preview.attackerId);
+  if (preview.details.vampiricStrikeHealPercent > 0 && updatedAttacker && preview.result.defenderDamage > 0) {
+    const vampHeal = Math.floor(preview.result.defenderDamage * preview.details.vampiricStrikeHealPercent);
+    if (vampHeal > 0) {
+      current = writeUnitToState(current, {
+        ...updatedAttacker,
+        hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + vampHeal),
+      });
+      combatHealingApplied += vampHeal;
+    }
+  }
+
+  // Bombardment (fortress+tidal_warfare): naval attacker deals bonus damage to land defender
+  let bombardmentDamageApplied = 0;
+  updatedDefender = current.units.get(preview.defenderId);
+  if (preview.details.bombardmentDamageMultiplier > 0 && updatedDefender && !defenderActuallyDestroyed
+    && isWaterTerrain(preview.details.attackerTerrainId) && !isWaterTerrain(preview.details.defenderTerrainId)) {
+    bombardmentDamageApplied = Math.max(1, Math.floor(preview.result.defenderDamage * preview.details.bombardmentDamageMultiplier));
+    current = writeUnitToState(current, { ...updatedDefender, hp: Math.max(0, updatedDefender.hp - bombardmentDamageApplied) });
+  }
+
+  // Fighting Retreat (hitrun+heavy_hitter): free strike during hit-and-run
+  let fightingRetreatDamage = 0;
+  updatedDefender = current.units.get(preview.defenderId);
+  if (hitAndRunTriggered && preview.details.fightingRetreatFreeStrike && updatedDefender && updatedDefender.hp > 0) {
+    fightingRetreatDamage = Math.max(1, Math.floor(preview.result.defenderDamage * (preview.details.fightingRetreatDamageMultiplier || 1)));
+    current = writeUnitToState(current, { ...updatedDefender, hp: Math.max(0, updatedDefender.hp - fightingRetreatDamage) });
+  }
+
+  // Post-combat re-stealth (hitrun+river_stealth Shadow Step)
+  updatedAttacker = current.units.get(preview.attackerId);
+  if (preview.details.reEnterStealthAfterCombat && updatedAttacker && updatedAttacker.hp > 0 && !updatedAttacker.isStealthed) {
+    updatedAttacker = enterStealth({ ...updatedAttacker, turnsSinceStealthBreak: 0 }, attackerPrototype.tags ?? []);
+    current = writeUnitToState(current, updatedAttacker);
+    reStealthTriggered = true;
+  }
+
   // Phase 3B — Capture aftermath: apply poison and modifiers to captured units
   if (capturedOnKill) {
     const capturedUnit = current.units.get(preview.defenderId);
@@ -1532,6 +1672,12 @@ export function applyCombatAction(
   }
   if (combatHealingApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Combat Healing', `Attacker recovered ${combatHealingApplied} HP from dealt damage.`, 'aftermath');
+  }
+  if (bombardmentDamageApplied > 0) {
+    pushCombatEffect(triggeredEffects, 'Naval Bombardment', `Ships bombarded for +${bombardmentDamageApplied} bonus damage.`, 'synergy');
+  }
+  if (fightingRetreatDamage > 0) {
+    pushCombatEffect(triggeredEffects, 'Fighting Retreat', `Disengaging strike dealt ${fightingRetreatDamage} damage.`, 'synergy');
   }
   if (sandstormTargetsHit > 0) {
     pushCombatEffect(triggeredEffects, 'Sandstorm Splash', `Area damage hit ${sandstormTargetsHit} nearby unit${sandstormTargetsHit === 1 ? '' : 's'}.`, 'aftermath');
@@ -1604,6 +1750,16 @@ export function applyCombatAction(
     const stanceLabel = preview.details.emergentManyFacedStance.charAt(0).toUpperCase() + preview.details.emergentManyFacedStance.slice(1);
     pushCombatEffect(triggeredEffects, `Many-Faced: ${stanceLabel}`, `Adapted stance based on combat context.`, 'synergy');
     baseResolution.emergentManyFacedStance = preview.details.emergentManyFacedStance;
+    // Store stance on faction for non-combat consumption (phantom movement bonus)
+    const factionsMF = new Map(current.factions);
+    const mf = factionsMF.get(attacker.factionId);
+    if (mf) {
+      factionsMF.set(attacker.factionId, {
+        ...mf,
+        manyFacedLastStance: preview.details.emergentManyFacedStance,
+      });
+      current = { ...current, factions: factionsMF };
+    }
   }
   if (baseResolution.instantKillTriggered) {
     pushCombatEffect(triggeredEffects, 'Lethal Ambush', 'Synergy enabled an instant kill bypassing all defenses.', 'synergy');

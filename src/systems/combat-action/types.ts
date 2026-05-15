@@ -115,6 +115,52 @@ export interface CombatActionPreviewDetails {
   damageReflection: number;
   aoeDamage: number;
   witheringReduction: number;
+  // Heal primitive wiring
+  synergyFlatHeal: number;
+  synergyPercentHealMaxHp: number;
+  // Post-combat re-stealth
+  reEnterStealthAfterCombat: boolean;
+  // Pair synergy fields
+  vampiricStrikeHealPercent: number;
+  bombardmentRange: number;
+  bombardmentDamageMultiplier: number;
+  bombardmentLandAuraDefense: number;
+  mobileStrongholdFortUp: boolean;
+  mobileStrongholdDefenseBonus: number;
+  mobileStrongholdAlliedDefenseBonus: number;
+  beachRaidDamageBonus: number;
+  beachRaidRetreatToWater: boolean;
+  ghostPassActive: boolean;
+  fightingRetreatFreeStrike: boolean;
+  fightingRetreatDamageMultiplier: number;
+  tidalCleanseHealPerTurn: number;
+  amphibiousMovementBonus: number;
+  stealthAuraShareRadius: number;
+  slaveEconomyHealPerTurn: number;
+  slaveEconomyResourceBonus: number;
+  caravanPassengerActive: boolean;
+  countsAsCity: boolean;
+  transportedTroopsStealth: boolean;
+  positionSwapAvailable: boolean;
+  caravanRelayVisionRange: number;
+  formationWallActive: boolean;
+  formationWallRangedReduction: number;
+  formationPinballCollisionDamage: number;
+  formationFocusBonus: number;
+  formationFocusIgnoresDefense: boolean;
+  formationChainBonus: number;
+  bloomPulseHeal: number;
+  bloomPulseSelfHeal: number;
+  bloomPulseAuraRadius: number;
+  bloomPulseMovementBonus: number;
+  toxicSpreadTransferRadius: number;
+  toxicSpreadTransferStacks: number;
+  // New emergent wiring fields
+  emergentPermanentStealth: boolean;
+  emergentTerraformCharges: number;
+  emergentPhaseDistance: number;
+  emergentKillChainRedeployRange: number;
+  emergentPoisonCloudPreventsHealing: boolean;
 }
 
 export interface CombatActionFeedback {

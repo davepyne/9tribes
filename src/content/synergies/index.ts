@@ -53,7 +53,6 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     requiredTags: ['poison', 'elephant'],
     effects: [
       { kind: 'statMod', stat: 'multiplierStackValue', op: 'set', value: 2 },
-      { kind: 'statMod', stat: 'damage', op: 'multiply', value: 2 },
     ],
     description:
       'Charge attacks inflict double poison duration. Knockback leaves enemies poisoned in their new position',
@@ -383,7 +382,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     domains: ['charge', 'river_stealth'],
     requiredTags: ['elephant', 'stealth'],
     effects: [
-      { kind: 'statMod', stat: 'damage', op: 'multiply', value: 1.5, condition: 'isCharge AND isStealthAttack' },
+      { kind: 'statMod', stat: 'damage', op: 'set', value: 0.5, condition: 'isCharge AND isStealthAttack' },
       { kind: 'grantVerb', verb: 'waiveChargeCooldown', condition: 'isCharge AND isStealthAttack' },
     ],
     description:
@@ -434,7 +433,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     requiredTags: ['elephant', 'heavy'],
     effects: [
       { kind: 'applyStatus', status: 'stun', duration: 1 },
-      { kind: 'knockback', distance: 0, extendMultiplier: 1.5, condition: 'isCharge' },
+      { kind: 'knockback', distance: 1, extendMultiplier: 1.5, condition: 'isCharge' },
     ],
     description:
       'Heavy charges deal massive knockback and stun enemies for 1 turn. Each hex of run-up adds +5% damage (cap +50%).',
@@ -467,7 +466,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'statMod', stat: 'beachRaidDamageBonus', op: 'set', value: 0.25 },
       { kind: 'grantVerb', verb: 'retreatToWater' },
-      { kind: 'statMod', stat: 'damage', op: 'multiply', value: 1.25 },
+      { kind: 'statMod', stat: 'damage', op: 'set', value: 0.25 },
     ],
     description:
       'Attack from water with +25% damage. After attacking, retreat to any water within 2 hexes. Land units cannot pursue.',
@@ -522,7 +521,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Raid Retreat',
     domains: ['hitrun', 'slaving'],
     requiredTags: ['skirmish', 'capture'],
-    effects: [{ kind: 'capture', chanceBonus: 0.15, condition: 'isRetreat' }],
+    effects: [{ kind: 'capture', chanceBonus: 0.15 }],
     description:
       'Hit-and-run attacks have 15% chance to capture wounded enemies (below 50% HP), rising to 40% below 25 HP. Instant retreat with captive.',
     friendlyFlavor:
@@ -536,8 +535,8 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     domains: ['hitrun', 'heavy_hitter'],
     requiredTags: ['skirmish', 'heavy'],
     effects: [
-      { kind: 'grantVerb', verb: 'opportunityStrikeOnDisengage', condition: 'isRetreat' },
-      { kind: 'statMod', stat: 'fightingRetreatDamageMultiplier', op: 'set', value: 1.0, condition: 'isRetreat' },
+      { kind: 'grantVerb', verb: 'opportunityStrikeOnDisengage' },
+      { kind: 'statMod', stat: 'fightingRetreatDamageMultiplier', op: 'set', value: 1.0 },
     ],
     description:
       'Free opportunity strike at full damage when disengaging. Heavy skirmishers hit back on the way out.',
@@ -554,7 +553,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'statMod', stat: 'formationFocusBonus', op: 'set', value: 0.3 },
       { kind: 'setFlag', flag: 'formationFocusIgnoresDefense' },
-      { kind: 'statMod', stat: 'damage', op: 'multiply', value: 1.3 },
+      { kind: 'statMod', stat: 'damage', op: 'set', value: 0.3 },
     ],
     description:
       "When 2+ hitrun units attack the same target in one turn, each subsequent attacker deals +30% damage and ignores defender's defense bonuses.",
@@ -827,7 +826,7 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     effects: [
       { kind: 'statMod', stat: 'slaveHordeDamageBonus', op: 'set', value: 0.5 },
       { kind: 'statMod', stat: 'slaveHordeDefensePenalty', op: 'set', value: 0.3 },
-      { kind: 'statMod', stat: 'damage', op: 'multiply', value: 1.5 },
+      { kind: 'statMod', stat: 'damage', op: 'set', value: 0.5 },
       { kind: 'statMod', stat: 'defense', op: 'add', value: -0.3 },
     ],
     description:
@@ -976,6 +975,15 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
     effects: [
       { kind: 'setFlag', flag: 'emergentUndying' },
       { kind: 'setFlag', flag: 'emergentIgnoreZoc' },
+      // Per-domain signatures — only fire if the faction has learned that domain
+      { kind: 'statMod', stat: 'emergentPoisonPerHit', op: 'set', value: 1, condition: 'domain:venom' },
+      { kind: 'statMod', stat: 'emergentDamageReflection', op: 'add', value: 0.3, condition: 'domain:fortress' },
+      { kind: 'statMod', stat: 'emergentKnockbackOnKill', op: 'set', value: 1, condition: 'domain:charge' },
+      { kind: 'statMod', stat: 'emergentDamageBehindPercent', op: 'set', value: 0.5, condition: 'domain:charge' },
+      { kind: 'statMod', stat: 'emergentFreeReposition', op: 'set', value: 1, condition: 'domain:hitrun' },
+      { kind: 'statMod', stat: 'emergentArmorPierce', op: 'set', value: 0.5, condition: 'domain:heavy_hitter' },
+      { kind: 'statMod', stat: 'emergentCaptureBelowHpPercent', op: 'set', value: 0.25, condition: 'domain:slaving' },
+      { kind: 'statMod', stat: 'emergentBonusDamageAdjacentWater', op: 'set', value: 2, condition: 'domain:tidal_warfare' },
     ],
     friendlyFlavor:
       'Your juggernauts collect the essence of every combat art they master. They cannot be stopped by a single blow, cannot be contained by formation, and carry the fury of three warriors in one body.',
