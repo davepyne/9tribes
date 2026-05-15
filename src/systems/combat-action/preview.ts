@@ -641,13 +641,10 @@ export function previewCombatAction(
       stealthCaptureBonus: attackerSynergyResult.stealthCaptureBonus,
       // Phase 3C: buff/aura/retreat effects
       captureEscapePrevented: attackerSynergyResult.captureEscapePrevented,
-      heavyRetreatDamageReduction: attackerSynergyResult.heavyRetreatDamageReduction,
       coastalNomadDefense: attackerSynergyResult.coastalNomadDefense,
-      coastalNomadSpeed: attackerSynergyResult.coastalNomadSpeed,
       heavyNavalRamDamage: attackerSynergyResult.heavyNavalRamDamage,
       slaveHealAmount: attackerSynergyResult.slaveHealAmount,
       heavyRegenPercent: attackerSynergyResult.heavyRegenPercent,
-      terrainSlaveSpeed: attackerSynergyResult.terrainSlaveSpeed,
       sandstormAuraRadius: attackerSynergyResult.sandstormAuraRadius,
       sandstormAuraDebuff: attackerSynergyResult.sandstormAuraDebuff,
       slaveArmyDamageBonus: attackerSynergyResult.slaveArmyDamageBonus,
@@ -703,8 +700,6 @@ export function previewCombatAction(
       toxicSpreadTransferStacks: attackerSynergyResult.toxicSpreadTransferStacks,
       // New emergent wiring fields
       emergentPermanentStealth: attackerSynergyResult.emergentPermanentStealth,
-      emergentTerraformCharges: attackerSynergyResult.emergentTerraformCharges,
-      emergentPhaseDistance: attackerSynergyResult.emergentPhaseDistance,
       emergentKillChainRedeployRange: attackerSynergyResult.emergentKillChainRedeployRange,
       emergentPoisonCloudPreventsHealing: attackerSynergyResult.emergentPoisonCloudPreventsHealing,
     },

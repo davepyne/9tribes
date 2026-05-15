@@ -87,9 +87,9 @@ describe('statMod', () => {
 
   it('respects condition: terrain:desert', () => {
     const r = resolve([
-      { kind: 'statMod', stat: 'terrainSlaveSpeed', op: 'set', value: 1, condition: 'terrain:desert' },
+      { kind: 'statMod', stat: 'sandstormDamage', op: 'set', value: 2, condition: 'terrain:desert' },
     ], { terrain: 'desert' });
-    expect(r.terrainSlaveSpeed).toBe(1);
+    expect(r.sandstormDamage).toBe(2);
   });
 
   it('adds to auraOverlapDefense', () => {
@@ -440,14 +440,12 @@ describe('composite: heavy_fortress', () => {
 });
 
 describe('composite: coastal_nomad on water', () => {
-  it('sets defense and speed bonuses on water terrain', () => {
+  it('sets defense bonus on water terrain', () => {
     const r = resolve([
       { kind: 'statMod', stat: 'coastalNomadDefense', op: 'set', value: 0.5, condition: 'isWater' },
-      { kind: 'statMod', stat: 'coastalNomadSpeed', op: 'set', value: 1, condition: 'isWater' },
       { kind: 'statMod', stat: 'defense', op: 'add', value: 0.5, condition: 'isWater' },
     ], { terrain: 'coast' });
     expect(r.coastalNomadDefense).toBe(0.5);
-    expect(r.coastalNomadSpeed).toBe(1);
     expect(r.defense).toBe(0.5);
   });
 });

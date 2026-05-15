@@ -95,13 +95,10 @@ export interface CombatActionPreviewDetails {
   stealthCaptureBonus: number;
   // Phase 3C: buff/aura/retreat effects
   captureEscapePrevented: boolean;
-  heavyRetreatDamageReduction: number;
   coastalNomadDefense: number;
-  coastalNomadSpeed: number;
   heavyNavalRamDamage: number;
   slaveHealAmount: number;
   heavyRegenPercent: number;
-  terrainSlaveSpeed: number;
   sandstormAuraRadius: number;
   sandstormAuraDebuff: number;
   slaveArmyDamageBonus: number;
@@ -157,8 +154,6 @@ export interface CombatActionPreviewDetails {
   toxicSpreadTransferStacks: number;
   // New emergent wiring fields
   emergentPermanentStealth: boolean;
-  emergentTerraformCharges: number;
-  emergentPhaseDistance: number;
   emergentKillChainRedeployRange: number;
   emergentPoisonCloudPreventsHealing: boolean;
 }

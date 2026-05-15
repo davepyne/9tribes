@@ -352,38 +352,16 @@ describe('Phase 3C lower-value synergy effects', () => {
     });
   });
 
-  describe('heavy_retreat (S11)', () => {
-    const synergy = makeSynergy([
-      { kind: 'statMod', stat: 'heavyRetreatDamageReduction', op: 'set', value: 0.30, condition: 'isRetreat' },
-    ] as PrimitiveEffect[]);
-
-    it('applies damage reduction on retreat', () => {
-      const ctx = makeContext({ isRetreat: true });
-      const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.heavyRetreatDamageReduction).toBe(0.30);
-      expect(result.additionalEffects).toContain('statMod_heavyRetreatDamageReduction_set_0.3');
-    });
-
-    it('does NOT trigger without retreat', () => {
-      const ctx = makeContext({ isRetreat: false });
-      const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.heavyRetreatDamageReduction).toBe(0);
-      expect(result.additionalEffects).not.toContain('statMod_heavyRetreatDamageReduction_set_0.3');
-    });
-  });
-
   describe('coastal_nomad (S12)', () => {
     const synergy = makeSynergy([
       { kind: 'statMod', stat: 'coastalNomadDefense', op: 'set', value: 0.25, condition: 'terrain:coast,river' },
-      { kind: 'statMod', stat: 'coastalNomadSpeed', op: 'set', value: 1, condition: 'terrain:coast,river' },
       { kind: 'statMod', stat: 'defense', op: 'add', value: 0.25, condition: 'terrain:coast,river' },
     ] as PrimitiveEffect[]);
 
-    it('grants defense and speed on coast terrain', () => {
+    it('grants defense on coast terrain', () => {
       const ctx = makeContext({ terrain: 'coast' });
       const result = applyCombatSynergies(ctx, [synergy], null);
       expect(result.coastalNomadDefense).toBe(0.25);
-      expect(result.coastalNomadSpeed).toBe(1);
       expect(result.defense).toBe(0.25);
       expect(result.additionalEffects).toContain('statMod_coastalNomadDefense_set_0.25');
     });
@@ -478,25 +456,6 @@ describe('Phase 3C lower-value synergy effects', () => {
     });
   });
 
-  describe('terrain_slave (S19)', () => {
-    const synergy = makeSynergy([
-      { kind: 'statMod', stat: 'terrainSlaveSpeed', op: 'set', value: 1, condition: 'terrain:desert' },
-    ] as PrimitiveEffect[]);
-
-    it('applies speed bonus on desert terrain', () => {
-      const ctx = makeContext({ terrain: 'desert' });
-      const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.terrainSlaveSpeed).toBe(1);
-      expect(result.additionalEffects).toContain('statMod_terrainSlaveSpeed_set_1');
-    });
-
-    it('does NOT trigger on non-desert terrain', () => {
-      const ctx = makeContext({ terrain: 'plains' });
-      const result = applyCombatSynergies(ctx, [synergy], null);
-      expect(result.terrainSlaveSpeed).toBe(0);
-    });
-  });
-
   describe('sandstorm_aura (S20)', () => {
     const synergy = makeSynergy([
       { kind: 'statMod', stat: 'sandstormAuraRadius', op: 'set', value: 2, condition: 'terrain:desert' },
@@ -573,13 +532,10 @@ describe('Phase 3C lower-value synergy effects', () => {
     it('returns zero/false defaults when no synergies active', () => {
       const result = applyCombatSynergies(makeContext(), [], null);
       expect(result.captureEscapePrevented).toBe(false);
-      expect(result.heavyRetreatDamageReduction).toBe(0);
       expect(result.coastalNomadDefense).toBe(0);
-      expect(result.coastalNomadSpeed).toBe(0);
       expect(result.heavyNavalRamDamage).toBe(0);
       expect(result.slaveHealAmount).toBe(0);
       expect(result.heavyRegenPercent).toBe(0);
-      expect(result.terrainSlaveSpeed).toBe(0);
       expect(result.sandstormAuraRadius).toBe(0);
       expect(result.sandstormAuraDebuff).toBe(0);
       expect(result.slaveArmyDamageBonus).toBe(0);
@@ -933,7 +889,6 @@ describe('Phase 4-6 new pair synergy effects', () => {
       expect(result.caravanRelayVisionRange).toBe(0);
       expect(result.slaveHordeDamageBonus).toBe(0);
       expect(result.slaveHordeDefensePenalty).toBe(0);
-      expect(result.slaveHordeRageTriggered).toBe(false);
       expect(result.bombardmentRange).toBe(0);
       expect(result.bombardmentDamageMultiplier).toBe(0);
       expect(result.bombardmentLandAuraDefense).toBe(0);
@@ -947,7 +902,6 @@ describe('Phase 4-6 new pair synergy effects', () => {
       expect(result.fightingRetreatFreeStrike).toBe(false);
       expect(result.fightingRetreatDamageMultiplier).toBe(0);
       expect(result.tidalCleanseHealPerTurn).toBe(0);
-      expect(result.tidalCleanseClearedDebuffs).toEqual([]);
       expect(result.amphibiousMovementBonus).toBe(0);
       expect(result.stealthAuraShareRadius).toBe(0);
       expect(result.slaveEconomyHealPerTurn).toBe(0);

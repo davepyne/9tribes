@@ -65,9 +65,6 @@ function dispatchApplyStatus(p: ApplyStatus, context: CombatContext, result: Syn
     case 'stun':
       result.stunDuration = Math.max(result.stunDuration, dur);
       break;
-    case 'slow':
-      result.slowDuration = Math.max(result.slowDuration, dur);
-      break;
     case 'formationCrush':
       result.formationCrushStacks += stacks;
       break;
@@ -166,9 +163,6 @@ function dispatchPreventAction(p: PreventAction, context: CombatContext, result:
     case 'pursue':
     case 'terrainPenalty':
       break;
-    case 'retaliation':
-      result.noRetaliation = true;
-      break;
     case 'retreatThroughImpassable':
       result.ghostPassActive = true;
       break;
@@ -230,10 +224,6 @@ function dispatchGrantVerb(p: GrantVerb, context: CombatContext, result: Synergy
     case 'reEnterStealth':
       result.reEnterStealthAfterCombat = true;
       break;
-    case 'decamp':
-    case 'terraform':
-      result.emergentTerraformCharges = p.uses === 'unlimited' ? 99 : (typeof p.uses === 'number' ? p.uses : EMERGENT_PARAMS.terrain_lord.terraformCharges);
-      break;
     // Activation-phase verbs — recorded but not applied during combat
     case 'submerge':
     case 'declareOasis':
@@ -241,9 +231,6 @@ function dispatchGrantVerb(p: GrantVerb, context: CombatContext, result: Synergy
     case 'repositionAfterKill':
     case 'shareVision':
     case 'instantRetreatWithCaptive':
-      break;
-    case 'phase':
-      result.emergentPhaseDistance = p.range ?? EMERGENT_PARAMS.ghost_army.phaseDistance;
       break;
     case 'redeployOnKill':
       result.emergentKillChainRedeployRange = p.range ?? EMERGENT_PARAMS.ghost_army.killChainRedeployRange;

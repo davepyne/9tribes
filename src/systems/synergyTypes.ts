@@ -81,18 +81,14 @@ export interface SynergyCombatResult {
   damage: number;
   defense: number;
   knockbackDistance: number;
-  strikeFirst: boolean;
-  noRetaliation: boolean;
   poisonStacks: number;
   frostbiteStacks: number;
-  slowDuration: number;
   poisonTrapPositions: { x: number; y: number }[];
-  routTriggered: boolean;
   additionalEffects: string[];
   chargeShield: boolean;
   antiDisplacement: boolean;
   healOnRetreatAmount: number;
-  swarmSpeedBonus: number;
+
   sandstormDamage: number;
   sandstormAccuracyDebuff: number;
   witheringReduction: number;
@@ -102,7 +98,7 @@ export interface SynergyCombatResult {
   frostbiteColdDoT: number;
   frostbiteSlow: number;
   stealthChargeMultiplier: number;
-  routThresholdOverride: number | null;
+
   aoeDamage: number;
   damageReflection: number;
   instantKill: boolean;
@@ -120,13 +116,13 @@ export interface SynergyCombatResult {
   navalCaptureBonus: number;
   stealthCaptureBonus: number;
   captureEscapePrevented: boolean;
-  heavyRetreatDamageReduction: number;
+
   coastalNomadDefense: number;
-  coastalNomadSpeed: number;
+
   heavyNavalRamDamage: number;
   slaveHealAmount: number;
   heavyRegenPercent: number;
-  terrainSlaveSpeed: number;
+
   sandstormAuraRadius: number;
   sandstormAuraDebuff: number;
   slaveArmyDamageBonus: number;
@@ -182,7 +178,7 @@ export interface SynergyCombatResult {
   caravanRelayVisionRange: number;
   slaveHordeDamageBonus: number;
   slaveHordeDefensePenalty: number;
-  slaveHordeRageTriggered: boolean;
+
   bombardmentRange: number;
   bombardmentDamageMultiplier: number;
   bombardmentLandAuraDefense: number;
@@ -196,7 +192,7 @@ export interface SynergyCombatResult {
   fightingRetreatFreeStrike: boolean;
   fightingRetreatDamageMultiplier: number;
   tidalCleanseHealPerTurn: number;
-  tidalCleanseClearedDebuffs: string[];
+
   amphibiousMovementBonus: number;
   stealthAuraShareRadius: number;
   slaveEconomyHealPerTurn: number;
@@ -211,8 +207,6 @@ export interface SynergyCombatResult {
   reEnterStealthAfterCombat: boolean;
   // New emergent wiring fields
   emergentPermanentStealth: boolean;
-  emergentTerraformCharges: number;
-  emergentPhaseDistance: number;
   emergentKillChainRedeployRange: number;
   emergentPoisonCloudPreventsHealing: boolean;
 }
