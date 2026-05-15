@@ -80,6 +80,7 @@ export interface ResearchDoctrine {
   toxicBloomPermanent: boolean;         // venom_t3 native - spawned Blooms are permanent (turnsRemaining: -1)
   myceliumNetworkOnKillEnabled: boolean; // venom_t3 native - kill inside own Bloom propagates poison to nearby friendly units
   cleanseToxicBloomEnabled: boolean;    // nature_healing_t3 native - Druid units passively cleanse Toxic Blooms they stand on
+  saplingOnKillEnabled: boolean;        // nature_healing_t3 native - kill converts defender hex to forest, attacker gains +1 maxHp (cap 3)
 
   // T3 upgrades
   poisonBonusEnabled: boolean;       // foreign venom_t3 - poison-tagged units deal +50% poison damage
@@ -278,6 +279,7 @@ export function resolveResearchDoctrine(
     toxicBloomPermanent: hasNativeT3('venom'),
     myceliumNetworkOnKillEnabled: hasNativeT3('venom'),
     cleanseToxicBloomEnabled: hasNativeT3('nature_healing'),
+    saplingOnKillEnabled: hasNativeT3('nature_healing'),
 
     // T3 upgrades
     poisonBonusEnabled: hasForeignT3('venom'),

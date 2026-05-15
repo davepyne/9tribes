@@ -210,7 +210,7 @@ const NATURE_HEALING_RESEARCH = buildResearchDomain({
     effect: {
       healingAuraRange: 2, // wired
       worldrootShareFraction: 0.1, // design
-      saplingOnKill: true, // design
+      saplingOnKill: true, // wired
       undyingDefenseAt20: 0.5, // wired (foreign legacy effect retained for the "<20% HP +50% def" rider; native gets Sapling instead)
     },
   },

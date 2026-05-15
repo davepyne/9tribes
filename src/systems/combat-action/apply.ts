@@ -30,7 +30,11 @@ import {
   recordPromotion,
   updateCombatRecordOnLoss,
   updateCombatRecordOnWin,
+  addHistoryEntry,
+  getHistoryByType,
 } from '../historySystem.js';
+
+import { setTerrainAt } from '../terrainMutationSystem.js';
 
 import type {
   CombatActionApplyResult,
@@ -179,6 +183,8 @@ export function applyCombatAction(
     woundedEarthAbsorbed: 0,
     woundedEarthAlliesHealed: 0,
     woundedEarthSaved: false,
+    saplingApplied: false,
+    saplingMaxHpBonus: 0,
   };
 
   const attacker = state.units.get(preview.attackerId);
@@ -1174,6 +1180,28 @@ export function applyCombatAction(
     }
   }
 
+  // Sapling (Nature Healing T3 native): kill converts defender hex to forest, attacker gains +1 maxHp (cap 3)
+  let saplingMaxHpBonus = 0;
+  if (
+    defenderActuallyDestroyed
+    && attackerDoctrine?.saplingOnKillEnabled
+    && nextAttacker.hp > 0
+  ) {
+    current = setTerrainAt(current, defender.position, 'forest');
+    updatedAttacker = current.units.get(preview.attackerId);
+    if (updatedAttacker) {
+      const saplingKills = getHistoryByType(updatedAttacker, 'sapling_kill').length;
+      if (saplingKills < 3) {
+        updatedAttacker = addHistoryEntry(updatedAttacker, 'sapling_kill', { hex: defender.position }, current.round);
+        updatedAttacker = { ...updatedAttacker, maxHp: updatedAttacker.maxHp + 1, hp: updatedAttacker.hp + 1 };
+        current = writeUnitToState(current, updatedAttacker);
+        saplingMaxHpBonus = 1;
+      }
+    }
+    baseResolution.saplingApplied = true;
+    baseResolution.saplingMaxHpBonus = saplingMaxHpBonus;
+  }
+
   updatedAttacker = current.units.get(preview.attackerId);
   updatedDefender = current.units.get(preview.defenderId);
 
@@ -1602,6 +1630,13 @@ export function applyCombatAction(
     pushCombatEffect(triggeredEffects, 'Slave Healing', `Synergy healed ${baseResolution.slaveHealApplied} HP.`, 'synergy');
   }
 
+  if (baseResolution.saplingApplied) {
+    const detail = baseResolution.saplingMaxHpBonus > 0
+      ? `Defender hex transformed into forest. Druid gained +${baseResolution.saplingMaxHpBonus} max HP.`
+      : 'Defender hex transformed into forest.';
+    pushCombatEffect(triggeredEffects, 'Sapling', detail, 'aftermath');
+  }
+
   feedback = {
     ...feedback,
     resolution: {
@@ -1647,6 +1682,8 @@ export function applyCombatAction(
       woundedEarthAbsorbed,
       woundedEarthAlliesHealed,
       woundedEarthSaved: baseResolution.woundedEarthSaved,
+      saplingApplied: baseResolution.saplingApplied,
+      saplingMaxHpBonus: baseResolution.saplingMaxHpBonus,
     },
   };
 

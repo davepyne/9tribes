@@ -11,5 +11,6 @@ export type HistoryEntryType =
   | "battle_fought"
   | "unit_killed"
   | "city_defended"
-  | "prototype_upgraded";
+  | "prototype_upgraded"
+  | "sapling_kill";
 export type UnitStatus = "ready" | "fortified" | "spent";

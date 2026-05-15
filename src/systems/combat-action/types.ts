@@ -169,6 +169,8 @@ export interface CombatActionResolution {
   woundedEarthAbsorbed: number;
   woundedEarthAlliesHealed: number;
   woundedEarthSaved: boolean;
+  saplingApplied: boolean;
+  saplingMaxHpBonus: number;
 }
 
 export interface CombatActionApplyResult {
