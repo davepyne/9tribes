@@ -5,6 +5,7 @@ import {
   type DomainConfig,
   type ActiveSynergy,
 } from '../src/systems/synergyEngine';
+import type { PrimitiveEffect } from '../src/systems/synergyPrimitives';
 
 // ---------------------------------------------------------------------------
 // Test fixtures — minimal data sets that exercise all engine code paths
@@ -15,8 +16,10 @@ function makePair(
 ): PairSynergyConfig {
   return {
     name: overrides.name ?? `Pair ${overrides.id}`,
-    effect: overrides.effect ?? { type: 'dug_in', defenseBonus: 0.25 },
+    effects: overrides.effects ?? [{ kind: 'statMod', stat: 'defense', op: 'add', value: 0.25 }] as PrimitiveEffect[],
     description: overrides.description ?? 'test pair',
+    friendlyFlavor: overrides.friendlyFlavor ?? 'test flavor',
+    enemyFlavor: overrides.enemyFlavor ?? 'test flavor',
     ...overrides,
   };
 }
@@ -28,6 +31,9 @@ function makeEmergent(
     name: overrides.name ?? overrides.id,
     condition: 'default',
     effect: overrides.effect ?? { type: 'multiplier', pairSynergyMultiplier: 1.0, description: 'test' },
+    effects: overrides.effects ?? [{ kind: 'statMod', stat: 'multiplierStackValue', op: 'set', value: 1 }] as PrimitiveEffect[],
+    friendlyFlavor: overrides.friendlyFlavor ?? 'test flavor',
+    enemyFlavor: overrides.enemyFlavor ?? 'test flavor',
     ...overrides,
   };
 }
@@ -56,19 +62,19 @@ const PAIR_SYNERGIES: PairSynergyConfig[] = [
     id: 'venom+fortress',
     domains: ['venom', 'fortress'],
     requiredTags: ['poison', 'fortress'],
-    effect: { type: 'poison_aura', damagePerTurn: 2, radius: 1 },
+    effects: [{ kind: 'applyStatus', status: 'poison', stacks: 2 }] as PrimitiveEffect[],
   }),
   makePair({
     id: 'venom+charge',
     domains: ['venom', 'charge'],
     requiredTags: ['poison', 'elephant'],
-    effect: { type: 'multiplier_stack', multiplier: 2 },
+    effects: [{ kind: 'statMod', stat: 'multiplierStackValue', op: 'set', value: 2 }] as PrimitiveEffect[],
   }),
   makePair({
     id: 'charge+hitrun',
     domains: ['charge', 'hitrun'],
     requiredTags: ['charge', 'skirmish'],
-    effect: { type: 'capture_retreat', captureChance: 0.20 },
+    effects: [{ kind: 'capture', chanceBonus: 0.20, condition: 'isRetreat' }] as PrimitiveEffect[],
   }),
 ];
 
@@ -136,7 +142,7 @@ describe('SynergyEngine.resolveUnitPairs', () => {
     expect(result[0].pairId).toBe('venom+fortress');
     expect(result[0].name).toBe('Pair venom+fortress');
     expect(result[0].domains).toEqual(['venom', 'fortress']);
-    expect(result[0].effect).toEqual({ type: 'poison_aura', damagePerTurn: 2, radius: 1 });
+    expect(result[0].effects).toEqual([{ kind: 'applyStatus', status: 'poison', stacks: 2 }]);
   });
 
   it('returns multiple pairs when tags match multiple', () => {

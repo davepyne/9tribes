@@ -4,7 +4,6 @@ import type {
   DomainConfig,
   PairSynergyConfig,
   EmergentRuleConfig,
-  SynergyEffect,
   EmergentEffect,
   ActiveSynergy,
   ActiveDoubleStack,
@@ -15,7 +14,6 @@ export type {
   DomainConfig,
   PairSynergyConfig,
   EmergentRuleConfig,
-  SynergyEffect,
   EmergentEffect,
   ActiveSynergy,
   ActiveDoubleStack,
@@ -138,7 +136,7 @@ export class SynergyEngine {
           pairId: synergy.id,
           name: synergy.name,
           domains: synergy.domains,
-          effect: synergy.effect,
+          effects: synergy.effects,
         });
       }
     }
@@ -154,7 +152,7 @@ export class SynergyEngine {
           pairId: synergy.id,
           name: synergy.name,
           domains: synergy.domains as [string, string],
-          effect: synergy.effect,
+          effects: synergy.effects,
         };
       }
     }
@@ -183,7 +181,7 @@ export class SynergyEngine {
           pairId: synergy.id,
           name: synergy.name,
           domains: synergy.domains as [string, string],
-          effect: synergy.effect,
+          effects: synergy.effects,
         });
       }
     }
@@ -208,7 +206,7 @@ export class SynergyEngine {
       pairId: s.id,
       name: s.name,
       domains: s.domains,
-      effect: s.effect,
+      effects: s.effects,
     }));
 
     const emergent = this.resolveEmergentRule(emergentEligibleDomains);

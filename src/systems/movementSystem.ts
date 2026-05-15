@@ -14,13 +14,7 @@ import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import { canUseCharge } from './abilitySystem.js';
 import { pruneDeadUnits } from './combatActionSystem.js';
 import { destroyVillage } from './villageSystem.js';
-import { resolveEffectiveSynergies } from './synergyRuntime.js';
-import type { Faction } from '../features/factions/types.js';
 
-function getSpeedBonus(faction: Faction | undefined, tags: string[], effectType: string): number {
-  const syn = resolveEffectiveSynergies(faction, tags).find(s => s.effect.type === effectType);
-  return syn ? (syn.effect as { speedBonus: number }).speedBonus : 0;
-}
 
 export interface MovementPreview {
   totalCost: number;
@@ -119,22 +113,6 @@ export function previewMove(
   // Ignore terrain (tag-based): units with ignore_terrain tag ignore all terrain costs, always cost 1
   if (prototypeTags.includes('ignore_terrain')) {
     totalCost = 1;
-  }
-
-  // Synergy speed bonuses
-  const swarmBonus = getSpeedBonus(faction, prototypeTags, 'swarm_speed');
-  if (swarmBonus > 0) {
-    totalCost -= swarmBonus;
-  }
-
-  const coastalNomadBonus = getSpeedBonus(faction, prototypeTags, 'coastal_nomad');
-  if (coastalNomadBonus > 0 && isWaterTerrain(targetTerrainId)) {
-    totalCost -= coastalNomadBonus;
-  }
-
-  const terrainSlaveBonus = getSpeedBonus(faction, prototypeTags, 'terrain_slave');
-  if (terrainSlaveBonus > 0) {
-    totalCost -= terrainSlaveBonus;
   }
 
   // Doctrine-based movement bonuses

@@ -234,9 +234,12 @@ export function applyHealingForFaction(
           const enemyFaction = gameState.factions.get(neighborUnit.factionId);
           const neighborSynergies = resolveEffectiveSynergies(enemyFaction, neighborTags);
           for (const syn of neighborSynergies) {
-            if (syn.effect.type === 'withering') {
-              const reduction = (syn.effect as { healingReduction: number }).healingReduction;
-              healRate = Math.floor(healRate * (1 - reduction));
+            const witheringMod = syn.effects.find(
+              (e): e is Extract<typeof e, { kind: 'statMod' }> =>
+                e.kind === 'statMod' && e.stat === 'witheringReduction',
+            );
+            if (witheringMod) {
+              healRate = Math.floor(healRate * (1 - witheringMod.value));
               break;
             }
           }
