@@ -79,6 +79,42 @@ export const getHexesInRange = (center: TileCoord, range: number): TileCoord[] =
   return results;
 };
 
+/**
+ * Trace `steps` hexes in a straight line, starting one hex beyond `origin`,
+ * heading in the direction *away from* `toward`. Origin itself is not included.
+ */
+export function hexLineAwayFrom(origin: TileCoord, toward: TileCoord, steps: number): TileCoord[] {
+  if (steps <= 0) return [];
+  const dq = origin.q - toward.q;
+  const dr = origin.r - toward.r;
+  const n = tileDistance(origin, toward);
+  if (n === 0) return [];
+  const stepQ = dq / n;
+  const stepR = dr / n;
+  const result: TileCoord[] = [];
+  for (let i = 1; i <= steps; i++) {
+    result.push(roundHex(origin.q + stepQ * i, origin.r + stepR * i));
+  }
+  return result;
+}
+
+/** Round fractional axial coordinates to the nearest hex (cube-coordinate rounding). */
+function roundHex(q: number, r: number): TileCoord {
+  const s = -q - r;
+  let rq = Math.round(q);
+  let rr = Math.round(r);
+  let rs = Math.round(s);
+  const dq = Math.abs(rq - q);
+  const dr = Math.abs(rr - r);
+  const ds = Math.abs(rs - s);
+  if (dq > dr && dq > ds) {
+    rq = -rr - rs;
+  } else if (dr > ds) {
+    rr = -rq - rs;
+  }
+  return { q: rq, r: rr };
+}
+
 // ---------------------------------------------------------------------------
 // Backwards-compatible aliases from hex.ts migration — kept because these
 // names are used pervasively across the codebase.

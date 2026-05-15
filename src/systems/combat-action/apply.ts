@@ -6,7 +6,7 @@ import { createUnitId } from '../../core/ids.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { Unit } from '../../features/units/types.js';
 import type { GameState } from '../../game/types.js';
-import type { FactionId, UnitId } from '../../types.js';
+import type { FactionId, TileCoord, UnitId } from '../../types.js';
 import { rngChance, rngShuffle } from '../../core/rng.js';
 import { resolveCapabilityDoctrine, buildSlaveOverrides } from '../capabilityDoctrine.js';
 import { clearPreparedAbility } from '../abilitySystem.js';
@@ -92,6 +92,44 @@ function applyCombatResearchBonus(
   return { ...state, research: researchMap };
 }
 
+interface PoisonInRangeOptions {
+  factionFilter: 'friendlies' | 'enemies';
+  filterFactionId: FactionId;
+  stacks: number;
+  damagePerStack: number;
+  duration: number;
+  provenance?: { factionId: FactionId; prototypeId?: string };
+}
+
+function applyPoisonInRange(
+  units: ReadonlyMap<UnitId, Unit>,
+  center: TileCoord,
+  radius: number,
+  opts: PoisonInRangeOptions,
+): { units: Map<UnitId, Unit>; targetsHit: number } {
+  const newUnits = new Map(units);
+  let targetsHit = 0;
+
+  for (const [uid, u] of newUnits) {
+    if (opts.factionFilter === 'friendlies' && u.factionId !== opts.filterFactionId) continue;
+    if (opts.factionFilter === 'enemies' && u.factionId === opts.filterFactionId) continue;
+    if (u.hp <= 0) continue;
+    if (hexDistance(u.position, center) > radius) continue;
+
+    let poisonedUnit = applyPoisonDoT(u, opts.stacks, opts.damagePerStack, opts.duration);
+    if (opts.provenance) {
+      poisonedUnit = { ...poisonedUnit, poisonedBy: opts.provenance.factionId };
+      if (opts.provenance.prototypeId !== undefined) {
+        poisonedUnit = { ...poisonedUnit, poisonSourcePrototypeId: opts.provenance.prototypeId };
+      }
+    }
+    newUnits.set(uid, poisonedUnit);
+    targetsHit++;
+  }
+
+  return { units: newUnits, targetsHit };
+}
+
 export function applyCombatAction(
   state: GameState,
   registry: RulesRegistry,
@@ -125,6 +163,8 @@ export function applyCombatAction(
     lastStandSaved: false,
     bleedApplied: false,
     killChainApplied: false,
+    sporeJumpApplied: false,
+    myceliumNetworkApplied: false,
     emergentManyFacedStance: '',
     instantKillTriggered: false,
     stunApplied: 0,
@@ -135,6 +175,7 @@ export function applyCombatAction(
     slaveHealApplied: 0,
     captureEscapePrevented: false,
     synergyCaptureBonus: 0,
+    chargeSplashTargetsHit: 0,
   };
 
   const attacker = state.units.get(preview.attackerId);
@@ -594,6 +635,7 @@ export function applyCombatAction(
   // Mycelium Network (venom_t3 native): a kill on a hex covered by an
   // attacker-owned Toxic Bloom propagates 2 fresh poison stacks to ALL
   // friendly units within 3 hexes of that bloom's center.
+  let myceliumTargets = 0;
   if (
     defenderActuallyDestroyed
     && attackerDoctrine?.myceliumNetworkOnKillEnabled
@@ -608,17 +650,15 @@ export function applyCombatAction(
       break;
     }
     if (ownedBloom) {
-      const propagationUnits = new Map(current.units);
-      let propagated = false;
-      for (const [uid, u] of propagationUnits) {
-        if (u.factionId !== attacker.factionId) continue;
-        if (u.hp <= 0) continue;
-        if (hexDistance(u.position, ownedBloom.center) > 3) continue;
-        propagationUnits.set(uid, applyPoisonDoT(u, 2, attackerDoctrine.poisonDamagePerStack, 3));
-        propagated = true;
-      }
-      if (propagated) {
-        current = { ...current, units: propagationUnits };
+      const result = applyPoisonInRange(current.units, ownedBloom.center, 3, {
+        factionFilter: 'friendlies', filterFactionId: attacker.factionId,
+        stacks: 2, damagePerStack: attackerDoctrine.poisonDamagePerStack, duration: 3,
+        provenance: { factionId: attacker.factionId, prototypeId: attacker.prototypeId },
+      });
+      if (result.targetsHit > 0) {
+        current = { ...current, units: result.units };
+        baseResolution.myceliumNetworkApplied = true;
+        myceliumTargets = result.targetsHit;
       }
     }
   }
@@ -647,6 +687,32 @@ export function applyCombatAction(
       current = { ...current, units: detonateUnits };
       poisonDetonated = true;
       baseResolution.poisonDetonated = true;
+    }
+  }
+
+  // Charge T3 native — splash: 50% of charge damage to enemies adjacent to defender
+  let chargeSplashDamage = 0;
+  let chargeSplashTargetsHit = 0;
+  if (
+    preview.details.isChargeAttack
+    && preview.details.chargeSplashEnabled
+    && preview.result.defenderDamage > 0
+    && nextAttacker.hp > 0
+  ) {
+    chargeSplashDamage = Math.max(1, Math.floor(preview.result.defenderDamage * 0.5));
+    const splashUnits = new Map(current.units);
+    for (const adjHex of getNeighbors(defender.position)) {
+      const adjUnitId = getUnitAtHex(current, adjHex);
+      if (!adjUnitId) continue;
+      const adjUnit = splashUnits.get(adjUnitId);
+      if (adjUnit && adjUnit.factionId !== attacker.factionId && adjUnit.hp > 0) {
+        splashUnits.set(adjUnitId, { ...adjUnit, hp: Math.max(0, adjUnit.hp - chargeSplashDamage) });
+        chargeSplashTargetsHit++;
+      }
+    }
+    if (chargeSplashTargetsHit > 0) {
+      current = { ...current, units: splashUnits };
+      baseResolution.chargeSplashTargetsHit = chargeSplashTargetsHit;
     }
   }
 
@@ -994,26 +1060,32 @@ export function applyCombatAction(
   }
 
   // Spore-jump (venom_t2): when a poisoned enemy dies, jump poison stacks to nearby enemies.
+  let sporeJumpTargets = 0;
   if (
     defenderActuallyDestroyed
     && attackerDoctrine?.sporeJumpEnabled
     && nextAttacker.hp > 0
     && defender.poisonStacks > 0
   ) {
-    const sporeUnits = new Map(current.units);
-    const jumpPoison = (id: UnitId, u: Unit) => {
-      const jumped = applyPoisonDoT(u, 1, attackerDoctrine.poisonDamagePerStack, 3);
-      sporeUnits.set(id, { ...jumped, poisonedBy: attacker.factionId, poisonSourcePrototypeId: attacker.prototypeId });
-    };
     let sporeJumped = false;
+    let sporeUnits = new Map(current.units);
     if (attackerDoctrine.sporeJumpAllEnemies) {
-      for (const [uid, u] of sporeUnits) {
-        if (u.factionId === attacker.factionId || u.hp <= 0) continue;
-        if (hexDistance(u.position, defender.position) > 2) continue;
-        jumpPoison(uid, u);
+      const result = applyPoisonInRange(current.units, defender.position, 2, {
+        factionFilter: 'enemies', filterFactionId: attacker.factionId,
+        stacks: 1, damagePerStack: attackerDoctrine.poisonDamagePerStack, duration: 3,
+        provenance: { factionId: attacker.factionId, prototypeId: attacker.prototypeId },
+      });
+      if (result.targetsHit > 0) {
+        sporeUnits = result.units;
         sporeJumped = true;
+        sporeJumpTargets = result.targetsHit;
       }
     } else {
+      sporeUnits = new Map(current.units);
+      const jumpPoison = (id: UnitId, u: Unit) => {
+        const jumped = applyPoisonDoT(u, 1, attackerDoctrine.poisonDamagePerStack, 3);
+        sporeUnits.set(id, { ...jumped, poisonedBy: attacker.factionId, poisonSourcePrototypeId: attacker.prototypeId });
+      };
       let nearestId: UnitId | null = null;
       let nearestDist = Infinity;
       for (const [uid, u] of sporeUnits) {
@@ -1028,10 +1100,12 @@ export function applyCombatAction(
       if (nearestId) {
         jumpPoison(nearestId, sporeUnits.get(nearestId)!);
         sporeJumped = true;
+        sporeJumpTargets = 1;
       }
     }
     if (sporeJumped) {
       current = { ...current, units: sporeUnits };
+      baseResolution.sporeJumpApplied = true;
     }
   }
 
@@ -1283,19 +1357,14 @@ export function applyCombatAction(
 
   // Phase 3A — Lethal Ambush poison: splash poison to adjacent enemies on instant kill
   if (baseResolution.instantKillTriggered && preview.details.lethalAmbushPoison > 0) {
-    const poisonUnits = new Map(current.units);
-    for (const adjHex of getNeighbors(defender.position)) {
-      const adjUnitId = getUnitAtHex(current, adjHex);
-      if (!adjUnitId) continue;
-      const adjUnit = poisonUnits.get(adjUnitId);
-      if (adjUnit && adjUnit.factionId !== attacker.factionId && adjUnit.hp > 0) {
-        poisonUnits.set(adjUnitId, applyPoisonDoT(
-          { ...adjUnit, poisonedBy: attacker.factionId } as Unit,
-          preview.details.lethalAmbushPoison, 1, 3,
-        ));
-      }
+    const result = applyPoisonInRange(current.units, defender.position, 1, {
+      factionFilter: 'enemies', filterFactionId: attacker.factionId,
+      stacks: preview.details.lethalAmbushPoison, damagePerStack: 1, duration: 3,
+      provenance: { factionId: attacker.factionId },
+    });
+    if (result.targetsHit > 0) {
+      current = { ...current, units: result.units };
     }
-    current = { ...current, units: poisonUnits };
   }
 
   // Phase 3C — Withering reduction: apply debuff to defender's healing
@@ -1404,11 +1473,20 @@ export function applyCombatAction(
   if (poisonDetonated) {
     pushCombatEffect(triggeredEffects, 'Poison Detonation', 'Venom erupted on kill, poisoning adjacent enemies.', 'aftermath');
   }
+  if (chargeSplashTargetsHit > 0) {
+    pushCombatEffect(triggeredEffects, 'Charge Splash', `Charge impact dealt ${chargeSplashDamage} splash damage to ${chargeSplashTargetsHit} adjacent unit${chargeSplashTargetsHit === 1 ? '' : 's'}.`, 'aftermath');
+  }
   if (pursuitMovementRestored > 0) {
     pushCombatEffect(triggeredEffects, 'Pursuit Movement', `Foraging riders pushed forward for +${pursuitMovementRestored} movement after the kill.`, 'aftermath');
   }
   if (baseResolution.killChainApplied) {
     pushCombatEffect(triggeredEffects, 'Killing Chain', 'Skirmisher chained a follow-up attack after the kill.', 'ability');
+  }
+  if (baseResolution.sporeJumpApplied) {
+    pushCombatEffect(triggeredEffects, 'Spore Jump', `Venom jumped to ${sporeJumpTargets} nearby unit${sporeJumpTargets === 1 ? '' : 's'} after the poisoned kill.`, 'ability');
+  }
+  if (baseResolution.myceliumNetworkApplied) {
+    pushCombatEffect(triggeredEffects, 'Mycelium Network', `Toxic bloom propagated ${myceliumTargets} friendly unit${myceliumTargets === 1 ? '' : 's'} with poison.`, 'ability');
   }
   if (emergentSustainHealApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Paladin Sustain', `Attacker recovered ${emergentSustainHealApplied} HP from damage dealt.`, 'aftermath');
@@ -1481,6 +1559,8 @@ export function applyCombatAction(
       lastStandSaved: baseResolution.lastStandSaved,
       bleedApplied: baseResolution.bleedApplied,
       killChainApplied: baseResolution.killChainApplied,
+      sporeJumpApplied: baseResolution.sporeJumpApplied,
+      myceliumNetworkApplied: baseResolution.myceliumNetworkApplied,
       emergentManyFacedStance: baseResolution.emergentManyFacedStance,
       instantKillTriggered: baseResolution.instantKillTriggered,
       stunApplied: baseResolution.stunApplied,
@@ -1491,6 +1571,7 @@ export function applyCombatAction(
       slaveHealApplied: baseResolution.slaveHealApplied,
       captureEscapePrevented: baseResolution.captureEscapePrevented,
       synergyCaptureBonus: baseResolution.synergyCaptureBonus,
+      chargeSplashTargetsHit: baseResolution.chargeSplashTargetsHit,
     },
   };
 

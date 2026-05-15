@@ -418,8 +418,8 @@ const CHARGE_RESEARCH = buildResearchDomain({
     effect: {
       chargeRoutedDamageMultiplier: 0.5, // wired
       sunderingChargeContinue: true, // design
-      chargeSplashRadius: 1, // design (native)
-      chargeChainBonus: 0.1, // design (native, capped at +0.5)
+      chargeSplashRadius: 1, // wired (native)
+      chargeChainBonus: 0.1, // wired (native, capped at +0.5)
       chargeTranscendenceEnabled: true, // KEEP: still gates terrain-ignoring charges in activateUnit.ts. ARMOR-PEN PATH MOVED OUT OF THIS FLAG.
     },
   },

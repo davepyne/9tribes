@@ -30,6 +30,8 @@ export interface CombatActionPreviewDetails {
   defenderTerrainId: string;
   isChargeAttack: boolean;
   chargeAttackBonus: number;
+  chargeChainBonusAmount: number;
+  chargeSplashEnabled: boolean;
   synergyAttackModifier: number;
   synergyDefenseModifier: number;
   improvementDefenseBonus: number;
@@ -150,6 +152,8 @@ export interface CombatActionResolution {
   lastStandSaved: boolean;
   bleedApplied: boolean;
   killChainApplied: boolean;
+  sporeJumpApplied: boolean;
+  myceliumNetworkApplied: boolean;
   emergentManyFacedStance: string;
   // Phase 3A/3B/3C: synergy effect resolution
   instantKillTriggered: boolean;
@@ -161,6 +165,7 @@ export interface CombatActionResolution {
   slaveHealApplied: number;
   captureEscapePrevented: boolean;
   synergyCaptureBonus: number;
+  chargeSplashTargetsHit: number;
 }
 
 export interface CombatActionApplyResult {

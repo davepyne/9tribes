@@ -44,6 +44,8 @@ export interface ResearchDoctrine {
   toxicBulwarkEnabled: boolean;      // venom_t3 - all units apply poison on hit
   fortressTranscendenceEnabled: boolean; // native fortress_t3 - all units can brace, aura range doubled
   chargeTranscendenceEnabled: boolean; // native charge_t3 - melee charges have no cooldown and ignore terrain penalties
+  chargeSplashEnabled: boolean;       // native charge_t3 - charge splash: 50% damage to adjacent enemies (will diverge from transcendence)
+  chargeChainEnabled: boolean;        // native charge_t3 - chain amplification: +10% per ally in charge line (will diverge from transcendence)
   universalHitAndRunEnabled: boolean; // native hitrun_t3 - all units can attack then retreat
   amphibiousMovementEnabled: boolean; // native tidal_warfare_t3 - all units cross rivers/coast without penalty
   undyingEnabled: boolean;           // native nature_healing_t3 - units below 20% HP gain +50% defense
@@ -237,6 +239,8 @@ export function resolveResearchDoctrine(
     toxicBulwarkEnabled: hasNativeT3('venom'),
     fortressTranscendenceEnabled: hasNativeT3('fortress'),
     chargeTranscendenceEnabled: hasNativeT3('charge'),
+    chargeSplashEnabled: hasNativeT3('charge'),
+    chargeChainEnabled: hasNativeT3('charge'),
     universalHitAndRunEnabled: hasNativeT3('hitrun'),
     amphibiousMovementEnabled: hasNativeT3('tidal_warfare'),
     undyingEnabled: hasNativeT3('nature_healing'),

@@ -1,4 +1,4 @@
-import { getNeighbors, hexDistance, hexToKey } from '../../core/grid.js';
+import { getNeighbors, hexDistance, hexLineAwayFrom, hexToKey } from '../../core/grid.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { Unit } from '../../features/units/types.js';
 import type { GameState, UnitId } from '../../game/types.js';
@@ -239,6 +239,26 @@ export function previewCombatAction(
       chargeMomentumTriggered = true;
     }
   }
+  // Charge T3 native — chain amplification: +10% damage per friendly unit in charge line
+  let chargeChainBonusAmount = 0;
+  if (isChargeAttack && attackerDoctrine?.chargeChainEnabled) {
+    const hexesMoved = attacker.maxMoves - attacker.movesRemaining;
+    if (hexesMoved > 0) {
+      const chargePath = hexLineAwayFrom(attacker.position, defender.position, hexesMoved);
+      let chainAllies = 0;
+      for (const pathHex of chargePath) {
+        const pathUnitId = getUnitAtHex(state, pathHex);
+        if (!pathUnitId || pathUnitId === attackerId) continue;
+        const pathUnit = state.units.get(pathUnitId);
+        if (pathUnit && pathUnit.factionId === attacker.factionId && pathUnit.hp > 0) {
+          chainAllies++;
+        }
+      }
+      chainAllies = Math.min(chainAllies, 5);
+      chargeChainBonusAmount = chainAllies * 0.1;
+      situationalAttackModifier += chargeChainBonusAmount;
+    }
+  }
   // Charge T1 first-attack bonus: +20% on first attack of combat (foreign) or per-target (native)
   let firstAttackTriggered = false;
   if (attackerDoctrine?.forcedMarchEnabled && isChargeAttack) {
@@ -426,6 +446,9 @@ export function previewCombatAction(
   if (firstAttackTriggered) {
     pushCombatEffect(triggeredEffects, 'First Strike', 'First attack bonus dealt +20% damage.', 'ability');
   }
+  if (chargeChainBonusAmount > 0) {
+    pushCombatEffect(triggeredEffects, 'Chain Charge', `Allies in charge line amplified damage by ${formatPercent(chargeChainBonusAmount)}.`, 'ability');
+  }
   if (coldHardenedTriggered) {
     pushCombatEffect(triggeredEffects, 'Cold Hardened', 'Arctic defender hardened stance for 10% defense.', 'ability');
   }
@@ -495,6 +518,8 @@ export function previewCombatAction(
       defenderTerrainId,
       isChargeAttack,
       chargeAttackBonus,
+      chargeChainBonusAmount,
+      chargeSplashEnabled: attackerDoctrine?.chargeSplashEnabled ?? false,
       synergyAttackModifier,
       synergyDefenseModifier,
       improvementDefenseBonus,

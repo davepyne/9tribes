@@ -7,6 +7,7 @@ import { previewCombatAction } from '../src/systems/combat-action/preview';
 import { applyCombatAction } from '../src/systems/combat-action/apply';
 import { createRNG } from '../src/core/rng';
 import type { GameState, Unit, HexCoord } from '../src/game/types';
+import { getCombatants, placeAdjacent } from './helpers/combatSetup.js';
 
 const registry = loadRulesRegistry();
 
@@ -21,38 +22,6 @@ const registry = loadRulesRegistry();
 // ---------------------------------------------------------------------------
 
 describe('combat-action pipeline', () => {
-  // Helper: get a valid attacker/defender pair from the scenario,
-  // placed adjacent so they can attack each other.
-  function getCombatants(state: GameState) {
-    const factionIds = Array.from(state.factions.keys());
-    const attackerFactionId = factionIds[0];
-    const defenderFactionId = factionIds[1];
-
-    const attFaction = state.factions.get(attackerFactionId)!;
-    const defFaction = state.factions.get(defenderFactionId)!;
-
-    const attacker = state.units.get(attFaction.unitIds[0]);
-    const defender = state.units.get(defFaction.unitIds[0]);
-
-    if (!attacker || !defender) {
-      throw new Error('Need at least 2 units from different factions');
-    }
-
-    return { attacker, defender, attackerFactionId, defenderFactionId };
-  }
-
-  // Place two units adjacent to each other for valid combat
-  function placeAdjacent(
-    state: GameState,
-    attacker: Unit,
-    defender: Unit,
-  ): GameState {
-    const adjacentPos: HexCoord = { q: attacker.position.q + 1, r: attacker.position.r };
-    const units = new Map(state.units);
-    units.set(defender.id, { ...defender, position: adjacentPos });
-    return { ...state, units };
-  }
-
   describe('previewCombatAction', () => {
     it('returns null for invalid attacker (dead)', () => {
       const state = buildMvpScenario(42);

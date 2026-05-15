@@ -6,82 +6,11 @@ import { applyCombatAction } from '../src/systems/combat-action/apply';
 import { resolveResearchDoctrine } from '../src/systems/capabilityDoctrine';
 import { createRNG } from '../src/core/rng';
 import { hexDistance, hexToKey } from '../src/core/grid';
-import { createUnitId } from '../src/core/ids';
-import type { GameState, Unit, HexCoord, FactionId } from '../src/game/types';
+import type { FactionId, HexCoord } from '../src/game/types';
+import type { ResearchNodeId } from '../src/types';
+import { getCombatants, placeAdjacent, addExtraUnit, setResearch } from './helpers/combatSetup.js';
 
 const registry = loadRulesRegistry();
-let extraUnitCounter = 0;
-
-function getCombatants(state: GameState) {
-  const factionIds = Array.from(state.factions.keys()) as FactionId[];
-  const attackerFactionId = factionIds[0];
-  const defenderFactionId = factionIds[1];
-  const attFaction = state.factions.get(attackerFactionId)!;
-  const defFaction = state.factions.get(defenderFactionId)!;
-  const attacker = state.units.get(attFaction.unitIds[0])!;
-  const defender = state.units.get(defFaction.unitIds[0])!;
-  return { attacker, defender, attackerFactionId, defenderFactionId, attFaction, defFaction };
-}
-
-function placeAdjacent(state: GameState, attacker: Unit, defender: Unit): GameState {
-  const adjacentPos: HexCoord = { q: attacker.position.q + 1, r: attacker.position.r };
-  const units = new Map(state.units);
-  units.set(defender.id, { ...defender, position: adjacentPos });
-  return { ...state, units };
-}
-
-function addExtraUnit(
-  state: GameState,
-  position: HexCoord,
-  factionId: FactionId,
-  template: Unit,
-): { state: GameState; unitId: Unit['id'] } {
-  const uid = createUnitId(`spore-test-${++extraUnitCounter}`);
-  const extra: Unit = {
-    ...template,
-    id: uid,
-    hp: 50,
-    maxHp: 100,
-    factionId,
-    position,
-    history: [],
-    morale: 100,
-    veteranLevel: 'green' as never,
-    learnedAbilities: [],
-  };
-  const units = new Map(state.units);
-  units.set(uid, extra);
-  return { state: { ...state, units }, unitId: uid };
-}
-
-function setResearch(
-  state: GameState,
-  factionId: FactionId,
-  completedNodes: string[],
-  nativeDomains: string[],
-): GameState {
-  const factions = new Map(state.factions);
-  const f = factions.get(factionId)!;
-  factions.set(factionId, {
-    ...f,
-    nativeDomain: nativeDomains[0],
-    nativeDomains,
-    learnedDomains: nativeDomains,
-    researchState: {
-      completedNodes: completedNodes as never[],
-      activeNodeId: undefined,
-    },
-  });
-
-  // Also update state.research — combat pipeline reads doctrine from here
-  const research = new Map(state.research);
-  research.set(factionId, {
-    completedNodes: completedNodes as never[],
-    activeNodeId: undefined,
-  });
-
-  return { ...state, factions, research };
-}
 
 // ---------------------------------------------------------------------------
 // Doctrine resolution
@@ -89,8 +18,8 @@ function setResearch(
 describe('spore-jump doctrine flags', () => {
   it('venom_t2 enables sporeJumpEnabled', () => {
     const doctrine = resolveResearchDoctrine(
-      { completedNodes: ['venom_t1', 'venom_t2'] as never[], activeNodeId: undefined },
-      { nativeDomain: 'charge', nativeDomains: ['charge'], learnedDomains: ['charge'], id: 'test' as never, bastionsBuilt: 0, maelstromsDeclared: 0, slaveCaptureCount: 0 },
+      { completedNodes: ['venom_t1', 'venom_t2'] as ResearchNodeId[], activeNodeId: undefined },
+      { nativeDomain: 'charge', nativeDomains: ['charge'], learnedDomains: ['charge'], id: 'test' as FactionId, bastionsBuilt: 0, maelstromsDeclared: 0, slaveCaptureCount: 0 },
     );
     expect(doctrine.sporeJumpEnabled).toBe(true);
     expect(doctrine.sporeJumpAllEnemies).toBe(false);
@@ -98,8 +27,8 @@ describe('spore-jump doctrine flags', () => {
 
   it('venom_t2 native enables sporeJumpAllEnemies', () => {
     const doctrine = resolveResearchDoctrine(
-      { completedNodes: ['venom_t1', 'venom_t2'] as never[], activeNodeId: undefined },
-      { nativeDomain: 'venom', nativeDomains: ['venom'], learnedDomains: ['venom'], id: 'test' as never, bastionsBuilt: 0, maelstromsDeclared: 0, slaveCaptureCount: 0 },
+      { completedNodes: ['venom_t1', 'venom_t2'] as ResearchNodeId[], activeNodeId: undefined },
+      { nativeDomain: 'venom', nativeDomains: ['venom'], learnedDomains: ['venom'], id: 'test' as FactionId, bastionsBuilt: 0, maelstromsDeclared: 0, slaveCaptureCount: 0 },
     );
     expect(doctrine.sporeJumpEnabled).toBe(true);
     expect(doctrine.sporeJumpAllEnemies).toBe(true);
@@ -107,8 +36,8 @@ describe('spore-jump doctrine flags', () => {
 
   it('no venom_t2 — sporeJumpEnabled is false', () => {
     const doctrine = resolveResearchDoctrine(
-      { completedNodes: [] as never[], activeNodeId: undefined },
-      { nativeDomain: 'venom', nativeDomains: ['venom'], learnedDomains: ['venom'], id: 'test' as never, bastionsBuilt: 0, maelstromsDeclared: 0, slaveCaptureCount: 0 },
+      { completedNodes: [] as ResearchNodeId[], activeNodeId: undefined },
+      { nativeDomain: 'venom', nativeDomains: ['venom'], learnedDomains: ['venom'], id: 'test' as FactionId, bastionsBuilt: 0, maelstromsDeclared: 0, slaveCaptureCount: 0 },
     );
     expect(doctrine.sporeJumpEnabled).toBe(false);
   });
