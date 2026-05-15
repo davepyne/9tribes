@@ -1,13 +1,7 @@
-// Non-combat configuration values for emergent rules.
-//
-// Combat effects live in each rule's PrimitiveEffect[] array (resolved by
-// the primitive dispatcher). This file holds tuning values used by
-// non-combat simulation systems (healing, movement, economy, etc.).
-//
-// Consumers look up params by rule ID:
-//   if (rule.id === 'standing_stone') {
-//     healRate += EMERGENT_PARAMS.standing_stone.anchoredHealPerTurn;
-//   }
+// Non-combat tuning values for emergent rules.
+// Combat effects live in each rule's PrimitiveEffect[] (resolved by the
+// primitive dispatcher). This file holds values used by non-combat systems
+// (healing, movement, economy, etc.).
 
 export const EMERGENT_PARAMS = {
   terrain_lord: {
@@ -87,5 +81,3 @@ export const EMERGENT_PARAMS = {
     phantomMovementBonus: 1,
   },
 } as const;
-
-export type EmergentRuleId = keyof typeof EMERGENT_PARAMS;

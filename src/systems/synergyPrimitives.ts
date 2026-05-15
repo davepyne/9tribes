@@ -112,6 +112,7 @@ export type ConditionSpec =
   | SimpleCondition
   | `tag:${string}`
   | `terrain:${string}`
+  | `domain:${string}`
   | `targetHp${'<' | '<=' | '>' | '>='}${number}`
   | `${string} AND ${string}`
   | `${string} OR ${string}`

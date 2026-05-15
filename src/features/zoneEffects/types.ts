@@ -19,11 +19,14 @@
 
 import type { ZoneEffectId, FactionId, HexCoord } from '../../types.js';
 
-export type ZoneEffectType = 'maelstrom' | 'toxic_bloom';
+export type ZoneEffectType = 'maelstrom' | 'toxic_bloom' | 'crushing_zone' | 'raid_camp' | 'poison_cloud';
 
 export const ZONE_EFFECT_LABEL: Record<ZoneEffectType, string> = {
   maelstrom: 'Maelstrom',
   toxic_bloom: 'Toxic Bloom',
+  crushing_zone: 'Crushing Zone',
+  raid_camp: 'Raid Camp',
+  poison_cloud: 'Poison Cloud',
 };
 
 export interface ZoneEffect {
@@ -41,4 +44,6 @@ export interface ZoneEffect {
   turnsRemaining: number;
   /** Round when this effect was created (for telemetry). */
   createdRound: number;
+  /** If true, non-owner units inside this zone cannot heal. Used by poison_cloud. */
+  preventsHealing?: boolean;
 }

@@ -93,6 +93,9 @@ export interface Faction {
   activeDoubleStack?: ActiveDoubleStack;    // native+foreign cross-pair (1 foreign domain eligible)
   activeNativeSelfPair?: ActiveSynergy;     // native self-pair, always active when native T3 done
   juggernautActive?: boolean;
+  manyFacedLastStance?: string;              // many_faced emergent: last combat stance (bulwark/predator/phantom)
+  terrainLordTerraformCharges?: number;      // terrain_lord emergent: charges for terraform ability
+  standingStoneStance?: 'anchored' | 'march'; // standing_stone emergent: current stance mode
   // Knowledge system tracking (Phase 5)
   exposureProgress: Record<string, number>;  // domainId -> current exposure points
   prototypeMastery: Record<string, number>;  // domainId -> count of prototypes built

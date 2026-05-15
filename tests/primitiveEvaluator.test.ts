@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { evaluateCondition } from '../src/systems/primitiveEvaluator.js';
+import type { ConditionSpec } from '../src/systems/synergyPrimitives.js';
 import type { CombatContext } from '../src/systems/synergyTypes.js';
 
 function makeContext(overrides: Partial<CombatContext> = {}): CombatContext {
@@ -96,6 +97,6 @@ describe('evaluateCondition', () => {
   });
 
   it('returns false for unknown conditions', () => {
-    expect(evaluateCondition('unknownCondition', makeContext())).toBe(false);
+    expect(evaluateCondition('unknownCondition' as ConditionSpec, makeContext())).toBe(false);
   });
 });

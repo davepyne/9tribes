@@ -17,6 +17,7 @@ import {
 import { getNatureHealingAura } from './signatureAbilitySystem.js';
 import { resolveEffectiveSynergies } from './synergyRuntime.js';
 import { EMERGENT_PARAMS } from './emergentRuleParams.js';
+import { getZoneEffectsAtHex } from './zoneEffectSystem.js';
 
 const HEALING_CONFIG = {
   OWNED_TERRITORY: 0.10,
@@ -219,7 +220,18 @@ export function applyHealingForFaction(
     // E1 — Standing Stone emergent: faction units gain healPerTurn bonus from the aura
     const tripleStack = faction.activeTripleStack;
     if (tripleStack?.emergentRule.id === 'standing_stone') {
-      healRate += EMERGENT_PARAMS.standing_stone.anchoredHealPerTurn;
+      const stance = faction.standingStoneStance ?? 'anchored';
+      healRate += stance === 'march'
+        ? EMERGENT_PARAMS.standing_stone.marchHealPerTurn
+        : EMERGENT_PARAMS.standing_stone.anchoredHealPerTurn;
+    }
+
+    // Poison Shadow: units inside an enemy poison cloud cannot heal
+    const inPoisonCloud = getZoneEffectsAtHex(gameState, unit.position).some(
+      e => e.type === 'poison_cloud' && e.ownerFactionId !== factionId && e.preventsHealing,
+    );
+    if (inPoisonCloud) {
+      healRate = 0;
     }
 
     // Withering: nearby enemies reduce healing

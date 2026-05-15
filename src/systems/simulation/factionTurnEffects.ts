@@ -1,10 +1,10 @@
-import type { GameState, Unit } from '../../game/types.js';
+import type { GameState, Unit, ZoneEffect } from '../../game/types.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { FactionId, HexCoord, UnitId, ChassisId } from '../../types.js';
 import type { PrototypeId } from '../../types.js';
 import type { Prototype } from '../../features/prototypes/types.js';
 import type { VeteranLevel, UnitStatus } from '../../core/enums.js';
-import { createImprovementId, createUnitId } from '../../core/ids.js';
+import { createImprovementId, createUnitId, createZoneEffectId } from '../../core/ids.js';
 import { hexToKey, hexDistance, getNeighbors, getHexesInRange } from '../../core/grid.js';
 import { isHexOccupied } from '../occupancySystem.js';
 import { resolveResearchDoctrine, prototypeHasComponent } from '../capabilityDoctrine.js';
@@ -70,6 +70,7 @@ import { log, recordFactionStrategy, recordSiegeEvent, recordResearch, recordTri
 import { getTerrainAt, occupiesFriendlySettlement, applyEnvironmentalDamage, getHealRate } from './environmentalEffects.js';
 import { isWetlandTerrain } from '../terrainUtils.js';
 import { isPassiveWetlandStealth } from '../factionIdentitySystem.js';
+import { addZoneEffect, removeZoneEffect } from '../zoneEffectSystem.js';
 
 function removeUnitFromFaction(
   state: GameState,
@@ -762,6 +763,32 @@ function applyJuggernautBonus(state: GameState, factionId: FactionId): GameState
   return { ...state, factions };
 }
 
+function applyIronTurtleCrushingZone(state: GameState, factionId: FactionId): GameState {
+  const faction = state.factions.get(factionId);
+  if (!faction) return state;
+  // Find the faction's meatiest unit (highest max HP) as the anchor
+  let anchor: Unit | undefined;
+  for (const uid of faction.unitIds) {
+    const u = state.units.get(uid as UnitId);
+    if (u && u.hp > 0 && (!anchor || u.maxHp > anchor.maxHp)) {
+      anchor = u;
+    }
+  }
+  if (!anchor) return state;
+  const params = EMERGENT_PARAMS.iron_turtle;
+  return addZoneEffect(state, {
+    id: createZoneEffectId(),
+    type: 'crushing_zone',
+    center: anchor.position,
+    radius: params.crushingZoneRadius,
+    ownerFactionId: factionId,
+    damagePerTurn: params.crushingZoneDamage,
+    movementPenalty: params.crushingZoneMovementPenalty,
+    turnsRemaining: -1,
+    createdRound: state.round,
+  });
+}
+
 export function processFactionPhases(
   state: GameState,
   factionId: FactionId,
@@ -845,6 +872,86 @@ export function processFactionPhases(
     if (emergentId === 'juggernaut') {
       current = applyJuggernautBonus(current, factionId);
     }
+    if (emergentId === 'iron_turtle') {
+      current = applyIronTurtleCrushingZone(current, factionId);
+    }
+    if (emergentId === 'terrain_lord') {
+      const tlFaction = current.factions.get(factionId);
+      if (tlFaction && (tlFaction.terrainLordTerraformCharges ?? 0) <= 0) {
+        const factionsTL = new Map(current.factions);
+        factionsTL.set(factionId, { ...tlFaction, terrainLordTerraformCharges: EMERGENT_PARAMS.terrain_lord.terraformCharges });
+        current = { ...current, factions: factionsTL };
+      }
+    }
+    if (emergentId === 'standing_stone') {
+      // Default to anchored stance; create tar pit zone around the meatiest unit
+      const ssFaction = current.factions.get(factionId);
+      const stance = ssFaction?.standingStoneStance ?? 'anchored';
+      if (stance === 'anchored') {
+        let anchor: Unit | undefined;
+        for (const uid of (ssFaction?.unitIds ?? [])) {
+          const u = current.units.get(uid as UnitId);
+          if (u && u.hp > 0 && (!anchor || u.maxHp > anchor.maxHp)) {
+            anchor = u;
+          }
+        }
+        if (anchor) {
+          const ssParams = EMERGENT_PARAMS.standing_stone;
+          current = addZoneEffect(current, {
+            id: createZoneEffectId(),
+            type: 'crushing_zone',
+            center: anchor.position,
+            radius: ssParams.anchoredAuraRadius,
+            ownerFactionId: factionId,
+            damagePerTurn: ssParams.anchoredAdjacentDamage,
+            movementPenalty: ssParams.tarPitMovementPenalty,
+            turnsRemaining: -1,
+            createdRound: current.round,
+          });
+        }
+      }
+    }
+    if (emergentId === 'raid_camp') {
+      // Place a camp zone at the most forward unit (closest to enemies)
+      const rcFaction = current.factions.get(factionId);
+      let forwardUnit: Unit | undefined;
+      let minEnemyDist = Infinity;
+      for (const uid of (rcFaction?.unitIds ?? [])) {
+        const u = current.units.get(uid as UnitId);
+        if (!u || u.hp <= 0) continue;
+        // Find distance to nearest enemy
+        let closestEnemy = Infinity;
+        for (const [, eu] of current.units) {
+          if (eu.factionId !== factionId && eu.hp > 0) {
+            closestEnemy = Math.min(closestEnemy, hexDistance(u.position, eu.position));
+          }
+        }
+        if (closestEnemy < minEnemyDist) {
+          minEnemyDist = closestEnemy;
+          forwardUnit = u;
+        }
+      }
+      if (forwardUnit) {
+        const rcParams = EMERGENT_PARAMS.raid_camp;
+        current = addZoneEffect(current, {
+          id: createZoneEffectId(),
+          type: 'raid_camp',
+          center: forwardUnit.position,
+          radius: rcParams.campEnemyRadius,
+          ownerFactionId: factionId,
+          damagePerTurn: 0,
+          movementPenalty: 0,
+          turnsRemaining: rcParams.campDuration,
+          createdRound: current.round,
+        });
+      }
+    }
+    if (emergentId === 'many_faced') {
+      const stance = current.factions.get(factionId)?.manyFacedLastStance;
+      if (stance === 'phantom') {
+        current = applyGhostArmyMovement(current, factionId, EMERGENT_PARAMS.many_faced.phantomMovementBonus);
+      }
+    }
     tripleResult = tripleStack;
   } else {
     const prevTriple = faction.activeTripleStack;
@@ -857,6 +964,27 @@ export function processFactionPhases(
         domains: prevTriple.domains,
         emergentRule: prevTriple.emergentRule.name,
       });
+      // Clean up iron_turtle crushing zone when triple stack is lost
+      if (prevTriple.emergentRule.id === 'iron_turtle') {
+        const toRemove = Array.from(current.zoneEffects.values()).filter((ze: ZoneEffect) => ze.type === 'crushing_zone' && ze.ownerFactionId === factionId);
+        for (const ze of toRemove) {
+          current = removeZoneEffect(current, ze.id);
+        }
+      }
+      // Clean up standing_stone tar pit zone on stack loss
+      if (prevTriple.emergentRule.id === 'standing_stone') {
+        const toRemove = Array.from(current.zoneEffects.values()).filter((ze: ZoneEffect) => ze.type === 'crushing_zone' && ze.ownerFactionId === factionId);
+        for (const ze of toRemove) {
+          current = removeZoneEffect(current, ze.id);
+        }
+      }
+      // Clean up raid_camp zones on stack loss
+      if (prevTriple.emergentRule.id === 'raid_camp') {
+        const toRemove = Array.from(current.zoneEffects.values()).filter((ze: ZoneEffect) => ze.type === 'raid_camp' && ze.ownerFactionId === factionId);
+        for (const ze of toRemove) {
+          current = removeZoneEffect(current, ze.id);
+        }
+      }
     }
 
     const doubleStack = engine.resolveFactionDouble(faction.nativeDomain, pairEligible);

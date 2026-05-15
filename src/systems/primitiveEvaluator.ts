@@ -17,15 +17,15 @@ export function evaluateCondition(
   if (condition === undefined) return true;
 
   if (condition.includes(' AND ')) {
-    return condition.split(' AND ').every(part => evaluateCondition(part.trim(), context));
+    return condition.split(' AND ').every(part => evaluateCondition(part.trim() as ConditionSpec, context));
   }
 
   if (condition.includes(' OR ')) {
-    return condition.split(' OR ').some(part => evaluateCondition(part.trim(), context));
+    return condition.split(' OR ').some(part => evaluateCondition(part.trim() as ConditionSpec, context));
   }
 
   if (condition.startsWith('!')) {
-    return !evaluateCondition(condition.slice(1), context);
+    return !evaluateCondition(condition.slice(1) as ConditionSpec, context);
   }
 
   switch (condition) {
@@ -47,6 +47,12 @@ export function evaluateCondition(
           return terrainType.split(',').some(t => context.terrain === t.trim());
         }
         return context.terrain === terrainType;
+      }
+
+      // Domain conditions: 'domain:venom' → attackerLearnedDomains.includes('venom')
+      if (condition.startsWith('domain:')) {
+        const domainId = condition.slice('domain:'.length);
+        return context.attackerLearnedDomains.includes(domainId);
       }
 
       // HP threshold: 'targetHp<0.25'
