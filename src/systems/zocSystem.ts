@@ -7,6 +7,7 @@ import type { HexCoord, FactionId } from '../types.js';
 import type { ResearchDoctrine } from './capabilityDoctrine.js';
 import { getDirectionIndex, getNeighbors, getOppositeDirection } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
+import { isFortificationHex } from './unit-activation/helpers.js';
 import { factionHasEmergentFlag } from './synergyRuntime.js';
 
 /** Naval chassis IDs — any unit with one of these is in the naval ZoC domain. */
@@ -161,7 +162,7 @@ export function entersEnemyZoC(
   if (isMounted(movingUnit, state) || canIgnoreZoCWithHitAndRun(movingUnit, state, doctrine)) {
     // But cannot ignore fort ZoC
     if (fortZoC) {
-      return !isOnFortAtHex(state, originHex); // already in fort = no ZoC entry
+      return !isFortificationHex(state, originHex); // already in fort = no ZoC entry
     }
     return false;
   }
@@ -170,7 +171,7 @@ export function entersEnemyZoC(
   const faction = state.factions.get(movingUnit.factionId);
   if (factionHasEmergentFlag(faction, 'emergentIgnoreZoc')) {
     if (fortZoC) {
-      return !isOnFortAtHex(state, originHex);
+      return !isFortificationHex(state, originHex);
     }
     return false;
   }
@@ -182,15 +183,6 @@ export function entersEnemyZoC(
   }
 
   return !isHexInEnemyZoC(originHex, movingUnit, state, doctrine) && isHexInEnemyZoC(targetHex, movingUnit, state, doctrine);
-}
-
-function isOnFortAtHex(gameState: GameState, pos: HexCoord): boolean {
-  for (const [, improvement] of gameState.improvements) {
-    if (improvement.position.q === pos.q && improvement.position.r === pos.r) {
-      return improvement.type === 'fortification';
-    }
-  }
-  return false;
 }
 
 /**
