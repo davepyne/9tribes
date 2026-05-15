@@ -36,6 +36,7 @@ export interface ResearchDoctrine {
   zoCAuraEnabled: boolean;           // fortress_t2 - fortified units project ZoC to adjacent hexes
   canBuildBastion: boolean;          // fortress_t3 (native) - Hill Engineers may construct up to 3 Bastions per game
   canDeclareMaelstrom: boolean;     // tidal_warfare_t3 - once-per-game Maelstrom declaration
+  canDeclareOasis: boolean;         // camel_adaptation_t3 native — once-per-game Oasis declaration
   maelstromRadius: number;          // 3 (foreign) or 5 (native Pirate Lords)
   maelstromDuration: number;        // 3 (foreign) or 5 (native)
   maelstromAutoCaptureEnabled: boolean; // native only: naval kills in Maelstrom auto-capture
@@ -149,6 +150,7 @@ type DoctrineCacheEntry = {
   nativeDomainsRef: readonly string[];
   bastionsBuilt: number;
   maelstromsDeclared: number;
+  oasisDeclared: number;
   doctrine: ResearchDoctrine;
 };
 const doctrineCache = new Map<FactionId, DoctrineCacheEntry>();
@@ -163,7 +165,7 @@ const doctrineCache = new Map<FactionId, DoctrineCacheEntry>();
  */
 export function resolveResearchDoctrine(
   researchState: ResearchState | undefined,
-  faction?: Pick<Faction, 'nativeDomain' | 'nativeDomains' | 'learnedDomains' | 'id' | 'bastionsBuilt' | 'maelstromsDeclared'>,
+  faction?: Pick<Faction, 'nativeDomain' | 'nativeDomains' | 'learnedDomains' | 'id' | 'bastionsBuilt' | 'maelstromsDeclared' | 'oasisDeclared'>,
 ): ResearchDoctrine {
   const completedNodes = researchState?.completedNodes ?? [];
   const learnedDomains = faction?.learnedDomains ?? [];
@@ -172,6 +174,7 @@ export function resolveResearchDoctrine(
   const factionId = faction?.id;
   const bastionsBuilt = faction?.bastionsBuilt ?? 0;
   const maelstromsDeclared = faction?.maelstromsDeclared ?? 0;
+  const oasisDeclared = faction?.oasisDeclared ?? 0;
 
   // Cache check: reference equality on the mutable arrays + scalar counters
   if (factionId) {
@@ -184,6 +187,7 @@ export function resolveResearchDoctrine(
       && cached.nativeDomainsRef === faction?.nativeDomains
       && cached.bastionsBuilt === bastionsBuilt
       && cached.maelstromsDeclared === maelstromsDeclared
+      && cached.oasisDeclared === oasisDeclared
     ) {
       return cached.doctrine;
     }
@@ -235,6 +239,9 @@ export function resolveResearchDoctrine(
     canDeclareMaelstrom:
       hasNode('tidal_warfare_t3')
       && (faction?.maelstromsDeclared ?? 0) < 1,
+    canDeclareOasis:
+      hasNativeT3('camel_adaptation')
+      && (faction?.oasisDeclared ?? 0) < 1,
     maelstromRadius: hasNativeT3('tidal_warfare') ? 5 : 3,
     maelstromDuration: hasNativeT3('tidal_warfare') ? 5 : 3,
     maelstromAutoCaptureEnabled: hasNativeT3('tidal_warfare'),
@@ -326,6 +333,7 @@ export function resolveResearchDoctrine(
       nativeDomainsRef: faction?.nativeDomains,
       bastionsBuilt,
       maelstromsDeclared,
+      oasisDeclared,
       doctrine,
     });
   }

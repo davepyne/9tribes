@@ -50,6 +50,8 @@ import {
   BASTION_ATTACK_MARGIN,
 } from './bastion.js';
 import { getMaelstromOpportunity, MAELSTROM_DECISION_SCORE } from './maelstrom.js';
+import { getOasisOpportunity, OASIS_DECISION_SCORE } from './oasis.js';
+import { declareOasis } from '../oasisSystem.js';
 import { findBestTargetChoice, findBestRangedTarget } from './targeting.js';
 import { performStrategicMovement } from './movement.js';
 import { RENDEZVOUS_READY_DISTANCE } from '../strategic-ai/rendezvous.js';
@@ -457,6 +459,22 @@ export function activateUnit(
     }
     if (current.zoneEffects.size > effectCount) {
       log(trace, `${faction.name} ${prototype.name} declared a Maelstrom (${maelstromOpportunity.reason})`);
+      return { state: setUnitActivated(current, unitId), pendingCombat: null };
+    }
+  }
+
+  // Oasis declaration: once-per-game Camel T3 native strategic action.
+  const oasisOpportunity = getOasisOpportunity(current, factionId, unitId, registry);
+  if (
+    oasisOpportunity
+    && oasisOpportunity.score >= OASIS_DECISION_SCORE
+    && bestImmediateAttackScore < BASTION_ATTACK_MARGIN
+  ) {
+    const activeUnitForOasis = current.units.get(unitId)!;
+    const oasisResult = declareOasis(current, factionId, activeUnitForOasis.position);
+    if (oasisResult.declared) {
+      current = oasisResult.state;
+      log(trace, `${faction.name} ${prototype.name} proclaimed an Oasis (${oasisOpportunity.reason})`);
       return { state: setUnitActivated(current, unitId), pendingCombat: null };
     }
   }

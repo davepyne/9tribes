@@ -13,7 +13,7 @@ import { canBoardTransport, getUnitTransport, getValidDisembarkHexes, getEmbarke
 import { getSpriteKeyForUnit, inferChassisId } from './spriteKeys.js';
 import { hexToKey, hexDistance, getNeighbors } from '../../../../src/core/grid.js';
 import { getImprovementBonus } from '../../../../src/systems/combat-action/helpers.js';
-import { isWaterTerrain } from '../../../../src/systems/terrainUtils.js';
+import { isWaterTerrain, isLandTerrain } from '../../../../src/systems/terrainUtils.js';
 
 function thisChassisMovementClass(chassisId: string | undefined, registry: RulesRegistry): string | undefined {
   return chassisId ? registry.getChassis(chassisId)?.movementClass : undefined;
@@ -84,6 +84,9 @@ export function buildUnitView(
   const canDeclareMaelstrom = !!factionDoctrine?.canDeclareMaelstrom
     && isWaterTerrain(tileTerrain) && unit.status === 'ready' && unit.hp > 0;
 
+  const canDeclareOasis = !!factionDoctrine?.canDeclareOasis
+    && isLandTerrain(tileTerrain) && unit.status === 'ready' && unit.hp > 0;
+
   const canDestroyFort = !!isHillClan && atFullMoves && improvementBonus > 0
     && !!prototype?.tags?.includes('engineer');
 
@@ -144,6 +147,7 @@ export function buildUnitView(
     canAmbush: canAmbush || undefined,
     canBuildBastion: canBuildBastion || undefined,
     canDeclareMaelstrom: canDeclareMaelstrom || undefined,
+    canDeclareOasis: canDeclareOasis || undefined,
     canDestroyFort: canDestroyFort || undefined,
     canSacrifice: canSacrifice || undefined,
     ...(() => {

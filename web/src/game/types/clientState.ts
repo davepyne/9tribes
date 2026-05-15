@@ -428,6 +428,7 @@ export type GameAction =
   | { type: 'disembark_unit'; unitId: string; transportId: string; destination: HexCoord }
   | { type: 'build_bastion'; unitId: string }
   | { type: 'declare_maelstrom'; unitId: string }
+  | { type: 'declare_oasis'; unitId: string }
   | { type: 'destroy_fort'; unitId: string }
   | { type: 'build_city'; unitId: string }
   | { type: 'summon_unit'; unitId: string }

@@ -139,6 +139,7 @@ export class GameController {
       case 'disembark_unit':
       case 'build_bastion':
       case 'declare_maelstrom':
+      case 'declare_oasis':
       case 'destroy_fort':
       case 'summon_unit':
         if (this.session) {

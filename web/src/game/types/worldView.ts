@@ -73,6 +73,7 @@ export type UnitView = {
   isSettler?: boolean;
   canBuildBastion?: boolean;
   canDeclareMaelstrom?: boolean;
+  canDeclareOasis?: boolean;
   canDestroyFort?: boolean;
   canSacrifice?: boolean;
   canBrace?: boolean;

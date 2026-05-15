@@ -104,6 +104,7 @@ export interface Faction {
   // Strategic-action counters
   bastionsBuilt: number;                    // fortress native T3 capstone: Hill Engineers may build up to 3 Bastions per game
   maelstromsDeclared: number;               // tidal_warfare T3 capstone: once-per-game Maelstrom declaration
+  oasisDeclared: number;                    // camel_adaptation T3 native: once-per-game Oasis terrain conversion
   slaveCaptureCount: number;                // slaving T3 native: total captures (triggers Captive Champion every 5)
 }
 
