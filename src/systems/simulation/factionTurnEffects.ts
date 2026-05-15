@@ -1070,9 +1070,13 @@ export function processFactionPhases(
     const poisonMovePenalty = unit.poisoned ? doctrine.poisonMovePenalty : 0;
     const staggerPenalty = unit.nextTurnMovePenalty ?? 0;
     const harshTerrainBonus = doctrine.heatResistanceEnabled && (currentTerrainId === 'desert' || currentTerrainId === 'tundra') ? 1 : 0;
+    const bloodtrailBonus = doctrine.bloodtrailMomentumEnabled && (unit.woundsReceivedThisTurn ?? 0) > 0
+      ? unit.woundsReceivedThisTurn!
+      : 0;
     const refreshedMoves = Math.min(
-      unit.maxMoves + 1,
-      Math.max(0, unit.maxMoves + coldProvisionMoveBonus + harshTerrainBonus - poisonMovePenalty - staggerPenalty),
+      unit.maxMoves + 1 + bloodtrailBonus,
+      Math.max(0, unit.maxMoves + coldProvisionMoveBonus + harshTerrainBonus + bloodtrailBonus - poisonMovePenalty - staggerPenalty),
+      unit.maxMoves + 3,
     );
     const refreshedUnit = {
       ...unit,
@@ -1088,6 +1092,7 @@ export function processFactionPhases(
       attackedTargetsThisTurn: [],
       lastStandUsedThisTurn: undefined,
       killChainCountThisTurn: undefined,
+      woundsReceivedThisTurn: undefined,
     };
 
     let stealthUpdatedUnit = tickStealthCooldown(refreshedUnit);

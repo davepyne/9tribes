@@ -293,6 +293,9 @@ export function applyCombatAction(
     movesRemaining: 0,
     activatedThisRound: true,
     status: 'spent',
+    woundsReceivedThisTurn: preview.result.attackerDamage > 0
+      ? (attacker.woundsReceivedThisTurn ?? 0) + 1
+      : attacker.woundsReceivedThisTurn,
   };
   let nextDefender: Unit = {
     ...defender,
@@ -305,6 +308,9 @@ export function applyCombatAction(
     // the Last Stand block below reverts this to defender.status if a save
     // fires, so the final state correctly reflects defenderActuallyDestroyed.
     status: preview.result.defenderDestroyed ? 'spent' : defender.status,
+    woundsReceivedThisTurn: preview.result.defenderDamage > 0
+      ? (defender.woundsReceivedThisTurn ?? 0) + 1
+      : defender.woundsReceivedThisTurn,
   };
 
   // Phase 3C — Heavy naval ram: extra damage from naval ram synergy

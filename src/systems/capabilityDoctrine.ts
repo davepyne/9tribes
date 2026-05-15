@@ -64,6 +64,7 @@ export interface ResearchDoctrine {
   damageReflectionEnabled: boolean;  // heavy_hitter_t2 - reflect 25% damage back to attackers
   nativeDamageReflectionEnabled: boolean; // heavy_hitter_t2 native - reflect 50% + stagger attacker
   hitAndRunEnabled: boolean;         // hitrun_t2 - cavalry can attack then retreat in same turn
+  bloodtrailMomentumEnabled: boolean; // hitrun_t2 - each wound received grants +1 movement next turn
   killChainEnabled: boolean;         // hitrun_t3 foreign - follow-up attack at 60% damage after kill
   nativeKillChainEnabled: boolean;   // hitrun_t3 native - follow-up at 100% damage, chain up to 3 kills
 
@@ -259,6 +260,7 @@ export function resolveResearchDoctrine(
     damageReflectionEnabled: hasNode('heavy_hitter_t2'),
     nativeDamageReflectionEnabled: hasNode('heavy_hitter_t2') && nativeDomains.has('heavy_hitter'),
     hitAndRunEnabled: hasNode('hitrun_t2'),
+    bloodtrailMomentumEnabled: hasNode('hitrun_t2'),
     killChainEnabled: hasNode('hitrun_t3'),
     nativeKillChainEnabled: hasNativeT3('hitrun'),
 
