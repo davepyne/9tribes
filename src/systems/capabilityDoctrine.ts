@@ -310,10 +310,10 @@ export function resolveResearchDoctrine(
       : hasNode('slaving_t2') ? 0.5
       : hasNode('slaving_t1') ? 0.01
       : 1.0,
-    slaveStatFraction: hasNativeT3('slaving') ? 0.7
+    slaveStatFraction: hasNode('slaving_t3') ? 0.7
       : hasNode('slaving_t1') ? 0.6
       : 1.0,
-    navalCaptureRadius: hasNativeT3('slaving') ? 2 : 0,
+    navalCaptureRadius: hasNode('slaving_t3') ? 2 : 0,
     natureHealingRegenBonus: hasNativeT3('nature_healing')
       ? 3
       : hasNode('nature_healing_t1')

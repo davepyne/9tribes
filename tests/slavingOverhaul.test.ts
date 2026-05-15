@@ -112,6 +112,30 @@ describe('slaving doctrine fractions', () => {
     expect(doctrine.navalCaptureRadius).toBe(2);
   });
 
+  it('T3 foreign resolves to stat 0.7, hp 0.5, radius 2', () => {
+    const doctrine = resolveResearchDoctrine(
+      { completedNodes: ['slaving_t1', 'slaving_t2', 'slaving_t3'] as never[], activeNodeId: undefined },
+      { nativeDomain: 'charge', nativeDomains: ['charge'], learnedDomains: ['charge', 'slaving'], id: 'test' as never, bastionsBuilt: 0, maelstromsDeclared: 0, slaveCaptureCount: 0 },
+    );
+    expect(doctrine.slaveStatFraction).toBe(0.7);
+    expect(doctrine.slaveHpFraction).toBe(0.5);
+    expect(doctrine.navalCaptureRadius).toBe(2);
+  });
+
+  it('T3 native enables slaverTranscendence, foreign T3 does not', () => {
+    const native = resolveResearchDoctrine(
+      { completedNodes: ['slaving_t1', 'slaving_t2', 'slaving_t3'] as never[], activeNodeId: undefined },
+      { nativeDomain: 'slaving', nativeDomains: ['slaving'], learnedDomains: ['slaving'], id: 'test' as never, bastionsBuilt: 0, maelstromsDeclared: 0, slaveCaptureCount: 0 },
+    );
+    expect(native.slaverTranscendenceEnabled).toBe(true);
+
+    const foreign = resolveResearchDoctrine(
+      { completedNodes: ['slaving_t1', 'slaving_t2', 'slaving_t3'] as never[], activeNodeId: undefined },
+      { nativeDomain: 'charge', nativeDomains: ['charge'], learnedDomains: ['charge', 'slaving'], id: 'test' as never, bastionsBuilt: 0, maelstromsDeclared: 0, slaveCaptureCount: 0 },
+    );
+    expect(foreign.slaverTranscendenceEnabled).toBe(false);
+  });
+
   it('no slaving research defaults to stat 1.0, hp 1.0, radius 0', () => {
     const doctrine = resolveResearchDoctrine(
       { completedNodes: [] as never[], activeNodeId: undefined },
