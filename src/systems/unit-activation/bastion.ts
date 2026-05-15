@@ -1,65 +1,50 @@
+// Bastion construction — the Hill Engineers' native fortress T3 capstone.
+//
+// A Bastion is a player- (or AI-) initiated improvement that converts the hex
+// under a qualified Hill unit into a permanent +400% defense fortification.
+// Each Hill faction may build at most 3 Bastions per game (tracked on
+// faction.bastionsBuilt) and only after researching the native fortress T3.
+//
+// This module exports both:
+//   - getBastionOpportunity / buildBastionIfEligible — the AI-side heuristic,
+//     invoked from activateUnit during the autonomous loop.
+//   - The player-side path lives in web/src/game/controller/sessionUtils.ts
+//     (getBastionBuildEligibility / buildBastionAtUnit) and dispatches via
+//     the 'build_bastion' ClientAction. Both paths funnel through the
+//     `canBuildBastion` doctrine flag in capabilityDoctrine.ts and through
+//     the +1 increment on faction.bastionsBuilt.
+
 import { createImprovementId } from '../../core/ids.js';
-import { hexDistance, hexToKey } from '../../core/grid.js';
+import { hexDistance } from '../../core/grid.js';
 import type { GameState, UnitId } from '../../game/types.js';
 import type { FactionId } from '../../types.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import { resolveResearchDoctrine } from '../capabilityDoctrine.js';
-import { getNearbySupportScore, getNearestFriendlyCity, getUnitIntent, scoreStrategicTerrain } from '../strategicAi.js';
-import { canUseBrace } from '../abilitySystem.js';
+import { getUnitIntent } from '../strategicAi.js';
+import { getNearestFriendlyCity } from '../../game/stateAccess.js';
 
-import { getTerrainAt, getImprovementAtHex, isFortificationHex, countFriendlyUnitsNearHex, countUnitsNearHex, countFortificationsNearHex } from './helpers.js';
+import { getTerrainAt, getImprovementAtHex, countFriendlyUnitsNearHex, countUnitsNearHex, countFortificationsNearHex } from './helpers.js';
 
-interface FieldFortOpportunity {
+interface BastionOpportunity {
   score: number;
   reason: string;
 }
 
-const FIELD_FORT_DECISION_SCORE = 6;
-const FIELD_FORT_ATTACK_MARGIN = 1;
+// Bastion is a much more deliberate placement than the retired field forts:
+// the score threshold is higher and the cap is global, so the AI only commits
+// when the position genuinely matters.
+const BASTION_DECISION_SCORE = 10;
+const BASTION_ATTACK_MARGIN = 1;
 
-export { FIELD_FORT_ATTACK_MARGIN, FIELD_FORT_DECISION_SCORE };
+export { BASTION_ATTACK_MARGIN, BASTION_DECISION_SCORE };
 
-export function shouldBrace(
-  unit: import('../../features/units/types.js').Unit,
-  prototype: { tags?: string[] },
-  state: GameState,
-  canUniversalBrace: boolean = false,
-): boolean {
-  if ((!canUseBrace(prototype as any) && !canUniversalBrace) || hasAdjacentEnemy(state, unit) === false) {
-    return false;
-  }
-
-  return Array.from(state.units.values()).some((other) => {
-    if (other.hp <= 0 || other.factionId === unit.factionId) {
-      return false;
-    }
-    const enemyPrototype = state.prototypes.get(other.prototypeId);
-    if (!enemyPrototype) {
-      return false;
-    }
-    return hexDistance(unit.position, other.position) === 1 && canUseCharge(enemyPrototype);
-  });
-}
-
-function canUseCharge(prototype: { tags?: string[] }): boolean {
-  return prototype.tags?.includes('charge') ?? false;
-}
-
-function hasAdjacentEnemy(state: GameState, unit: import('../../features/units/types.js').Unit): boolean {
-  for (const other of state.units.values()) {
-    if (other.hp <= 0 || other.factionId === unit.factionId) continue;
-    if (hexDistance(unit.position, other.position) === 1) return true;
-  }
-  return false;
-}
-
-export function getFieldFortOpportunity(
+export function getBastionOpportunity(
   state: GameState,
   factionId: FactionId,
   unitId: UnitId,
   registry: RulesRegistry,
-  fortsBuiltThisRound?: Set<FactionId>,
-): FieldFortOpportunity | null {
+  bastionsBuiltThisRound?: Set<FactionId>,
+): BastionOpportunity | null {
   const faction = state.factions.get(factionId);
   const unit = state.units.get(unitId);
   const research = state.research.get(factionId);
@@ -69,14 +54,16 @@ export function getFieldFortOpportunity(
     !unit ||
     factionId !== ('hill_clan' as FactionId) ||
     unit.hp <= 0 ||
-    fortsBuiltThisRound?.has(factionId) ||
+    bastionsBuiltThisRound?.has(factionId) ||
     unit.movesRemaining !== unit.maxMoves ||
     unit.status !== 'ready'
   ) {
     return null;
   }
 
-  if (!doctrine.canBuildFieldForts) {
+  // canBuildBastion already enforces the native-fortress-T3 gate and the
+  // 3-per-game cap from faction.bastionsBuilt.
+  if (!doctrine.canBuildBastion) {
     return null;
   }
 
@@ -135,14 +122,14 @@ export function getFieldFortOpportunity(
   return { score, reason };
 }
 
-export function buildFieldFortIfEligible(
+export function buildBastionIfEligible(
   state: GameState,
   factionId: FactionId,
   unitId: UnitId,
   registry: RulesRegistry,
-  fortsBuiltThisRound?: Set<FactionId>
+  bastionsBuiltThisRound?: Set<FactionId>
 ): GameState {
-  const opportunity = getFieldFortOpportunity(state, factionId, unitId, registry, fortsBuiltThisRound);
+  const opportunity = getBastionOpportunity(state, factionId, unitId, registry, bastionsBuiltThisRound);
   if (!opportunity) {
     return state;
   }
@@ -153,38 +140,21 @@ export function buildFieldFortIfEligible(
     return state;
   }
 
-  const fortId = createImprovementId();
+  const improvementId = createImprovementId();
   const improvements = new Map(state.improvements);
-  const fieldFort = registry.getImprovement('field_fort');
-  improvements.set(fortId, {
-    id: fortId,
+  const bastion = registry.getImprovement('bastion');
+  improvements.set(improvementId, {
+    id: improvementId,
     type: 'fortification',
     position: { ...unit.position },
     ownerFactionId: factionId,
-    defenseBonus: fieldFort?.defenseBonus ?? 2,
+    defenseBonus: bastion?.defenseBonus ?? 4,
   });
-  fortsBuiltThisRound?.add(factionId);
-  return { ...state, improvements };
-}
 
-export function applyHillDugInIfEligible(
-  state: GameState,
-  factionId: FactionId,
-  unitId: UnitId
-): GameState {
-  const faction = state.factions.get(factionId);
-  const research = state.research.get(factionId);
-  const unit = state.units.get(unitId);
-  if (!faction || !unit || unit.hp <= 0) {
-    return state;
-  }
+  // Increment the per-game cap counter — new faction object with bumped count.
+  const factions = new Map(state.factions);
+  factions.set(factionId, { ...faction, bastionsBuilt: faction.bastionsBuilt + 1 });
 
-  const doctrine = resolveResearchDoctrine(research, faction);
-  if (!doctrine.rapidEntrenchEnabled || getTerrainAt(state, unit.position) !== 'hill') {
-    return state;
-  }
-
-  const units = new Map(state.units);
-  units.set(unitId, { ...unit, hillDugIn: true });
-  return { ...state, units };
+  bastionsBuiltThisRound?.add(factionId);
+  return { ...state, improvements, factions };
 }

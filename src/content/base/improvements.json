@@ -1,8 +1,8 @@
 {
-  "field_fort": {
-    "id": "field_fort",
-    "name": "Field Fortification",
+  "bastion": {
+    "id": "bastion",
+    "name": "Bastion",
     "category": "fortification",
-    "defenseBonus": 1
+    "defenseBonus": 4
   }
 }

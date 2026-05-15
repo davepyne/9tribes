@@ -1,4 +1,5 @@
 import type { Faction } from '../features/factions/types.js';
+import { getNativeDomains } from '../features/factions/types.js';
 import type { ResearchState } from '../features/research/types.js';
 
 export interface DomainProgression {
@@ -50,11 +51,12 @@ function getHighestCompletedTier(domainId: string, completedNodes: Set<string>):
 }
 
 export function getDomainProgression(
-  faction: Pick<Faction, 'nativeDomain' | 'learnedDomains'> & { synergyEligibleDomains?: string[] },
+  faction: Pick<Faction, 'nativeDomain' | 'nativeDomains' | 'learnedDomains'> & { synergyEligibleDomains?: string[] },
   researchState?: ResearchState,
 ): DomainProgression {
   const learnedDomains = Array.from(new Set(faction.learnedDomains ?? []));
   const completedNodes = getCompletedNodesSet(researchState);
+  const nativeSet = new Set(getNativeDomains(faction));
   const t1Domains: string[] = [];
   const t2Domains: string[] = [];
   const t3Domains: string[] = [];
@@ -67,7 +69,7 @@ export function getDomainProgression(
     if (tier >= 2) t2Domains.push(domainId);
     if (tier >= 3) {
       t3Domains.push(domainId);
-      if (domainId === faction.nativeDomain) {
+      if (nativeSet.has(domainId)) {
         nativeT3Domains.push(domainId);
       } else {
         foreignT3Domains.push(domainId);
@@ -99,7 +101,7 @@ export function isDomainUnlockedForFaction(
 }
 
 export function getDomainTierFromProgression(
-  faction: Pick<Faction, 'nativeDomain' | 'learnedDomains'>,
+  faction: Pick<Faction, 'nativeDomain' | 'nativeDomains' | 'learnedDomains'>,
   domainId: string,
   researchState?: ResearchState,
 ): number {

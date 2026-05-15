@@ -1,9 +1,9 @@
 // Branded ID factory functions for type-safe identifiers
 // Uses nominal typing pattern to prevent ID mixing
 
-import type { 
+import type {
   FactionId, UnitId, CityId, PrototypeId, ImprovementId,
-  ChassisId, ComponentId, ResearchNodeId, VillageId
+  ChassisId, ComponentId, ResearchNodeId, VillageId, ZoneEffectId,
 } from '../types.js';
 
 // Counter-based ID generation (deterministic within a session)
@@ -47,6 +47,9 @@ export const createResearchNodeId = (id?: string): ResearchNodeId =>
 
 export const createVillageId = (id?: string): VillageId =>
   (id ?? generateId('village')) as VillageId;
+
+export const createZoneEffectId = (id?: string): ZoneEffectId =>
+  (id ?? generateId('zone')) as ZoneEffectId;
 
 
 // Export for testing - allows resetting counter between tests

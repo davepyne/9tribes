@@ -10,6 +10,7 @@ import type { UnitId, HexCoord } from '../types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
 import { getNeighbors, hexToKey } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
+import { isFortificationHex } from './unit-activation/helpers.js';
 import { getWeaponEffectiveness } from '../data/weaponEffectiveness.js';
 import { calculateMoraleLoss } from './moraleSystem.js';
 import { getVeteranStatBonus } from './combatSystem.js';
@@ -30,18 +31,6 @@ function canDisengageFree(unit: Unit, state: GameState): boolean {
   if (!proto) return false;
   const chassisId = proto.chassisId;
   return chassisId === 'cavalry_frame' || chassisId === 'camel_frame' || chassisId === 'beast_frame';
-}
-
-/**
- * Returns true if there is a fortification improvement at the given position.
- */
-function isOnFort(gameState: GameState, pos: HexCoord): boolean {
-  for (const [, improvement] of gameState.improvements) {
-    if (improvement.position.q === pos.q && improvement.position.r === pos.r) {
-      return improvement.type === 'fortification';
-    }
-  }
-  return false;
 }
 
 /**
@@ -75,7 +64,7 @@ export function applyOpportunityAttacks(
   if (!movingUnit || movingUnit.hp <= 0) return gameState;
 
   // Cavalry / camel / beast disengage freely — UNLESS departing from fort ZoC.
-  if (canDisengageFree(movingUnit, gameState) && !isOnFort(gameState, originHex)) return gameState;
+  if (canDisengageFree(movingUnit, gameState) && !isFortificationHex(gameState, originHex)) return gameState;
 
   // Routed units are already in flight and receive no additional OA penalty.
   if (movingUnit.routed) return gameState;
@@ -113,7 +102,7 @@ export function applyOpportunityAttacks(
     const veteranBonus = getVeteranStatBonus(rulesRegistry, opportunist.veteranLevel);
     const baseAttack = Math.max(1, Math.round(oppProto.derivedStats.attack * (1 + veteranBonus)));
     const weaponMod = getWeaponEffectiveness(getWeaponTags(oppProto, rulesRegistry), movingUnitMovementClass);
-    const onFort = isOnFort(current, opportunist.position);
+    const onFort = isFortificationHex(current, opportunist.position);
     const multiplier = onFort ? OA_FORT_MULTIPLIER : OA_MULTIPLIER;
     const damage = Math.max(1, Math.round(baseAttack * (1 + weaponMod) * multiplier));
 

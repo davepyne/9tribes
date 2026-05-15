@@ -4,8 +4,7 @@ import type { PairSynergyData, EmergentRuleData } from './SynergyCard';
 import type { EnemySynergyIntelMap } from '../game/types/clientState';
 import { intelTier } from '../game/synergy/intelTiers';
 import { playSynergyContactSting } from '../app/audio/sfxManager';
-import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
-import emergentRulesData from '../../../src/content/base/emergent-rules.json';
+import { PAIR_SYNERGY_BY_ID, EMERGENT_RULE_BY_ID } from '../data/synergyLookup';
 
 type FirstContactEvent = {
   factionId: string;
@@ -52,10 +51,8 @@ export const EnemySynergyContactModal = React.memo(function EnemySynergyContactM
   if (!current) return null;
 
   // Resolve full synergy data
-  const pairData = (pairSynergiesData.pairSynergies as PairSynergyData[])
-    .find((p) => p.id === current.synergyId);
-  const emergentData = (emergentRulesData.rules as EmergentRuleData[])
-    .find((r) => r.id === current.synergyId);
+  const pairData = PAIR_SYNERGY_BY_ID.get(current.synergyId);
+  const emergentData = EMERGENT_RULE_BY_ID.get(current.synergyId);
 
   const synergyData = pairData ?? emergentData;
   if (!synergyData) return null;

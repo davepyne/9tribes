@@ -149,6 +149,19 @@ export class MapSceneInput {
       return;
     }
 
+    // Submerge targeting mode: click valid waterway hex to teleport
+    if (selectedUnitId && state.actions.targetingMode === 'submerge') {
+      if (state.actions.submergeHexes.some((hex) => hex.key === key)) {
+        this.controller.dispatch({
+          type: 'submerge',
+          unitId: selectedUnitId,
+          destination: { q: coord.q, r: coord.r },
+        });
+        this.controller.dispatch({ type: 'set_targeting_mode', mode: 'move' });
+      }
+      return;
+    }
+
     if (clickedUnit && !clickedUnit.isActiveFaction && selectedUnitId) {
       const attackTarget = state.actions.attackTargets.find((t) => t.unitId === clickedUnit.id);
       if (attackTarget) {

@@ -11,13 +11,14 @@ export type { Prototype, UnitStats } from '../features/prototypes/types.js';
 export type { Improvement } from '../features/improvements/types.js';
 export type { ResearchState, ResearchUnlock } from '../features/research/types.js';
 export type { FactionEconomy, ResourceYield, TerrainYieldDef } from '../features/economy/types.js';
+export type { ZoneEffect, ZoneEffectType } from '../features/zoneEffects/types.js';
 
 // Re-export IDs
-export type { FactionId, UnitId, CityId, VillageId, PrototypeId, ImprovementId, ChassisId, ComponentId, ResearchNodeId } from '../types.js';
+export type { FactionId, UnitId, CityId, VillageId, PrototypeId, ImprovementId, ChassisId, ComponentId, ResearchNodeId, ZoneEffectId } from '../types.js';
 export type { HexCoord } from '../types.js';
 
 // Import for GameState composition
-import type { FactionId, UnitId, CityId, VillageId, PrototypeId, ImprovementId } from '../types.js';
+import type { FactionId, UnitId, CityId, VillageId, PrototypeId, ImprovementId, ZoneEffectId } from '../types.js';
 import type { Faction } from '../features/factions/types.js';
 import type { Unit } from '../features/units/types.js';
 import type { City } from '../features/cities/types.js';
@@ -26,6 +27,7 @@ import type { Prototype } from '../features/prototypes/types.js';
 import type { Improvement } from '../features/improvements/types.js';
 import type { ResearchState } from '../features/research/types.js';
 import type { FactionEconomy } from '../features/economy/types.js';
+import type { ZoneEffect } from '../features/zoneEffects/types.js';
 import type { GameMap } from '../world/map/types.js';
 import type { FactionStrategy } from '../systems/factionStrategy.js';
 import type { TransportMap } from '../systems/transportSystem.js';
@@ -51,6 +53,13 @@ export interface GameState {
   factionStrategies: ReadonlyMap<FactionId, FactionStrategy>;
   poisonTraps: ReadonlyMap<string, { damage: number; slow: number; ownerFactionId: FactionId }>;
   contaminatedHexes: ReadonlySet<string>;
+  /**
+   * Map-level effects (Maelstrom, Toxic Bloom, …) keyed by ZoneEffectId. Each
+   * effect occupies one or more hexes and ticks per-round. See
+   * src/features/zoneEffects/types.ts for the data shape and
+   * src/systems/zoneEffectSystem.ts for the lifecycle/query helpers.
+   */
+  zoneEffects: ReadonlyMap<ZoneEffectId, ZoneEffect>;
   transportMap: TransportMap;
   villageCaptureCooldowns: VillageCaptureCooldownMap;
   fogState: ReadonlyMap<FactionId, FactionFogState>;

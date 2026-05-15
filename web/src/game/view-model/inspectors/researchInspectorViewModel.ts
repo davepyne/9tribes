@@ -16,7 +16,7 @@ import type {
 } from '../../types/clientState';
 import HYBRID_RECIPES from '../../../../../src/content/base/hybrid-recipes.json';
 import SIGNATURE_ABILITIES from '../../../../../src/content/base/signatureAbilities.json';
-import ABILITY_DOMAINS from '../../../../../src/content/base/ability-domains.json';
+import { ABILITY_DOMAINS } from '../../../../../src/content/domains/index.js';
 import { getFaction, getResearch, getResearchProgress, isResearchNodeCompleted } from '../../stateAccess.js';
 
 type UnlockEntry = { type: 'component' | 'chassis' | 'improvement' | 'recipe'; id: string; name: string };
@@ -71,8 +71,7 @@ function getUnitUnlocksForNode(
 }
 
 function getNativeFactionForDomain(domainId: string): string {
-  const domain = (ABILITY_DOMAINS.domains as Record<string, { nativeFaction?: string }>)[domainId];
-  return domain?.nativeFaction ?? '';
+  return ABILITY_DOMAINS[domainId]?.nativeFaction ?? '';
 }
 
 export function buildResearchInspectorViewModel(

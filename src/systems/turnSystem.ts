@@ -2,6 +2,8 @@
 import type { GameState, Faction } from '../game/types.js';
 import type { FactionId, UnitId } from '../types.js';
 import type { Unit } from '../features/units/types.js';
+import { tickZoneEffectLifetimes } from './zoneEffectSystem.js';
+import { detectAndSpawnToxicBlooms, cleanseToxicBlooms } from './toxicBloomSystem.js';
 
 /**
  * Activation state for alternating unit activation.
@@ -37,12 +39,18 @@ function resetFactionUnitsMoves(
   const newUnits = new Map(units);
   for (const [unitId, unit] of units) {
     if (unit.factionId === factionId) {
+      const staggerPenalty = unit.nextTurnMovePenalty ?? 0;
       newUnits.set(unitId, {
         ...unit,
-        movesRemaining: unit.maxMoves,
+        movesRemaining: Math.max(0, unit.maxMoves - staggerPenalty),
         attacksRemaining: 1,
         status: 'ready',
         enteredZoCThisActivation: false,
+        nextTurnMovePenalty: undefined,
+        attackedTargetsThisTurn: [],
+        lastStandUsedThisTurn: undefined,
+        killChainCountThisTurn: undefined,
+        woundsReceivedThisTurn: undefined,
       });
     }
   }
@@ -102,11 +110,23 @@ export function advanceTurn(gameState: GameState): GameState {
   if (!nextFactionId) return gameState; // No factions
   
   const isNewRound = nextFactionId === getFirstFactionId(factions);
-  
+
   const newUnits = resetFactionUnitsMoves(gameState.units, nextFactionId);
-  
+
+  // Tick zone-effect lifetimes once per round, on rollover. Permanent effects
+  // (turnsRemaining === -1) are untouched; expired effects are removed.
+  // Then run the Toxic Bloom passes: cleanse Druid-occupied blooms, then
+  // detect new Bloom spawns from poison clusters. Detection runs AFTER the
+  // tick + cleanse so a hex freed this round can host a fresh Bloom.
+  let tickedState = gameState;
+  if (isNewRound) {
+    tickedState = tickZoneEffectLifetimes(tickedState);
+    tickedState = cleanseToxicBlooms(tickedState);
+    tickedState = detectAndSpawnToxicBlooms(tickedState);
+  }
+
   return {
-    ...gameState,
+    ...tickedState,
     round: isNewRound ? gameState.round + 1 : gameState.round,
     turnNumber: gameState.turnNumber + 1,
     activeFactionId: nextFactionId,

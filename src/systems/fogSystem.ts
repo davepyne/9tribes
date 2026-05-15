@@ -7,6 +7,9 @@ import type { Unit } from '../features/units/types.js';
 import type { Prototype } from '../features/prototypes/types.js';
 import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import { isUnitRiverStealthed } from './factionIdentitySystem.js';
+import { resolveEffectiveSynergies } from './synergyRuntime.js';
+import { isWaterTerrain } from './terrainUtils.js';
+import { getUnitTransport } from './transportSystem.js';
 
 // --- Types ---
 export type HexVisibility = 'hidden' | 'explored' | 'visible';
@@ -78,6 +81,47 @@ export function isUnitEffectivelyStealthed(
   const terrainId = state.map?.tiles.get(hexToKey(unit.position))?.terrain;
   if (isUnitRiverStealthed(faction, terrainId ?? '')) {
     return true;
+  }
+
+  // Nature's Veil (nature_healing+river_stealth): adjacent stealthed ally shares stealth
+  if (faction) {
+    const prototype = state.prototypes.get(unit.prototypeId);
+    const tags = prototype?.tags ?? [];
+    const synergies = resolveEffectiveSynergies(faction, tags);
+    for (const syn of synergies) {
+      for (const eff of syn.effects) {
+        if (eff.kind === 'statMod') {
+          const sm = eff as Extract<typeof eff, { kind: 'statMod' }>;
+          if (sm.stat === 'stealthAuraShareRadius' && sm.value > 0) {
+            // Check if a nearby stealthed ally shares stealth within radius
+            for (const sourceId of faction.unitIds) {
+              if (sourceId === unit.id) continue;
+              const source = state.units.get(sourceId);
+              if (!source || source.hp <= 0 || !source.isStealthed) continue;
+              if (hexDistance(source.position, unit.position) <= sm.value) return true;
+            }
+          }
+        }
+      }
+    }
+
+    // Silent Landing (tidal_warfare+river_stealth): transported troops gain stealth
+    // Check if unit is embarked on a stealthed naval transport
+    if (state.transportMap) {
+      const transportState = getUnitTransport(unit.id, state.transportMap);
+      if (transportState) {
+        const transportUnit = state.units.get(transportState.transportId);
+        if (transportUnit && transportUnit.isStealthed && transportUnit.hp > 0) {
+          const transportProto = state.prototypes.get(transportUnit.prototypeId);
+          const transportTags = transportProto?.tags ?? [];
+          const transportSynergies = resolveEffectiveSynergies(faction, transportTags);
+          const hasTransportedStealth = transportSynergies.some(s =>
+            s.effects.some(e => e.kind === 'setFlag' && (e as { flag: string }).flag === 'transportedTroopsStealth')
+          );
+          if (hasTransportedStealth) return true;
+        }
+      }
+    }
   }
 
   return false;
@@ -163,6 +207,46 @@ export function calculateVisibility(state: GameState, factionId: FactionId): Fac
       const visibleHexes = getHexesInRange(village.position, VILLAGE_VISIBILITY_RADIUS);
       for (const hex of visibleHexes) {
         newVisibleKeys.add(hexToKey(hex));
+      }
+    }
+  }
+
+  // Nomad Network (camel_adaptation+camel_adaptation): camel units within range share vision
+  let caravanRelayRange = 0;
+  for (const camelPos of camelUnitPositions) {
+    if (caravanRelayRange > 0) break; // Only need to compute once per faction
+    for (const unitId of faction.unitIds) {
+      const u = state.units.get(unitId);
+      if (!u || u.hp <= 0) continue;
+      const proto = state.prototypes.get(u.prototypeId);
+      if (proto?.chassisId !== 'camel_frame') continue;
+      const tags = proto?.tags ?? [];
+      const syns = resolveEffectiveSynergies(faction, tags);
+      for (const syn of syns) {
+        for (const eff of syn.effects) {
+          if (eff.kind === 'statMod') {
+            const sm = eff as Extract<typeof eff, { kind: 'statMod' }>;
+            if (sm.stat === 'caravanRelayVisionRange') {
+              caravanRelayRange = Math.max(caravanRelayRange, sm.value);
+            }
+          }
+        }
+      }
+      if (caravanRelayRange > 0) break;
+    }
+  }
+  if (caravanRelayRange > 0 && camelUnitPositions.length >= 2) {
+    // Each camel sees what other camels within relay range see
+    for (const camelPos of camelUnitPositions) {
+      for (const otherCamelPos of camelUnitPositions) {
+        if (hexDistance(camelPos, otherCamelPos) <= caravanRelayRange) {
+          // Extend visibility around the other camel
+          const relayRadius = UNIT_VISIBILITY_RADIUS;
+          const relayHexes = getHexesInRange(otherCamelPos, relayRadius);
+          for (const hex of relayHexes) {
+            newVisibleKeys.add(hexToKey(hex));
+          }
+        }
       }
     }
   }

@@ -1,0 +1,66 @@
+/**
+ * Faction-scoped tuning values for emergent rules. NOT for per-combat effects.
+ * Per-combat effects live in each rule's `effects: PrimitiveEffect[]` array in
+ * `src/content/synergies/index.ts` and are resolved by the primitive dispatcher.
+ * Adding a key here that duplicates a primitive's value violates Invariant 3.
+ */
+export const EMERGENT_PARAMS = {
+  terrain_lord: {
+    nativeTerrainDamageBonus: 0.5,
+    doubleChargeRangeInNativeTerrain: true,
+    terraformCharges: 3,
+  },
+  terrain_assassin: {
+    terrainTypes: ['desert', 'coast', 'hill'],
+  },
+  standing_stone: {
+    anchoredAuraRadius: 4,
+    anchoredDefenseBonus: 0.3,
+    anchoredHealPerTurn: 5,
+    anchoredSelfRegen: 8,
+    anchoredAdjacentDamage: 2,
+    damageSharePercent: 0.5,
+    tarPitMovementPenalty: 2,
+    marchAuraRadius: 1,
+    marchDefenseBonus: 0.15,
+    marchHealPerTurn: 2,
+  },
+  ghost_army: {
+    phaseDistance: 4,
+    killChainRedeployRange: 99,
+    phaseAlliesMovementBonus: 2,
+  },
+  slave_empire: {
+    captureAuraRadius: 2,
+    captureChanceBonus: 0.2,
+    slaveProductionBonus: 0.5,
+  },
+  raid_camp: {
+    campPlacementRange: 5,
+    campDuration: 2,
+    campStealthDuration: 1,
+    campMovementBonus: 2,
+    campEnemyRadius: 3,
+    campEnemyDefensePenalty: 0.25,
+    captureBonus: 0.3,
+  },
+  poison_shadow: {
+    stealthPoisonStacks: 3,
+    retreatPoisonCloud: true,
+    poisonCloudDamage: 2,
+  },
+  iron_turtle: {
+    crushingZoneRadius: 3,
+    crushingZoneDamage: 2,
+    crushingZoneMovementPenalty: 1,
+    damageReflection: 0.5,
+    ignoreZoc: true,
+  },
+  many_faced: {
+    bulwarkDefense: 0.4,
+    bulwarkReflection: 0.25,
+    predatorDamage: 0.4,
+    predatorRangeBonus: 1,
+    phantomMovementBonus: 1,
+  },
+} as const;

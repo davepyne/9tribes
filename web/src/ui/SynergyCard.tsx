@@ -19,7 +19,7 @@ export type EmergentRuleData = {
   domainSets?: Record<string, string[]>;
   mobilityDomains?: string[];
   combatDomains?: string[];
-  effect: { description: string };
+  description: string;
   friendlyFlavor: string;
   enemyFlavor: string;
 };
@@ -457,9 +457,7 @@ export const SynergyCard = React.memo(function SynergyCard(props: SynergyCardPro
   const prose = isFriendly
     ? synergy.friendlyFlavor
     : (tier >= 1 ? synergy.enemyFlavor : '');
-  const mechanics = isPairSynergy(synergy)
-    ? synergy.description
-    : synergy.effect?.description ?? '';
+  const mechanics = synergy.description;
 
   const obscured = !isFriendly && tier < 2;
   const inactive = isFriendly && 'inactive' in props ? props.inactive : false;

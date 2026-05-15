@@ -1,4 +1,4 @@
-import { getNeighbors, hexDistance, hexToKey } from '../../core/grid.js';
+import { getNeighbors, hexDistance, hexLineAwayFrom, hexToKey } from '../../core/grid.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { Unit } from '../../features/units/types.js';
 import type { GameState, UnitId } from '../../game/types.js';
@@ -29,7 +29,8 @@ import {
   calculateSynergyDefenseBonus,
   resolveEffectiveSynergies,
 } from '../synergyRuntime.js';
-import { isCoverTerrain } from '../terrainUtils.js';
+import { isCoverTerrain, isWaterTerrain } from '../terrainUtils.js';
+import { getZoneEffectsAtHex } from '../zoneEffectSystem.js';
 
 import type {
   CombatActionEffect,
@@ -220,6 +221,9 @@ export function previewCombatAction(
   if (attackerDoctrine?.antiFortificationEnabled && (defender.preparedAbility === 'brace' || defenderOnFort)) {
     situationalAttackModifier += 0.2;
   }
+  if (attackerDoctrine?.damageBonusVsElevationEnabled && (defenderTerrainId === 'hill' || defenderTerrainId === 'mountain')) {
+    situationalAttackModifier += 0.2;
+  }
   if (attackerDoctrine?.chargeRoutedBonusEnabled && isChargeAttack && defender.routed) {
     situationalAttackModifier += 0.5;
   }
@@ -236,18 +240,54 @@ export function previewCombatAction(
       chargeMomentumTriggered = true;
     }
   }
+  // Charge T3 native — chain amplification: +10% damage per friendly unit in charge line
+  let chargeChainBonusAmount = 0;
+  if (isChargeAttack && attackerDoctrine?.chargeChainEnabled) {
+    const hexesMoved = attacker.maxMoves - attacker.movesRemaining;
+    if (hexesMoved > 0) {
+      const chargePath = hexLineAwayFrom(attacker.position, defender.position, hexesMoved);
+      let chainAllies = 0;
+      for (const pathHex of chargePath) {
+        const pathUnitId = getUnitAtHex(state, pathHex);
+        if (!pathUnitId || pathUnitId === attackerId) continue;
+        const pathUnit = state.units.get(pathUnitId);
+        if (pathUnit && pathUnit.factionId === attacker.factionId && pathUnit.hp > 0) {
+          chainAllies++;
+        }
+      }
+      chainAllies = Math.min(chainAllies, 5);
+      chargeChainBonusAmount = chainAllies * 0.1;
+      situationalAttackModifier += chargeChainBonusAmount;
+    }
+  }
+  // Charge T1 first-attack bonus: +20% on first attack of combat (foreign) or per-target (native)
+  let firstAttackTriggered = false;
+  if (attackerDoctrine?.forcedMarchEnabled && isChargeAttack) {
+    const alreadyAttacked = attacker.attackedTargetsThisTurn ?? [];
+    const isFreshTarget = !alreadyAttacked.includes(defenderId);
+    const isFirstAttack = alreadyAttacked.length === 0;
+    if (attackerDoctrine.firstAttackPerTargetEnabled ? isFreshTarget : isFirstAttack) {
+      situationalAttackModifier += 0.2;
+      firstAttackTriggered = true;
+    }
+  }
   if (defenderDoctrine?.shieldWallEnabled) {
     const defenderIsInfantry = defenderPrototype.derivedStats.role === 'melee'
       && !(defenderPrototype.tags?.includes('cavalry') || defenderPrototype.tags?.includes('elephant'));
     if (attackerIsRanged && defenderIsInfantry) {
       const supportRadius = defenderDoctrine.fortressTranscendenceEnabled ? 2 : 1;
-      const hasSupportAlly = Array.from(state.units.values()).some((neighbor) =>
-        neighbor.id !== defender.id
-        && neighbor.factionId === defender.factionId
-        && neighbor.hp > 0
-        && hexDistance(neighbor.position, defender.position) <= supportRadius);
-      if (hasSupportAlly) {
-        situationalDefenseModifier += defenderDoctrine.fortressAuraUpgradeEnabled ? 0.25 : 0.15;
+      let adjacentAllyCount = 0;
+      for (const neighbor of state.units.values()) {
+        if (neighbor.id !== defender.id
+          && neighbor.factionId === defender.factionId
+          && neighbor.hp > 0
+          && hexDistance(neighbor.position, defender.position) <= supportRadius) {
+          adjacentAllyCount++;
+        }
+      }
+      if (adjacentAllyCount > 0) {
+        const shieldwallBonus = adjacentAllyCount >= 2 ? 0.25 : 0.15;
+        situationalDefenseModifier += defenderDoctrine.fortressAuraUpgradeEnabled ? 0.25 : shieldwallBonus;
       }
     }
   }
@@ -288,9 +328,9 @@ export function previewCombatAction(
       isStealthAttack: unit.id === attacker.id ? attackerWasStealthed : isUnitEffectivelyStealthed(state, unit),
       isRetreat: false,
       isStealthed: isUnitEffectivelyStealthed(state, unit),
-      position: { x: unit.position.q, y: unit.position.r },
       attackerPosition: { x: unit.position.q, y: unit.position.r },
       defenderPosition: { x: enemyUnit.position.q, y: enemyUnit.position.r },
+      attackerLearnedDomains: faction?.learnedDomains ?? [],
     };
 
     return applyCombatSynergies(context, synergies, triple);
@@ -300,10 +340,51 @@ export function previewCombatAction(
   const defenderSynergyResult = resolveSynergies(defender, defenderPrototype, defenderFaction, attacker, attackerPrototype);
   const synergyAttackModifier = calculateSynergyAttackBonus(attackerSynergyResult);
   const synergyDefenseModifier = calculateSynergyDefenseBonus(defenderSynergyResult);
-  situationalAttackModifier += synergyAttackModifier + attackerSynergyResult.damage;
-  situationalDefenseModifier += synergyDefenseModifier + defenderSynergyResult.defense;
-  if (attackerSynergyResult.coastalNomadDefense > 0 && ['coast', 'river'].includes(attackerTerrainId)) {
-    situationalDefenseModifier += attackerSynergyResult.coastalNomadDefense;
+  situationalAttackModifier += synergyAttackModifier + attackerSynergyResult.getStat('damage');
+  situationalDefenseModifier += synergyDefenseModifier + defenderSynergyResult.getStat('defense');
+  const beachRaidDamageBonus = attackerSynergyResult.getStat('beachRaidDamageBonus');
+  if (beachRaidDamageBonus > 0 && isWaterTerrain(attackerTerrainId)) {
+    situationalAttackModifier += beachRaidDamageBonus;
+  }
+
+  // Layered Defense (fortress+fortress): two adjacent fortress units halve ranged attacks against them
+  if (defenderSynergyResult.hasFlag('formationWallActive') && attackerIsRanged) {
+    for (const hex of getNeighbors(defender.position)) {
+      const neighborUnitId = getUnitAtHex(state, hex);
+      if (!neighborUnitId || neighborUnitId === defenderId) continue;
+      const neighborUnit = state.units.get(neighborUnitId);
+      if (!neighborUnit || neighborUnit.factionId !== defender.factionId || neighborUnit.hp <= 0) continue;
+      const neighborProto = state.prototypes.get(neighborUnit.prototypeId);
+      if (neighborProto?.tags?.includes('fortress')) {
+        situationalAttackModifier -= defenderSynergyResult.getStat('formationWallRangedReduction');
+        break;
+      }
+    }
+  }
+
+  // Mobile Stronghold aura (fortress+camel_adaptation): adjacent allies gain defense
+  const mobileStrongholdAlliedDefenseBonus = defenderSynergyResult.getStat('mobileStrongholdAlliedDefenseBonus');
+  if (mobileStrongholdAlliedDefenseBonus > 0) {
+    for (const hex of getNeighbors(defender.position)) {
+      const neighborUnitId = getUnitAtHex(state, hex);
+      if (!neighborUnitId || neighborUnitId === defenderId) continue;
+      const neighborUnit = state.units.get(neighborUnitId);
+      if (!neighborUnit || neighborUnit.factionId !== defender.factionId || neighborUnit.hp <= 0) continue;
+      const neighborProto = state.prototypes.get(neighborUnit.prototypeId);
+      if (neighborProto?.tags?.includes('fortress') || neighborProto?.tags?.includes('camel')) {
+        situationalDefenseModifier += mobileStrongholdAlliedDefenseBonus;
+        break;
+      }
+    }
+  }
+
+  // Raid camp: defender in a raid_camp zone owned by attacker's faction takes defense penalty
+  const raidCampEffects = getZoneEffectsAtHex(state, defender.position);
+  const inRaidCamp = raidCampEffects.some(
+    (e: { type: string; ownerFactionId: string }) => e.type === 'raid_camp' && e.ownerFactionId === attacker.factionId,
+  );
+  if (inRaidCamp) {
+    situationalDefenseModifier -= 0.25;
   }
 
   const attackerChassis = registry.getChassis(attackerPrototype.chassisId);
@@ -315,6 +396,19 @@ export function previewCombatAction(
   if (attackerDoctrine?.amphibiousAssaultEnabled) {
     if (attackerTerrainId === 'coast' || attackerTerrainId === 'river') {
       situationalAttackModifier += 0.15;
+    }
+  }
+
+  // Juggernaut tidal_warfare signature: bonus damage when adjacent to water
+  const emergentBonusDamageAdjacentWater = attackerSynergyResult.getStat('emergentBonusDamageAdjacentWater');
+  if (emergentBonusDamageAdjacentWater > 0) {
+    const adjacentHexes = getNeighbors(attacker.position);
+    const adjacentToWater = adjacentHexes.some(h => {
+      const t = state.map?.tiles.get(hexToKey(h))?.terrain;
+      return t === 'coast' || t === 'river' || isWaterTerrain(t ?? 'plains');
+    }) || isWaterTerrain(attackerTerrainId);
+    if (adjacentToWater) {
+      situationalAttackModifier += emergentBonusDamageAdjacentWater * 0.1;
     }
   }
 
@@ -344,19 +438,21 @@ export function previewCombatAction(
     retaliationDamageMultiplier,
     isCharge: isChargeAttack,
     isStealthed: attackerWasStealthed,
-    chargeShield: attackerSynergyResult.chargeShield,
-    antiDisplacement: defenderSynergyResult.antiDisplacement || defenderDoctrine?.armorPenetrationEnabled === true || attackerDoctrine?.chargeTranscendenceEnabled === true,
-    stealthChargeMultiplier: attackerSynergyResult.stealthChargeMultiplier,
-    accuracyDebuff: attackerSynergyResult.sandstormAccuracyDebuff,
+    chargeShield: attackerSynergyResult.hasFlag('chargeShield'),
+    antiDisplacement: defenderSynergyResult.hasFlag('antiDisplacement') || defenderDoctrine?.armorPenetrationEnabled === true || defenderDoctrine?.heavyTranscendenceEnabled === true,
+    stealthChargeMultiplier: attackerSynergyResult.getStat('stealthChargeMultiplier'),
+    accuracyDebuff: attackerSynergyResult.getStat('sandstormAccuracyDebuff'),
     forestFirstStrike,
-    armorPenetration: (attackerDoctrine?.chargeTranscendenceEnabled ? 1.0 : attackerDoctrine?.armorPenetrationEnabled ? 0.5 : 0) + attackerSynergyResult.armorPiercing,
+    // Heavy Hitter native T3 (Arctic Wardens) — 100% armor pen. Foreign T3 — 50%.
+    // Previously cross-wired to chargeTranscendenceEnabled; corrected here.
+    armorPenetration: (attackerDoctrine?.heavyTranscendenceEnabled ? 1.0 : attackerDoctrine?.armorPenetrationEnabled ? 0.5 : 0) + attackerSynergyResult.getStat('armorPiercing') + attackerSynergyResult.getStat('emergentArmorPierce'),
   });
 
   let totalKnockbackDistance = result.defenderKnockedBack ? result.knockbackDistance : 0;
   if (result.defenderKnockedBack && attackerDoctrine?.elephantStampede2Enabled) {
     totalKnockbackDistance = 2;
   }
-  totalKnockbackDistance += attackerSynergyResult.knockbackDistance;
+  totalKnockbackDistance += attackerSynergyResult.getStat('knockbackDistance');
 
   const triggeredEffects: CombatActionEffect[] = [];
 
@@ -402,6 +498,12 @@ export function previewCombatAction(
   if (chargeMomentumTriggered) {
     pushCombatEffect(triggeredEffects, 'Charge Momentum', 'Long charge added 15% bonus damage.', 'ability');
   }
+  if (firstAttackTriggered) {
+    pushCombatEffect(triggeredEffects, 'First Strike', 'First attack bonus dealt +20% damage.', 'ability');
+  }
+  if (chargeChainBonusAmount > 0) {
+    pushCombatEffect(triggeredEffects, 'Chain Charge', `Allies in charge line amplified damage by ${formatPercent(chargeChainBonusAmount)}.`, 'ability');
+  }
   if (coldHardenedTriggered) {
     pushCombatEffect(triggeredEffects, 'Cold Hardened', 'Arctic defender hardened stance for 10% defense.', 'ability');
   }
@@ -430,32 +532,36 @@ export function previewCombatAction(
       pushCombatEffect(triggeredEffects, effect.label, effect.detail, 'synergy');
     }
   }
-  if (attackerSynergyResult.damage > 0) {
-    pushCombatEffect(triggeredEffects, 'Synergy Damage', `Synergy added ${formatPercent(attackerSynergyResult.damage)} to attack power.`, 'synergy');
+  const synergyDamage = attackerSynergyResult.getStat('damage');
+  if (synergyDamage > 0) {
+    pushCombatEffect(triggeredEffects, 'Synergy Damage', `Synergy added ${formatPercent(synergyDamage)} to attack power.`, 'synergy');
   }
-  if (defenderSynergyResult.defense > 0) {
-    pushCombatEffect(triggeredEffects, 'Synergy Defense', `Synergy added ${formatPercent(defenderSynergyResult.defense)} to defense.`, 'synergy');
+  const synergyDefense = defenderSynergyResult.getStat('defense');
+  if (synergyDefense > 0) {
+    pushCombatEffect(triggeredEffects, 'Synergy Defense', `Synergy added ${formatPercent(synergyDefense)} to defense.`, 'synergy');
   }
-  if (attackerSynergyResult.armorPiercing > 0) {
-    pushCombatEffect(triggeredEffects, 'Armor Pierce', `Synergy pierced ${(attackerSynergyResult.armorPiercing * 100).toFixed(0)}% of defender armor.`, 'synergy');
+  const synergyArmorPiercing = attackerSynergyResult.getStat('armorPiercing');
+  if (synergyArmorPiercing > 0) {
+    pushCombatEffect(triggeredEffects, 'Armor Pierce', `Synergy pierced ${(synergyArmorPiercing * 100).toFixed(0)}% of defender armor.`, 'synergy');
   }
-  if (attackerSynergyResult.instantKill) {
+  if (attackerSynergyResult.hasFlag('instantKill')) {
     pushCombatEffect(triggeredEffects, 'Lethal Ambush', 'Synergy enables a lethal strike bypassing all defenses.', 'synergy');
   }
-  if (attackerSynergyResult.stunDuration > 0) {
-    pushCombatEffect(triggeredEffects, 'Stun', `Synergy stuns the target for ${attackerSynergyResult.stunDuration} turn(s).`, 'synergy');
+  const stunDuration = attackerSynergyResult.getStat('stunDuration');
+  if (stunDuration > 0) {
+    pushCombatEffect(triggeredEffects, 'Stun', `Synergy stuns the target for ${stunDuration} turn(s).`, 'synergy');
   }
-  if (defenderSynergyResult.damageReflection > 0) {
-    pushCombatEffect(triggeredEffects, 'Damage Reflection', `Synergy reflects ${(defenderSynergyResult.damageReflection * 100).toFixed(0)}% of damage.`, 'synergy');
+  const damageReflection = defenderSynergyResult.getStat('damageReflection');
+  if (damageReflection > 0) {
+    pushCombatEffect(triggeredEffects, 'Damage Reflection', `Synergy reflects ${(damageReflection * 100).toFixed(0)}% of damage.`, 'synergy');
   }
-  if (attackerSynergyResult.aoeDamage > 0) {
-    pushCombatEffect(triggeredEffects, 'AoE Burst', `Synergy area damage: ${attackerSynergyResult.aoeDamage} to adjacent enemies.`, 'synergy');
+  const aoeDamage = attackerSynergyResult.getStat('aoeDamage');
+  if (aoeDamage > 0) {
+    pushCombatEffect(triggeredEffects, 'AoE Burst', `Synergy area damage: ${aoeDamage} to adjacent enemies.`, 'synergy');
   }
-  if (attackerSynergyResult.formationCrushStacks > 0) {
-    pushCombatEffect(triggeredEffects, 'Formation Crush', `Synergy adds ${attackerSynergyResult.formationCrushStacks} crush stack(s).`, 'synergy');
-  }
-  if (attackerSynergyResult.sandstormAuraRadius > 0) {
-    pushCombatEffect(triggeredEffects, 'Sandstorm Aura', `Synergy creates a ${attackerSynergyResult.sandstormAuraRadius}-hex accuracy debuff aura.`, 'synergy');
+  const sandstormAuraRadius = attackerSynergyResult.getStat('sandstormAuraRadius');
+  if (sandstormAuraRadius > 0) {
+    pushCombatEffect(triggeredEffects, 'Sandstorm Aura', `Synergy creates a ${sandstormAuraRadius}-hex accuracy debuff aura.`, 'synergy');
   }
 
   return createCombatActionPreviewRecord(
@@ -471,91 +577,17 @@ export function previewCombatAction(
       defenderTerrainId,
       isChargeAttack,
       chargeAttackBonus,
+      chargeChainBonusAmount,
+      chargeSplashEnabled: attackerDoctrine?.chargeSplashEnabled ?? false,
       synergyAttackModifier,
       synergyDefenseModifier,
       improvementDefenseBonus,
       wallDefenseBonus,
       totalKnockbackDistance,
-      poisonTrapPositions: attackerSynergyResult.poisonTrapDamage > 0
-        ? [{ q: attacker.position.q, r: attacker.position.r }]
-        : attackerSynergyResult.poisonTrapPositions.map((position) => ({ q: position.x, r: position.y })),
-      poisonTrapDamage: attackerSynergyResult.poisonTrapDamage,
-      poisonTrapSlow: attackerSynergyResult.poisonTrapSlow,
-      healOnRetreatAmount: attackerSynergyResult.healOnRetreatAmount,
-      sandstormDamage: attackerSynergyResult.sandstormDamage,
-      contaminateActive: attackerSynergyResult.contaminateActive,
-      frostbiteColdDoT: attackerSynergyResult.frostbiteColdDoT,
-      frostbiteSlow: attackerSynergyResult.frostbiteSlow,
-      attackerSynergyEffects: attackerSynergyResult.additionalEffects,
-      defenderSynergyEffects: defenderSynergyResult.additionalEffects,
       sneakAttackTriggered,
       stampedeTriggered,
-      // Phase 4: emergent rule fields
-      emergentSustainHealPercent: attackerSynergyResult.emergentSustainHealPercent,
-      emergentSustainMinHp: attackerSynergyResult.emergentSustainMinHp,
-      emergentSmiteBonus: attackerSynergyResult.emergentSmiteBonus,
-      emergentPermanentStealthTerrains: attackerSynergyResult.emergentPermanentStealthTerrains,
-      emergentCaptureBonus: attackerSynergyResult.emergentCaptureBonus,
-      emergentDesertCaptureBonus: attackerSynergyResult.emergentDesertCaptureBonus,
-      // Juggernaut per-domain signature fields
-      emergentPoisonPerHit: attackerSynergyResult.emergentPoisonPerHit,
-      emergentDamageReflection: attackerSynergyResult.emergentDamageReflection,
-      emergentKnockbackOnKill: attackerSynergyResult.emergentKnockbackOnKill,
-      emergentDamageBehindPercent: attackerSynergyResult.emergentDamageBehindPercent,
-      emergentFreeReposition: attackerSynergyResult.emergentFreeReposition,
-      emergentArmorPierce: attackerSynergyResult.emergentArmorPierce,
-      emergentCaptureBelowHpPercent: attackerSynergyResult.emergentCaptureBelowHpPercent,
-      emergentBonusDamageAdjacentWater: attackerSynergyResult.emergentBonusDamageAdjacentWater,
-      emergentUndying: attackerSynergyResult.emergentUndying,
-      emergentIgnoreZoc: attackerSynergyResult.emergentIgnoreZoc,
-      // Iron Turtle expanded
-      emergentCrushZoneRadius: attackerSynergyResult.emergentCrushZoneRadius,
-      emergentCrushZoneMovementPenalty: attackerSynergyResult.emergentCrushZoneMovementPenalty,
-      // Many-Faced stance
-      emergentManyFacedStance: attackerSynergyResult.emergentManyFacedStance,
-      emergentManyFacedDefense: attackerSynergyResult.emergentManyFacedDefense,
-      emergentManyFacedReflection: attackerSynergyResult.emergentManyFacedReflection,
-      emergentManyFacedDamage: attackerSynergyResult.emergentManyFacedDamage,
-      emergentManyFacedRangeBonus: attackerSynergyResult.emergentManyFacedRangeBonus,
-      emergentManyFacedMovementBonus: attackerSynergyResult.emergentManyFacedMovementBonus,
-      // Phase 3A: direct combat effects
-      instantKill: attackerSynergyResult.instantKill,
-      lethalAmbushPoison: attackerSynergyResult.lethalAmbushPoison,
-      chargeCooldownWaived: attackerSynergyResult.chargeCooldownWaived,
-      formationCrushStacks: attackerSynergyResult.formationCrushStacks,
-      stunDuration: attackerSynergyResult.stunDuration,
-      armorPiercing: attackerSynergyResult.armorPiercing,
-      // Phase 3B: capture synergy modifiers
-      capturePoisonDamage: attackerSynergyResult.capturePoisonDamage,
-      capturePoisonStacks: attackerSynergyResult.capturePoisonStacks,
-      slaveDamageBonus: attackerSynergyResult.slaveDamageBonus,
-      slaveHealPenalty: attackerSynergyResult.slaveHealPenalty,
-      chargeCaptureChance: attackerSynergyResult.chargeCaptureChance,
-      retreatCaptureChance: attackerSynergyResult.retreatCaptureChance,
-      navalCaptureBonus: attackerSynergyResult.navalCaptureBonus,
-      stealthCaptureBonus: attackerSynergyResult.stealthCaptureBonus,
-      // Phase 3C: buff/aura/retreat effects
-      captureEscapePrevented: attackerSynergyResult.captureEscapePrevented,
-      heavyRetreatDamageReduction: attackerSynergyResult.heavyRetreatDamageReduction,
-      coastalNomadDefense: attackerSynergyResult.coastalNomadDefense,
-      coastalNomadSpeed: attackerSynergyResult.coastalNomadSpeed,
-      heavyNavalRamDamage: attackerSynergyResult.heavyNavalRamDamage,
-      slaveHealAmount: attackerSynergyResult.slaveHealAmount,
-      heavyRegenPercent: attackerSynergyResult.heavyRegenPercent,
-      terrainSlaveSpeed: attackerSynergyResult.terrainSlaveSpeed,
-      sandstormAuraRadius: attackerSynergyResult.sandstormAuraRadius,
-      sandstormAuraDebuff: attackerSynergyResult.sandstormAuraDebuff,
-      slaveArmyDamageBonus: attackerSynergyResult.slaveArmyDamageBonus,
-      slaveArmyDefensePenalty: attackerSynergyResult.slaveArmyDefensePenalty,
-      slaveCoercionDamageBonus: attackerSynergyResult.slaveCoercionDamageBonus,
-      heavyMassStacks: attackerSynergyResult.heavyMassStacks,
-      // Top-level synergy modifiers
-      synergyDamageBonus: attackerSynergyResult.damage,
-      synergyDefenseBonus: defenderSynergyResult.defense,
-      poisonStacks: attackerSynergyResult.poisonStacks,
-      damageReflection: defenderSynergyResult.damageReflection,
-      aoeDamage: attackerSynergyResult.aoeDamage,
-      witheringReduction: attackerSynergyResult.witheringReduction,
+      attackerSynergy: attackerSynergyResult,
+      defenderSynergy: defenderSynergyResult,
     },
   );
 }

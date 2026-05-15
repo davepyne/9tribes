@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
-import emergentRulesData from '../../../src/content/base/emergent-rules.json';
-import { validatePairSynergiesData, validateEmergentRulesData } from '../data/jsonValidators';
-import type { PairSynergy } from '../data/jsonValidators';
+import {
+  PAIR_SYNERGIES as PAIR_SYNERGIES_BACKEND,
+  EMERGENT_RULES as EMERGENT_RULES_BACKEND,
+} from '../../../src/content/synergies/index';
+import type { PairSynergy } from '../data/synergyDataTypes';
 import { SynergyCard } from './SynergyCard';
 import type { PairSynergyData, EmergentRuleData } from './SynergyCard';
 import { playSynergyUnlockSting } from '../app/audio/sfxManager';
@@ -20,21 +21,33 @@ type FactionSynergyState = BackendSynergyState & { id: string };
 
 // ── Typed data ──
 
-validatePairSynergiesData(pairSynergiesData);
-validateEmergentRulesData(emergentRulesData);
-
-const PAIR_SYNERGIES: PairSynergy[] = (pairSynergiesData as { pairSynergies: Array<{
-  id: string; name: string; domains: string[]; description: string;
-}> }).pairSynergies.map((s) => ({
+const PAIR_SYNERGIES: PairSynergy[] = PAIR_SYNERGIES_BACKEND.map((s) => ({
   id: s.id,
   name: s.name,
-  domains: s.domains,
+  domains: [...s.domains],
   description: s.description,
 }));
 
-const PAIR_SYNERGIES_FULL: PairSynergyData[] = (pairSynergiesData as { pairSynergies: PairSynergyData[] }).pairSynergies;
+const PAIR_SYNERGIES_FULL: PairSynergyData[] = PAIR_SYNERGIES_BACKEND.map((s) => ({
+  id: s.id,
+  name: s.name,
+  domains: [...s.domains],
+  description: s.description,
+  friendlyFlavor: s.friendlyFlavor,
+  enemyFlavor: s.enemyFlavor,
+}));
 
-const EMERGENT_RULES_FULL: EmergentRuleData[] = (emergentRulesData as unknown as { rules: EmergentRuleData[] }).rules;
+const EMERGENT_RULES_FULL: EmergentRuleData[] = EMERGENT_RULES_BACKEND.map((r) => ({
+  id: r.id,
+  name: r.name,
+  condition: r.condition,
+  domainSets: r.domainSets,
+  mobilityDomains: r.mobilityDomains,
+  combatDomains: r.combatDomains,
+  description: r.description,
+  friendlyFlavor: r.friendlyFlavor,
+  enemyFlavor: r.enemyFlavor,
+}));
 
 // ── Helpers ──
 
@@ -118,7 +131,7 @@ export function useSynergyUnlockDetector(
         }
         onDetect({
           synergies,
-          tripleStack: { id: rule.id, name: rule.name, description: rule.effect.description },
+          tripleStack: { id: rule.id, name: rule.name, description: rule.description },
         });
       }
     }

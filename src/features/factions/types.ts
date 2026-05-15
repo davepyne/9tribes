@@ -87,11 +87,15 @@ export interface Faction {
   combatRecord: CombatRecord;
   summonState?: SummonState;
   nativeDomain: string;
+  nativeDomains: string[];     // all domains treated as native for mechanical purposes
   learnedDomains: string[];
   activeTripleStack?: ActiveTripleStack;
   activeDoubleStack?: ActiveDoubleStack;    // native+foreign cross-pair (1 foreign domain eligible)
   activeNativeSelfPair?: ActiveSynergy;     // native self-pair, always active when native T3 done
   juggernautActive?: boolean;
+  manyFacedLastStance?: string;              // many_faced emergent: last combat stance (bulwark/predator/phantom)
+  terrainLordTerraformCharges?: number;      // terrain_lord emergent: charges for terraform ability
+  standingStoneStance?: 'anchored' | 'march'; // standing_stone emergent: current stance mode
   // Knowledge system tracking (Phase 5)
   exposureProgress: Record<string, number>;  // domainId -> current exposure points
   prototypeMastery: Record<string, number>;  // domainId -> count of prototypes built
@@ -100,7 +104,16 @@ export interface Faction {
   synergyEligibleDomains: string[];        // domains that activate pair/triple synergies (sacrifice + native only)
   // Home city for sacrifice mechanic - the faction's starting city
   homeCityId?: CityId;
+  // Strategic-action counters
+  bastionsBuilt: number;                    // fortress native T3 capstone: Hill Engineers may build up to 3 Bastions per game
+  maelstromsDeclared: number;               // tidal_warfare T3 capstone: once-per-game Maelstrom declaration
+  oasisDeclared: number;                    // camel_adaptation T3 native: once-per-game Oasis terrain conversion
+  slaveCaptureCount: number;                // slaving T3 native: total captures (triggers Captive Champion every 5)
 }
 
 export type DomainAcquisitionMethod = 'native' | 'sacrifice' | 'ecology' | 'exposure' | 'absorption';
+
+export function getNativeDomains(faction: { nativeDomain: string; nativeDomains?: string[] }): string[] {
+  return faction.nativeDomains ?? [faction.nativeDomain];
+}
 

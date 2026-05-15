@@ -257,6 +257,7 @@ describe('strategic AI', () => {
     const sourcePrototype = state.prototypes.get(source.prototypeId)!;
 
     hillFaction.nativeDomain = 'river_stealth';
+    hillFaction.nativeDomains = ['river_stealth'];
     hillFaction.learnedDomains = ['river_stealth'];
     hillResearch.completedNodes.push('river_stealth_t1' as never, 'river_stealth_t2' as never, 'river_stealth_t3' as never);
     state.prototypes.set(source.prototypeId, {

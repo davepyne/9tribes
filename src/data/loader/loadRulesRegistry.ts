@@ -20,7 +20,7 @@ import chassisData from '../../content/base/chassis.json';
 import componentsData from '../../content/base/components.json';
 import veteranLevelsData from '../../content/base/veteran-levels.json';
 import improvementsData from '../../content/base/improvements.json';
-import researchData from '../../content/base/research.json';
+import { RESEARCH_DOMAINS } from '../../content/domains/index.js';
 import hybridRecipesData from '../../content/base/hybrid-recipes.json';
 import economyData from '../../content/base/economy.json';
 import aiProfilesData from '../../content/base/ai-profiles.json';
@@ -37,7 +37,7 @@ export function loadRulesRegistry(overrides?: BalanceOverrides): RulesRegistry {
   const components = cloneData(componentsData) as Record<string, ComponentDef>;
   const veteranLevels = cloneData(veteranLevelsData) as Record<string, VeteranLevelDef>;
   const improvements = cloneData(improvementsData) as Record<string, ImprovementDef>;
-  const research = cloneData(researchData) as Record<string, ResearchDomainDef>;
+  const research = cloneData(RESEARCH_DOMAINS) as Record<string, ResearchDomainDef>;
   const hybridRecipes = cloneData(hybridRecipesData) as Record<string, HybridRecipeDef>;
   const terrainYields = cloneData(economyData) as Record<string, TerrainYieldDef>;
   const aiProfiles = cloneData(aiProfilesData) as AiProfilesDef;

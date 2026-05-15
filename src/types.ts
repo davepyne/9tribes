@@ -10,6 +10,7 @@ export type ChassisId = string & { readonly __brand: 'ChassisId' };
 export type ComponentId = string & { readonly __brand: 'ComponentId' };
 export type ResearchNodeId = string & { readonly __brand: 'ResearchNodeId' };
 export type VillageId = string & { readonly __brand: 'VillageId' };
+export type ZoneEffectId = string & { readonly __brand: 'ZoneEffectId' };
 
 // Square isometric grid coordinate. Property names q/r are preserved from the
 // old hex system to avoid touching every property access site.

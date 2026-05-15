@@ -1,4 +1,4 @@
-import abilityDomains from '../../../../src/content/base/ability-domains.json';
+import { getAbilityDomainById } from '../../../../src/content/domains/index.js';
 import { DOMAIN_SHORT_NAMES } from '../../data/domainMeta';
 
 export function formatDomainName(domainId: string): string {
@@ -13,6 +13,5 @@ export function formatNativeDomainName(domainId: string): string {
 }
 
 export function getDomainDescription(domainId: string): string | undefined {
-  const domain = (abilityDomains.domains as Record<string, { baseEffect?: { description?: string } }>)[domainId];
-  return domain?.baseEffect?.description;
+  return getAbilityDomainById(domainId)?.baseEffect.description;
 }

@@ -16,6 +16,8 @@ import {
 } from './synergyEffects.js';
 import { getNatureHealingAura } from './signatureAbilitySystem.js';
 import { resolveEffectiveSynergies } from './synergyRuntime.js';
+import { EMERGENT_PARAMS } from './emergentRuleParams.js';
+import { getZoneEffectsAtHex } from './zoneEffectSystem.js';
 
 const HEALING_CONFIG = {
   OWNED_TERRITORY: 0.10,
@@ -217,9 +219,19 @@ export function applyHealingForFaction(
 
     // E1 — Standing Stone emergent: faction units gain healPerTurn bonus from the aura
     const tripleStack = faction.activeTripleStack;
-    if (tripleStack?.emergentRule.effect.type === 'standing_stone') {
-      const stoneEffect = tripleStack.emergentRule.effect as import('./synergyEngine.js').EmergentEffect & { type: 'standing_stone' };
-      healRate += stoneEffect.anchoredHealPerTurn;
+    if (tripleStack?.emergentRule.id === 'standing_stone') {
+      const stance = faction.standingStoneStance ?? 'anchored';
+      healRate += stance === 'march'
+        ? EMERGENT_PARAMS.standing_stone.marchHealPerTurn
+        : EMERGENT_PARAMS.standing_stone.anchoredHealPerTurn;
+    }
+
+    // Poison Shadow: units inside an enemy poison cloud cannot heal
+    const inPoisonCloud = getZoneEffectsAtHex(gameState, unit.position).some(
+      e => e.type === 'poison_cloud' && e.ownerFactionId !== factionId && e.preventsHealing,
+    );
+    if (inPoisonCloud) {
+      healRate = 0;
     }
 
     // Withering: nearby enemies reduce healing
@@ -234,9 +246,12 @@ export function applyHealingForFaction(
           const enemyFaction = gameState.factions.get(neighborUnit.factionId);
           const neighborSynergies = resolveEffectiveSynergies(enemyFaction, neighborTags);
           for (const syn of neighborSynergies) {
-            if (syn.effect.type === 'withering') {
-              const reduction = (syn.effect as { healingReduction: number }).healingReduction;
-              healRate = Math.floor(healRate * (1 - reduction));
+            const witheringMod = syn.effects.find(
+              (e): e is Extract<typeof e, { kind: 'statMod' }> =>
+                e.kind === 'statMod' && e.stat === 'witheringReduction',
+            );
+            if (witheringMod) {
+              healRate = Math.floor(healRate * (1 - witheringMod.value));
               break;
             }
           }

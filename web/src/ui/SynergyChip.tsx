@@ -2,15 +2,13 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import type { ClientState } from '../game/types/clientState';
 import type { CapabilityPipViewModel } from '../game/types/clientState';
-import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
-import emergentRulesData from '../../../src/content/base/emergent-rules.json';
-import abilityDomainsData from '../../../src/content/base/ability-domains.json';
-import researchData from '../../../src/content/base/research.json';
+import { ALL_PAIR_SYNERGIES, ALL_EMERGENT_RULES, PAIR_SYNERGY_BY_ID, EMERGENT_RULE_BY_ID } from '../data/synergyLookup';
+import { ABILITY_DOMAINS, RESEARCH_DOMAINS, getAbilityDomainById } from '../../../src/content/domains/index.js';
 import { DOMAIN_COLORS, DOMAIN_ICONS, DOMAIN_NAMES } from '../data/domainMeta';
-import { SynergyCard, type TierDescriptions } from './SynergyCard';
+import { SynergyCard, type TierDescriptions, type PairSynergyData, type EmergentRuleData } from './SynergyCard';
 
-type PairSynergy = typeof pairSynergiesData.pairSynergies[number];
-type EmergentRule = typeof emergentRulesData.rules[number];
+type PairSynergy = PairSynergyData;
+type EmergentRule = EmergentRuleData;
 
 // Emergent rule descriptions for popup
 const EMERGENT_DESCRIPTIONS: Record<string, { effect: string; requirement: string }> = {
@@ -75,16 +73,23 @@ export function domainDisplayName(domainId: string): string {
 }
 
 export function domainBenefit(domainId: string): string {
-  return (abilityDomainsData.domains as Record<string, { baseEffect?: { description?: string } }>)[domainId]?.baseEffect?.description ?? '';
+  return getAbilityDomainById(domainId)?.baseEffect.description ?? '';
 }
 
-function buildTierDescriptions(domainId: string, capabilities: CapabilityPipViewModel[]): TierDescriptions {
-  const nodes = (researchData as Record<string, { nodes: Record<string, { qualitativeEffect?: { description?: string } }> }>)[domainId]?.nodes;
+function buildTierDescriptions(domainId: string, capabilities: CapabilityPipViewModel[], nativeDomain: string): TierDescriptions {
+  const nodes = RESEARCH_DOMAINS[domainId]?.nodes;
   const cap = capabilities.find((c) => c.domainId === domainId);
+  const isNative = domainId === nativeDomain;
+  const readDesc = (nodeId: string) => {
+    const effect = nodes?.[nodeId]?.qualitativeEffect;
+    if (!effect) return '';
+    if (isNative && effect.nativeDescription) return effect.nativeDescription;
+    return effect.description ?? '';
+  };
   return {
-    t1: nodes?.[`${domainId}_t1`]?.qualitativeEffect?.description ?? '',
-    t2: nodes?.[`${domainId}_t2`]?.qualitativeEffect?.description ?? '',
-    t3: nodes?.[`${domainId}_t3`]?.qualitativeEffect?.description ?? '',
+    t1: readDesc(`${domainId}_t1`),
+    t2: readDesc(`${domainId}_t2`),
+    t3: readDesc(`${domainId}_t3`),
     t1Complete: cap?.t1Ready ?? false,
     t2Complete: cap?.t2Ready ?? false,
     t3Complete: (cap?.level ?? 0) >= 3,
@@ -92,13 +97,14 @@ function buildTierDescriptions(domainId: string, capabilities: CapabilityPipView
 }
 
 function buildSoloSynergyData(domainId: string) {
-  const domain = (abilityDomainsData.domains as Record<string, { id: string; name: string; baseEffect?: { description: string } }>)[domainId];
+  const domain = ABILITY_DOMAINS[domainId];
+  const description = domain?.baseEffect.description ?? '';
   return {
     id: domainId,
     name: domain?.name ?? domainId,
     domains: [domainId],
-    description: domain?.baseEffect?.description ?? '',
-    friendlyFlavor: domain?.baseEffect?.description ?? '',
+    description,
+    friendlyFlavor: description,
     enemyFlavor: '',
   };
 }
@@ -184,7 +190,7 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
 
   const activeTripleRule = useMemo(() => {
     if (!hasActiveTriple || !activeTripleEmergentRuleId) return null;
-    return (emergentRulesData.rules as EmergentRule[]).find((r) => r.id === activeTripleEmergentRuleId) ?? null;
+    return EMERGENT_RULE_BY_ID.get(activeTripleEmergentRuleId) ?? null;
   }, [hasActiveTriple, activeTripleEmergentRuleId]);
 
   const hasContent = foreignDomains.length > 0 || activePairCount > 0;
@@ -192,15 +198,15 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
   // Build all cards for the hand using backend state
   const handCards = useMemo(() => {
     const cards: Array<{ key: string; kind: 'solo' | 'pair' | 'triple'; synergy: any; tierDescriptions?: TierDescriptions; inactive?: boolean }> = [];
-    const allPairs = pairSynergiesData.pairSynergies as PairSynergy[];
-    const allRules = emergentRulesData.rules as EmergentRule[];
+    const allPairs = ALL_PAIR_SYNERGIES;
+    const allRules = ALL_EMERGENT_RULES;
 
     for (const d of learnedDomains) {
       cards.push({
         key: `solo-${d}`,
         kind: 'solo',
         synergy: buildSoloSynergyData(d),
-        tierDescriptions: buildTierDescriptions(d, capabilities),
+        tierDescriptions: buildTierDescriptions(d, capabilities, nativeDomain),
       });
     }
 
@@ -241,7 +247,7 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
     }
 
     return cards;
-  }, [learnedDomains, capabilities, hasActiveTriple, activeTriplePairIds, activeTripleEmergentRuleId, activeNativePairId, activeDoubleStackPairIds]);
+  }, [learnedDomains, capabilities, hasActiveTriple, activeTriplePairIds, activeTripleEmergentRuleId, activeNativePairId, activeDoubleStackPairIds, nativeDomain]);
 
   return (
     <div className="syn-chip-wrap" onClick={handleClick}>

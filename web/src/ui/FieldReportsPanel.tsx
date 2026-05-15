@@ -3,8 +3,7 @@ import { SynergyCard } from './SynergyCard';
 import type { PairSynergyData, EmergentRuleData } from './SynergyCard';
 import type { EnemySynergyIntelMap } from '../game/types/clientState';
 import { intelTier } from '../game/synergy/intelTiers';
-import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
-import emergentRulesData from '../../../src/content/base/emergent-rules.json';
+import { PAIR_SYNERGY_BY_ID, EMERGENT_RULE_BY_ID } from '../data/synergyLookup';
 
 type FactionSummary = {
   id: string;
@@ -33,9 +32,9 @@ export const FieldReportsPanel = React.memo(function FieldReportsPanel({
       for (const [synergyId, entry] of Object.entries(factionIntel)) {
         const tier = intelTier(entry);
         if (tier < 1) continue;
-        const pairData = (pairSynergiesData.pairSynergies as PairSynergyData[]).find((p) => p.id === synergyId);
+        const pairData = PAIR_SYNERGY_BY_ID.get(synergyId);
         if (pairData) { cards.push({ data: pairData, kind: 'pair', tier }); continue; }
-        const ruleData = (emergentRulesData.rules as EmergentRuleData[]).find((r) => r.id === synergyId);
+        const ruleData = EMERGENT_RULE_BY_ID.get(synergyId);
         if (ruleData) { cards.push({ data: ruleData, kind: 'triple', tier }); }
       }
 

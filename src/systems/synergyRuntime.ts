@@ -3,25 +3,29 @@ import {
   SynergyEngine,
   type ActiveSynergy,
   type DomainConfig,
-  type EmergentRuleConfig,
-  type PairSynergyConfig,
 } from './synergyEngine.js';
-import pairSynergiesData from '../content/base/pair-synergies.json' with { type: 'json' };
-import abilityDomainsData from '../content/base/ability-domains.json' with { type: 'json' };
-import emergentRulesData from '../content/base/emergent-rules.json' with { type: 'json' };
+import type { FlagName } from './synergyPrimitives.js';
+import { getAllAbilityDomains } from '../content/domains/index.js';
+import {
+  getAllPairSynergies,
+  getAllEmergentRules,
+} from '../content/synergies/index.js';
 
-const synergyEngine: SynergyEngine = new SynergyEngine(
-  pairSynergiesData.pairSynergies as PairSynergyConfig[],
-  emergentRulesData.rules as EmergentRuleConfig[],
-  Object.values(abilityDomainsData.domains) as DomainConfig[],
-);
+let _engine: SynergyEngine | null = null;
 
 export function getSynergyEngine(): SynergyEngine {
-  return synergyEngine;
+  if (!_engine) {
+    _engine = new SynergyEngine(
+      [...getAllPairSynergies()],
+      [...getAllEmergentRules()],
+      getAllAbilityDomains() as DomainConfig[],
+    );
+  }
+  return _engine;
 }
 
 type FactionSynergyState = {
-  activeTripleStack?: { pairs: ActiveSynergy[] };
+  activeTripleStack?: { pairs: ActiveSynergy[]; emergentRule?: { effects: readonly { kind: string; flag?: string }[] } };
   activeDoubleStack?: { pairs: ActiveSynergy[] };
   activeNativeSelfPair?: ActiveSynergy;
 };
@@ -40,12 +44,27 @@ export function resolveEffectiveSynergies(
 }
 
 export function calculateSynergyAttackBonus(result: SynergyCombatResult): number {
-  if (result.multiplierStackValue > 0) {
-    return result.multiplierStackValue - 1;
+  const mult = result.getStat('multiplierStackValue');
+  if (mult > 0) {
+    return mult - 1;
   }
   return 0;
 }
 
 export function calculateSynergyDefenseBonus(result: SynergyCombatResult): number {
-  return result.dugInDefense + result.auraOverlapDefense;
+  return result.getStat('dugInDefense');
+}
+
+/**
+ * Check if a faction's active emergent rule sets a specific flag.
+ * Used by non-combat systems (e.g. zocSystem) to read emergent effects
+ * without needing a SynergyCombatResult.
+ */
+export function factionHasEmergentFlag(
+  faction: FactionSynergyState | null | undefined,
+  flagName: FlagName,
+): boolean {
+  const effects = faction?.activeTripleStack?.emergentRule?.effects;
+  if (!effects) return false;
+  return effects.some(e => e.kind === 'setFlag' && e.flag === flagName);
 }

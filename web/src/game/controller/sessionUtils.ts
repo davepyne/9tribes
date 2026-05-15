@@ -3,8 +3,8 @@
  * None of these depend on `this` — they take explicit state and return new state.
  */
 
-import type { GameState, Unit, UnitId } from '../../../../src/game/types.js';
-import type { HexCoord } from '../../../../src/types.js';
+import type { GameState, Unit } from '../../../../src/game/types.js';
+import type { HexCoord, FactionId, UnitId } from '../../../../src/types.js';
 import { createImprovementId } from '../../../../src/core/ids.js';
 import { resolveCapabilityDoctrine } from '../../../../src/systems/capabilityDoctrine.js';
 import { updateFogState } from '../../../../src/systems/fogSystem.js';
@@ -13,6 +13,9 @@ import { isCityEncircled } from '../../../../src/systems/territorySystem.js';
 import { calculatePrototypeCost, getDomainIdsByTags, isUnlockPrototype } from '../../../../src/systems/knowledgeSystem.js';
 import { hasCaptureAbility } from '../../../../src/systems/captureSystem.js';
 import { canPriestSummon, attemptPriestSummon } from '../../../../src/systems/summonSystem.js';
+import { declareMaelstrom } from '../../../../src/systems/maelstromSystem.js';
+import { declareOasis } from '../../../../src/systems/oasisSystem.js';
+import { executeSubmerge } from '../../../../src/systems/submergeSystem.js';
 import type { RulesRegistry } from '../../../../src/data/registry/types.js';
 
 // ---------------------------------------------------------------------------
@@ -74,7 +77,7 @@ export function isFortificationHex(state: GameState, position: { q: number; r: n
   return getImprovementAtHex(state, position)?.type === 'fortification';
 }
 
-export function getFortBuildEligibility(
+export function getBastionBuildEligibility(
   state: GameState,
   registry: RulesRegistry,
   unit: Unit,
@@ -83,13 +86,14 @@ export function getFortBuildEligibility(
   const research = getResearch(state, unit.factionId);
   const doctrine = faction ? resolveCapabilityDoctrine(research, faction) : undefined;
   const prototype = getPrototype(state, unit.prototypeId);
-  const isEngineer = prototype?.tags?.includes('engineer') ?? false;
 
   if (!faction || faction.id !== 'hill_clan') {
     return { canBuild: false, defenseBonus: 0 };
   }
 
-  if (!doctrine?.canBuildFieldForts && !isEngineer) {
+  // canBuildBastion already enforces fortress native T3 + the 3-per-game cap
+  // (faction.bastionsBuilt < 3) at the doctrine layer.
+  if (!doctrine?.canBuildBastion) {
     return { canBuild: false, defenseBonus: 0 };
   }
 
@@ -111,22 +115,22 @@ export function getFortBuildEligibility(
     return { canBuild: false, defenseBonus: 0 };
   }
 
-  const fieldFort = registry.getImprovement('field_fort');
+  const bastion = registry.getImprovement('bastion');
   return {
     canBuild: true,
-    defenseBonus: fieldFort?.defenseBonus ?? 1,
+    defenseBonus: bastion?.defenseBonus ?? 4,
   };
 }
 
-export function buildFortAtUnit(
+export function buildBastionAtUnit(
   state: GameState,
   unit: Unit,
   defenseBonus: number,
 ): GameState {
-  const fortId = createImprovementId();
+  const improvementId = createImprovementId();
   const improvements = new Map(state.improvements);
-  improvements.set(fortId, {
-    id: fortId,
+  improvements.set(improvementId, {
+    id: improvementId,
     type: 'fortification',
     position: { ...unit.position },
     ownerFactionId: unit.factionId,
@@ -141,11 +145,79 @@ export function buildFortAtUnit(
     status: 'fortified' as const,
   });
 
+  // Increment the per-game Bastion counter so the doctrine flag re-evaluates
+  // to false once the cap is hit.
+  const factions = new Map(state.factions);
+  const faction = state.factions.get(unit.factionId);
+  if (faction) {
+    factions.set(unit.factionId, { ...faction, bastionsBuilt: faction.bastionsBuilt + 1 });
+  }
+
   return {
     ...state,
     improvements,
     units,
+    factions,
   };
+}
+
+export function getMaelstromDeclareEligibility(
+  state: GameState,
+  unit: Unit,
+): { canDeclare: boolean } {
+  const faction = state.factions.get(unit.factionId);
+  const research = getResearch(state, unit.factionId);
+  const doctrine = faction ? resolveCapabilityDoctrine(research, faction) : undefined;
+
+  if (!faction || !doctrine?.canDeclareMaelstrom) {
+    return { canDeclare: false };
+  }
+  if (unit.hp <= 0 || unit.status !== 'ready') {
+    return { canDeclare: false };
+  }
+  return { canDeclare: true };
+}
+
+export function declareMaelstromAtUnit(
+  state: GameState,
+  unit: Unit,
+): GameState {
+  const result = declareMaelstrom(state, unit.factionId as FactionId, unit.position);
+  return result.state;
+}
+
+export function getOasisDeclareEligibility(
+  state: GameState,
+  unit: Unit,
+): { canDeclare: boolean } {
+  const faction = state.factions.get(unit.factionId);
+  const research = getResearch(state, unit.factionId);
+  const doctrine = faction ? resolveCapabilityDoctrine(research, faction) : undefined;
+
+  if (!faction || !doctrine?.canDeclareOasis) {
+    return { canDeclare: false };
+  }
+  if (unit.hp <= 0 || unit.status !== 'ready') {
+    return { canDeclare: false };
+  }
+  return { canDeclare: true };
+}
+
+export function declareOasisAtUnit(
+  state: GameState,
+  unit: Unit,
+): GameState {
+  const result = declareOasis(state, unit.factionId as FactionId, unit.position);
+  return result.state;
+}
+
+export function executeSubmergeAtUnit(
+  state: GameState,
+  unit: Unit,
+  destination: HexCoord,
+): GameState {
+  const result = executeSubmerge(state, unit.factionId as FactionId, unit.id as UnitId, destination);
+  return result.state;
 }
 
 export function getFortDestroyEligibility(

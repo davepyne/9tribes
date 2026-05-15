@@ -41,6 +41,7 @@ type PlayWorldSource = {
   reachableHexes: ReachableHexView[];
   attackHexes: AttackTargetView[];
   disembarkHexes: ReachableHexView[];
+  submergeHexes: ReachableHexView[];
   pathPreview: PathPreviewNodeView[];
   queuedPath: PathPreviewNodeView[];
   lastMove: { unitId: string; destination: HexCoord } | null;
@@ -208,6 +209,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       reachableHexes: source.reachableHexes,
       attackHexes: source.attackHexes,
       disembarkHexes: source.disembarkHexes,
+      submergeHexes: source.submergeHexes,
       pathPreview: source.pathPreview,
       queuedPath: source.queuedPath,
       lastMove: source.lastMove,

@@ -38,6 +38,7 @@ export interface MvpFactionConfig {
   terrainDependence: string;
   lateGameHybridPotential: string;
   nativeDomain: string;
+  nativeDomains?: string[];
   startingLearnedDomains?: string[];
   startingCompletedResearchNodes?: string[];
   researchRate?: number;

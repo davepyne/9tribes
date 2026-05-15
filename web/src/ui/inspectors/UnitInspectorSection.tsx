@@ -8,9 +8,42 @@ import { formatNativeDomainName, getDomainDescription } from './domainFormatters
 import { SynergyCard } from '../SynergyCard';
 import type { ResolvedActiveSynergies } from '../resolveActiveSynergies';
 import { intelTier } from '../../game/synergy/intelTiers';
-import pairSynergiesData from '../../../../src/content/base/pair-synergies.json';
-import emergentRulesData from '../../../../src/content/base/emergent-rules.json';
+import {
+  PAIR_SYNERGIES as PAIR_SYNERGIES_BACKEND,
+  EMERGENT_RULES as EMERGENT_RULES_BACKEND,
+} from '../../../../src/content/synergies/index';
 import type { PairSynergyData, EmergentRuleData } from '../SynergyCard';
+
+const PAIR_SYNERGY_BY_ID = new Map<string, PairSynergyData>(
+  PAIR_SYNERGIES_BACKEND.map((s) => [
+    s.id,
+    {
+      id: s.id,
+      name: s.name,
+      domains: [...s.domains],
+      description: s.description,
+      friendlyFlavor: s.friendlyFlavor,
+      enemyFlavor: s.enemyFlavor,
+    },
+  ]),
+);
+
+const EMERGENT_RULE_BY_ID = new Map<string, EmergentRuleData>(
+  EMERGENT_RULES_BACKEND.map((r) => [
+    r.id,
+    {
+      id: r.id,
+      name: r.name,
+      condition: r.condition,
+      domainSets: r.domainSets,
+      mobilityDomains: r.mobilityDomains,
+      combatDomains: r.combatDomains,
+      description: r.description,
+      friendlyFlavor: r.friendlyFlavor,
+      enemyFlavor: r.enemyFlavor,
+    },
+  ]),
+);
 
 type UnitInspectorSectionProps = {
   unit: UnitView;
@@ -57,9 +90,9 @@ export const UnitInspectorSection = React.memo(function UnitInspectorSection({
     for (const [synergyId, intel] of Object.entries(factionIntel)) {
       const tier = intelTier(intel);
       if (tier < 1) continue;
-      const pairData = (pairSynergiesData.pairSynergies as PairSynergyData[]).find(p => p.id === synergyId);
+      const pairData = PAIR_SYNERGY_BY_ID.get(synergyId);
       if (pairData) { cards.push({ data: pairData, kind: 'pair', tier }); continue; }
-      const ruleData = (emergentRulesData.rules as EmergentRuleData[]).find(r => r.id === synergyId);
+      const ruleData = EMERGENT_RULE_BY_ID.get(synergyId);
       if (ruleData) { cards.push({ data: ruleData, kind: 'triple', tier }); }
     }
     return cards;

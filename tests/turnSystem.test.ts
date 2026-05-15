@@ -4,12 +4,13 @@ import {
   nextUnitActivation,
   resetAllUnitsForRound,
 } from '../src/systems/turnSystem';
+import type { FactionId, UnitId, PrototypeId } from '../src/types';
 
 function makeFaction(id: string, unitIds: string[]) {
   return {
-    id: id as never,
+    id: id as FactionId,
     name: id,
-    unitIds: unitIds as never[],
+    unitIds: unitIds as UnitId[],
     cityIds: [],
     villageIds: [],
     prototypeIds: [],
@@ -36,8 +37,8 @@ function makeFaction(id: string, unitIds: string[]) {
 
 function makeUnit(id: string, factionId: string, activatedThisRound = false, hp = 10) {
   return {
-    id: id as never,
-    factionId: factionId as never,
+    id: id as UnitId,
+    factionId: factionId as FactionId,
     position: { q: 0, r: 0 },
     facing: 0,
     hp,
@@ -48,7 +49,7 @@ function makeUnit(id: string, factionId: string, activatedThisRound = false, hp 
     xp: 0,
     veteranLevel: 'green' as const,
     status: 'spent' as const,
-    prototypeId: 'proto' as never,
+    prototypeId: 'proto' as PrototypeId,
     history: [],
     morale: 60,
     routed: false,
@@ -59,11 +60,11 @@ function makeUnit(id: string, factionId: string, activatedThisRound = false, hp 
 
 function buildState() {
   const state = createEmptyGameState(1);
-  state.factions.set('alpha' as never, makeFaction('alpha', ['a1', 'a2']));
-  state.factions.set('beta' as never, makeFaction('beta', ['b1']));
-  state.units.set('a1' as never, makeUnit('a1', 'alpha'));
-  state.units.set('a2' as never, makeUnit('a2', 'alpha'));
-  state.units.set('b1' as never, makeUnit('b1', 'beta'));
+  state.factions.set('alpha' as FactionId, makeFaction('alpha', ['a1', 'a2']));
+  state.factions.set('beta' as FactionId, makeFaction('beta', ['b1']));
+  state.units.set('a1' as UnitId, makeUnit('a1', 'alpha'));
+  state.units.set('a2' as UnitId, makeUnit('a2', 'alpha'));
+  state.units.set('b1' as UnitId, makeUnit('b1', 'beta'));
   return state;
 }
 
@@ -78,8 +79,8 @@ describe('turnSystem alternating activation', () => {
 
   it('skips dead and already-activated units when advancing the queue', () => {
     const state = buildState();
-    state.units.set('a1' as never, makeUnit('a1', 'alpha', true));
-    state.units.set('b1' as never, makeUnit('b1', 'beta', false, 0));
+    state.units.set('a1' as UnitId, makeUnit('a1', 'alpha', true));
+    state.units.set('b1' as UnitId, makeUnit('b1', 'beta', false, 0));
 
     const activation = buildActivationQueue(state);
     const next = nextUnitActivation(state, activation);
@@ -92,9 +93,9 @@ describe('turnSystem alternating activation', () => {
     const state = buildState();
     const reset = resetAllUnitsForRound(state);
 
-    expect(reset.units.get('a1' as never)?.activatedThisRound).toBe(false);
-    expect(reset.units.get('a1' as never)?.movesRemaining).toBe(2);
-    expect(reset.units.get('a1' as never)?.attacksRemaining).toBe(1);
-    expect(reset.units.get('a1' as never)?.status).toBe('ready');
+    expect(reset.units.get('a1' as UnitId)?.activatedThisRound).toBe(false);
+    expect(reset.units.get('a1' as UnitId)?.movesRemaining).toBe(2);
+    expect(reset.units.get('a1' as UnitId)?.attacksRemaining).toBe(1);
+    expect(reset.units.get('a1' as UnitId)?.status).toBe('ready');
   });
 });

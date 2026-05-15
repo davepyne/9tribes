@@ -8,9 +8,8 @@ import { SynergyEngine } from '../src/systems/synergyEngine';
 import { getVillageSpawnReadiness, countVillagesInCityTerritory } from '../src/systems/villageSystem';
 import { getHexesInRange } from '../src/core/grid';
 import { hexDistance } from '../src/core/grid';
-import pairSynergiesData from '../src/content/base/pair-synergies.json';
-import emergentRulesData from '../src/content/base/emergent-rules.json';
-import abilityDomainsData from '../src/content/base/ability-domains.json';
+import { PAIR_SYNERGIES, EMERGENT_RULES } from '../src/content/synergies/index.js';
+import { ABILITY_DOMAINS } from '../src/content/domains/index.js';
 
 const registry = loadRulesRegistry();
 
@@ -157,9 +156,9 @@ describe('progression pipeline constants', () => {
 
   describe('triple stack gate', () => {
     const engine = new SynergyEngine(
-      pairSynergiesData.pairSynergies as any[],
-      emergentRulesData.rules as any[],
-      Object.values(abilityDomainsData.domains) as any[],
+      [...PAIR_SYNERGIES],
+      [...EMERGENT_RULES],
+      Object.values(ABILITY_DOMAINS) as any[],
     );
 
     it('returns null for 0 emergent-eligible domains', () => {

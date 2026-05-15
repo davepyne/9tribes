@@ -5,6 +5,7 @@ import { updateFogState } from '../src/systems/fogSystem';
 import { boardTransport } from '../src/systems/transportSystem';
 import { GameSession } from '../web/src/game/controller/GameSession';
 import { buildWorldViewModel } from '../web/src/game/view-model/worldViewModel';
+import type { FactionId, UnitId, ImprovementId, ChassisId, ComponentId } from '../src/game/types';
 
 describe('worldViewModel play derivation', () => {
   it('includes active faction, reachable tiles, and unit action state', () => {
@@ -96,12 +97,12 @@ describe('worldViewModel play derivation', () => {
   it('maps hill clan fortifications to the fortress sprite', () => {
     const session = new GameSession({ type: 'fresh', seed: 42 });
     const state = session.getState();
-    const hillFactionId = 'hill_clan' as never;
+    const hillFactionId = 'hill_clan' as FactionId;
     const hillUnit = Array.from(state.units.values()).find((unit) => unit.factionId === hillFactionId);
 
     expect(hillUnit).toBeTruthy();
 
-    const fortId = 'improvement_test_fort' as never;
+    const fortId = 'improvement_test_fort' as ImprovementId;
     state.improvements.set(fortId, {
       id: fortId,
       type: 'fortification',
@@ -126,12 +127,12 @@ describe('worldViewModel play derivation', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
 
-    const steppeFaction = state.factions.get('steppe_clan' as never)!;
-    const druidFaction = state.factions.get('druid_circle' as never)!;
+    const steppeFaction = state.factions.get('steppe_clan' as FactionId)!;
+    const druidFaction = state.factions.get('druid_circle' as FactionId)!;
     const braceProto = assemblePrototype(
       steppeFaction.id,
-      'infantry_frame' as never,
-      ['basic_spear', 'simple_armor'] as never,
+      'infantry_frame' as ChassisId,
+      ['basic_spear', 'simple_armor'] as ComponentId[],
       registry,
       Array.from(state.prototypes.keys()),
       {
@@ -141,8 +142,8 @@ describe('worldViewModel play derivation', () => {
     );
     const rangedProto = assemblePrototype(
       steppeFaction.id,
-      'ranged_frame' as never,
-      ['basic_bow', 'simple_armor'] as never,
+      'ranged_frame' as ChassisId,
+      ['basic_bow', 'simple_armor'] as ComponentId[],
       registry,
       Array.from(state.prototypes.keys()),
       {
@@ -153,15 +154,15 @@ describe('worldViewModel play derivation', () => {
     state.prototypes.set(braceProto.id, braceProto);
     state.prototypes.set(rangedProto.id, rangedProto);
 
-    const braceUnitId = 'world_brace_unit' as never;
-    const ambushUnitId = 'world_ambush_unit' as never;
+    const braceUnitId = 'world_brace_unit' as UnitId;
+    const ambushUnitId = 'world_ambush_unit' as UnitId;
     const enemyId = druidFaction.unitIds[0];
-    const braceBase = state.units.get(steppeFaction.unitIds[0] as never)!;
-    const ambushBase = state.units.get(steppeFaction.unitIds[1] as never)!;
+    const braceBase = state.units.get(steppeFaction.unitIds[0])!;
+    const ambushBase = state.units.get(steppeFaction.unitIds[1])!;
 
     state.map!.tiles.get('10,10')!.terrain = 'plains';
     state.map!.tiles.get('13,10')!.terrain = 'forest';
-    state.units.set(braceUnitId as never, {
+    state.units.set(braceUnitId, {
       ...braceBase,
       id: braceUnitId,
       prototypeId: braceProto.id,
@@ -181,12 +182,12 @@ describe('worldViewModel play derivation', () => {
       movesRemaining: rangedProto.derivedStats.moves,
       maxMoves: rangedProto.derivedStats.moves,
     });
-    state.units.set(enemyId as never, {
-      ...state.units.get(enemyId as never)!,
+    state.units.set(enemyId, {
+      ...state.units.get(enemyId)!,
       position: { q: 11, r: 10 },
       status: 'ready',
       attacksRemaining: 1,
-      movesRemaining: state.units.get(enemyId as never)!.maxMoves,
+      movesRemaining: state.units.get(enemyId)!.maxMoves,
     });
     state.factions.set(steppeFaction.id, {
       ...steppeFaction,
@@ -216,11 +217,11 @@ describe('worldViewModel play derivation', () => {
   it('exposes boardable transports and valid disembark hexes', () => {
     const registry = loadRulesRegistry();
     const state = buildMvpScenario(42, { registry, mapMode: 'fixed' });
-    const faction = state.factions.get('coral_people' as never)!;
+    const faction = state.factions.get('coral_people' as FactionId)!;
     const transportProto = assemblePrototype(
       faction.id,
-      'galley_frame' as never,
-      ['slaver_net', 'simple_armor'] as never,
+      'galley_frame' as ChassisId,
+      ['slaver_net', 'simple_armor'] as ComponentId[],
       registry,
       Array.from(state.prototypes.keys()),
       {
@@ -231,12 +232,12 @@ describe('worldViewModel play derivation', () => {
     state.prototypes.set(transportProto.id, transportProto);
 
     const unitId = faction.unitIds[0];
-    const unitBase = state.units.get(unitId as never)!;
-    const transportId = 'world_transport' as never;
+    const unitBase = state.units.get(unitId)!;
+    const transportId = 'world_transport' as UnitId;
     state.map!.tiles.get('10,10')!.terrain = 'plains';
     state.map!.tiles.get('11,10')!.terrain = 'coast';
     state.map!.tiles.get('12,10')!.terrain = 'plains';
-    state.units.set(unitId as never, {
+    state.units.set(unitId, {
       ...unitBase,
       position: { q: 10, r: 10 },
       status: 'ready',
@@ -273,7 +274,7 @@ describe('worldViewModel play derivation', () => {
     });
     expect(preBoardWorld.units.find((unit) => unit.id === unitId)?.boardableTransportIds).toContain(transportId);
 
-    const boarded = boardTransport(state, unitId as never, transportId, state.transportMap);
+    const boarded = boardTransport(state, unitId, transportId, state.transportMap);
     const boardedState = {
       ...boarded.state,
       transportMap: boarded.transportMap,
@@ -297,7 +298,7 @@ describe('worldViewModel play derivation', () => {
   it('exposes siege turns until capture for besieged cities', () => {
     const session = new GameSession({ type: 'fresh', seed: 42 });
     const state = session.getState();
-    const cityId = state.factions.get(state.activeFactionId as never)!.cityIds[0];
+    const cityId = state.factions.get(state.activeFactionId)!.cityIds[0];
     const city = state.cities.get(cityId)!;
     const besiegedState = {
       ...state,

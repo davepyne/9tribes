@@ -347,21 +347,3 @@ export function isThreatenedCityHex(
     return city && city.position.q === hex.q && city.position.r === hex.r;
   });
 }
-
-export function getNearestFriendlyCity(
-  state: GameState,
-  factionId: FactionId,
-  origin: HexCoord,
-) {
-  let best: import('../game/types.js').City | undefined;
-  let bestDist = Infinity;
-  for (const city of state.cities.values()) {
-    if (city.factionId !== factionId) continue;
-    const dist = hexDistance(origin, city.position);
-    if (dist < bestDist) {
-      bestDist = dist;
-      best = city;
-    }
-  }
-  return best;
-}

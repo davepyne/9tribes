@@ -9,17 +9,13 @@ import { entersEnemyZoC, getZoCMovementCost } from './zocSystem.js';
 import { applyOpportunityAttacks } from './opportunityAttackSystem.js';
 import { getMovementCostModifier, isUnitRiverStealthed } from './factionIdentitySystem.js';
 import { isWaterTerrain, isDeepWaterTerrain, isCoverTerrain } from './terrainUtils.js';
+import { getZoneEffectMovementPenalty } from './zoneEffectSystem.js';
 import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import { canUseCharge } from './abilitySystem.js';
 import { pruneDeadUnits } from './combatActionSystem.js';
 import { destroyVillage } from './villageSystem.js';
 import { resolveEffectiveSynergies } from './synergyRuntime.js';
-import type { Faction } from '../features/factions/types.js';
 
-function getSpeedBonus(faction: Faction | undefined, tags: string[], effectType: string): number {
-  const syn = resolveEffectiveSynergies(faction, tags).find(s => s.effect.type === effectType);
-  return syn ? (syn.effect as { speedBonus: number }).speedBonus : 0;
-}
 
 export interface MovementPreview {
   totalCost: number;
@@ -120,22 +116,6 @@ export function previewMove(
     totalCost = 1;
   }
 
-  // Synergy speed bonuses
-  const swarmBonus = getSpeedBonus(faction, prototypeTags, 'swarm_speed');
-  if (swarmBonus > 0) {
-    totalCost -= swarmBonus;
-  }
-
-  const coastalNomadBonus = getSpeedBonus(faction, prototypeTags, 'coastal_nomad');
-  if (coastalNomadBonus > 0 && isWaterTerrain(targetTerrainId)) {
-    totalCost -= coastalNomadBonus;
-  }
-
-  const terrainSlaveBonus = getSpeedBonus(faction, prototypeTags, 'terrain_slave');
-  if (terrainSlaveBonus > 0) {
-    totalCost -= terrainSlaveBonus;
-  }
-
   // Doctrine-based movement bonuses
   const isCavalry = chassis?.movementClass === 'cavalry';
 
@@ -155,7 +135,7 @@ export function previewMove(
     totalCost = Math.min(totalCost, 1);
   }
   // E4 — Raid Camp emergent: allied units ignore desert movement penalty
-  if (targetTerrainId === 'desert' && faction?.activeTripleStack?.emergentRule.effect.type === 'raid_camp') {
+  if (targetTerrainId === 'desert' && faction?.activeTripleStack?.emergentRule.id === 'raid_camp') {
     totalCost = Math.min(totalCost, 1);
   }
   if (doctrine.roughTerrainMovementEnabled && isCoverTerrain(targetTerrainId)) {
@@ -165,6 +145,29 @@ export function previewMove(
     totalCost = Math.min(totalCost, 1);
   }
 
+  // Shoreline Nomads (tidal_warfare+camel_adaptation): +1 movement on coast/desert/shallow water
+  if (faction) {
+    const synergies = resolveEffectiveSynergies(faction, prototypeTags);
+    let amphibiousBonus = 0;
+    for (const syn of synergies) {
+      for (const eff of syn.effects) {
+        if (eff.kind === 'statMod') {
+          const sm = eff as Extract<typeof eff, { kind: 'statMod' }>;
+          if (sm.stat === 'amphibiousMovementBonus' && sm.value > 0) {
+            amphibiousBonus = sm.value;
+          }
+        }
+      }
+    }
+    if (amphibiousBonus > 0) {
+      const isAmphibiousTerrain = targetTerrainId === 'coast' || targetTerrainId === 'desert'
+        || isWaterTerrain(targetTerrainId);
+      if (isAmphibiousTerrain) {
+        totalCost = Math.max(1, totalCost - amphibiousBonus);
+      }
+    }
+  }
+
   // Only River People naval movement through rivers is allowed to drop below 1.
   const minimumMoveCost = isNavalUnit
     && targetTerrainId === 'river'
@@ -172,7 +175,12 @@ export function previewMove(
     ? 0.5
     : 1;
   totalCost = Math.max(minimumMoveCost, totalCost);
-  
+
+  // Zone-effect movement penalty (Maelstrom, etc.): non-owner units pay extra
+  // to enter hexes covered by hostile zone effects. Applied after the cost
+  // floor so it cannot be negated by minimum-cost reductions.
+  totalCost += getZoneEffectMovementPenalty(gameState, targetHex, unit.factionId);
+
   // Swamp: always enterable but consumes all remaining moves (difficult terrain)
   const consumesAllMoves = targetTerrainId === 'swamp';
 

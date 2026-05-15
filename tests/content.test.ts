@@ -133,18 +133,22 @@ describe('Veteran Levels', () => {
 });
 
 describe('Improvements', () => {
-  it('getImprovement returns field_fort', () => {
-    const fort = registry.getImprovement('field_fort');
-    expect(fort).toBeDefined();
-    expect(fort?.id).toBe('field_fort');
+  it('getImprovement returns bastion', () => {
+    const bastion = registry.getImprovement('bastion');
+    expect(bastion).toBeDefined();
+    expect(bastion?.id).toBe('bastion');
   });
 
-  it('field_fort has defenseBonus 1, category "fortification"', () => {
-    const fort = registry.getImprovement('field_fort');
-    expect(fort).toBeDefined();
-    expect(fort?.id).toBe('field_fort');
-    expect(fort?.defenseBonus).toBe(1);
-    expect(fort?.category).toBe('fortification');
+  it('bastion has defenseBonus 4, category "fortification"', () => {
+    const bastion = registry.getImprovement('bastion');
+    expect(bastion).toBeDefined();
+    expect(bastion?.id).toBe('bastion');
+    expect(bastion?.defenseBonus).toBe(4);
+    expect(bastion?.category).toBe('fortification');
+  });
+
+  it('field_fort improvement has been retired (replaced by Bastion)', () => {
+    expect(registry.getImprovement('field_fort')).toBeUndefined();
   });
 
   it('getAllImprovements returns 1 improvement', () => {

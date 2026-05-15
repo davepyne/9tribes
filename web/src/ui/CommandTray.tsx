@@ -7,14 +7,17 @@ type CommandTrayProps = {
   state: ClientState;
   onEndTurn: () => void;
   onSetTargetingMode: (mode: 'move' | 'attack') => void;
-  onBuildFort?: (unitId: string) => void;
+  onBuildBastion?: (unitId: string) => void;
+  onDeclareMaelstrom?: (unitId: string) => void;
+  onDeclareOasis?: (unitId: string) => void;
+  onSubmerge?: (unitId: string) => void;
   onDestroyFort?: (unitId: string) => void;
   onBuildCity?: (unitId: string) => void;
   onSummon?: (unitId: string) => void;
   onSacrifice?: (unitId: string) => void;
 };
 
-export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildFort, onDestroyFort, onBuildCity, onSummon, onSacrifice }: CommandTrayProps) {
+export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, onSetTargetingMode, onBuildBastion, onDeclareMaelstrom, onDeclareOasis, onSubmerge, onDestroyFort, onBuildCity, onSummon, onSacrifice }: CommandTrayProps) {
   const selectedUnitId = state.selected?.type === 'unit' ? state.selected.unitId : state.actions.selectedUnitId;
   const selectedUnit = selectedUnitId
     ? state.world.units.find((u) => u.id === selectedUnitId)
@@ -22,7 +25,10 @@ export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, o
   const selectedCity = state.hud.selectedCity;
   const settlementPreview = state.hud.settlementPreview;
 
-  const canBuildFort = selectedUnit?.canBuildFort ?? false;
+  const canBuildBastion = selectedUnit?.canBuildBastion ?? false;
+  const canDeclareMaelstrom = selectedUnit?.canDeclareMaelstrom ?? false;
+  const canDeclareOasis = selectedUnit?.canDeclareOasis ?? false;
+  const canSubmerge = selectedUnit?.canSubmerge ?? false;
   const canDestroyFort = selectedUnit?.canDestroyFort ?? false;
   const canSacrifice = selectedUnit?.canSacrifice ?? false;
 
@@ -83,13 +89,44 @@ export const CommandTray = React.memo(function CommandTray({ state, onEndTurn, o
       <div className="ct-segment ct-segment--actions">
         {selectedUnit ? (
           <>
-            {canBuildFort ? (
+            {canBuildBastion ? (
               <button
                 type="button"
                 className="ct-mode-btn"
-                onClick={() => onBuildFort?.(selectedUnitId!)}
+                onClick={() => onBuildBastion?.(selectedUnitId!)}
+                title="Raise a Bastion — Hill Engineers' native fortress capstone (max 3 per game)"
               >
-                Build Fort
+                Raise Bastion
+              </button>
+            ) : null}
+            {canDeclareMaelstrom ? (
+              <button
+                type="button"
+                className="ct-mode-btn"
+                onClick={() => onDeclareMaelstrom?.(selectedUnitId!)}
+                title="Declare Maelstrom — once-per-game tidal AoE (damage + slow to enemies)"
+              >
+                Declare Maelstrom
+              </button>
+            ) : null}
+            {canDeclareOasis ? (
+              <button
+                type="button"
+                className="ct-mode-btn"
+                onClick={() => onDeclareOasis?.(selectedUnitId!)}
+                title="Proclaim Oasis — Desert Nomads' native camel capstone (once per game)"
+              >
+                Proclaim Oasis
+              </button>
+            ) : null}
+            {canSubmerge ? (
+              <button
+                type="button"
+                className="ct-mode-btn"
+                onClick={() => onSubmerge?.(selectedUnitId!)}
+                title="Submerge — River People's native capstone: teleport to a connected waterway hex in stealth"
+              >
+                Submerge
               </button>
             ) : null}
             {canDestroyFort ? (

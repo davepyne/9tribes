@@ -13,6 +13,7 @@ import { canBoardTransport, getUnitTransport, getValidDisembarkHexes, getEmbarke
 import { getSpriteKeyForUnit, inferChassisId } from './spriteKeys.js';
 import { hexToKey, hexDistance, getNeighbors } from '../../../../src/core/grid.js';
 import { getImprovementBonus } from '../../../../src/systems/combat-action/helpers.js';
+import { isWaterTerrain, isLandTerrain } from '../../../../src/systems/terrainUtils.js';
 
 function thisChassisMovementClass(chassisId: string | undefined, registry: RulesRegistry): string | undefined {
   return chassisId ? registry.getChassis(chassisId)?.movementClass : undefined;
@@ -68,18 +69,26 @@ export function buildUnitView(
   const effectiveDefense = Math.max(1, Math.round(baseDefense * (1 + terrainMod + improvementBonus + veteranDefBonus)));
   const tileTerrain = tile?.terrain;
 
-  // Precompute fort build eligibility
+  // Precompute Bastion build eligibility — Hill Engineers (hill_clan) only,
+  // gated on fortress native T3 + the 3-per-game bastionsBuilt cap.
   const unitFaction = state.factions.get(unit.factionId);
-  const unitResearch = state.research.get(unit.factionId);
   const isHillClan = unitFaction?.id === 'hill_clan';
   const atFullMoves = unit.movesRemaining === unit.maxMoves;
   const hasExistingImprovement = getImprovementBonus(state, unit.position) > 0;
   const isInfantryOrRanged = prototype
     ? (thisChassisMovementClass(prototype?.chassisId, registry) === 'infantry' || prototype?.derivedStats?.role === 'ranged')
     : false;
-  const canBuildFieldForts = unitResearch?.completedNodes?.includes('fortress_t2' as ResearchNodeId) ?? false;
-  const canBuildFort = !!isHillClan && !!unitFaction && atFullMoves && !hasExistingImprovement && isInfantryOrRanged
-    && (prototype?.tags?.includes('engineer') || canBuildFieldForts);
+  const canBuildBastion = !!factionDoctrine?.canBuildBastion
+    && !!isHillClan && atFullMoves && !hasExistingImprovement && isInfantryOrRanged;
+
+  const canDeclareMaelstrom = !!factionDoctrine?.canDeclareMaelstrom
+    && isWaterTerrain(tileTerrain) && unit.status === 'ready' && unit.hp > 0;
+
+  const canDeclareOasis = !!factionDoctrine?.canDeclareOasis
+    && isLandTerrain(tileTerrain) && unit.status === 'ready' && unit.hp > 0;
+
+  const canSubmergeFlag = !!factionDoctrine?.submergeEnabled
+    && isWaterTerrain(tileTerrain) && unit.status === 'ready' && unit.hp > 0;
 
   const canDestroyFort = !!isHillClan && atFullMoves && improvementBonus > 0
     && !!prototype?.tags?.includes('engineer');
@@ -139,7 +148,10 @@ export function buildUnitView(
     isEngineer: prototype?.tags?.includes('engineer') || undefined,
     canBrace: canBrace || undefined,
     canAmbush: canAmbush || undefined,
-    canBuildFort: canBuildFort || undefined,
+    canBuildBastion: canBuildBastion || undefined,
+    canDeclareMaelstrom: canDeclareMaelstrom || undefined,
+    canDeclareOasis: canDeclareOasis || undefined,
+    canSubmerge: canSubmergeFlag || undefined,
     canDestroyFort: canDestroyFort || undefined,
     canSacrifice: canSacrifice || undefined,
     ...(() => {

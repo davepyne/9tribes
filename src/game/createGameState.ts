@@ -28,6 +28,7 @@ export function createEmptyGameState(seed: number): GameState {
     factionStrategies: new Map(),
     poisonTraps: new Map(),
     contaminatedHexes: new Set(),
+    zoneEffects: new Map(),
     transportMap: new Map(),
     villageCaptureCooldowns: new Map(),
     fogState: new Map(),

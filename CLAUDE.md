@@ -86,6 +86,8 @@ Both the AI path and the player path converge on a **single shared function**: `
 - Player path adds UI feedback (combat log, enemy synergy intel tracking, siege state rendering)
 - Combat now also applies an ecology research bonus (`applyCombatResearchBonus`) — combat against a faction whose native domain you've learned gives +1 XP to that domain's next research node
 
+**T3 Capstone abilities** are checked in `activateUnit()` after every decision branch: Bastion (Hill Engineers fortress), Maelstrom (Tidal Warfare zone), Oasis (Desert terrain mutation), Submerge (Naval stealth teleport). Each has its own heuristic module in `src/systems/unit-activation/`.
+
 ## Research & Ecology System
 
 Research progresses via two parallel tracks:
@@ -102,12 +104,39 @@ Key functions in `researchSystem.ts`: `addResearchProgressToNode()` (ungated pro
 
 UI ecology fields live on `ResearchNodeViewModel` in `web/src/game/types/clientState.ts` and are computed in `web/src/game/view-model/inspectors/researchInspectorViewModel.ts`.
 
+## Synergy Primitives Architecture (2026-05)
+
+The old 69-entry `synergyEffectHandlers` Map and 11-entry `emergentEffectHandlers` Map have been replaced by a **declarative primitives system**:
+
+- **`src/systems/synergyPrimitives.ts`** — Type definitions for 12 primitive kinds (StatMod, SetFlag, ApplyStatus, Knockback, Heal, ProjectAura, Capture, PreventAction, SpawnOnMap, GrantVerb, InstantKill, ModeSelect). Future synergies are declarative records, not discriminated-union branches.
+- **`src/systems/primitiveDispatcher.ts`** — Resolves `PrimitiveEffect[]` → `SynergyCombatResult`. One dispatch function per primitive kind. Mutates the result object in-place.
+- **`src/systems/primitiveEvaluator.ts`** — Evaluates condition strings (AND/OR/negation, tag checks, terrain conditions, HP thresholds), resolves targets, and matches triggers.
+- **`src/systems/synergyRuntime.ts`** — Singleton that lazy-loads the synergy engine from JSON files. Now also exports `resolveEffectiveSynergies()`.
+- Types (DomainConfig, PairSynergyConfig, etc.) moved to `src/systems/synergyTypes.ts`.
+
+## Zone Effects & Terrain Mutation
+
+New map-level persistent effects system:
+
+- **`src/systems/zoneEffectSystem.ts`** — Lifecycle and query helpers for zone effects. Key functions: `getZoneEffectsAtHex`, `getZoneEffectDamageOnHex`, `getZoneEffectMovementPenalty`, `addZoneEffect`, `removeZoneEffect`, `tickZoneEffectLifetimes` (called once per round at rollover).
+- **`src/systems/terrainMutationSystem.ts`** — One-way terrain conversion. `setTerrainAt` (single hex), `setTerrainInRadius` (area). Mutates `state.map.tiles` directly. Used by Oasis and Sapling mechanics.
+
+### T3 Capstone Abilities
+
+| Ability | Faction | Type | Effect |
+|---------|---------|------|--------|
+| Bastion | Hill Engineers | Improvement | +400% defense fortification, 3 per game. Replaces Field Fort. |
+| Maelstrom | Tidal Warfare T3 | ZoneEffect | 2 dmg/turn + movement penalty in water zone. Native Pirate Lords: larger radius + auto-capture on naval kills. |
+| Oasis | Desert Nomads (Camel Adaptation T3) | Terrain Mutation | Converts 2-hex radius to desert permanently. Once per game. |
+| Submerge | Naval | Unit verb | Teleports unit along connected waterway into stealth. Consumes all moves/attacks. |
+| Toxic Bloom | Venom T3 | ZoneEffect | Spawns when 3+ poisoned units cluster. 2 dmg/turn on center hex. Cleansable by Druid T3. |
+
 ## Code Conventions
 
 - **TypeScript strict mode**, ES2022 target, ESNext modules
 - **Data-driven design**: Game content defined in JSON, loaded at runtime via registry pattern
 - **Pure-ish systems**: Most systems take GameState + inputs → return updated GameState. Side effects are documented in each system's contract (see codemap.md).
-- **External state**: `FogState` and `TransportMap` are NOT part of GameState — callers must manage them separately.
+- **External state**: `FogState`, `TransportMap`, and `ZoneEffects` are stored on `GameState` but managed by specialized lifecycle systems (fogSystem, transportSystem, zoneEffectSystem). Callers must use the system APIs, not mutate these directly.
 - **History arrays as state**: Many systems write to `unit.history[]` or `faction.history[]` for event tracking (e.g., capture cooldowns tracked via history entries, not dedicated counters).
 - **Deterministic RNG** (`src/core/rng.ts`) for reproducible simulations. Tests use seeded RNG states.
 - **Tests** use fixtures from `tests/fixtures/` and seed RNG for determinism

@@ -6,6 +6,7 @@ import { getHealingBonus } from '../factionIdentitySystem.js';
 import { getHexOwner } from '../territorySystem.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { pruneDeadUnits } from '../combatActionSystem.js';
+import { getZoneEffectsAtHex, ZONE_EFFECT_LABEL } from '../zoneEffectSystem.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { SimulationTrace } from './traceTypes.js';
 import { log } from './traceRecorder.js';
@@ -181,6 +182,32 @@ export function applyEnvironmentalDamage(
     if (!died && !safeInSettlement && current.contaminatedHexes.has(hexToKey(unit.position))) {
       updatedUnit = { ...updatedUnit, hp: Math.max(0, updatedUnit.hp - 1) };
       log(trace, `${faction.name} ${current.prototypes.get(unit.prototypeId)?.name ?? 'unit'} suffers contamination (1 dmg)`);
+      died = updatedUnit.hp <= 0;
+    }
+
+    if (!died && !safeInSettlement) {
+      const enemyEffects = getZoneEffectsAtHex(current, unit.position)
+        .filter(e => e.ownerFactionId !== faction.id);
+      const zoneDamage = enemyEffects.reduce((sum, e) => sum + e.damagePerTurn, 0);
+      if (zoneDamage > 0) {
+        updatedUnit = { ...updatedUnit, hp: Math.max(0, updatedUnit.hp - zoneDamage) };
+        const label = enemyEffects.length === 1
+          ? ZONE_EFFECT_LABEL[enemyEffects[0].type]
+          : enemyEffects.map(e => ZONE_EFFECT_LABEL[e.type]).join(' + ');
+        log(trace, `${faction.name} ${current.prototypes.get(unit.prototypeId)?.name ?? 'unit'} suffers ${label} (${zoneDamage} dmg)`);
+        died = updatedUnit.hp <= 0;
+      }
+    }
+
+    if (!died && updatedUnit.bleeding && (updatedUnit.bleedTurnsRemaining ?? 0) > 0) {
+      updatedUnit = { ...updatedUnit, hp: Math.max(0, updatedUnit.hp - 1) };
+      const remaining = (updatedUnit.bleedTurnsRemaining ?? 1) - 1;
+      if (remaining <= 0) {
+        updatedUnit = { ...updatedUnit, bleeding: false, bleedTurnsRemaining: 0 };
+      } else {
+        updatedUnit = { ...updatedUnit, bleedTurnsRemaining: remaining };
+      }
+      log(trace, `${faction.name} ${current.prototypes.get(unit.prototypeId)?.name ?? 'unit'} suffers bleed (1 dmg, ${remaining} turns left)`);
       died = updatedUnit.hp <= 0;
     }
 

@@ -12,8 +12,7 @@ import {
 import { deriveResourceIncome } from '../src/systems/economySystem';
 import { applyEnvironmentalDamage } from '../src/systems/simulation/environmentalEffects';
 import { createRNG } from '../src/core/rng';
-import type { GameState } from '../src/game/types';
-import type { Faction, Unit } from '../src/game/types';
+import type { GameState, Faction, Unit, FactionId } from '../src/game/types';
 import type { HexCoord } from '../src/types';
 
 const registry = loadRulesRegistry();
@@ -96,7 +95,7 @@ describe('RESEARCH_PROXIMITY_BONUS_PER_CONTACT', () => {
 describe('computeTerrainResearchBonuses', () => {
   it('returns empty map for an unknown faction', () => {
     const state = buildMvpScenario(42);
-    const result = computeTerrainResearchBonuses(state, 'nonexistent' as never, ['venom']);
+    const result = computeTerrainResearchBonuses(state, 'nonexistent' as FactionId, ['venom']);
     expect(result.size).toBe(0);
   });
 

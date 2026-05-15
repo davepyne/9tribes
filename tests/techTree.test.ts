@@ -12,8 +12,7 @@ import { buildMvpScenario } from '../src/game/buildMvpScenario';
 import { createResearchState, startResearch, addResearchProgress, isNodeCompleted, getDomainTier } from '../src/systems/researchSystem';
 import { getDomainProgression, getDomainTierFromProgression } from '../src/systems/domainProgression';
 import civsData from '../src/content/base/civilizations.json';
-import researchData from '../src/content/base/research.json';
-import abilityDomainsData from '../src/content/base/ability-domains.json';
+import { RESEARCH_DOMAINS, ABILITY_DOMAINS } from '../src/content/domains/index.js';
 import type { MvpFactionConfig } from '../src/game/scenarios/mvp';
 import { getMvpFactionConfigs } from '../src/game/scenarios/mvp';
 import type { FactionId, ResearchNodeId } from '../src/types';
@@ -29,7 +28,7 @@ const researchDomains = registry.getAllResearchDomains();
 const allDomainIds = researchDomains.map((d) => d.id);
 
 // Map of tribal IDs from civilization configs
-const tribalIds = Object.keys(researchData);
+const tribalIds = Object.keys(RESEARCH_DOMAINS);
 
 // The domain ID list from research.json (all 10)
 const researchDomainIds = tribalIds; // ['venom','fortress','charge','hitrun','nature_healing','camel_adaptation','tidal_warfare','river_stealth','slaving','heavy_hitter']
@@ -181,24 +180,26 @@ describe('Tribe-to-Domain Mapping', () => {
     expect(domainToTribe.has('tidal_warfare')).toBe(false);
   });
 
-  it('tribes with startingLearnedDomains have those domains listed in faction config', () => {
-    const hillEngineers = factionConfigs.find((c) => c.id === 'hill_clan');
-    expect(hillEngineers).toBeDefined();
-    expect(hillEngineers!.startingLearnedDomains).toBeDefined();
-    expect(hillEngineers!.startingLearnedDomains).toContain('heavy_hitter');
-
+  it('Pirate Lords are the only tribe with a dual-start (slaving native + tidal_warfare learned)', () => {
     const pirateLords = factionConfigs.find((c) => c.id === 'coral_people');
     expect(pirateLords).toBeDefined();
     expect(pirateLords!.startingLearnedDomains).toBeDefined();
     expect(pirateLords!.startingLearnedDomains).toContain('tidal_warfare');
-
-    // Verify these are real research domains
-    expect(registry.getResearchDomain('heavy_hitter')).toBeDefined();
     expect(registry.getResearchDomain('tidal_warfare')).toBeDefined();
+
+    // All other tribes must have no startingLearnedDomains (single-domain start).
+    for (const config of factionConfigs) {
+      if (config.id === 'coral_people') continue;
+      const starting = config.startingLearnedDomains ?? [];
+      expect(
+        starting,
+        `${config.id} unexpectedly has startingLearnedDomains: ${starting.join(', ')}`,
+      ).toEqual([]);
+    }
   });
 
   it('all research domains have an entry in ability-domains.json', () => {
-    const abilityDomainIds = Object.keys(abilityDomainsData.domains);
+    const abilityDomainIds = Object.keys(ABILITY_DOMAINS);
     for (const researchDomainId of researchDomainIds) {
       expect(
         abilityDomainIds,
@@ -211,7 +212,7 @@ describe('Tribe-to-Domain Mapping', () => {
 
   it('each research domain in ability-domains has a valid nativeFaction', () => {
     const validTribes = new Set(factionConfigs.map((c) => c.id));
-    for (const [domainId, domainEntry] of Object.entries(abilityDomainsData.domains)) {
+    for (const [domainId, domainEntry] of Object.entries(ABILITY_DOMAINS)) {
       const nativeFaction = (domainEntry as { nativeFaction?: string }).nativeFaction;
       expect(nativeFaction, `domain "${domainId}" missing nativeFaction`).toBeTruthy();
       expect(validTribes, `domain "${domainId}" has invalid nativeFaction "${nativeFaction}"`).toContain(nativeFaction);
@@ -263,18 +264,6 @@ describe('Runtime Wiring via buildMvpScenario', () => {
   });
 
   describe('startingLearnedDomains behavior', () => {
-    it("Hill Engineers learn heavy_hitter domain as a starting learned domain", () => {
-      const state = buildSingleTribeScenario('hill_clan');
-      const faction = Array.from(state.factions.values())[0]!;
-      const research = state.research.get(faction.id);
-
-      // heavy_hitter should be in learnedDomains
-      expect(faction.learnedDomains).toContain('heavy_hitter');
-
-      // heavy_hitter is a real research domain
-      expect(registry.getResearchDomain('heavy_hitter')).toBeDefined();
-    });
-
     it("Pirate Lords learn tidal_warfare domain as a starting learned domain", () => {
       const state = buildSingleTribeScenario('coral_people');
       const faction = Array.from(state.factions.values())[0]!;
@@ -289,22 +278,6 @@ describe('Runtime Wiring via buildMvpScenario', () => {
   });
 
   describe('learnedDomains composition', () => {
-    it('faction learnedDomains includes nativeDomain + startingLearnedDomains', () => {
-      // Hill Engineers: nativeDomain='fortress', startingLearnedDomains=['fortification']
-      const hillConfig = factionConfigs.find((c) => c.id === 'hill_clan')!;
-      const state = buildSingleTribeScenario('hill_clan');
-      const faction = Array.from(state.factions.values())[0]!;
-
-      expect(faction.learnedDomains).toContain(hillConfig.nativeDomain);
-      for (const d of hillConfig.startingLearnedDomains ?? []) {
-        expect(faction.learnedDomains).toContain(d);
-      }
-      // Should have exactly 2 learned domains (no extras)
-      expect(faction.learnedDomains.length).toBe(
-        1 + (hillConfig.startingLearnedDomains?.length ?? 0),
-      );
-    });
-
     it("Pirate Lords learnedDomains includes slaving + tidal_warfare", () => {
       const state = buildSingleTribeScenario('coral_people');
       const faction = Array.from(state.factions.values())[0]!;
@@ -313,10 +286,11 @@ describe('Runtime Wiring via buildMvpScenario', () => {
       expect(faction.learnedDomains.length).toBe(2);
     });
 
-    it("most tribes have exactly 1 learned domain (nativeDomain only)", () => {
-      // Tribes without startingLearnedDomains should have only their native domain
+    it("all other tribes have exactly 1 learned domain (nativeDomain only)", () => {
+      // After removing Hill Engineers' heavy_hitter dual-start, Pirate Lords
+      // are the only faction with a dual-domain start.
       const singleDomainTribes = ['jungle_clan', 'druid_circle', 'steppe_clan',
-        'desert_nomads', 'savannah_lions', 'river_people', 'frost_wardens'];
+        'hill_clan', 'desert_nomads', 'savannah_lions', 'river_people', 'frost_wardens'];
 
       for (const tribeId of singleDomainTribes) {
         const state = buildSingleTribeScenario(tribeId);
@@ -572,6 +546,7 @@ describe('Domain Progression', () => {
   const factions = Array.from(state.factions.values());
   const jungleClans = factions.find((f) => f.nativeDomain === 'venom')!;
   const hillEngineers = factions.find((f) => f.nativeDomain === 'fortress')!;
+  const pirateLords = factions.find((f) => f.nativeDomain === 'slaving')!;
 
   describe('getDomainTierFromProgression', () => {
     it('returns 0 for a domain not in learnedDomains', () => {
@@ -663,15 +638,15 @@ describe('Domain Progression', () => {
     });
 
     it('advances to mid-tier when 2 domains are learned', () => {
-      // Hill Engineers have 2 learned domains: fortress + fortification
-      const progression = getDomainProgression(hillEngineers);
+      // Pirate Lords are the only dual-start tribe: slaving + tidal_warfare
+      const progression = getDomainProgression(pirateLords);
       expect(progression.learnedDomainCount).toBe(2);
       expect(progression.canBuildMidTier).toBe(true);
       expect(progression.canBuildLateTier).toBe(false);
     });
 
     it('does not flag late-tier with only 2 learned domains', () => {
-      const progression = getDomainProgression(hillEngineers);
+      const progression = getDomainProgression(pirateLords);
       expect(progression.canBuildLateTier).toBe(false);
     });
 

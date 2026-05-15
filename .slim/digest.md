@@ -968,3 +968,131 @@ No significant changes detected.
 ### Dependency Changes
 - `src/systems/factionIdentitySystem.ts` — 11 dependencies
 - `src/systems/knowledgeSystem.ts` — 13 dependencies
+
+---
+
+## Digest — 2026-05-15T18:00:51.050482Z
+
+### Modified Files
+- `src/features/cities/types.ts` — ~1 signatures (CitySiteTraitKey)
+- `src/features/factions/types.ts` — +1 exports (getNativeDomains); -1 exports (WarExhaustion)
+- `src/game/buildMvpScenario.ts` — +1 exports (MutableGameState)
+- `src/systems/capabilityDoctrine.ts` — +2 exports (SlaveOverrides, buildSlaveOverrides); -1 exports (clearDoctrineCache); ~1 signatures (resolveResearchDoctrine)
+- `src/systems/combat-action/helpers.ts` — -1 exports (WATER_TERRAIN)
+- `src/systems/factionIdentitySystem.ts` — -1 exports (getForagingRidersExhaustionBonus)
+- `src/systems/healingSystem.ts` — ~1 signatures (applyHealingForFaction)
+- `src/systems/productionSystem.ts` — +1 exports (getNavalSpawnDisabledReason)
+- `src/systems/simulation/factionTurnEffects.ts` — +4 exports (applyEcologyResearchPass, buildEcologyBreakdown, computeProximityResearchBonuses, computeTerrainResearchBonuses)
+- `src/systems/synergyEffects.ts` — +1 exports (makeEmptyResult)
+- `src/systems/synergyRuntime.ts` — +1 exports (resolveEffectiveSynergies)
+- `src/systems/synergyTypes.ts` — +1 exports (ActiveDoubleStack); -1 exports (SynergyEffect)
+- `src/systems/terrainUtils.ts` — +1 exports (isWoodlandTerrain)
+- `src/world/map/types.ts` — +1 exports (TileResource)
+- `web/src/game/view-model/worldViewModel.ts` — ~1 signatures (buildHudViewModel)
+- `web/src/ui/SynergyUnlockedModal.tsx` — ~1 signatures (useSynergyUnlockDetector)
+- `web/src/ui/resolveActiveSynergies.ts` — +2 exports (BackendSynergyState, resolveActiveSynergiesFromBackend); -1 exports (resolveActiveSynergies)
+
+### Dependency Changes
+- `src/features/cities/types.ts` — 2 dependencies
+- `src/features/factions/types.ts` — 4 dependencies
+- `src/game/buildMvpScenario.ts` — 50 dependencies
+- `src/systems/capabilityDoctrine.ts` — 12 dependencies
+- `src/systems/combat-action/helpers.ts` — 17 dependencies
+- `src/systems/factionIdentitySystem.ts` — 13 dependencies
+- `src/systems/healingSystem.ts` — 20 dependencies
+- `src/systems/productionSystem.ts` — 23 dependencies
+- `src/systems/simulation/factionTurnEffects.ts` — 73 dependencies
+- `src/systems/synergyRuntime.ts` — 3 dependencies
+- `src/world/map/types.ts` — 2 dependencies
+- `web/src/game/view-model/worldViewModel.ts` — 41 dependencies
+- `web/src/ui/SynergyUnlockedModal.tsx` — 7 dependencies
+- `web/src/ui/resolveActiveSynergies.ts` — 3 dependencies
+
+---
+
+## Digest — 2026-05-15T18:15:27.078210Z
+
+### New Files
+- `src/content/domains/index.ts` — 9 exports: AbilityDomainDef, AbilityBaseEffect, RESEARCH_DOMAINS, ABILITY_DOMAINS, getAllResearchDomains, ... (+4 more)
+- `src/content/synergies/index.ts` — 6 exports: PAIR_SYNERGIES, EMERGENT_RULES, getAllPairSynergies, getAllEmergentRules, getPairSynergyById, ... (+1 more)
+- `src/features/zoneEffects/types.ts` — 3 exports: ZoneEffectType, ZONE_EFFECT_LABEL, ZoneEffect
+- `src/game/stateAccess.ts` — 20 exports: getUnit, getFaction, getCity, getPrototype, getResearch, ... (+15 more)
+- `src/systems/maelstromSystem.ts` — 2 exports: DeclareMaelstromResult, declareMaelstrom
+- `src/systems/oasisSystem.ts` — 3 exports: OASIS_RADIUS, DeclareOasisResult, declareOasis
+- `src/systems/primitiveDispatcher.ts` — 1 exports: resolvePrimitives
+- `src/systems/primitiveEvaluator.ts` — 1 exports: evaluateCondition
+- `src/systems/submergeSystem.ts` — 5 exports: SUBMERGE_MAX_RANGE, SubmergeResult, getConnectedWaterway, canSubmerge, executeSubmerge
+- `src/systems/synergyPrimitives.ts` — 24 exports: StatName, FlagName, StatusName, ActionName, VerbName, ... (+19 more)
+- `src/systems/terrainMutationSystem.ts` — 2 exports: setTerrainAt, setTerrainInRadius
+- `src/systems/toxicBloomSystem.ts` — 2 exports: detectAndSpawnToxicBlooms, cleanseToxicBlooms
+- `src/systems/unit-activation/bastion.ts` — 4 exports: BASTION_ATTACK_MARGIN, BASTION_DECISION_SCORE, getBastionOpportunity, buildBastionIfEligible
+- `src/systems/unit-activation/braceAndDugIn.ts` — 2 exports: shouldBrace, applyHillDugInIfEligible
+- `src/systems/unit-activation/maelstrom.ts` — 2 exports: MAELSTROM_DECISION_SCORE, getMaelstromOpportunity
+- `src/systems/unit-activation/oasis.ts` — 2 exports: OASIS_DECISION_SCORE, getOasisOpportunity
+- `src/systems/unit-activation/submerge.ts` — 3 exports: SubmergeOpportunity, SUBMERGE_DECISION_SCORE, getSubmergeOpportunity
+- `src/systems/zoneEffectSystem.ts` — 6 exports: getZoneEffectsAtHex, getZoneEffectDamageOnHex, getZoneEffectMovementPenalty, addZoneEffect, removeZoneEffect, ... (+1 more)
+- `tests/helpers/combatSetup.ts` — 5 exports: getCombatants, placeAdjacent, addExtraUnit, setResearch, fakeFaction
+- `web/src/data/domainMeta.ts` — 7 exports: DOMAIN_IDS, DomainId, DOMAIN_NAMES, DOMAIN_SHORT_NAMES, DOMAIN_COLORS, ... (+2 more)
+- `web/src/data/synergyDataTypes.ts` — 2 exports: PairSynergy, EmergentRule
+- `web/src/data/synergyLookup.ts` — 5 exports: ALL_PAIR_SYNERGIES, ALL_EMERGENT_RULES, PAIR_SYNERGY_BY_ID, EMERGENT_RULE_BY_ID, findSynergyById
+
+### Modified Files
+- `src/core/grid.ts` — +1 exports (hexLineAwayFrom)
+- `src/core/ids.ts` — +1 exports (createZoneEffectId)
+- `src/systems/aiProductionScoring.ts` — ~13 signatures (getProductionCostForPrototype, scoreAggressiveSupplyFill, scoreArmyQualityLag, scoreArmySizePressure, scoreCatapultPreference)
+- `src/systems/aiResearchScoring.ts` — ~1 signatures (getDomainsWithResearchProgress)
+- `src/systems/captureSystem.ts` — +2 exports (findOriginalFaction, liberationOverrides); ~2 signatures (attemptCapture, attemptNonCombatCapture)
+- `src/systems/combatSystem.ts` — -1 exports (addBattleHistory)
+- `src/systems/domainProgression.ts` — ~2 signatures (getDomainProgression, getDomainTierFromProgression)
+- `src/systems/historySystem.ts` — ~5 signatures (addHistoryEntry, recordBattleFought, recordEnemyKilled, recordPromotion, recordUnitCreated)
+- `src/systems/researchSystem.ts` — ~1 signatures (createResearchState)
+- `src/systems/signatureAbilitySystem.ts` — ~1 signatures (hasFortressTraining)
+- `src/systems/strategic-ai/debugReasons.ts` — ~1 signatures (buildDebugReasons)
+- `src/systems/strategic-ai/posture.ts` — ~1 signatures (determinePosture)
+- `src/systems/strategicAi.ts` — -1 exports (getNearestFriendlyCity)
+- `src/systems/territorySystem.ts` — ~1 signatures (getHexOwner)
+- `src/types.ts` — +1 exports (ZoneEffectId)
+- `web/src/game/controller/sessionUtils.ts` — +7 exports (buildBastionAtUnit, declareMaelstromAtUnit, declareOasisAtUnit, executeSubmergeAtUnit, getBastionBuildEligibility); -2 exports (buildFortAtUnit, getFortBuildEligibility)
+
+### Dependency Changes
+- `src/content/synergies/index.ts` imports: src/systems/synergyPrimitives.ts (PrimitiveEffect)
+- `src/features/zoneEffects/types.ts` imports: src/types.ts (ZoneEffectId, FactionId, HexCoord)
+- `src/game/stateAccess.ts` imports: src/core/grid.ts (hexDistance), src/types.ts (HexCoord)
+- `src/systems/maelstromSystem.ts` imports: src/game/types.ts (GameState, ZoneEffect), src/types.ts (FactionId, HexCoord), src/core/grid.ts (hexToKey), src/core/ids.ts (createZoneEffectId), src/systems/capabilityDoctrine.ts (resolveResearchDoctrine)
+- `src/systems/oasisSystem.ts` imports: src/game/types.ts (GameState), src/types.ts (FactionId, HexCoord), src/core/grid.ts (hexToKey), src/systems/capabilityDoctrine.ts (resolveResearchDoctrine), src/systems/terrainMutationSystem.ts (setTerrainInRadius)
+- `src/systems/primitiveDispatcher.ts` imports: src/systems/synergyTypes.ts (CombatContext, SynergyCombatResult), src/systems/primitiveEvaluator.ts (evaluateCondition)
+- `src/systems/primitiveEvaluator.ts` imports: src/systems/synergyTypes.ts (CombatContext), src/systems/synergyPrimitives.ts (ConditionSpec), src/systems/terrainUtils.ts (isWaterTerrain)
+- `src/systems/submergeSystem.ts` imports: src/game/types.ts (GameState), src/types.ts (FactionId, HexCoord, UnitId), src/core/grid.ts (getNeighbors, hexToKey), src/systems/capabilityDoctrine.ts (resolveResearchDoctrine), src/systems/occupancySystem.ts (buildOccupancyMap)
+- `src/systems/terrainMutationSystem.ts` imports: src/core/grid.ts (hexToKey), src/game/types.ts (GameState, HexCoord), src/world/map/types.ts (TerrainType)
+- `src/systems/toxicBloomSystem.ts` imports: src/game/types.ts (GameState, ZoneEffect), src/types.ts (FactionId, HexCoord, UnitId), src/core/grid.ts (hexDistance, hexToKey, getNeighbors), src/core/ids.ts (createZoneEffectId), src/systems/capabilityDoctrine.ts (resolveResearchDoctrine)
+- `src/systems/unit-activation/bastion.ts` imports: src/core/ids.ts (createImprovementId), src/core/grid.ts (hexDistance), src/game/types.ts (GameState, UnitId), src/types.ts (FactionId), src/data/registry/types.ts (RulesRegistry)
+- `src/systems/unit-activation/braceAndDugIn.ts` imports: src/core/grid.ts (hexDistance), src/game/types.ts (GameState, UnitId), src/types.ts (FactionId), src/systems/capabilityDoctrine.ts (resolveResearchDoctrine), src/systems/abilitySystem.ts (canUseBrace)
+- `src/systems/unit-activation/maelstrom.ts` imports: src/game/types.ts (GameState, UnitId), src/types.ts (FactionId), src/data/registry/types.ts (RulesRegistry), src/systems/capabilityDoctrine.ts (resolveResearchDoctrine), src/systems/terrainUtils.ts (isWaterTerrain)
+- `src/systems/unit-activation/oasis.ts` imports: src/game/types.ts (GameState, UnitId), src/types.ts (FactionId), src/data/registry/types.ts (RulesRegistry), src/systems/capabilityDoctrine.ts (resolveResearchDoctrine), src/systems/terrainUtils.ts (isLandTerrain)
+- `src/systems/unit-activation/submerge.ts` imports: src/game/types.ts (GameState, UnitId), src/types.ts (FactionId, HexCoord), src/data/registry/types.ts (RulesRegistry), src/core/grid.ts (hexDistance), src/systems/unit-activation/helpers.ts (countEnemyUnitsNearHex)
+- `src/systems/zoneEffectSystem.ts` imports: src/game/types.ts (GameState, ZoneEffect, ZoneEffectId), src/core/grid.ts (hexDistance), src/features/zoneEffects/types.ts (ZONE_EFFECT_LABEL)
+- `tests/helpers/combatSetup.ts` imports: src/game/types.ts (GameState, Unit, HexCoord), src/types.ts (ResearchNodeId), src/core/enums.ts (VeteranLevel), src/core/ids.ts (createUnitId)
+- `web/src/data/domainMeta.ts` imports: src/content/domains/index.ts (ABILITY_DOMAINS)
+- `web/src/data/synergyLookup.ts` imports: web/src/ui/SynergyCard.tsx (PairSynergyData, EmergentRuleData)
+- `src/core/grid.ts` — 1 dependencies
+- `src/systems/aiProductionScoring.ts` — 16 dependencies
+- `src/systems/aiResearchScoring.ts` — 11 dependencies
+- `src/systems/captureSystem.ts` — 8 dependencies
+- `src/systems/combatSystem.ts` — 19 dependencies
+- `src/systems/domainProgression.ts` — 2 dependencies
+- `src/systems/historySystem.ts` — 5 dependencies
+- `src/systems/researchSystem.ts` — 4 dependencies
+- `src/systems/signatureAbilitySystem.ts` — 10 dependencies
+- `src/systems/strategic-ai/debugReasons.ts` — 4 dependencies
+- `src/systems/strategic-ai/posture.ts` — 7 dependencies
+- `src/systems/strategicAi.ts` — 14 dependencies
+- `src/systems/territorySystem.ts` — 5 dependencies
+- `web/src/game/controller/sessionUtils.ts` — 16 dependencies
+
+---
+
+## Digest — 2026-05-15T18:17:53.142988Z
+
+### Dependency Changes
+
+No significant changes detected.

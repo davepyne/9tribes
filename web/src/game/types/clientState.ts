@@ -177,10 +177,11 @@ export type DebugViewModel = {
 
 export type ClientActionState = {
   selectedUnitId: string | null;
-  targetingMode: 'move' | 'attack' | 'disembark';
+  targetingMode: 'move' | 'attack' | 'disembark' | 'submerge';
   legalMoves: ReachableHexView[];
   attackTargets: AttackTargetView[];
   disembarkHexes: ReachableHexView[];
+  submergeHexes: ReachableHexView[];
   pathPreview: PathPreviewNodeView[];
   canEndTurn: boolean;
   interactionHint: string | null;
@@ -420,13 +421,16 @@ export type GameAction =
   | { type: 'cancel_city_production'; cityId: string }
   | { type: 'remove_from_queue'; cityId: string; queueIndex: number }
   | { type: 'reorder_queue'; cityId: string; fromIndex: number; toIndex: number }
-  | { type: 'set_targeting_mode'; mode: 'move' | 'attack' | 'disembark' }
+  | { type: 'set_targeting_mode'; mode: 'move' | 'attack' | 'disembark' | 'submerge' }
   | { type: 'move_unit'; unitId: string; destination: HexCoord }
   | { type: 'attack_unit'; attackerId: string; defenderId: string }
   | { type: 'prepare_ability'; unitId: string; ability: 'brace' | 'ambush' }
   | { type: 'board_transport'; unitId: string; transportId: string }
   | { type: 'disembark_unit'; unitId: string; transportId: string; destination: HexCoord }
-  | { type: 'build_fort'; unitId: string }
+  | { type: 'build_bastion'; unitId: string }
+  | { type: 'declare_maelstrom'; unitId: string }
+  | { type: 'declare_oasis'; unitId: string }
+  | { type: 'submerge'; unitId: string; destination: HexCoord }
   | { type: 'destroy_fort'; unitId: string }
   | { type: 'build_city'; unitId: string }
   | { type: 'summon_unit'; unitId: string }

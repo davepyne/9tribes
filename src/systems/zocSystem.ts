@@ -7,6 +7,8 @@ import type { HexCoord, FactionId } from '../types.js';
 import type { ResearchDoctrine } from './capabilityDoctrine.js';
 import { getDirectionIndex, getNeighbors, getOppositeDirection } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
+import { isFortificationHex } from './unit-activation/helpers.js';
+import { factionHasEmergentFlag } from './synergyRuntime.js';
 
 /** Naval chassis IDs — any unit with one of these is in the naval ZoC domain. */
 const NAVAL_CHASSIS_IDS = new Set(['naval_frame', 'ranged_naval_frame', 'galley_frame']);
@@ -123,6 +125,17 @@ export function getZoCMovementCost(
     return 0;
   }
 
+  // Emergent rule ZoC immunity (juggernaut, iron_turtle, many_faced phantom)
+  const faction = state.factions.get(movingUnit.factionId);
+  if (factionHasEmergentFlag(faction, 'emergentIgnoreZoc')) {
+    return 0;
+  }
+
+  // Hitrun T1 approach: ignore ZoC when moving toward an enemy to attack
+  if (doctrine?.ignoreZocOnApproachEnabled && blockers.length > 0) {
+    return 0;
+  }
+
   return blockers.length > 0 ? 1 : 0;
 }
 
@@ -149,29 +162,27 @@ export function entersEnemyZoC(
   if (isMounted(movingUnit, state) || canIgnoreZoCWithHitAndRun(movingUnit, state, doctrine)) {
     // But cannot ignore fort ZoC
     if (fortZoC) {
-      return !isOnFortAtHex(state, originHex); // already in fort = no ZoC entry
+      return !isFortificationHex(state, originHex); // already in fort = no ZoC entry
     }
     return false;
   }
 
-  return !isHexInEnemyZoC(originHex, movingUnit, state, doctrine) && isHexInEnemyZoC(targetHex, movingUnit, state, doctrine);
-}
-
-function isOnFortAtHex(gameState: GameState, pos: HexCoord): boolean {
-  for (const [, improvement] of gameState.improvements) {
-    if (improvement.position.q === pos.q && improvement.position.r === pos.r) {
-      return improvement.type === 'fortification';
+  // Emergent rule ZoC immunity (juggernaut, iron_turtle, many_faced phantom)
+  const faction = state.factions.get(movingUnit.factionId);
+  if (factionHasEmergentFlag(faction, 'emergentIgnoreZoc')) {
+    if (fortZoC) {
+      return !isFortificationHex(state, originHex);
     }
+    return false;
   }
-  return false;
-}
 
-/**
- * Check if a unit is cavalry (based on prototype chassis).
- * @deprecated Use isMounted instead for broader mounted unit support
- */
-function isCavalry(unit: Unit, state: GameState): boolean {
-  return isMounted(unit, state);
+  // Hitrun T1 approach: ignore ZoC when moving toward an enemy
+  const targetBlockers = getZoCBlockers(targetHex, movingUnit.factionId, state, movingUnit);
+  if (doctrine?.ignoreZocOnApproachEnabled && targetBlockers.length > 0 && !fortZoC) {
+    return false;
+  }
+
+  return !isHexInEnemyZoC(originHex, movingUnit, state, doctrine) && isHexInEnemyZoC(targetHex, movingUnit, state, doctrine);
 }
 
 /**

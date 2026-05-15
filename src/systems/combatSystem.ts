@@ -62,7 +62,8 @@ export interface CombatModifier {
 
 // Calculate attack stat: base × (1 + veteranBonus)
 function calculateAttack(unit: Unit, prototype: Prototype, veteranBonus: number): number {
-  const base = prototype.derivedStats.attack;
+  const slaveFraction = unit.slaveStatFraction ?? 1;
+  const base = prototype.derivedStats.attack * slaveFraction;
   return Math.max(1, Math.round(base * (1 + veteranBonus)));
 }
 
@@ -75,7 +76,8 @@ function calculateDefense(
   improvementBonus: number,
   situationalDefenseModifier: number
 ): number {
-  const base = prototype.derivedStats.defense;
+  const slaveFraction = unit.slaveStatFraction ?? 1;
+  const base = prototype.derivedStats.defense * slaveFraction;
   const terrainMod = terrain?.defenseModifier ?? 0;
   return Math.max(1, Math.round(base * (1 + terrainMod + improvementBonus + veteranBonus + situationalDefenseModifier)));
 }

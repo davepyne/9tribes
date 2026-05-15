@@ -3,6 +3,7 @@ import type { GameState } from '../game/types.js';
 import type { FactionId, HexCoord } from '../types.js';
 import type { FactionPosture } from './factionStrategy.js';
 import { hexDistance, hexToKey } from '../core/grid.js';
+import { getNativeDomains } from '../features/factions/types.js';
 import { getSupplyDeficit } from './economySystem.js';
 import type { DifficultyLevel } from './aiDifficulty.js';
 import { getAiDifficultyProfile } from './aiDifficulty.js';
@@ -359,13 +360,14 @@ export function computeAiPersonalitySnapshot(
     return snapshot;
   }
 
-  const activeDoctrines = Array.from(new Set([faction.nativeDomain, ...faction.learnedDomains].filter(Boolean)));
+  const nativeSet = new Set(getNativeDomains(faction));
+  const activeDoctrines = Array.from(new Set([...nativeSet, ...faction.learnedDomains].filter(Boolean)));
   snapshot.activeDoctrines = activeDoctrines;
 
   for (const doctrineId of activeDoctrines) {
     const doctrine = registry.getDomainAiDoctrine(doctrineId);
     if (!doctrine) continue;
-    const factor = doctrineId === faction.nativeDomain ? 1 : 0.6;
+    const factor = nativeSet.has(doctrineId) ? 1 : 0.6;
     applyDoctrine(snapshot, doctrine, factor);
     snapshot.reasons.push(`${doctrineId}@${factor}`);
   }

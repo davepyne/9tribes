@@ -1,4 +1,4 @@
-import { hexDistance, hexToKey } from '../../core/grid.js';
+import { hexDistance, hexToKey, getNeighbors } from '../../core/grid.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { GameState, Unit } from '../../game/types.js';
 import type { HexCoord, UnitId } from '../../types.js';
@@ -13,7 +13,7 @@ import {
 } from '../abilitySystem.js';
 import { applyCombatAction, previewCombatAction } from '../combatActionSystem.js';
 import type { CombatActionPreview } from '../combat-action/types.js';
-import { resolveResearchDoctrine } from '../capabilityDoctrine.js';
+import { resolveResearchDoctrine, buildSlaveOverrides } from '../capabilityDoctrine.js';
 import { describeCapabilityLevels } from '../capabilitySystem.js';
 import { findFleeHex } from '../moraleSystem.js';
 import { moveUnit, canMoveTo, getValidMoves } from '../movementSystem.js';
@@ -41,20 +41,29 @@ import {
 } from './helpers.js';
 import {
   shouldBrace,
-  getFieldFortOpportunity,
-  buildFieldFortIfEligible,
   applyHillDugInIfEligible,
-  FIELD_FORT_DECISION_SCORE,
-  FIELD_FORT_ATTACK_MARGIN,
-} from './fieldFort.js';
+} from './braceAndDugIn.js';
+import {
+  getBastionOpportunity,
+  buildBastionIfEligible,
+  BASTION_DECISION_SCORE,
+  BASTION_ATTACK_MARGIN,
+} from './bastion.js';
+import { getMaelstromOpportunity, MAELSTROM_DECISION_SCORE } from './maelstrom.js';
+import { getOasisOpportunity, OASIS_DECISION_SCORE } from './oasis.js';
+import { declareOasis } from '../oasisSystem.js';
+import { getSubmergeOpportunity, SUBMERGE_DECISION_SCORE } from './submerge.js';
+import { executeSubmerge } from '../submergeSystem.js';
 import { findBestTargetChoice, findBestRangedTarget } from './targeting.js';
 import { performStrategicMovement } from './movement.js';
 import { RENDEZVOUS_READY_DISTANCE } from '../strategic-ai/rendezvous.js';
 import { isSettlerPrototype, getAvailableProductionPrototypes, getPrototypeQueueCost, queueUnit } from '../productionSystem.js';
 import { canSacrifice, performSacrifice } from '../sacrificeSystem.js';
 import { createCityId } from '../../core/ids.js';
+import { declareMaelstrom } from '../maelstromSystem.js';
 import { createCitySiteBonuses, findBestCitySiteForFaction, getSettlementOccupancyBlocker } from '../citySiteSystem.js';
 import { syncFactionSettlementIds } from '../factionOwnershipSystem.js';
+import { resolveEffectiveSynergies } from '../synergyRuntime.js';
 
 const HIGH_VALUE_ATTACK_SCORE = 10;
 
@@ -419,21 +428,70 @@ export function activateUnit(
     }
   }
 
-  const fieldFortOpportunity = getFieldFortOpportunity(current, factionId, unitId, registry, fortsBuiltThisRound);
+  const bastionOpportunity = getBastionOpportunity(current, factionId, unitId, registry, fortsBuiltThisRound);
   const bestImmediateAttackScore = Math.max(
     enemy && activeUnit.attacksRemaining > 0 ? enemyChoice.score : -Infinity,
     bestChargeScore,
   );
   if (
-    fieldFortOpportunity
-    && fieldFortOpportunity.score >= FIELD_FORT_DECISION_SCORE
-    && bestImmediateAttackScore < FIELD_FORT_ATTACK_MARGIN
+    bastionOpportunity
+    && bastionOpportunity.score >= BASTION_DECISION_SCORE
+    && bestImmediateAttackScore < BASTION_ATTACK_MARGIN
   ) {
     const improvementCount = current.improvements.size;
-    current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+    current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
     if (current.improvements.size > improvementCount) {
-      log(trace, `${faction.name} ${prototype.name} built a field fort (${fieldFortOpportunity.reason})`);
+      log(trace, `${faction.name} ${prototype.name} raised a Bastion (${bastionOpportunity.reason})`);
       current = applyHillDugInIfEligible(current, factionId, unitId);
+      return { state: setUnitActivated(current, unitId), pendingCombat: null };
+    }
+  }
+
+  // Maelstrom declaration: once-per-game Tidal T3 strategic action.
+  const maelstromOpportunity = getMaelstromOpportunity(current, factionId, unitId, registry);
+  if (
+    maelstromOpportunity
+    && maelstromOpportunity.score >= MAELSTROM_DECISION_SCORE
+    && bestImmediateAttackScore < BASTION_ATTACK_MARGIN
+  ) {
+    const effectCount = current.zoneEffects.size;
+    const activeUnitForMaelstrom = current.units.get(unitId)!;
+    const maelstromResult = declareMaelstrom(current, factionId, activeUnitForMaelstrom.position);
+    if (maelstromResult.declared) {
+      current = maelstromResult.state;
+    }
+    if (current.zoneEffects.size > effectCount) {
+      log(trace, `${faction.name} ${prototype.name} declared a Maelstrom (${maelstromOpportunity.reason})`);
+      return { state: setUnitActivated(current, unitId), pendingCombat: null };
+    }
+  }
+
+  // Oasis declaration: once-per-game Camel T3 native strategic action.
+  const oasisOpportunity = getOasisOpportunity(current, factionId, unitId, registry);
+  if (
+    oasisOpportunity
+    && oasisOpportunity.score >= OASIS_DECISION_SCORE
+    && bestImmediateAttackScore < BASTION_ATTACK_MARGIN
+  ) {
+    const activeUnitForOasis = current.units.get(unitId)!;
+    const oasisResult = declareOasis(current, factionId, activeUnitForOasis.position);
+    if (oasisResult.declared) {
+      current = oasisResult.state;
+      log(trace, `${faction.name} ${prototype.name} proclaimed an Oasis (${oasisOpportunity.reason})`);
+      return { state: setUnitActivated(current, unitId), pendingCombat: null };
+    }
+  }
+
+  const submergeOpp = getSubmergeOpportunity(current, factionId, unitId, registry);
+  if (
+    submergeOpp
+    && submergeOpp.score >= SUBMERGE_DECISION_SCORE
+    && bestImmediateAttackScore < BASTION_ATTACK_MARGIN
+  ) {
+    const submergeResult = executeSubmerge(current, factionId, unitId, submergeOpp.destination);
+    if (submergeResult.submerged) {
+      current = submergeResult.state;
+      log(trace, `${faction.name} ${prototype.name} Submerged to ${submergeOpp.destination.q},${submergeOpp.destination.r} (${submergeOpp.reason})`);
       return { state: setUnitActivated(current, unitId), pendingCombat: null };
     }
   }
@@ -476,7 +534,7 @@ export function activateUnit(
     units.set(unitId, prepareAbility(activeUnit, 'brace', current.round));
     log(trace, `${faction.name} ${prototype.name} braced`);
     current = { ...current, units };
-    current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+    current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
     current = applyHillDugInIfEligible(current, factionId, unitId);
     return { state: current, pendingCombat: null };
   }
@@ -633,7 +691,7 @@ export function activateUnit(
       },
     });
 
-    current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+    current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
     current = applyHillDugInIfEligible(current, factionId, unitId);
     return { state: current, pendingCombat: null };
   }
@@ -647,7 +705,7 @@ export function activateUnit(
     units.set(unitId, prepareAbility(activeUnit, 'ambush', current.round));
     log(trace, `${faction.name} ${prototype.name} prepared an ambush`);
     current = { ...current, units };
-    current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+    current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
     current = applyHillDugInIfEligible(current, factionId, unitId);
     return { state: current, pendingCombat: null };
   }
@@ -685,14 +743,15 @@ export function activateUnit(
 
     if (bestCaptureTarget) {
       const captureResult = attemptNonCombatCapture(
-        current, unitId, bestCaptureTarget, registry, nonCombatChance, hpFraction, captureCooldown, current.rngState
+        current, unitId, bestCaptureTarget, registry, nonCombatChance, hpFraction, captureCooldown, current.rngState,
+        buildSlaveOverrides(factionDoctrine),
       );
       if (captureResult.captured) {
         const capturedUnit = captureResult.state.units.get(bestCaptureTarget);
         const capturedProto = capturedUnit ? captureResult.state.prototypes.get(capturedUnit.prototypeId) : null;
         log(trace, `${faction.name} ${prototype.name} ENSLAVED ${capturedProto?.name ?? 'unit'} (non-combat capture)`);
         current = captureResult.state;
-        current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+        current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
         current = applyHillDugInIfEligible(current, factionId, unitId);
         return { state: setUnitActivated(current, unitId), pendingCombat: null };
       } else {
@@ -707,12 +766,85 @@ export function activateUnit(
     }
   }
 
+  // Shadow Network (river_stealth+river_stealth): position swap with adjacent stealthed ally
+  const activeUnitForSwap = current.units.get(unitId);
+  if (activeUnitForSwap && activeUnitForSwap.isStealthed && activeUnitForSwap.hp > 0) {
+    const swapTags = prototype?.tags ?? [];
+    const swapSynergies = resolveEffectiveSynergies(faction, swapTags);
+    const canSwap = swapSynergies.some(s =>
+      s.effects.some(e => e.kind === 'grantVerb' && (e as { verb: string }).verb === 'positionSwap')
+    );
+    if (canSwap) {
+      // Find an adjacent stealthed ally to swap with — pick the one furthest from enemies
+      let bestSwapAlly: Unit | null = null;
+      let bestSwapDist = -1;
+      for (const allyId of faction.unitIds) {
+        if (allyId === unitId) continue;
+        const ally = current.units.get(allyId as UnitId);
+        if (!ally || ally.hp <= 0 || !ally.isStealthed) continue;
+        if (hexDistance(activeUnitForSwap.position, ally.position) <= 3) {
+          // Find distance to nearest enemy
+          let nearestEnemyDist = Infinity;
+          for (const [, eu] of current.units) {
+            if (eu.factionId !== factionId && eu.hp > 0) {
+              nearestEnemyDist = Math.min(nearestEnemyDist, hexDistance(ally.position, eu.position));
+            }
+          }
+          if (nearestEnemyDist > bestSwapDist) {
+            bestSwapDist = nearestEnemyDist;
+            bestSwapAlly = ally;
+          }
+        }
+      }
+      if (bestSwapAlly) {
+        const swapUnits = new Map(current.units);
+        const posA = activeUnitForSwap.position;
+        const posB = bestSwapAlly.position;
+        swapUnits.set(unitId, { ...activeUnitForSwap, position: posB });
+        swapUnits.set(bestSwapAlly.id, { ...bestSwapAlly, position: posA });
+        current = { ...current, units: swapUnits };
+        activeUnit = current.units.get(unitId)!;
+        log(trace, `${faction.name} ${prototype.name} swapped positions via Shadow Network`);
+      }
+    }
+  }
+
   current = performStrategicMovement(current, unitId, registry, trace);
+
+  // Desert Slave Train (camel_adaptation+slaving): carry captured/slave units along movement path
+  const postMoveUnit = current.units.get(unitId);
+  if (postMoveUnit && postMoveUnit.hp > 0) {
+    const carryTags = prototype?.tags ?? [];
+    const carrySynergies = resolveEffectiveSynergies(faction, carryTags);
+    const canCarry = carrySynergies.some(s =>
+      s.effects.some(e => e.kind === 'setFlag' && (e as { flag: string }).flag === 'caravanPassengerActive')
+    );
+    if (canCarry) {
+      // Move slave units that were adjacent to the unit's pre-move position to be adjacent to the new position
+      const carryUnits = new Map(current.units);
+      for (const allyId of faction.unitIds) {
+        const ally = carryUnits.get(allyId as UnitId);
+        if (!ally || ally.hp <= 0 || !ally.slaveStatFraction) continue;
+        if (hexDistance(activeUnit.position, ally.position) <= 1) {
+          // Find an empty hex adjacent to the moved unit
+          const neighbors = getNeighbors(postMoveUnit.position);
+          for (const hex of neighbors) {
+            const hasOccupant = [...carryUnits.values()].some(u => u.hp > 0 && u.position.q === hex.q && u.position.r === hex.r);
+            if (!hasOccupant) {
+              carryUnits.set(allyId as UnitId, { ...ally, position: hex });
+              break;
+            }
+          }
+        }
+      }
+      current = { ...current, units: carryUnits };
+    }
+  }
 
   const movedUnit = current.units.get(unitId);
   if (movedUnit) {
     if (movedUnit.attacksRemaining <= 0) {
-      current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+      current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
       current = applyHillDugInIfEligible(current, factionId, unitId);
       return { state: setUnitActivated(current, unitId), pendingCombat: null };
     }
@@ -841,7 +973,7 @@ export function activateUnit(
               triggeredEffects: postMoveResolution.triggeredEffects,
             },
           });
-          current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+          current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
           current = applyHillDugInIfEligible(current, factionId, unitId);
           return { state: setUnitActivated(current, unitId), pendingCombat: null };
         }
@@ -849,7 +981,7 @@ export function activateUnit(
     }
   }
 
-  current = buildFieldFortIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
+  current = buildBastionIfEligible(current, factionId, unitId, registry, fortsBuiltThisRound);
   current = applyHillDugInIfEligible(current, factionId, unitId);
 
   return { state: setUnitActivated(current, unitId), pendingCombat: null };

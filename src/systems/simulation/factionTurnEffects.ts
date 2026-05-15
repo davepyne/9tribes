@@ -4,10 +4,11 @@ import type { FactionId, HexCoord, UnitId, ChassisId } from '../../types.js';
 import type { PrototypeId } from '../../types.js';
 import type { Prototype } from '../../features/prototypes/types.js';
 import type { VeteranLevel, UnitStatus } from '../../core/enums.js';
-import { createImprovementId, createUnitId } from '../../core/ids.js';
+import { createImprovementId, createUnitId, createZoneEffectId } from '../../core/ids.js';
 import { hexToKey, hexDistance, getNeighbors, getHexesInRange } from '../../core/grid.js';
 import { isHexOccupied } from '../occupancySystem.js';
 import { resolveResearchDoctrine, prototypeHasComponent } from '../capabilityDoctrine.js';
+import { getNativeDomains } from '../../features/factions/types.js';
 import { addResearchProgress, addResearchProgressToNode, getNextResearchNodeForDomain, startResearch } from '../researchSystem.js';
 import { unlockHybridRecipes } from '../hybridSystem.js';
 import { deriveResourceIncome, getSupplyDeficit, advanceCaptureTimers } from '../economySystem.js';
@@ -58,6 +59,7 @@ import {
 import { getSynergyEngine, resolveEffectiveSynergies } from '../synergyRuntime.js';
 import type { SynergyEngine, ActiveTripleStack, ActiveDoubleStack, ActiveSynergy } from '../synergyEngine.js';
 import { applyHealingSynergies, type HealingContext } from '../synergyEffects.js';
+import { EMERGENT_PARAMS } from '../emergentRuleParams.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { maybeExpirePreparedAbility } from '../unitActivationSystem.js';
 import type { DifficultyLevel } from '../aiDifficulty.js';
@@ -68,7 +70,19 @@ import { log, recordFactionStrategy, recordSiegeEvent, recordResearch, recordTri
 import { getTerrainAt, occupiesFriendlySettlement, applyEnvironmentalDamage, getHealRate } from './environmentalEffects.js';
 import { isWetlandTerrain } from '../terrainUtils.js';
 import { isPassiveWetlandStealth } from '../factionIdentitySystem.js';
+import { addZoneEffect, removeZoneEffectsByOwner } from '../zoneEffectSystem.js';
 import { isWildFaction, CYCLOPS_REGEN_PER_ROUND } from '../wildCyclopsConstants.js';
+
+function findMeatiestUnit(state: GameState, factionId: FactionId): Unit | undefined {
+  const faction = state.factions.get(factionId);
+  if (!faction) return undefined;
+  let best: Unit | undefined;
+  for (const uid of faction.unitIds) {
+    const u = state.units.get(uid as UnitId);
+    if (u && u.hp > 0 && (!best || u.maxHp > best.maxHp)) best = u;
+  }
+  return best;
+}
 
 function removeUnitFromFaction(
   state: GameState,
@@ -352,11 +366,13 @@ export function applyEcologyResearchPass(
   let updatedFaction = faction;
 
   // Sort ecology domains by priority: native > learned > foreign with progress
-  const nativeDomain = faction.nativeDomain ?? '';
+  const nativeDomains = new Set(getNativeDomains(faction));
   const learnedSet = new Set(learnedDomains);
   const sortedDomains = [...allDomains].sort((a, b) => {
-    if (a === nativeDomain && b !== nativeDomain) return -1;
-    if (b === nativeDomain && a !== nativeDomain) return 1;
+    const aNative = nativeDomains.has(a);
+    const bNative = nativeDomains.has(b);
+    if (aNative && !bNative) return -1;
+    if (!aNative && bNative) return 1;
     // Learned domains before foreign
     const aLearned = learnedSet.has(a);
     const bLearned = learnedSet.has(b);
@@ -759,6 +775,23 @@ function applyJuggernautBonus(state: GameState, factionId: FactionId): GameState
   return { ...state, factions };
 }
 
+function applyIronTurtleCrushingZone(state: GameState, factionId: FactionId): GameState {
+  const anchor = findMeatiestUnit(state, factionId);
+  if (!anchor) return state;
+  const params = EMERGENT_PARAMS.iron_turtle;
+  return addZoneEffect(state, {
+    id: createZoneEffectId(),
+    type: 'crushing_zone',
+    center: anchor.position,
+    radius: params.crushingZoneRadius,
+    ownerFactionId: factionId,
+    damagePerTurn: params.crushingZoneDamage,
+    movementPenalty: params.crushingZoneMovementPenalty,
+    turnsRemaining: -1,
+    createdRound: state.round,
+  });
+}
+
 function processWildFactionPhases(state: GameState, factionId: FactionId): GameState {
   const faction = state.factions.get(factionId);
   if (!faction) return state;
@@ -860,12 +893,85 @@ export function processFactionPhases(
   let tripleResult: ActiveTripleStack | undefined;
   let doubleResult: ActiveDoubleStack | null | undefined;
   if (tripleStack) {
-    const emergent = tripleStack.emergentRule.effect;
-    if (emergent.type === 'ghost_army') {
-      current = applyGhostArmyMovement(current, factionId, emergent.phaseAlliesMovementBonus);
+    const emergentId = tripleStack.emergentRule.id;
+    if (emergentId === 'ghost_army') {
+      current = applyGhostArmyMovement(current, factionId, EMERGENT_PARAMS.ghost_army.phaseAlliesMovementBonus);
     }
-    if (emergent.type === 'juggernaut') {
+    if (emergentId === 'juggernaut') {
       current = applyJuggernautBonus(current, factionId);
+    }
+    if (emergentId === 'iron_turtle') {
+      current = applyIronTurtleCrushingZone(current, factionId);
+    }
+    if (emergentId === 'terrain_lord') {
+      const tlFaction = current.factions.get(factionId);
+      if (tlFaction && (tlFaction.terrainLordTerraformCharges ?? 0) <= 0) {
+        const factionsTL = new Map(current.factions);
+        factionsTL.set(factionId, { ...tlFaction, terrainLordTerraformCharges: EMERGENT_PARAMS.terrain_lord.terraformCharges });
+        current = { ...current, factions: factionsTL };
+      }
+    }
+    if (emergentId === 'standing_stone') {
+      const ssFaction = current.factions.get(factionId);
+      const stance = ssFaction?.standingStoneStance ?? 'anchored';
+      if (stance === 'anchored') {
+        const anchor = findMeatiestUnit(current, factionId);
+        if (anchor) {
+          const ssParams = EMERGENT_PARAMS.standing_stone;
+          current = addZoneEffect(current, {
+            id: createZoneEffectId(),
+            type: 'crushing_zone',
+            center: anchor.position,
+            radius: ssParams.anchoredAuraRadius,
+            ownerFactionId: factionId,
+            damagePerTurn: ssParams.anchoredAdjacentDamage,
+            movementPenalty: ssParams.tarPitMovementPenalty,
+            turnsRemaining: -1,
+            createdRound: current.round,
+          });
+        }
+      }
+    }
+    if (emergentId === 'raid_camp') {
+      const rcFaction = current.factions.get(factionId);
+      const enemyPositions: HexCoord[] = [];
+      for (const [, eu] of current.units) {
+        if (eu.factionId !== factionId && eu.hp > 0) enemyPositions.push(eu.position);
+      }
+      let forwardUnit: Unit | undefined;
+      let minEnemyDist = Infinity;
+      for (const uid of (rcFaction?.unitIds ?? [])) {
+        const u = current.units.get(uid as UnitId);
+        if (!u || u.hp <= 0) continue;
+        let closestEnemy = Infinity;
+        for (const ep of enemyPositions) {
+          closestEnemy = Math.min(closestEnemy, hexDistance(u.position, ep));
+        }
+        if (closestEnemy < minEnemyDist) {
+          minEnemyDist = closestEnemy;
+          forwardUnit = u;
+        }
+      }
+      if (forwardUnit) {
+        const rcParams = EMERGENT_PARAMS.raid_camp;
+        current = addZoneEffect(current, {
+          id: createZoneEffectId(),
+          type: 'raid_camp',
+          center: forwardUnit.position,
+          radius: rcParams.campEnemyRadius,
+          ownerFactionId: factionId,
+          damagePerTurn: 0,
+          movementPenalty: 0,
+          turnsRemaining: rcParams.campDuration,
+          createdRound: current.round,
+        });
+      }
+    }
+    if (emergentId === 'many_faced') {
+      const stance = current.factions.get(factionId)?.manyFacedLastStance;
+      if (stance === 'phantom') {
+        current = applyGhostArmyMovement(current, factionId, EMERGENT_PARAMS.many_faced.phantomMovementBonus);
+      }
     }
     tripleResult = tripleStack;
   } else {
@@ -879,6 +985,13 @@ export function processFactionPhases(
         domains: prevTriple.domains,
         emergentRule: prevTriple.emergentRule.name,
       });
+      // Clean up emergent zone effects when triple stack is lost
+      if (prevTriple.emergentRule.id === 'iron_turtle' || prevTriple.emergentRule.id === 'standing_stone') {
+        current = removeZoneEffectsByOwner(current, 'crushing_zone', factionId);
+      }
+      if (prevTriple.emergentRule.id === 'raid_camp') {
+        current = removeZoneEffectsByOwner(current, 'raid_camp', factionId);
+      }
     }
 
     const doubleStack = engine.resolveFactionDouble(faction.nativeDomain, pairEligible);
@@ -911,9 +1024,8 @@ export function processFactionPhases(
 
     // E3 — Slave Empire emergent: captured slaves boost production
     let slaveProductionBonus = 0;
-    if (tripleStack?.emergentRule.effect.type === 'slave_empire') {
-      const slaveEffect = tripleStack.emergentRule.effect as import('../synergyEngine.js').EmergentEffect & { type: 'slave_empire' };
-      slaveProductionBonus = cityProductionIncome * slaveEffect.slaveProductionBonus;
+    if (tripleStack?.emergentRule.id === 'slave_empire') {
+      slaveProductionBonus = cityProductionIncome * EMERGENT_PARAMS.slave_empire.slaveProductionBonus;
     }
 
     let updatedCity = advanceProduction(city, cityProductionIncome + slaveProductionBonus);
@@ -1060,9 +1172,12 @@ export function processFactionPhases(
           const enemyFaction = current.factions.get(neighborUnit.factionId);
           const neighborSynergies = resolveEffectiveSynergies(enemyFaction, neighborTags);
           for (const syn of neighborSynergies) {
-            if (syn.effect.type === 'withering') {
-              const reduction = (syn.effect as { healingReduction: number }).healingReduction;
-              healRate = Math.floor(healRate * (1 - reduction));
+            const witheringMod = syn.effects.find(
+              (e): e is Extract<typeof e, { kind: 'statMod' }> =>
+                e.kind === 'statMod' && e.stat === 'witheringReduction',
+            );
+            if (witheringMod) {
+              healRate = Math.floor(healRate * (1 - witheringMod.value));
               break;
             }
           }
@@ -1081,18 +1196,84 @@ export function processFactionPhases(
       (currentTerrainId === 'tundra' || currentTerrainId === 'hill')
         ? 1
         : 0;
+    // Nature Healing T1 regen + forest override
+    if (doctrine.natureHealingRegenBonus > 0) {
+      if (doctrine.forestRegenBonus > 0 && (terrainId === 'forest' || terrainId === 'jungle')) {
+        healRate += doctrine.forestRegenBonus;
+      } else {
+        healRate += doctrine.natureHealingRegenBonus;
+      }
+    }
+
     const poisonMovePenalty = unit.poisoned ? doctrine.poisonMovePenalty : 0;
-    const refreshedMoves = Math.max(0, unit.maxMoves + coldProvisionMoveBonus - poisonMovePenalty);
+    // Synergy turn effects: read primitive fields from unit synergies
+    let tidalCleanseHeal = 0;
+    let bloomPulseHeal = 0;
+    let bloomPulseSelfHeal = 0;
+    let bloomPulseAuraRadius = 0;
+    let bloomPulseMovementBonus = 0;
+    let slaveEconomyHeal = 0;
+    for (const syn of unitSynergies) {
+      for (const eff of syn.effects) {
+        if (eff.kind === 'statMod') {
+          const sm = eff as Extract<typeof eff, { kind: 'statMod' }>;
+          if (sm.stat === 'tidalCleanseHealPerTurn') tidalCleanseHeal = Math.max(tidalCleanseHeal, sm.value);
+          if (sm.stat === 'bloomPulseHeal') bloomPulseHeal = Math.max(bloomPulseHeal, sm.value);
+          if (sm.stat === 'bloomPulseSelfHeal') bloomPulseSelfHeal = Math.max(bloomPulseSelfHeal, sm.value);
+          if (sm.stat === 'bloomPulseAuraRadius') bloomPulseAuraRadius = Math.max(bloomPulseAuraRadius, sm.value);
+          if (sm.stat === 'bloomPulseMovementBonus') bloomPulseMovementBonus = Math.max(bloomPulseMovementBonus, sm.value);
+          if (sm.stat === 'slaveEconomyHealPerTurn') slaveEconomyHeal = Math.max(slaveEconomyHeal, sm.value);
+        }
+      }
+    }
+
+    // Tidal Restoration (tidal_warfare+nature_healing): heal + cleanse debuffs
+    if (tidalCleanseHeal > 0 && (healTags.includes('healing') || healTags.includes('druid'))) {
+      healRate += tidalCleanseHeal;
+      // Cleansed units lose poison, stun effects
+      if (unit.poisoned) {
+        // Mark for cleanse below
+      }
+    }
+
+    // Life Bloom (nature_healing+nature_healing): periodic healing pulse
+    if (bloomPulseHeal > 0 && (healTags.includes('healing') || healTags.includes('druid'))) {
+      healRate += bloomPulseSelfHeal; // Self-heal for the bloom unit itself
+      // Aura heal for nearby allies is applied in a second pass below
+    }
+
+    // Forced Labor (nature_healing+slaving): slaves heal and produce resources
+    if (slaveEconomyHeal > 0 && unit.slaveStatFraction) {
+      healRate += slaveEconomyHeal;
+    }
+
+    const staggerPenalty = unit.nextTurnMovePenalty ?? 0;
+    const harshTerrainBonus = doctrine.heatResistanceEnabled && (currentTerrainId === 'desert' || currentTerrainId === 'tundra') ? 1 : 0;
+    const bloodtrailBonus = doctrine.bloodtrailMomentumEnabled && (unit.woundsReceivedThisTurn ?? 0) > 0
+      ? unit.woundsReceivedThisTurn!
+      : 0;
+    const refreshedMoves = Math.min(
+      unit.maxMoves + 1 + bloodtrailBonus,
+      Math.max(0, unit.maxMoves + coldProvisionMoveBonus + harshTerrainBonus + bloodtrailBonus + bloomPulseMovementBonus - poisonMovePenalty - staggerPenalty),
+      unit.maxMoves + 3,
+    );
+    const tidalCleanseActive = tidalCleanseHeal > 0 && (healTags.includes('healing') || healTags.includes('druid'));
     const refreshedUnit = {
       ...unit,
       movesRemaining: refreshedMoves,
       attacksRemaining: 1,
       morale: recoverMorale(unit),
       hp: Math.min(unit.maxHp, unit.hp + healRate),
-      poisoned: safeInSettlement ? false : unit.poisoned,
-      poisonStacks: safeInSettlement ? 0 : unit.poisonStacks,
-      poisonTurnsRemaining: safeInSettlement ? 0 : unit.poisonTurnsRemaining,
+      poisoned: safeInSettlement || tidalCleanseActive ? false : unit.poisoned,
+      poisonStacks: safeInSettlement || tidalCleanseActive ? 0 : unit.poisonStacks,
+      poisonTurnsRemaining: safeInSettlement || tidalCleanseActive ? 0 : unit.poisonTurnsRemaining,
+      stunDuration: tidalCleanseActive ? 0 : unit.stunDuration,
       enteredZoCThisActivation: false,
+      nextTurnMovePenalty: undefined,
+      attackedTargetsThisTurn: [],
+      lastStandUsedThisTurn: undefined,
+      killChainCountThisTurn: undefined,
+      woundsReceivedThisTurn: undefined,
     };
 
     let stealthUpdatedUnit = tickStealthCooldown(refreshedUnit);
@@ -1116,6 +1297,71 @@ export function processFactionPhases(
     unitsMap.set(unitIdStr as UnitId, updatedUnit);
   }
   current = { ...current, units: unitsMap };
+
+  // Life Bloom aura pass: druid/healing units with bloomPulse heal nearby allies
+  const bloomAuraUnits = new Map(current.units);
+  for (const unitIdStr of refreshedFaction.unitIds) {
+    const bloomUnit = bloomAuraUnits.get(unitIdStr as UnitId);
+    if (!bloomUnit || bloomUnit.hp <= 0) continue;
+    const bloomProto = current.prototypes.get(bloomUnit.prototypeId);
+    const bloomTags = bloomProto?.tags ?? [];
+    if (!(bloomTags.includes('healing') || bloomTags.includes('druid'))) continue;
+    const bloomSynergies = resolveEffectiveSynergies(refreshedFaction, bloomTags);
+    let auraHeal = 0;
+    let auraRadius = 0;
+    for (const syn of bloomSynergies) {
+      for (const eff of syn.effects) {
+        if (eff.kind === 'statMod') {
+          const sm = eff as Extract<typeof eff, { kind: 'statMod' }>;
+          if (sm.stat === 'bloomPulseHeal') auraHeal = Math.max(auraHeal, sm.value);
+          if (sm.stat === 'bloomPulseAuraRadius') auraRadius = Math.max(auraRadius, sm.value);
+        }
+      }
+    }
+    if (auraHeal > 0 && auraRadius > 0) {
+      for (const [uid, ally] of bloomAuraUnits) {
+        if (ally.factionId !== factionId || ally.hp <= 0 || ally.id === bloomUnit.id) continue;
+        if (hexDistance(bloomUnit.position, ally.position) <= auraRadius) {
+          bloomAuraUnits.set(uid, {
+            ...ally,
+            hp: Math.min(ally.maxHp, ally.hp + auraHeal),
+          });
+        }
+      }
+    }
+  }
+  current = { ...current, units: bloomAuraUnits };
+
+  // Slave economy resource bonus pass
+  for (const unitIdStr of refreshedFaction.unitIds) {
+    const slaveUnit = current.units.get(unitIdStr as UnitId);
+    if (!slaveUnit || slaveUnit.hp <= 0 || !slaveUnit.slaveStatFraction) continue;
+    const slaveProto = current.prototypes.get(slaveUnit.prototypeId);
+    const slaveTags = slaveProto?.tags ?? [];
+    const slaveSynergies = resolveEffectiveSynergies(refreshedFaction, slaveTags);
+    for (const syn of slaveSynergies) {
+      for (const eff of syn.effects) {
+        if (eff.kind === 'statMod') {
+          const sm = eff as Extract<typeof eff, { kind: 'statMod' }>;
+          if (sm.stat === 'slaveEconomyResourceBonus' && sm.value > 0) {
+            const economy = current.economy.get(factionId);
+            if (economy) {
+              const updatedEconomy = {
+                ...economy,
+                productionPool: economy.productionPool + sm.value,
+              };
+              const economyMap = new Map(current.economy);
+              economyMap.set(factionId, updatedEconomy);
+              current = { ...current, economy: economyMap };
+            }
+          }
+        }
+      }
+    }
+    // Only apply once per faction, not per slave unit iteration
+    break;
+  }
+
   current = applyEnvironmentalDamage(current, factionId, registry, trace);
 
   // H-1-2-2: Gain exposure from proximity to enemy units

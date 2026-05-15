@@ -38,6 +38,8 @@ export { getSynergyEngine, calculateSynergyAttackBonus, calculateSynergyDefenseB
 import { recordSnapshot, maybeRecordEndSnapshot } from './simulation/traceRecorder.js';
 import { getVictoryStatus, getAliveFactions } from './simulation/victory.js';
 import { processFactionPhases } from './simulation/factionTurnEffects.js';
+import { tickZoneEffectLifetimes } from './zoneEffectSystem.js';
+import { detectAndSpawnToxicBlooms, cleanseToxicBlooms } from './toxicBloomSystem.js';
 
 
 export function runWarEcologySimulation(
@@ -63,6 +65,7 @@ export function runWarEcologySimulation(
     transportMap: new Map(initialState.transportMap),
     villageCaptureCooldowns: new Map(initialState.villageCaptureCooldowns),
     contaminatedHexes: new Set(initialState.contaminatedHexes),
+    zoneEffects: new Map(initialState.zoneEffects),
   };
   let roundsCompleted = 0;
 
@@ -127,6 +130,14 @@ export function runWarEcologySimulation(
     }
 
     maybeRecordEndSnapshot(current, trace);
+
+    // Tick zone-effect lifetimes at the same logical point as turnSystem.ts
+    // (on round rollover, before the round counter advances). Run the Toxic
+    // Bloom passes in the same order as turnSystem.ts: tick → cleanse →
+    // detect, so re-spawn is consistent across both round-rollover paths.
+    current = tickZoneEffectLifetimes(current);
+    current = cleanseToxicBlooms(current);
+    current = detectAndSpawnToxicBlooms(current);
 
     current = {
       ...current,

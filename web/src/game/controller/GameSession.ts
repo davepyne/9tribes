@@ -1,6 +1,7 @@
 import { buildMvpScenario } from '../../../../src/game/buildMvpScenario.js';
 import { MVP_SCENARIO_CONFIG } from '../../../../src/game/scenarios/mvp.js';
 import type { GameState, UnitId } from '../../../../src/game/types.js';
+import type { HexCoord } from '../../../../src/types.js';
 import { createCityId } from '../../../../src/core/ids.js';
 import { hexDistance, hexToKey } from '../../../../src/core/grid.js';
 import { loadRulesRegistry } from '../../../../src/data/loader/loadRulesRegistry.js';
@@ -33,9 +34,9 @@ import { buildPendingCombat, type PendingCombat } from './combatSession.js';
 export type { PendingCombat } from './combatSession.js';
 import { clearMoveQueueOnUnit, executeQueuedMovesForUnit } from './moveQueueSession.js';
 import { buildReachableMoves } from './movementExplorer.js';
-import { refreshFogForAllFactions, updateSiegeState, getFortBuildEligibility, buildFortAtUnit, getFortDestroyEligibility, destroyFortAtUnit, getPrototypeCost, getAiUnitIds, getPrototypeName, getActiveFactionName, hasCaptureAbility, canPriestSummon, attemptPriestSummon } from './sessionUtils.js';
+import { refreshFogForAllFactions, updateSiegeState, getBastionBuildEligibility, buildBastionAtUnit, getFortDestroyEligibility, destroyFortAtUnit, getPrototypeCost, getAiUnitIds, getPrototypeName, getActiveFactionName, hasCaptureAbility, canPriestSummon, attemptPriestSummon, getMaelstromDeclareEligibility, declareMaelstromAtUnit, getOasisDeclareEligibility, declareOasisAtUnit, executeSubmergeAtUnit } from './sessionUtils.js';
 import type { GameAction, EnemySynergyIntelMap } from '../types/clientState';
-import pairSynergiesData from '../../../../src/content/base/pair-synergies.json';
+import { PAIR_SYNERGIES as PAIR_SYNERGIES_DATA } from '../../../../src/content/synergies/index.js';
 import type { ReplayCombatEvent } from '../types/replay';
 import type { PlayStateSource, SerializedGameState } from '../types/playState';
 import type { AttackTargetView } from '../types/worldView';
@@ -366,9 +367,21 @@ export class GameSession {
         this._undoSnapshot = null;
         this.applySacrifice(action.unitId);
         return;
-      case 'build_fort':
+      case 'build_bastion':
         this.takeUndoSnapshot();
-        this.applyBuildFort(action.unitId);
+        this.applyBuildBastion(action.unitId);
+        return;
+      case 'declare_maelstrom':
+        this.takeUndoSnapshot();
+        this.applyDeclareMaelstrom(action.unitId);
+        return;
+      case 'declare_oasis':
+        this.takeUndoSnapshot();
+        this.applyDeclareOasis(action.unitId);
+        return;
+      case 'submerge':
+        this.takeUndoSnapshot();
+        this.applySubmerge(action.unitId, action.destination);
         return;
       case 'destroy_fort':
         this.takeUndoSnapshot();
@@ -666,11 +679,7 @@ export class GameSession {
     const enemyDomains = enemyFaction.learnedDomains ?? [];
     if (enemyDomains.length < 2) return;
 
-    const pairData = pairSynergiesData.pairSynergies as unknown as Array<{
-      id: string; name: string; domains: [string, string];
-    }>;
-
-    for (const synergy of pairData) {
+    for (const synergy of PAIR_SYNERGIES_DATA) {
       const [d1, d2] = synergy.domains;
       if (!enemyDomains.includes(d1) || !enemyDomains.includes(d2)) continue;
 
@@ -1042,7 +1051,7 @@ export class GameSession {
     );
   }
 
-  private applyBuildFort(unitId: string) {
+  private applyBuildBastion(unitId: string) {
     const unit = this.state.units.get(unitId as UnitId);
     if (!unit || !this.state.activeFactionId || unit.factionId !== this.state.activeFactionId) {
       return;
@@ -1053,15 +1062,61 @@ export class GameSession {
       return;
     }
 
-    const fortEligibility = getFortBuildEligibility(this.state, this.registry, unit);
-    if (!fortEligibility.canBuild) {
+    const bastionEligibility = getBastionBuildEligibility(this.state, this.registry, unit);
+    if (!bastionEligibility.canBuild) {
       return;
     }
 
-    this.state = buildFortAtUnit(this.state, unit, fortEligibility.defenseBonus);
+    this.state = buildBastionAtUnit(this.state, unit, bastionEligibility.defenseBonus);
     this.feedback.lastMove = null;
     this.feedback.lastTurnChange = null;
-    this.record('turn', `${getPrototypeName(this.state,unit.prototypeId)} built a field fort at ${unit.position.q},${unit.position.r}.`);
+    this.record('turn', `${getPrototypeName(this.state,unit.prototypeId)} raised a Bastion at ${unit.position.q},${unit.position.r}.`);
+  }
+
+  private applyDeclareMaelstrom(unitId: string) {
+    const unit = this.state.units.get(unitId as UnitId);
+    if (!unit || !this.state.activeFactionId || unit.factionId !== this.state.activeFactionId) {
+      return;
+    }
+
+    const eligibility = getMaelstromDeclareEligibility(this.state, unit);
+    if (!eligibility.canDeclare) {
+      return;
+    }
+
+    this.state = declareMaelstromAtUnit(this.state, unit);
+    this.feedback.lastMove = null;
+    this.feedback.lastTurnChange = null;
+    this.record('turn', `${getPrototypeName(this.state, unit.prototypeId)} declared a Maelstrom at ${unit.position.q},${unit.position.r}.`);
+  }
+
+  private applyDeclareOasis(unitId: string) {
+    const unit = this.state.units.get(unitId as UnitId);
+    if (!unit || !this.state.activeFactionId || unit.factionId !== this.state.activeFactionId) {
+      return;
+    }
+
+    const eligibility = getOasisDeclareEligibility(this.state, unit);
+    if (!eligibility.canDeclare) {
+      return;
+    }
+
+    this.state = declareOasisAtUnit(this.state, unit);
+    this.feedback.lastMove = null;
+    this.feedback.lastTurnChange = null;
+    this.record('turn', `${getPrototypeName(this.state, unit.prototypeId)} proclaimed an Oasis at ${unit.position.q},${unit.position.r}.`);
+  }
+
+  private applySubmerge(unitId: string, destination: HexCoord) {
+    const unit = this.state.units.get(unitId as UnitId);
+    if (!unit || !this.state.activeFactionId || unit.factionId !== this.state.activeFactionId) {
+      return;
+    }
+
+    this.state = executeSubmergeAtUnit(this.state, unit, destination);
+    this.feedback.lastMove = { unitId, destination };
+    this.feedback.lastTurnChange = null;
+    this.record('turn', `${getPrototypeName(this.state, unit.prototypeId)} Submerged to ${destination.q},${destination.r}.`);
   }
 
   private applyDestroyFort(unitId: string) {

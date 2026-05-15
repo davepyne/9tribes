@@ -4,23 +4,17 @@
 import type { GameState } from '../game/types.js';
 import type { FactionId } from '../types.js';
 import type { Faction } from '../features/factions/types.js';
+import { getNativeDomains } from '../features/factions/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
-import abilityDomainsData from '../content/base/ability-domains.json' with { type: 'json' };
-import pairSynergiesData from '../content/base/pair-synergies.json' with { type: 'json' };
+import { ABILITY_DOMAINS, type AbilityDomainDef } from '../content/domains/index.js';
+import { PAIR_SYNERGIES } from '../content/synergies/index.js';
 import { recordDomainLearned, recordSynergyPair } from './simulation/traceRecorder.js';
 import type { SimulationTrace } from './simulation/traceTypes.js';
 
-// Domain tags to domain ID mapping (built from ability-domains.json)
-type DomainConfig = {
-  id: string;
-  name: string;
-  nativeFaction: string;
-  restrictedToNative?: boolean;
-  tags: string[];
-  baseEffect: unknown;
-};
+// Domain tags to domain ID mapping (sourced from src/content/domains)
+type DomainConfig = AbilityDomainDef;
 
-const DOMAINS = abilityDomainsData.domains as Record<string, DomainConfig>;
+const DOMAINS: Record<string, DomainConfig> = ABILITY_DOMAINS;
 
 // Domains restricted to their native faction only — derived from ability-domains.json
 const RESTRICTED_DOMAINS = new Set(
@@ -45,7 +39,7 @@ export function getForeignT1Cost(assimilatedCount: number): number {
 // Native domain = 1.0x, 1st non-native = 1.33x, 2nd = 1.66x, 3rd = 1.99x, etc.
 // Position is derived from learnedDomains array (native always at index 0)
 export function getDomainCostMultiplier(faction: Faction, domainId: string): number {
-  if (domainId === faction.nativeDomain) return 1.0;
+  if (getNativeDomains(faction).includes(domainId)) return 1.0;
   const index = faction.learnedDomains.indexOf(domainId);
   const effectiveIndex = index >= 0 ? index : faction.learnedDomains.length;
   return 1 + (effectiveIndex * 0.33);
@@ -112,7 +106,7 @@ export function getDomainIdsByTags(tags: string[]): string[] {
  * Check if a domain is foreign to a faction (not native, not already learned).
  */
 export function isForeignDomain(faction: Faction, domainId: string): boolean {
-  return domainId !== faction.nativeDomain && !faction.learnedDomains.includes(domainId);
+  return !getNativeDomains(faction).includes(domainId) && !faction.learnedDomains.includes(domainId);
 }
 
 /**
@@ -173,7 +167,7 @@ export function gainExposure(
     for (const existingDomain of faction.learnedDomains) {
       const synergyPairId = `${existingDomain}+${domainId}`;
       const reversePairId = `${domainId}+${existingDomain}`;
-      const synergyExists = (pairSynergiesData.pairSynergies as any[]).some(
+      const synergyExists = PAIR_SYNERGIES.some(
         (pair) => pair.id === synergyPairId || pair.id === reversePairId
       );
       if (synergyExists) {

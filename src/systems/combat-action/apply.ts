@@ -1,12 +1,14 @@
 import { getEffectiveXpCost } from '../knowledgeSystem.js';
 import { isWaterTerrain } from '../terrainUtils.js';
+import { getZoneEffectsAtHex, addZoneEffect } from '../zoneEffectSystem.js';
 import { getNeighbors, hexDistance, hexToKey } from '../../core/grid.js';
+import { createUnitId } from '../../core/ids.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { Unit } from '../../features/units/types.js';
 import type { GameState } from '../../game/types.js';
-import type { FactionId } from '../../types.js';
-import { rngChance } from '../../core/rng.js';
-import { resolveCapabilityDoctrine } from '../capabilityDoctrine.js';
+import type { FactionId, TileCoord, UnitId } from '../../types.js';
+import { rngChance, rngShuffle } from '../../core/rng.js';
+import { resolveCapabilityDoctrine, buildSlaveOverrides } from '../capabilityDoctrine.js';
 import { clearPreparedAbility } from '../abilitySystem.js';
 import { applyCombatSignals } from '../combatSignalSystem.js';
 import { addResearchProgressToNode, getNextResearchNodeForDomain } from '../researchSystem.js';
@@ -14,13 +16,13 @@ import { unlockHybridRecipes } from '../hybridSystem.js';
 import { awardCombatXP } from '../xpSystem.js';
 import { tryPromoteUnit } from '../veterancySystem.js';
 import { tryLearnFromKill } from '../learnByKillSystem.js';
-import { attemptCapture, attemptNonCombatCapture, getCaptureParams, hasCaptureAbility } from '../captureSystem.js';
+import { attemptCapture, attemptNonCombatCapture, getCaptureParams, hasCaptureAbility, findOriginalFaction, liberationOverrides } from '../captureSystem.js';
 import { applyContactTransfer } from '../capabilitySystem.js';
 import { applyPoisonDoT, enterStealth, findRetreatHex } from '../signatureAbilitySystem.js';
-import { getPrototype } from '../../game/stateAccess.js';
+import { getPrototype, getNearestFriendlyCity } from '../../game/stateAccess.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { getGreedyLootOnKill, getPoisonOnAttack, getPursuitMovementOnKill, isUnitRiverStealthed } from '../factionIdentitySystem.js';
-import { isCoverTerrain } from '../terrainUtils.js';
+import { isCoverTerrain, isWoodlandTerrain } from '../terrainUtils.js';
 
 import {
   recordBattleFought,
@@ -28,7 +30,13 @@ import {
   recordPromotion,
   updateCombatRecordOnLoss,
   updateCombatRecordOnWin,
+  addHistoryEntry,
+  getHistoryByType,
 } from '../historySystem.js';
+
+import { setTerrainAt } from '../terrainMutationSystem.js';
+import { createZoneEffectId } from '../../core/ids.js';
+import { EMERGENT_PARAMS } from '../emergentRuleParams.js';
 
 import type {
   CombatActionApplyResult,
@@ -42,6 +50,8 @@ import {
   removeDeadUnitsFromFactions,
   rotateUnitToward,
   writeUnitToState,
+  healUnit,
+  applyDamageToAdjacentEnemies,
   applyKnockbackDistance,
   destroyTransportIfApplicable,
 } from './helpers.js';
@@ -90,6 +100,44 @@ function applyCombatResearchBonus(
   return { ...state, research: researchMap };
 }
 
+interface PoisonInRangeOptions {
+  factionFilter: 'friendlies' | 'enemies';
+  filterFactionId: FactionId;
+  stacks: number;
+  damagePerStack: number;
+  duration: number;
+  provenance?: { factionId: FactionId; prototypeId?: string };
+}
+
+function applyPoisonInRange(
+  units: ReadonlyMap<UnitId, Unit>,
+  center: TileCoord,
+  radius: number,
+  opts: PoisonInRangeOptions,
+): { units: Map<UnitId, Unit>; targetsHit: number } {
+  const newUnits = new Map(units);
+  let targetsHit = 0;
+
+  for (const [uid, u] of newUnits) {
+    if (opts.factionFilter === 'friendlies' && u.factionId !== opts.filterFactionId) continue;
+    if (opts.factionFilter === 'enemies' && u.factionId === opts.filterFactionId) continue;
+    if (u.hp <= 0) continue;
+    if (hexDistance(u.position, center) > radius) continue;
+
+    let poisonedUnit = applyPoisonDoT(u, opts.stacks, opts.damagePerStack, opts.duration);
+    if (opts.provenance) {
+      poisonedUnit = { ...poisonedUnit, poisonedBy: opts.provenance.factionId };
+      if (opts.provenance.prototypeId !== undefined) {
+        poisonedUnit = { ...poisonedUnit, poisonSourcePrototypeId: opts.provenance.prototypeId };
+      }
+    }
+    newUnits.set(uid, poisonedUnit);
+    targetsHit++;
+  }
+
+  return { units: newUnits, targetsHit };
+}
+
 export function applyCombatAction(
   state: GameState,
   registry: RulesRegistry,
@@ -101,6 +149,7 @@ export function applyCombatAction(
     capturedOnKill: false,
     retreatCaptured: false,
     pressGangCaptured: false,
+    captiveChampionSpawned: false,
     poisonDetonated: false,
     greedyLootGained: 0,
     pursuitMovementRestored: 0,
@@ -110,25 +159,33 @@ export function applyCombatAction(
     combatHealingApplied: 0,
     sandstormTargetsHit: 0,
     contaminatedHexApplied: false,
-    frostbiteApplied: false,
     hitAndRunTriggered: false,
-    healOnRetreatApplied: 0,
     totalKnockbackDistance: 0,
     pursuitDamageApplied: 0,
     emergentSustainHealApplied: 0,
     emergentSustainMinHpSaved: false,
     emergentSmiteApplied: 0,
     emergentUndyingSaved: false,
+    lastStandSaved: false,
+    bleedApplied: false,
+    killChainApplied: false,
+    sporeJumpApplied: false,
+    myceliumNetworkApplied: false,
     emergentManyFacedStance: '',
     instantKillTriggered: false,
     stunApplied: 0,
-    formationCrushApplied: 0,
     synergyReflectionDamage: 0,
     aoeTargetsHit: 0,
     heavyRegenApplied: 0,
-    slaveHealApplied: 0,
     captureEscapePrevented: false,
     synergyCaptureBonus: 0,
+    chargeSplashTargetsHit: 0,
+    armadaChainDamage: 0,
+    woundedEarthAbsorbed: 0,
+    woundedEarthAlliesHealed: 0,
+    woundedEarthSaved: false,
+    saplingApplied: false,
+    saplingMaxHpBonus: 0,
   };
 
   const attacker = state.units.get(preview.attackerId);
@@ -166,6 +223,11 @@ export function applyCombatAction(
     ? resolveCapabilityDoctrine(state.research.get(attacker.factionId), attackerFactionForDoctrine)
     : undefined;
 
+  const defenderFactionForDoctrine = state.factions.get(defender.factionId);
+  const defenderDoctrineEarly = defenderFactionForDoctrine
+    ? resolveCapabilityDoctrine(state.research.get(defender.factionId), defenderFactionForDoctrine)
+    : undefined;
+
   // E5 — Paladin minHp: can't drop below threshold from a single hit
   const attackerChassis = registry.getChassis(attackerPrototype.chassisId);
   const isNavalAttacker = attackerChassis?.movementClass === 'naval';
@@ -184,6 +246,7 @@ export function applyCombatAction(
         captureParams.hpFraction,
         captureParams.cooldown,
         state.rngState,
+        buildSlaveOverrides(attackerDoctrine),
       );
 
       const spentAttacker = enslavementResult.state.units.get(preview.attackerId);
@@ -215,8 +278,11 @@ export function applyCombatAction(
     }
   }
 
+  const atk = preview.details.attackerSynergy;
+  const def = preview.details.defenderSynergy;
+
   const rawAttackerHp = attacker.hp - preview.result.attackerDamage;
-  const minHpFloor = preview.details.emergentSustainMinHp;
+  const minHpFloor = atk.getStat('emergentSustainMinHp');
   let attackerHp = Math.max(0, rawAttackerHp);
   if (minHpFloor > 0 && rawAttackerHp <= 0 && attacker.hp > 0) {
     attackerHp = Math.min(minHpFloor, attacker.hp);
@@ -224,7 +290,7 @@ export function applyCombatAction(
   }
 
   // Juggernaut undying: survive at 1 HP once per combat
-  if (preview.details.emergentUndying && rawAttackerHp <= 0 && attacker.hp > 0 && attackerHp <= 0) {
+  if (atk.hasFlag('emergentUndying') && rawAttackerHp <= 0 && attacker.hp > 0 && attackerHp <= 0) {
     attackerHp = 1;
     baseResolution.emergentUndyingSaved = true;
   }
@@ -240,41 +306,102 @@ export function applyCombatAction(
     movesRemaining: 0,
     activatedThisRound: true,
     status: 'spent',
+    woundsReceivedThisTurn: preview.result.attackerDamage > 0
+      ? (attacker.woundsReceivedThisTurn ?? 0) + 1
+      : attacker.woundsReceivedThisTurn,
   };
   let nextDefender: Unit = {
     ...defender,
     hp: Math.max(0, defender.hp - preview.result.defenderDamage),
     morale: Math.max(0, defender.morale - preview.result.defenderMoraleLoss),
-    routed: preview.result.defenderRouted || preview.result.defenderFled,
+    routed: defender.slaveRoutImmune ? false : (preview.result.defenderRouted || preview.result.defenderFled),
     hillDugIn: false,
     digInStacks: 0,
     status: preview.result.defenderDestroyed ? 'spent' : defender.status,
+    woundsReceivedThisTurn: preview.result.defenderDamage > 0
+      ? (defender.woundsReceivedThisTurn ?? 0) + 1
+      : defender.woundsReceivedThisTurn,
   };
 
-  // Phase 3C — Heavy naval ram: extra damage from naval ram synergy
-  if (preview.details.heavyNavalRamDamage > 0 && isNavalAttacker && nextDefender.hp > 0) {
-    nextDefender = { ...nextDefender, hp: Math.max(0, nextDefender.hp - preview.details.heavyNavalRamDamage) };
+  // Nature Healing T2 — Wounded Earth: terrain absorbs 25% damage on forest/jungle
+  let woundedEarthAbsorbed = 0;
+  let woundedEarthAlliesHealed = 0;
+  if (
+    defenderDoctrineEarly?.woundedEarthEnabled
+    && preview.result.defenderDamage > 0
+    && isWoodlandTerrain(defenderTerrainId)
+  ) {
+    const absorbAmount = Math.floor(preview.result.defenderDamage * 0.25);
+    if (absorbAmount > 0) {
+      woundedEarthAbsorbed = absorbAmount;
+      if (!defenderDoctrineEarly.woundedEarthHealEnabled) {
+        // Foreign: terrain absorbs damage, reducing HP loss
+        const newHp = Math.min(defender.hp, nextDefender.hp + absorbAmount);
+        nextDefender = {
+          ...nextDefender,
+          hp: newHp,
+          terrainDamageAbsorption: absorbAmount,
+        };
+        if (preview.result.defenderDestroyed && newHp > 0) {
+          baseResolution.woundedEarthSaved = true;
+        }
+      } else {
+        // Native: defender takes full damage; adjacent allies heal instead (applied after current is built)
+        nextDefender = { ...nextDefender, terrainDamageAbsorption: absorbAmount };
+      }
+    }
   }
 
-  // Phase 3C — Slave coercion: extra damage when attacking with slaves
-  if (preview.details.slaveCoercionDamageBonus > 0 && nextDefender.hp > 0) {
-    const coercionDmg = Math.max(1, Math.floor(preview.result.defenderDamage * preview.details.slaveCoercionDamageBonus));
+  // Revert 'spent' status if Wounded Earth saved the defender
+  if (baseResolution.woundedEarthSaved) {
+    nextDefender = { ...nextDefender, status: defender.status };
+  }
+
+  // Heavy naval ram: extra damage from naval ram synergy
+  const heavyNavalRamDamage = atk.getStat('heavyNavalRamDamage');
+  if (heavyNavalRamDamage > 0 && isNavalAttacker && nextDefender.hp > 0) {
+    nextDefender = { ...nextDefender, hp: Math.max(0, nextDefender.hp - heavyNavalRamDamage) };
+  }
+
+  // Slave coercion: extra damage when attacking with slaves
+  const slaveCoercionDamageBonus = atk.getStat('slaveCoercionDamageBonus');
+  if (slaveCoercionDamageBonus > 0 && nextDefender.hp > 0) {
+    const coercionDmg = Math.max(1, Math.floor(preview.result.defenderDamage * slaveCoercionDamageBonus));
     nextDefender = { ...nextDefender, hp: Math.max(0, nextDefender.hp - coercionDmg) };
   }
 
-  // Phase 3A — Lethal Ambush: instant kill bypasses normal damage
-  if (preview.details.instantKill && nextDefender.hp > 0) {
+  // Lethal Ambush: instant kill bypasses normal damage
+  if (atk.hasFlag('instantKill') && nextDefender.hp > 0) {
     nextDefender = { ...nextDefender, hp: 0 };
     baseResolution.instantKillTriggered = true;
   }
 
+  // Heavy Hitter T3 native — Last Stand: survive lethal at 1 HP once per turn
+  if (
+    nextDefender.hp <= 0
+    && defender.hp > 0
+    && defenderDoctrineEarly?.lastStandEnabled
+    && !defender.lastStandUsedThisTurn
+    && !baseResolution.instantKillTriggered
+  ) {
+    // Restore HP + status. The 'spent' status was set above based on the
+    // preview's destroyed prediction; revert it so the saved defender is
+    // not mis-flagged as having acted/died.
+    nextDefender = { ...nextDefender, hp: 1, lastStandUsedThisTurn: true, status: defender.status };
+    baseResolution.lastStandSaved = true;
+  }
+
+  const defenderActuallyDestroyed = preview.result.defenderDestroyed && !baseResolution.lastStandSaved && !baseResolution.woundedEarthSaved;
+
   if (preview.attackerWasStealthed && attacker.isStealthed && nextAttacker.hp > 0) {
     const isDesertStealth = attackerDoctrine?.permanentStealthEnabled === true
       && (preview.details.attackerTerrainId === 'desert' || preview.details.attackerTerrainId === 'tundra');
-    const isEmergentTerrainStealth = preview.details.emergentPermanentStealthTerrains.length > 0
-      && preview.details.emergentPermanentStealthTerrains.includes(preview.details.attackerTerrainId);
+    const stealthTerrains = atk.getList('emergentPermanentStealthTerrains');
+    const isEmergentTerrainStealth = stealthTerrains.length > 0
+      && stealthTerrains.includes(preview.details.attackerTerrainId);
     const isRiverTerrainStealth = isUnitRiverStealthed(attackerFactionForDoctrine, preview.details.attackerTerrainId);
-    if (!isDesertStealth && !isEmergentTerrainStealth && !isRiverTerrainStealth) {
+    const isPersistentStealth = attackerDoctrine?.persistentStealthOnAttackEnabled === true;
+    if (!isDesertStealth && !isEmergentTerrainStealth && !isRiverTerrainStealth && !isPersistentStealth) {
       nextAttacker = { ...nextAttacker, isStealthed: false, turnsSinceStealthBreak: 1 };
     }
   }
@@ -285,6 +412,21 @@ export function applyCombatAction(
     nextDefender = clearPreparedAbility(nextDefender);
   }
 
+  // River Stealth T2 — Predator bleed: first attack from stealth applies bleed
+  if (
+    preview.attackerWasStealthed
+    && attackerDoctrine?.predatorBleedEnabled
+    && nextDefender.hp > 0
+    && !defenderActuallyDestroyed
+  ) {
+    nextDefender = {
+      ...nextDefender,
+      bleeding: true,
+      bleedTurnsRemaining: 3,
+    };
+    baseResolution.bleedApplied = true;
+  }
+
   let feedback: CombatActionFeedback = {
     lastLearnedDomain: null,
     hitAndRunRetreat: null,
@@ -292,7 +434,7 @@ export function applyCombatAction(
     resolution: baseResolution,
   };
 
-  if (preview.result.defenderDestroyed && !preview.result.attackerDestroyed && nextAttacker.hp > 0) {
+  if (defenderActuallyDestroyed && !preview.result.attackerDestroyed && nextAttacker.hp > 0) {
     const learnResult = tryLearnFromKill(nextAttacker, defender, state, state.rngState, undefined, learnChanceScale);
     nextAttacker = learnResult.unit;
     if (learnResult.learned && learnResult.domainId) {
@@ -307,8 +449,12 @@ export function applyCombatAction(
   }
 
   if (nextAttacker.hp > 0) {
-    nextAttacker = awardCombatXP(nextAttacker, preview.result.defenderDestroyed, !preview.result.attackerDestroyed);
+    nextAttacker = awardCombatXP(nextAttacker, defenderActuallyDestroyed, !preview.result.attackerDestroyed);
     nextAttacker = tryPromoteUnit(nextAttacker, registry);
+    nextAttacker = {
+      ...nextAttacker,
+      attackedTargetsThisTurn: [...(nextAttacker.attackedTargetsThisTurn ?? []), preview.defenderId],
+    };
 
     // Slayer bonus: killing a cyclops promotes directly to Elite
     if (preview.result.defenderDestroyed && defenderPrototype?.tags?.includes('cyclops')) {
@@ -338,14 +484,35 @@ export function applyCombatAction(
 
   const attackerFaction = current.factions.get(attacker.factionId);
   const defenderFaction = current.factions.get(defender.factionId);
-  const defenderDoctrine = defenderFaction
-    ? resolveCapabilityDoctrine(current.research.get(defender.factionId), defenderFaction)
-    : undefined;
+  const defenderDoctrine = defenderDoctrineEarly;
+
+  // Nature Healing T2 native — Wounded Earth: adjacent allies on forest/jungle heal for absorbed amount
+  if (woundedEarthAbsorbed > 0 && defenderDoctrineEarly?.woundedEarthHealEnabled) {
+    const healUnits = new Map(current.units);
+    for (const adjHex of getNeighbors(defender.position)) {
+      const adjUnitId = getUnitAtHex(current, adjHex);
+      if (!adjUnitId) continue;
+      const adjUnit = healUnits.get(adjUnitId);
+      if (!adjUnit || adjUnit.factionId !== defender.factionId || adjUnit.hp <= 0) continue;
+      const adjTerrainId = current.map?.tiles.get(hexToKey(adjHex))?.terrain ?? '';
+      if (isWoodlandTerrain(adjTerrainId)) {
+        healUnits.set(adjUnitId, {
+          ...adjUnit,
+          hp: Math.min(adjUnit.maxHp, adjUnit.hp + woundedEarthAbsorbed),
+        });
+        woundedEarthAlliesHealed++;
+      }
+    }
+    if (woundedEarthAlliesHealed > 0) {
+      current = { ...current, units: healUnits };
+    }
+  }
 
   // E5 — Paladin sustain: heal for % of damage dealt
   let emergentSustainHealApplied = 0;
-  if (preview.details.emergentSustainHealPercent > 0 && nextAttacker.hp > 0 && preview.result.defenderDamage > 0) {
-    const sustainHeal = Math.floor(preview.result.defenderDamage * preview.details.emergentSustainHealPercent);
+  const emergentSustainHealPercent = atk.getStat('emergentSustainHealPercent');
+  if (emergentSustainHealPercent > 0 && nextAttacker.hp > 0 && preview.result.defenderDamage > 0) {
+    const sustainHeal = Math.floor(preview.result.defenderDamage * emergentSustainHealPercent);
     if (sustainHeal > 0) {
       const sustainUnit = current.units.get(preview.attackerId);
       if (sustainUnit && sustainUnit.hp > 0) {
@@ -361,8 +528,9 @@ export function applyCombatAction(
 
   // E5b — Paladin smite: bonus damage when attacker is at full HP
   let emergentSmiteApplied = 0;
-  if (preview.details.emergentSmiteBonus > 0 && attacker.hp >= attacker.maxHp && nextDefender.hp > 0) {
-    const smiteDamage = Math.floor(preview.result.defenderDamage * preview.details.emergentSmiteBonus);
+  const emergentSmiteBonus = atk.getStat('emergentSmiteBonus');
+  if (emergentSmiteBonus > 0 && attacker.hp >= attacker.maxHp && nextDefender.hp > 0) {
+    const smiteDamage = Math.floor(preview.result.defenderDamage * emergentSmiteBonus);
     if (smiteDamage > 0) {
       const smittenDefender = current.units.get(preview.defenderId);
       if (smittenDefender && smittenDefender.hp > 0) {
@@ -409,14 +577,46 @@ export function applyCombatAction(
         greedyCaptureHpFraction: autoCaptureThreshold,
       }
     : null;
-  // E3/E4 — emergent capture bonus from Slave Empire (+0.20) and Desert Raider (+0.30 in desert)
-  const emergentCaptureBonus = preview.details.emergentCaptureBonus
-    + (preview.details.defenderTerrainId === 'desert' ? preview.details.emergentDesertCaptureBonus : 0);
-  // Phase 3B — synergy capture bonuses
+  // Maelstrom auto-capture: native tidal T3 — naval kills inside attacker's
+  // own Maelstrom auto-capture regardless of HP threshold (slaving synergy).
+  const maelstromAutoCapture = attackerDoctrine?.maelstromAutoCaptureEnabled
+    && isNavalAttacker
+    && getZoneEffectsAtHex(current, defender.position).some(
+      e => e.type === 'maelstrom' && e.ownerFactionId === attacker.factionId,
+    )
+    ? { greedyCaptureChance: 1, greedyCaptureCooldown: 0, greedyCaptureHpFraction: 0.5 }
+    : null;
+  // Slaving T3 — Naval capture radius: friendly naval units within range extend
+  // auto-capture to non-capture attackers (naval support aura).
+  const navalRadius = attackerDoctrine?.navalCaptureRadius ?? 0;
+  const hasNavalSupport = navalRadius > 0
+    && !hasCaptureAbility(attackerPrototype, registry)
+    && !autoCaptureAbility
+    && !maelstromAutoCapture
+    && Array.from(current.units.values()).some(unit => {
+      if (unit.factionId !== attacker.factionId || unit.id === attacker.id) return false;
+      if (hexDistance(unit.position, defender.position) > navalRadius) return false;
+      const proto = current.prototypes.get(unit.prototypeId);
+      const chassis = proto ? registry.getChassis(proto.chassisId) : undefined;
+      return chassis?.movementClass === 'naval' && !unit.slaveStatFraction;
+    });
+  const navalSupportCapture = hasNavalSupport && defender.hp <= defender.maxHp * 0.5
+    ? { greedyCaptureChance: 1, greedyCaptureCooldown: 0, greedyCaptureHpFraction: 0.5 }
+    : null;
+  // Juggernaut slaving signature: auto-capture below HP threshold
+  const emergentCaptureBelowHpPercent = atk.getStat('emergentCaptureBelowHpPercent');
+  const juggernautSlavingCapture = emergentCaptureBelowHpPercent > 0
+    && !autoCaptureAbility && !maelstromAutoCapture && !navalSupportCapture
+    && defender.hp <= defender.maxHp * emergentCaptureBelowHpPercent
+    ? { greedyCaptureChance: 1, greedyCaptureCooldown: 0, greedyCaptureHpFraction: emergentCaptureBelowHpPercent }
+    : null;
+  // E3/E4 — emergent capture bonus from Slave Empire (+0.20)
+  const emergentCaptureBonus = atk.getStat('emergentCaptureBonus');
+  // Synergy capture bonuses
   let synergyCaptureBonus = 0;
-  if (preview.details.isChargeAttack) synergyCaptureBonus += preview.details.chargeCaptureChance;
-  if (isWaterTerrain(attackerTerrainId)) synergyCaptureBonus += preview.details.navalCaptureBonus;
-  if (preview.attackerWasStealthed) synergyCaptureBonus += preview.details.stealthCaptureBonus;
+  if (preview.details.isChargeAttack) synergyCaptureBonus += atk.getStat('chargeCaptureChance');
+  if (isWaterTerrain(attackerTerrainId)) synergyCaptureBonus += atk.getStat('navalCaptureBonus');
+  if (preview.attackerWasStealthed) synergyCaptureBonus += atk.getStat('stealthCaptureBonus');
   baseResolution.synergyCaptureBonus = synergyCaptureBonus;
   const totalCaptureBonus = emergentCaptureBonus + synergyCaptureBonus;
 
@@ -427,9 +627,9 @@ export function applyCombatAction(
   let capturedOnKill = false;
   let retreatCaptured = false;
   if (
-    preview.result.defenderDestroyed
+    defenderActuallyDestroyed
     && nextAttacker.hp > 0
-    && (hasCaptureAbility(attackerPrototype, registry) || isGreedyCoastal || autoCaptureAbility)
+    && (hasCaptureAbility(attackerPrototype, registry) || isGreedyCoastal || autoCaptureAbility || maelstromAutoCapture || navalSupportCapture || juggernautSlavingCapture)
   ) {
     const captureResult = attemptCapture(
       current,
@@ -437,11 +637,15 @@ export function applyCombatAction(
       defender,
       registry,
       autoCaptureAbility
+        ?? maelstromAutoCapture
+        ?? navalSupportCapture
+        ?? juggernautSlavingCapture
         ?? (isGreedyCoastal && !hasCaptureAbility(attackerPrototype, registry)
           ? registry.getSignatureAbility(attacker.factionId)
           : null),
       current.rngState,
       totalCaptureBonus > 0 ? totalCaptureBonus : undefined,
+      buildSlaveOverrides(attackerDoctrine),
     );
     current = captureResult.state;
     capturedOnKill = captureResult.captured;
@@ -450,7 +654,7 @@ export function applyCombatAction(
   // Phase A — Press gang capture (slaving_t1): capture chance on kill vs wounded
   let pressGangCaptured = false;
   if (
-    preview.result.defenderDestroyed
+    defenderActuallyDestroyed
     && !capturedOnKill
     && attackerDoctrine?.pressGangCaptureEnabled
     && nextAttacker.hp > 0
@@ -459,13 +663,19 @@ export function applyCombatAction(
     // was already deleted from current.units when defenderDestroyed is true.
     if (defender) {
       if (rngChance(current.rngState, 0.3)) {
+        const slaveHp = attackerDoctrine?.slaveHpFraction ?? 0.25;
+        const overrides = buildSlaveOverrides(attackerDoctrine);
+        const isReCapture = findOriginalFaction(defender, defender.factionId) === attacker.factionId;
+        const liberation = liberationOverrides(isReCapture, overrides, defender.slaveStatFraction);
         const captured: Unit = {
           ...defender,
           factionId: attacker.factionId,
-          hp: Math.max(1, Math.floor(defender.maxHp * 0.25)),
+          hp: Math.max(1, Math.floor(defender.maxHp * slaveHp)),
           morale: 40,
           veteranLevel: 'green' as import('../../core/enums.js').VeteranLevel,
           status: 'ready' as import('../../core/enums.js').UnitStatus,
+          slaveStatFraction: liberation.statFraction,
+          slaveRoutImmune: liberation.routImmune,
         };
         const unitsAfterCapture = new Map(current.units);
         unitsAfterCapture.set(preview.defenderId, captured);
@@ -475,6 +685,7 @@ export function applyCombatAction(
           factionsAfterCapture.set(attacker.factionId, {
             ...attackerFactionAfterCapture,
             unitIds: [...attackerFactionAfterCapture.unitIds, captured.id],
+            slaveCaptureCount: attackerFactionAfterCapture.slaveCaptureCount + 1,
           });
         }
         current = { ...current, units: unitsAfterCapture, factions: factionsAfterCapture };
@@ -486,7 +697,7 @@ export function applyCombatAction(
 
   // Phase A — Greedy loot on kill (Pirate Lords passive)
   let greedyLootGained = 0;
-  if (preview.result.defenderDestroyed && nextAttacker.hp > 0) {
+  if (defenderActuallyDestroyed && nextAttacker.hp > 0) {
     const loot = getGreedyLootOnKill(attackerFaction);
     if (loot) {
       const attackerEconomy = current.economy.get(attacker.factionId);
@@ -503,9 +714,40 @@ export function applyCombatAction(
     }
   }
 
+  // Mycelium Network (venom_t3 native): a kill on a hex covered by an
+  // attacker-owned Toxic Bloom propagates 2 fresh poison stacks to ALL
+  // friendly units within 3 hexes of that bloom's center.
+  let myceliumTargets = 0;
+  if (
+    defenderActuallyDestroyed
+    && attackerDoctrine?.myceliumNetworkOnKillEnabled
+    && nextAttacker.hp > 0
+  ) {
+    let ownedBloom: import('../../game/types.js').ZoneEffect | null = null;
+    for (const effect of current.zoneEffects.values()) {
+      if (effect.type !== 'toxic_bloom') continue;
+      if (effect.ownerFactionId !== attacker.factionId) continue;
+      if (hexDistance(defender.position, effect.center) > effect.radius) continue;
+      ownedBloom = effect;
+      break;
+    }
+    if (ownedBloom) {
+      const result = applyPoisonInRange(current.units, ownedBloom.center, 3, {
+        factionFilter: 'friendlies', filterFactionId: attacker.factionId,
+        stacks: 2, damagePerStack: attackerDoctrine.poisonDamagePerStack, duration: 3,
+        provenance: { factionId: attacker.factionId, prototypeId: attacker.prototypeId },
+      });
+      if (result.targetsHit > 0) {
+        current = { ...current, units: result.units };
+        baseResolution.myceliumNetworkApplied = true;
+        myceliumTargets = result.targetsHit;
+      }
+    }
+  }
+
   // Phase A — Poison detonate (venom_t3 native): AoE poison on adjacent enemies after kill
   let poisonDetonated = false;
-  if (preview.result.defenderDestroyed && attackerDoctrine?.nativePoisonDetonateEnabled && nextAttacker.hp > 0) {
+  if (defenderActuallyDestroyed && attackerDoctrine?.nativePoisonDetonateEnabled && nextAttacker.hp > 0) {
     const detonateUnits = new Map(current.units);
     let detonateCount = 0;
     for (const adjHex of getNeighbors(defender.position)) {
@@ -530,9 +772,53 @@ export function applyCombatAction(
     }
   }
 
+  // Charge T3 native — splash: 50% of charge damage to enemies adjacent to defender
+  let chargeSplashDamage = 0;
+  let chargeSplashTargetsHit = 0;
+  if (
+    preview.details.isChargeAttack
+    && preview.details.chargeSplashEnabled
+    && preview.result.defenderDamage > 0
+    && nextAttacker.hp > 0
+  ) {
+    chargeSplashDamage = Math.max(1, Math.floor(preview.result.defenderDamage * 0.5));
+    const splash = applyDamageToAdjacentEnemies(current, defender.position, attacker.factionId, chargeSplashDamage);
+    if (splash.hitCount > 0) {
+      current = splash.state;
+      chargeSplashTargetsHit = splash.hitCount;
+      baseResolution.chargeSplashTargetsHit = splash.hitCount;
+    }
+  }
+
+  // Armada chain damage: naval units deal +1 damage per friendly naval unit within 2 hexes (cap +4)
+  let armadaChainDamage = 0;
+  const chainBonus = atk.getStat('formationChainBonus');
+  if (chainBonus > 0 && isNavalAttacker && nextDefender.hp > 0) {
+    let chainCount = 0;
+    for (const unit of current.units.values()) {
+      if (unit.factionId !== attacker.factionId || unit.id === attacker.id || unit.hp <= 0) continue;
+      if (hexDistance(unit.position, attacker.position) > 2) continue;
+      const proto = current.prototypes.get(unit.prototypeId);
+      const chassis = proto ? registry.getChassis(proto.chassisId) : undefined;
+      if (chassis?.movementClass === 'naval') chainCount++;
+    }
+    const cappedCount = Math.min(chainCount, 4);
+    if (cappedCount > 0) {
+      armadaChainDamage = chainBonus * cappedCount;
+      const chainDefender = current.units.get(preview.defenderId);
+      if (chainDefender && chainDefender.hp > 0) {
+        const newHp = Math.max(0, chainDefender.hp - armadaChainDamage);
+        const chainUnits = new Map(current.units);
+        chainUnits.set(preview.defenderId, { ...chainDefender, hp: newHp });
+        current = { ...current, units: chainUnits };
+        baseResolution.armadaChainDamage = armadaChainDamage;
+      }
+    }
+  }
+
   // Phase A — Pursuit movement (foraging_riders): restore movement after kill
   let pursuitMovementRestored = 0;
-  if (preview.result.defenderDestroyed && nextAttacker.hp > 0) {
+  if (defenderActuallyDestroyed && nextAttacker.hp > 0) {
     const pursuitMoves = getPursuitMovementOnKill(attackerFaction);
     if (pursuitMoves > 0) {
       const pursuitUnit = current.units.get(preview.attackerId);
@@ -551,7 +837,7 @@ export function applyCombatAction(
 
   // Melee advance: melee attacker occupies defender's hex on kill (not capture)
   if (
-    preview.result.defenderDestroyed
+    defenderActuallyDestroyed
     && !attackerActuallyDestroyed
     && !capturedOnKill
     && !attackerIsRanged
@@ -567,31 +853,202 @@ export function applyCombatAction(
     }
   }
 
-  if (!preview.result.defenderDestroyed && preview.result.defenderFled && nextAttacker.hp > 0 && (attackerDoctrine?.captureRetreatEnabled || preview.details.retreatCaptureChance > 0)) {
-    const retreatChance = (attackerDoctrine?.captureRetreatEnabled ? 0.15 : 0) + preview.details.retreatCaptureChance;
+  // Hitrun T3 — Killing Chain: follow-up attack after kill
+  if (
+    defenderActuallyDestroyed
+    && !attackerActuallyDestroyed
+    && (attackerDoctrine?.killChainEnabled || attackerDoctrine?.nativeKillChainEnabled)
+  ) {
+    const chainUnit = current.units.get(preview.attackerId);
+    if (chainUnit && chainUnit.hp > 0) {
+      const attackRange = attackerPrototype.derivedStats.range ?? 1;
+      const maxChains = attackerDoctrine.nativeKillChainEnabled ? 3 : 1;
+      const currentChainCount = chainUnit.killChainCountThisTurn ?? 0;
+      if (currentChainCount < maxChains) {
+        // Find nearest enemy within attack range (excluding the already-killed defender)
+        let nearestEnemy: Unit | null = null;
+        let nearestDist = Infinity;
+        for (const [uid, u] of current.units) {
+          if (u.factionId === attacker.factionId || u.hp <= 0 || uid === preview.defenderId) continue;
+          const dist = hexDistance(chainUnit.position, u.position);
+          if (dist <= attackRange && dist < nearestDist) {
+            nearestDist = dist;
+            nearestEnemy = u;
+          }
+        }
+        if (nearestEnemy) {
+          const damageMultiplier = attackerDoctrine.nativeKillChainEnabled ? 1.0 : 0.6;
+          const chainDamage = Math.max(1, Math.floor(preview.result.defenderDamage * damageMultiplier));
+          const newHp = Math.max(0, nearestEnemy.hp - chainDamage);
+          const chainUnits = new Map(current.units);
+          chainUnits.set(nearestEnemy.id, { ...nearestEnemy, hp: newHp });
+          // If the chain killed the target, remove from factions
+          if (newHp <= 0) {
+            chainUnits.delete(nearestEnemy.id);
+            current = { ...current, units: chainUnits, factions: removeDeadUnitsFromFactions(current.factions, chainUnits) };
+          } else {
+            current = { ...current, units: chainUnits };
+          }
+          // Increment chain counter on attacker
+          const updatedChainUnit = current.units.get(preview.attackerId);
+          if (updatedChainUnit) {
+            current = writeUnitToState(current, {
+              ...updatedChainUnit,
+              killChainCountThisTurn: (updatedChainUnit.killChainCountThisTurn ?? 0) + 1,
+            });
+          }
+          baseResolution.killChainApplied = true;
+        }
+      }
+    }
+  }
+
+  const retreatCaptureChance = atk.getStat('retreatCaptureChance');
+  if (!defenderActuallyDestroyed && preview.result.defenderFled && nextAttacker.hp > 0 && (attackerDoctrine?.captureRetreatEnabled || retreatCaptureChance > 0)) {
+    const retreatChance = (attackerDoctrine?.captureRetreatEnabled ? 0.15 : 0) + retreatCaptureChance;
+    const retreatSlaveHp = attackerDoctrine?.slaveHpFraction ?? 0.25;
+    const retreatSlaveOverrides = buildSlaveOverrides(attackerDoctrine);
     const retreatCapture = attemptNonCombatCapture(
       current,
       preview.attackerId,
       preview.defenderId,
       registry,
       retreatChance,
-      0.25,
+      retreatSlaveHp,
       0,
       current.rngState,
+      retreatSlaveOverrides,
     );
     current = retreatCapture.state;
     retreatCaptured = retreatCapture.captured;
   }
 
-  let totalKnockbackDistance = 0;
-  const effectiveKnockback = preview.details.totalKnockbackDistance + preview.details.heavyMassStacks;
-  if (effectiveKnockback > 0 && !preview.result.defenderDestroyed && !retreatCaptured) {
-    const knockbackResult = applyKnockbackDistance(current, preview.attackerId, preview.defenderId, effectiveKnockback);
-    current = knockbackResult.state;
-    totalKnockbackDistance = knockbackResult.appliedDistance;
+  // Slaving T3 native — Captive Champion: every 5 captures spawn a promoted unit
+  const anyCapture = capturedOnKill || pressGangCaptured || retreatCaptured;
+  if (anyCapture && attackerDoctrine?.slaverTranscendenceEnabled && nextAttacker.hp > 0) {
+    const captorFaction = current.factions.get(attacker.factionId);
+    if (captorFaction && captorFaction.slaveCaptureCount > 0 && captorFaction.slaveCaptureCount % 5 === 0) {
+      const championPrototype = current.prototypes.get(defender.prototypeId);
+      if (championPrototype) {
+        const spawnHex = getNeighbors(nextAttacker.position).find(hex => {
+          const tile = current.map?.tiles.get(hexToKey(hex));
+          if (!tile) return false;
+          return !getUnitAtHex(current, hex);
+        });
+        if (spawnHex) {
+          const stats = championPrototype.derivedStats;
+          const championUnit: Unit = {
+            id: createUnitId(),
+            factionId: attacker.factionId,
+            position: spawnHex,
+            facing: nextAttacker.facing,
+            hp: stats.hp,
+            maxHp: stats.hp,
+            movesRemaining: stats.moves,
+            maxMoves: stats.moves,
+            attacksRemaining: 1,
+            xp: 0,
+            veteranLevel: 'seasoned' as import('../../core/enums.js').VeteranLevel,
+            status: 'ready' as import('../../core/enums.js').UnitStatus,
+            prototypeId: defender.prototypeId,
+            history: [{ type: 'captive_champion', timestamp: current.round, details: { round: current.round, fromCaptureOf: defender.id } }],
+            morale: 75,
+            routed: false,
+            poisonStacks: 0,
+            poisonTurnsRemaining: 0,
+            isStealthed: false,
+            turnsSinceStealthBreak: 0,
+            learnedAbilities: [],
+          };
+          const champUnits = new Map(current.units);
+          champUnits.set(championUnit.id, championUnit);
+          const champFactions = new Map(current.factions);
+          champFactions.set(attacker.factionId, {
+            ...captorFaction,
+            unitIds: [...captorFaction.unitIds, championUnit.id],
+          });
+          current = { ...current, units: champUnits, factions: champFactions };
+          baseResolution.captiveChampionSpawned = true;
+        }
+      }
+    }
   }
 
-  if (preview.result.defenderDestroyed && !capturedOnKill) {
+  // Slaving T2 — Slave market: +1 production to nearest city on capture
+  if (anyCapture && attackerDoctrine?.captureRetreatEnabled && nextAttacker.hp > 0) {
+    const nearestCity = getNearestFriendlyCity(current, attacker.factionId, defender.position);
+    if (nearestCity) {
+      const updatedCities = new Map(current.cities);
+      updatedCities.set(nearestCity.id, {
+        ...nearestCity,
+        productionProgress: nearestCity.productionProgress + 1,
+      });
+      current = { ...current, cities: updatedCities };
+    }
+  }
+
+  let totalKnockbackDistance = 0;
+  let knockbackCollisionDamage = 0;
+  const effectiveKnockback = preview.details.totalKnockbackDistance;
+  const collisionDmg = atk.getStat('formationPinballCollisionDamage');
+  if (effectiveKnockback > 0 && !defenderActuallyDestroyed && !retreatCaptured) {
+    const knockbackResult = applyKnockbackDistance(current, preview.attackerId, preview.defenderId, effectiveKnockback, collisionDmg);
+    current = knockbackResult.state;
+    totalKnockbackDistance = knockbackResult.appliedDistance;
+    knockbackCollisionDamage = knockbackResult.collisionDamageApplied;
+  }
+
+  // Juggernaut charge signature: knockback on kill
+  const emergentKnockbackOnKill = atk.getStat('emergentKnockbackOnKill');
+  if (emergentKnockbackOnKill > 0 && defenderActuallyDestroyed) {
+    const knockbackResult = applyKnockbackDistance(current, preview.attackerId, preview.defenderId, emergentKnockbackOnKill);
+    current = knockbackResult.state;
+    totalKnockbackDistance += knockbackResult.appliedDistance;
+  }
+
+  // Charge T2 — Rout on big charge + Stampede
+  let bigChargeRoutTriggered = false;
+  let stampedeDamageApplied = 0;
+  if (
+    preview.details.isChargeAttack
+    && !defenderActuallyDestroyed
+    && !retreatCaptured
+    && attackerDoctrine?.routOnBigChargeEnabled
+    && preview.result.defenderDamage > defender.maxHp * 0.5
+  ) {
+    const routedDefender = current.units.get(preview.defenderId);
+    if (routedDefender && routedDefender.hp > 0 && !routedDefender.slaveRoutImmune) {
+      current = writeUnitToState(current, { ...routedDefender, routed: true });
+      bigChargeRoutTriggered = true;
+
+      // Native Stampede: routed target moves 2 hexes randomly, takes 2 dmg on collision
+      if (attackerDoctrine.stampedeOnRoutEnabled) {
+        let stampedeUnit = current.units.get(preview.defenderId);
+        if (stampedeUnit) {
+          const neighbors = getNeighbors(stampedeUnit.position);
+          const shuffled = rngShuffle(current.rngState, neighbors);
+          let moved = 0;
+          for (const hex of shuffled) {
+            if (moved >= 2) break;
+            const occupant = getUnitAtHex(current, hex);
+            if (occupant) {
+              // Collision: deal 2 damage to the stampeding unit
+              stampedeUnit = { ...stampedeUnit, hp: Math.max(0, stampedeUnit.hp - 2) };
+              stampedeDamageApplied = 2;
+              break;
+            }
+            const tile = current.map?.tiles.get(`${hex.q},${hex.r}`);
+            if (!tile) continue;
+            stampedeUnit = { ...stampedeUnit, position: hex };
+            moved++;
+          }
+          current = writeUnitToState(current, stampedeUnit);
+        }
+      }
+    }
+  }
+
+  if (defenderActuallyDestroyed && !capturedOnKill) {
     current = destroyTransportIfApplicable(current, preview.defenderId, registry);
   }
   if (attackerActuallyDestroyed) {
@@ -609,7 +1066,7 @@ export function applyCombatAction(
   }
   current = unlockHybridRecipes(current, attacker.factionId, registry);
 
-  if (preview.result.defenderDestroyed && !capturedOnKill) {
+  if (defenderActuallyDestroyed && !capturedOnKill) {
     current = updateCombatRecordOnWin(current, attacker.factionId as FactionId, current.round);
     current = updateCombatRecordOnLoss(current, defender.factionId as FactionId, current.round);
   } else if (attackerActuallyDestroyed) {
@@ -619,11 +1076,14 @@ export function applyCombatAction(
 
   const hitAndRunEligible =
     attackerDoctrine?.universalHitAndRunEnabled
-    || (attackerDoctrine?.hitAndRunEnabled && preview.result.defenderDestroyed);
+    || (attackerDoctrine?.hitAndRunEnabled && defenderActuallyDestroyed);
   if (hitAndRunEligible) {
     const retreatingAttacker = current.units.get(preview.attackerId);
     if (retreatingAttacker && retreatingAttacker.hp > 0) {
-      const retreatHex = findRetreatHex(retreatingAttacker, current);
+      const retreatHex = findRetreatHex(retreatingAttacker, current, {
+        ghostPassActive: atk.hasFlag('ghostPassActive'),
+        preferWater: atk.hasFlag('beachRaidRetreatToWater'),
+      });
       if (retreatHex) {
         const unitsAfterRetreat = new Map(current.units);
         unitsAfterRetreat.set(retreatingAttacker.id, {
@@ -641,6 +1101,25 @@ export function applyCombatAction(
     }
   }
 
+  // Juggernaut hitrun signature: free reposition after kill
+  if (atk.getStat('emergentFreeReposition') > 0 && defenderActuallyDestroyed && !hitAndRunEligible) {
+    const repositionAttacker = current.units.get(preview.attackerId);
+    if (repositionAttacker && repositionAttacker.hp > 0) {
+      const retreatHex = findRetreatHex(repositionAttacker, current);
+      if (retreatHex) {
+        current = writeUnitToState(current, {
+          ...repositionAttacker,
+          position: retreatHex,
+          status: 'ready',
+        });
+        feedback = {
+          ...feedback,
+          hitAndRunRetreat: { unitId: repositionAttacker.id, to: retreatHex },
+        };
+      }
+    }
+  }
+
   let updatedAttacker = current.units.get(preview.attackerId);
   let updatedDefender = current.units.get(preview.defenderId);
 
@@ -648,12 +1127,12 @@ export function applyCombatAction(
     updatedAttacker = recordBattleFought(
       updatedAttacker,
       defender.id,
-      preview.result.defenderDestroyed,
+      defenderActuallyDestroyed,
       preview.result.attackerDamage,
       preview.result.defenderDamage,
       state.round,
     );
-    if (preview.result.defenderDestroyed) {
+    if (defenderActuallyDestroyed) {
       updatedAttacker = recordEnemyKilled(updatedAttacker, defender.id, state.round);
     }
     if (updatedAttacker.veteranLevel !== attacker.veteranLevel) {
@@ -669,7 +1148,7 @@ export function applyCombatAction(
     || (attackerDoctrine?.toxicBulwarkEnabled === true)
     || (attackerDoctrine?.venomousStrikesEnabled === true);
   let poisonApplied = false;
-  if (!preview.result.defenderDestroyed && preview.result.defenderDamage > 0 && canInflictPoison && updatedDefender) {
+  if (!defenderActuallyDestroyed && preview.result.defenderDamage > 0 && canInflictPoison && updatedDefender) {
     updatedDefender = applyPoisonDoT(
       updatedDefender,
       attackerDoctrine?.poisonStacksOnHit ?? 1,
@@ -681,11 +1160,23 @@ export function applyCombatAction(
     poisonApplied = true;
   }
 
-  // Phase 3A — Synergy poison stacks (separate from tag-based poison)
-  if (preview.details.poisonStacks > 0 && !preview.result.defenderDestroyed && updatedDefender) {
+  // Synergy poison stacks
+  const synergyPoisonStacks = atk.getStat('poisonStacks');
+  if (synergyPoisonStacks > 0 && !defenderActuallyDestroyed && updatedDefender) {
     updatedDefender = current.units.get(preview.defenderId);
     if (updatedDefender && updatedDefender.hp > 0) {
-      updatedDefender = applyPoisonDoT(updatedDefender, preview.details.poisonStacks, 1, 3);
+      updatedDefender = applyPoisonDoT(updatedDefender, synergyPoisonStacks, 1, 3);
+      updatedDefender = { ...updatedDefender, poisonedBy: attacker.factionId } as Unit;
+      current = writeUnitToState(current, updatedDefender);
+      poisonApplied = true;
+    }
+  }
+
+  const emergentPoisonPerHit = atk.getStat('emergentPoisonPerHit');
+  if (emergentPoisonPerHit > 0 && !defenderActuallyDestroyed) {
+    updatedDefender = current.units.get(preview.defenderId);
+    if (updatedDefender && updatedDefender.hp > 0) {
+      updatedDefender = applyPoisonDoT(updatedDefender, emergentPoisonPerHit, 1, 3);
       updatedDefender = { ...updatedDefender, poisonedBy: attacker.factionId } as Unit;
       current = writeUnitToState(current, updatedDefender);
       poisonApplied = true;
@@ -693,7 +1184,7 @@ export function applyCombatAction(
   }
 
   // Jungle Stalkers passive: extra poison stacks in native terrain (stacks with venom_t1)
-  if (!preview.result.defenderDestroyed) {
+  if (!defenderActuallyDestroyed) {
     const junglePoison = getPoisonOnAttack(attackerFaction, attackerTerrainId);
     if (junglePoison && junglePoison.stacks > 0) {
       updatedDefender = current.units.get(preview.defenderId);
@@ -707,11 +1198,100 @@ export function applyCombatAction(
   }
 
   let contaminatedHexApplied = false;
-  if (preview.result.defenderDestroyed && attackerDoctrine?.contaminateTerrainEnabled) {
+  if (defenderActuallyDestroyed && attackerDoctrine?.contaminateTerrainEnabled) {
     const contaminatedHexes = new Set(current.contaminatedHexes);
     contaminatedHexes.add(hexToKey(defender.position));
     current = { ...current, contaminatedHexes };
     contaminatedHexApplied = true;
+  }
+
+  // Spore-jump (venom_t2): when a poisoned enemy dies, jump poison stacks to nearby enemies.
+  let sporeJumpTargets = 0;
+  if (
+    defenderActuallyDestroyed
+    && attackerDoctrine?.sporeJumpEnabled
+    && nextAttacker.hp > 0
+    && defender.poisonStacks > 0
+  ) {
+    let sporeJumped = false;
+    let sporeUnits = new Map(current.units);
+    if (attackerDoctrine.sporeJumpAllEnemies) {
+      const result = applyPoisonInRange(current.units, defender.position, 2, {
+        factionFilter: 'enemies', filterFactionId: attacker.factionId,
+        stacks: 1, damagePerStack: attackerDoctrine.poisonDamagePerStack, duration: 3,
+        provenance: { factionId: attacker.factionId, prototypeId: attacker.prototypeId },
+      });
+      if (result.targetsHit > 0) {
+        sporeUnits = result.units;
+        sporeJumped = true;
+        sporeJumpTargets = result.targetsHit;
+      }
+    } else {
+      sporeUnits = new Map(current.units);
+      const jumpPoison = (id: UnitId, u: Unit) => {
+        const jumped = applyPoisonDoT(u, 1, attackerDoctrine.poisonDamagePerStack, 3);
+        sporeUnits.set(id, { ...jumped, poisonedBy: attacker.factionId, poisonSourcePrototypeId: attacker.prototypeId });
+      };
+      let nearestId: UnitId | null = null;
+      let nearestDist = Infinity;
+      for (const [uid, u] of sporeUnits) {
+        if (u.factionId === attacker.factionId || u.hp <= 0) continue;
+        const dist = hexDistance(u.position, defender.position);
+        if (dist <= 2 && dist < nearestDist) {
+          nearestDist = dist;
+          nearestId = uid;
+          if (dist === 1) break;
+        }
+      }
+      if (nearestId) {
+        jumpPoison(nearestId, sporeUnits.get(nearestId)!);
+        sporeJumped = true;
+        sporeJumpTargets = 1;
+      }
+    }
+    if (sporeJumped) {
+      current = { ...current, units: sporeUnits };
+      baseResolution.sporeJumpApplied = true;
+    }
+  }
+
+  // Toxic Spread (venom+venom): when a poisoned enemy dies, spread poison to adjacent enemies
+  const toxicSpreadTransferRadius = atk.getStat('toxicSpreadTransferRadius');
+  if (
+    defenderActuallyDestroyed
+    && toxicSpreadTransferRadius > 0
+    && defender.poisonStacks > 0
+    && nextAttacker.hp > 0
+  ) {
+    const spreadRadius = toxicSpreadTransferRadius;
+    const spreadStacks = atk.getStat('toxicSpreadTransferStacks');
+    const spreadResult = applyPoisonInRange(current.units, defender.position, spreadRadius, {
+      factionFilter: 'enemies', filterFactionId: attacker.factionId,
+      stacks: spreadStacks, damagePerStack: attackerDoctrine?.poisonDamagePerStack ?? 1, duration: 3,
+      provenance: { factionId: attacker.factionId, prototypeId: attacker.prototypeId },
+    });
+    if (spreadResult.targetsHit > 0) {
+      current = { ...current, units: spreadResult.units };
+    }
+  }
+
+  // Sapling: Nature Healing T3 native — cap +3 lifetime
+  let saplingMaxHpBonus = 0;
+  if (
+    defenderActuallyDestroyed
+    && attackerDoctrine?.saplingOnKillEnabled
+    && nextAttacker.hp > 0
+  ) {
+    current = setTerrainAt(current, defender.position, 'forest');
+    const saplingKillCount = getHistoryByType(nextAttacker, 'sapling_kill').length;
+    if (saplingKillCount < 3) {
+      updatedAttacker = addHistoryEntry(nextAttacker, 'sapling_kill', { hex: defender.position }, current.round);
+      updatedAttacker = { ...updatedAttacker, maxHp: updatedAttacker.maxHp + 1, hp: updatedAttacker.hp + 1 };
+      current = writeUnitToState(current, updatedAttacker);
+      saplingMaxHpBonus = 1;
+    }
+    baseResolution.saplingApplied = true;
+    baseResolution.saplingMaxHpBonus = saplingMaxHpBonus;
   }
 
   updatedAttacker = current.units.get(preview.attackerId);
@@ -721,7 +1301,7 @@ export function applyCombatAction(
     current = writeUnitToState(current, rotateUnitToward(updatedAttacker, defender.position));
   }
   updatedAttacker = current.units.get(preview.attackerId);
-  if (updatedDefender && !preview.result.defenderDestroyed) {
+  if (updatedDefender && !defenderActuallyDestroyed) {
     current = writeUnitToState(
       current,
       rotateUnitToward(updatedDefender, updatedAttacker?.position ?? attacker.position),
@@ -731,17 +1311,20 @@ export function applyCombatAction(
   updatedAttacker = current.units.get(preview.attackerId);
   let reflectionDamageApplied = 0;
   if (defenderDoctrine?.damageReflectionEnabled && preview.result.defenderDamage > 0 && updatedAttacker) {
-    reflectionDamageApplied = Math.max(1, Math.floor(preview.result.defenderDamage * 0.25));
+    const reflectionPct = defenderDoctrine.nativeDamageReflectionEnabled ? 0.5 : 0.25;
+    reflectionDamageApplied = Math.max(1, Math.floor(preview.result.defenderDamage * reflectionPct));
     updatedAttacker = {
       ...updatedAttacker,
       hp: Math.max(0, updatedAttacker.hp - reflectionDamageApplied),
+      ...(defenderDoctrine.nativeDamageReflectionEnabled ? { nextTurnMovePenalty: 1 } : {}),
     };
     current = writeUnitToState(current, updatedAttacker);
   }
 
-  // Phase 3C — Synergy damage reflection (heavy_fortress, iron_turtle)
-  if (preview.details.damageReflection > 0 && preview.result.defenderDamage > 0 && updatedAttacker) {
-    const synergyReflectedDmg = Math.max(1, Math.floor(preview.result.defenderDamage * preview.details.damageReflection));
+  // Synergy damage reflection
+  const totalReflection = def.getStat('damageReflection') + atk.getStat('emergentDamageReflection');
+  if (totalReflection > 0 && preview.result.defenderDamage > 0 && updatedAttacker) {
+    const synergyReflectedDmg = Math.max(1, Math.floor(preview.result.defenderDamage * totalReflection));
     updatedAttacker = { ...updatedAttacker, hp: Math.max(0, updatedAttacker.hp - synergyReflectedDmg) };
     current = writeUnitToState(current, updatedAttacker);
     reflectionDamageApplied += synergyReflectedDmg;
@@ -756,9 +1339,9 @@ export function applyCombatAction(
     });
   }
 
-  // Phase 3A — Charge cooldown waived: grant an extra attack
+  // Charge cooldown waived: grant an extra attack
   updatedAttacker = current.units.get(preview.attackerId);
-  if (preview.details.chargeCooldownWaived && updatedAttacker && updatedAttacker.hp > 0) {
+  if (atk.hasFlag('chargeCooldownWaived') && updatedAttacker && updatedAttacker.hp > 0) {
     current = writeUnitToState(current, {
       ...updatedAttacker,
       attacksRemaining: Math.max(updatedAttacker.attacksRemaining, 1),
@@ -769,10 +1352,8 @@ export function applyCombatAction(
   let reStealthTriggered = false;
   if (
     updatedAttacker
-    && (
-      preview.details.attackerSynergyEffects.includes('stealth_recharge')
-      || (attackerDoctrine?.stealthRechargeEnabled && isCoverTerrain(preview.details.attackerTerrainId))
-    )
+    && attackerDoctrine?.stealthRechargeEnabled
+    && isCoverTerrain(preview.details.attackerTerrainId)
   ) {
     const hasAdjacentEnemy = getNeighbors(updatedAttacker.position).some((hex) => {
       const neighborUnitId = getUnitAtHex(current, hex);
@@ -796,71 +1377,54 @@ export function applyCombatAction(
   }
 
   const hitAndRunTriggered = feedback.hitAndRunRetreat !== null;
-  if (hitAndRunTriggered && preview.details.poisonTrapPositions.length > 0) {
+  const poisonTrapPositionsRaw =
+    atk.getStat('poisonTrapDamage') > 0
+      ? [{ q: attacker.position.q, r: attacker.position.r }]
+      : (atk.data.get('poisonTrapPositions') as { x: number; y: number }[] | undefined ?? [])
+          .map(p => ({ q: p.x, r: p.y }));
+  if (hitAndRunTriggered && poisonTrapPositionsRaw.length > 0) {
     const poisonTraps = new Map(current.poisonTraps);
-    for (const position of preview.details.poisonTrapPositions) {
+    for (const position of poisonTrapPositionsRaw) {
       poisonTraps.set(hexToKey(position), {
-        damage: preview.details.poisonTrapDamage,
-        slow: preview.details.poisonTrapSlow,
+        damage: atk.getStat('poisonTrapDamage'),
+        slow: atk.getStat('poisonTrapSlow'),
         ownerFactionId: attacker.factionId,
       });
     }
     current = { ...current, poisonTraps };
-  }
-  updatedAttacker = current.units.get(preview.attackerId);
-  let healOnRetreatApplied = 0;
-  if (hitAndRunTriggered && preview.details.healOnRetreatAmount > 0 && updatedAttacker) {
-    healOnRetreatApplied = preview.details.healOnRetreatAmount;
-    current = writeUnitToState(current, {
-      ...updatedAttacker,
-      hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + healOnRetreatApplied),
-    });
-  }
 
-  updatedAttacker = current.units.get(preview.attackerId);
-  let combatHealingApplied = 0;
-  const combatHealingEffect = preview.details.attackerSynergyEffects.find((effectCode) => effectCode.includes('combat_healing'));
-  if (combatHealingEffect && updatedAttacker) {
-    const healMatch = combatHealingEffect.match(/combat_healing_(\d+)%/);
-    if (healMatch) {
-      const healPercent = parseInt(healMatch[1], 10) / 100;
-      const healAmount = Math.floor(preview.result.defenderDamage * healPercent);
-      if (healAmount > 0) {
-        combatHealingApplied = healAmount;
-        current = writeUnitToState(current, {
-          ...updatedAttacker,
-          hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + healAmount),
-        });
-      }
+    // Poison Shadow: create a poison_cloud zone effect that prevents healing
+    if (atk.hasFlag('emergentPoisonCloudPreventsHealing')) {
+      const cloudCenter = poisonTrapPositionsRaw[0] ?? attacker.position;
+      current = addZoneEffect(current, {
+        id: createZoneEffectId(),
+        type: 'poison_cloud',
+        center: { q: cloudCenter.q, r: cloudCenter.r },
+        radius: 2,
+        ownerFactionId: attacker.factionId,
+        damagePerTurn: EMERGENT_PARAMS.poison_shadow.poisonCloudDamage,
+        movementPenalty: 0,
+        turnsRemaining: 3,
+        createdRound: current.round,
+        preventsHealing: true,
+      });
     }
   }
-
-  // Phase 3C — Heavy regen: heal attacker for % of damage dealt
+  // Heavy regen: heal attacker for % of damage dealt
   updatedAttacker = current.units.get(preview.attackerId);
-  if (preview.details.heavyRegenPercent > 0 && updatedAttacker && preview.result.defenderDamage > 0) {
-    const regenAmount = Math.floor(preview.result.defenderDamage * preview.details.heavyRegenPercent);
+  const heavyRegenPercent = atk.getStat('heavyRegenPercent');
+  if (heavyRegenPercent > 0 && updatedAttacker && preview.result.defenderDamage > 0) {
+    const regenAmount = Math.floor(preview.result.defenderDamage * heavyRegenPercent);
     if (regenAmount > 0) {
-      current = writeUnitToState(current, {
-        ...updatedAttacker,
-        hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + regenAmount),
-      });
+      current = healUnit(current, updatedAttacker, regenAmount);
       baseResolution.heavyRegenApplied = regenAmount;
     }
   }
 
-  // Phase 3C — Slave healing: flat heal from slave synergy
-  updatedAttacker = current.units.get(preview.attackerId);
-  if (preview.details.slaveHealAmount > 0 && updatedAttacker && updatedAttacker.hp > 0) {
-    current = writeUnitToState(current, {
-      ...updatedAttacker,
-      hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + preview.details.slaveHealAmount),
-    });
-    baseResolution.slaveHealApplied = preview.details.slaveHealAmount;
-  }
-
   updatedDefender = current.units.get(preview.defenderId);
   let sandstormTargetsHit = 0;
-  if (preview.details.sandstormDamage > 0 && updatedDefender && !preview.result.defenderDestroyed && !retreatCaptured) {
+  const sandstormDamage = atk.getStat('sandstormDamage');
+  if (sandstormDamage > 0 && updatedDefender && !defenderActuallyDestroyed && !retreatCaptured) {
     const sandstormUnits = new Map(current.units);
     for (const adjHex of getNeighbors(updatedDefender.position)) {
       const adjUnitId = getUnitAtHex(current, adjHex);
@@ -871,7 +1435,7 @@ export function applyCombatAction(
       if (adjUnit && adjUnit.factionId !== attacker.factionId && adjUnit.hp > 0) {
         sandstormUnits.set(adjUnitId, {
           ...adjUnit,
-          hp: Math.max(0, adjUnit.hp - preview.details.sandstormDamage),
+          hp: Math.max(0, adjUnit.hp - sandstormDamage),
         });
         sandstormTargetsHit += 1;
       }
@@ -879,28 +1443,19 @@ export function applyCombatAction(
     current = { ...current, units: sandstormUnits };
   }
 
-  // Phase 3C — Synergy AoE damage (multiplier_stack, etc.)
+  // Synergy AoE damage
   updatedDefender = current.units.get(preview.defenderId);
-  if (preview.details.aoeDamage > 0 && updatedDefender && !preview.result.defenderDestroyed && !retreatCaptured) {
-    const aoeUnits = new Map(current.units);
-    let aoeHit = 0;
-    for (const adjHex of getNeighbors(updatedDefender.position)) {
-      const adjUnitId = getUnitAtHex(current, adjHex);
-      if (!adjUnitId) continue;
-      const adjUnit = aoeUnits.get(adjUnitId);
-      if (adjUnit && adjUnit.factionId !== attacker.factionId && adjUnit.hp > 0) {
-        aoeUnits.set(adjUnitId, { ...adjUnit, hp: Math.max(0, adjUnit.hp - preview.details.aoeDamage) });
-        aoeHit++;
-      }
-    }
-    if (aoeHit > 0) {
-      current = { ...current, units: aoeUnits };
-      baseResolution.aoeTargetsHit = aoeHit;
+  const aoeDamage = atk.getStat('aoeDamage');
+  if (aoeDamage > 0 && updatedDefender && !defenderActuallyDestroyed && !retreatCaptured) {
+    const splash = applyDamageToAdjacentEnemies(current, updatedDefender.position, attacker.factionId, aoeDamage);
+    if (splash.hitCount > 0) {
+      current = splash.state;
+      baseResolution.aoeTargetsHit = splash.hitCount;
     }
   }
 
   updatedDefender = current.units.get(preview.defenderId);
-  if (preview.details.contaminateActive && updatedDefender && !preview.result.defenderDestroyed && !retreatCaptured) {
+  if (atk.hasFlag('contaminateActive') && updatedDefender && !defenderActuallyDestroyed && !retreatCaptured) {
     const contaminatedHexes = new Set(current.contaminatedHexes);
     contaminatedHexes.add(hexToKey(updatedDefender.position));
     current = { ...current, contaminatedHexes };
@@ -908,41 +1463,24 @@ export function applyCombatAction(
   }
 
   updatedDefender = current.units.get(preview.defenderId);
-  let frostbiteApplied = false;
-  if (preview.details.frostbiteColdDoT > 0 && updatedDefender && !preview.result.defenderDestroyed && !retreatCaptured) {
-    frostbiteApplied = true;
-    current = writeUnitToState(current, {
-      ...updatedDefender,
-      frozen: true,
-      frostbiteStacks: preview.details.frostbiteColdDoT,
-      frostbiteDoTDuration: 3,
-      movesRemaining: Math.max(0, updatedDefender.movesRemaining - preview.details.frostbiteSlow),
-    });
-  }
 
-  // Phase 3A — Stun: reduce defender moves for N turns
+  // Stun: reduce defender moves for N turns
   updatedDefender = current.units.get(preview.defenderId);
-  if (preview.details.stunDuration > 0 && updatedDefender && !preview.result.defenderDestroyed && updatedDefender.hp > 0) {
+  const stunDuration = atk.getStat('stunDuration');
+  if (stunDuration > 0 && updatedDefender && !defenderActuallyDestroyed && updatedDefender.hp > 0) {
     current = writeUnitToState(current, {
       ...updatedDefender,
-      stunDuration: preview.details.stunDuration,
+      stunDuration,
       movesRemaining: 0,
     });
-    baseResolution.stunApplied = preview.details.stunDuration;
+    baseResolution.stunApplied = stunDuration;
   }
 
-  // Phase 3A — Formation Crush: apply crush stacks to defender
-  if (preview.details.formationCrushStacks > 0 && updatedDefender && !preview.result.defenderDestroyed && updatedDefender.hp > 0) {
-    current = writeUnitToState(current, {
-      ...updatedDefender,
-      formationCrushStacks: (updatedDefender.formationCrushStacks ?? 0) + preview.details.formationCrushStacks,
-    });
-    baseResolution.formationCrushApplied = preview.details.formationCrushStacks;
-  }
-
-  // Phase 3C — Sandstorm aura: accuracy debuff on adjacent enemies
+  // Sandstorm aura: accuracy debuff on adjacent enemies
   updatedDefender = current.units.get(preview.defenderId);
-  if (preview.details.sandstormAuraRadius > 0 && updatedDefender && !preview.result.defenderDestroyed && updatedDefender.hp > 0) {
+  const sandstormAuraRadius = atk.getStat('sandstormAuraRadius');
+  const sandstormAuraDebuff = atk.getStat('sandstormAuraDebuff');
+  if (sandstormAuraRadius > 0 && updatedDefender && !defenderActuallyDestroyed && updatedDefender.hp > 0) {
     const auraUnits = new Map(current.units);
     for (const adjHex of getNeighbors(updatedDefender.position)) {
       const adjUnitId = getUnitAtHex(current, adjHex);
@@ -951,73 +1489,114 @@ export function applyCombatAction(
       if (adjUnit && adjUnit.factionId !== attacker.factionId && adjUnit.hp > 0) {
         auraUnits.set(adjUnitId, {
           ...adjUnit,
-          accuracyDebuff: (adjUnit.accuracyDebuff ?? 0) + preview.details.sandstormAuraDebuff,
+          accuracyDebuff: (adjUnit.accuracyDebuff ?? 0) + sandstormAuraDebuff,
         });
       }
     }
     current = { ...current, units: auraUnits };
   }
 
-  // Phase 3A — Lethal Ambush poison: splash poison to adjacent enemies on instant kill
-  if (baseResolution.instantKillTriggered && preview.details.lethalAmbushPoison > 0) {
-    const poisonUnits = new Map(current.units);
-    for (const adjHex of getNeighbors(defender.position)) {
-      const adjUnitId = getUnitAtHex(current, adjHex);
-      if (!adjUnitId) continue;
-      const adjUnit = poisonUnits.get(adjUnitId);
-      if (adjUnit && adjUnit.factionId !== attacker.factionId && adjUnit.hp > 0) {
-        poisonUnits.set(adjUnitId, applyPoisonDoT(
-          { ...adjUnit, poisonedBy: attacker.factionId } as Unit,
-          preview.details.lethalAmbushPoison, 1, 3,
-        ));
-      }
+  // Lethal Ambush poison: splash poison on instant kill
+  const lethalAmbushPoison = atk.getStat('lethalAmbushPoison');
+  if (baseResolution.instantKillTriggered && lethalAmbushPoison > 0) {
+    const result = applyPoisonInRange(current.units, defender.position, 1, {
+      factionFilter: 'enemies', filterFactionId: attacker.factionId,
+      stacks: lethalAmbushPoison, damagePerStack: 1, duration: 3,
+      provenance: { factionId: attacker.factionId },
+    });
+    if (result.targetsHit > 0) {
+      current = { ...current, units: result.units };
     }
-    current = { ...current, units: poisonUnits };
   }
 
-  // Phase 3C — Withering reduction: apply debuff to defender's healing
-  if (preview.details.witheringReduction > 0 && updatedDefender && !preview.result.defenderDestroyed && updatedDefender.hp > 0) {
+  // Withering reduction: apply debuff to defender's healing
+  const witheringReduction = atk.getStat('witheringReduction');
+  if (witheringReduction > 0 && updatedDefender && !defenderActuallyDestroyed && updatedDefender.hp > 0) {
     current = writeUnitToState(current, {
       ...updatedDefender,
-      witherReduction: preview.details.witheringReduction,
+      witherReduction: witheringReduction,
     });
   }
 
-  // Phase 3C — Slave Army: buff nearby allied units with damage bonus / defense penalty
+  // Synergy heal primitives (flat + % max HP)
+  let combatHealingApplied = 0;
   updatedAttacker = current.units.get(preview.attackerId);
-  if (updatedAttacker && (preview.details.slaveArmyDamageBonus > 0 || preview.details.slaveArmyDefensePenalty > 0)) {
-    const armyUnits = new Map(current.units);
-    for (const adjHex of getNeighbors(updatedAttacker.position)) {
-      const adjUnitId = getUnitAtHex(current, adjHex);
-      if (!adjUnitId) continue;
-      const adjUnit = armyUnits.get(adjUnitId);
-      if (adjUnit && adjUnit.factionId === attacker.factionId && adjUnit.hp > 0) {
-        armyUnits.set(adjUnitId, {
-          ...adjUnit,
-          slaveArmyDamageBonus: (adjUnit.slaveArmyDamageBonus ?? 0) + preview.details.slaveArmyDamageBonus,
-          slaveArmyDefensePenalty: (adjUnit.slaveArmyDefensePenalty ?? 0) + preview.details.slaveArmyDefensePenalty,
-        });
+  const synergyFlatHeal = atk.getStat('synergyFlatHeal');
+  const synergyPercentHealMaxHp = atk.getStat('synergyPercentHealMaxHp');
+  if (updatedAttacker && updatedAttacker.hp > 0) {
+    let healed = false;
+    if (synergyFlatHeal > 0) {
+      updatedAttacker = { ...updatedAttacker, hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + synergyFlatHeal) };
+      combatHealingApplied += synergyFlatHeal;
+      healed = true;
+    }
+    if (synergyPercentHealMaxHp > 0) {
+      const pctHeal = Math.floor(updatedAttacker.maxHp * synergyPercentHealMaxHp);
+      if (pctHeal > 0) {
+        updatedAttacker = { ...updatedAttacker, hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + pctHeal) };
+        combatHealingApplied += pctHeal;
+        healed = true;
       }
     }
-    current = { ...current, units: armyUnits };
+    if (healed) current = writeUnitToState(current, updatedAttacker);
   }
 
-  // Phase 3B — Capture aftermath: apply poison and modifiers to captured units
+  // Vampiric Strike (hitrun+nature_healing): heal attacker for % of damage dealt
+  updatedAttacker = current.units.get(preview.attackerId);
+  const vampiricStrikeHealPercent = atk.getStat('vampiricStrikeHealPercent');
+  if (vampiricStrikeHealPercent > 0 && updatedAttacker && preview.result.defenderDamage > 0) {
+    const vampHeal = Math.floor(preview.result.defenderDamage * vampiricStrikeHealPercent);
+    if (vampHeal > 0) {
+      current = healUnit(current, updatedAttacker, vampHeal);
+      combatHealingApplied += vampHeal;
+    }
+  }
+
+  // Bombardment (fortress+tidal_warfare): naval attacker deals bonus damage to land defender
+  let bombardmentDamageApplied = 0;
+  updatedDefender = current.units.get(preview.defenderId);
+  const bombardmentDamageMultiplier = atk.getStat('bombardmentDamageMultiplier');
+  if (bombardmentDamageMultiplier > 0 && updatedDefender && !defenderActuallyDestroyed
+    && isWaterTerrain(preview.details.attackerTerrainId) && !isWaterTerrain(preview.details.defenderTerrainId)) {
+    bombardmentDamageApplied = Math.max(1, Math.floor(preview.result.defenderDamage * bombardmentDamageMultiplier));
+    current = writeUnitToState(current, { ...updatedDefender, hp: Math.max(0, updatedDefender.hp - bombardmentDamageApplied) });
+  }
+
+  // Fighting Retreat (hitrun+heavy_hitter): free strike during hit-and-run
+  let fightingRetreatDamage = 0;
+  updatedDefender = current.units.get(preview.defenderId);
+  if (hitAndRunTriggered && atk.hasFlag('fightingRetreatFreeStrike') && updatedDefender && updatedDefender.hp > 0) {
+    fightingRetreatDamage = Math.max(1, Math.floor(preview.result.defenderDamage * (atk.getStat('fightingRetreatDamageMultiplier') || 1)));
+    current = writeUnitToState(current, { ...updatedDefender, hp: Math.max(0, updatedDefender.hp - fightingRetreatDamage) });
+  }
+
+  updatedAttacker = current.units.get(preview.attackerId);
+  if (atk.hasFlag('reEnterStealthAfterCombat') && updatedAttacker && updatedAttacker.hp > 0 && !updatedAttacker.isStealthed) {
+    updatedAttacker = enterStealth({ ...updatedAttacker, turnsSinceStealthBreak: 0 }, attackerPrototype.tags ?? []);
+    current = writeUnitToState(current, updatedAttacker);
+    reStealthTriggered = true;
+  }
+
+  // Capture aftermath: apply poison and modifiers to captured units
   if (capturedOnKill) {
     const capturedUnit = current.units.get(preview.defenderId);
     if (capturedUnit && capturedUnit.hp > 0) {
       let updated = { ...capturedUnit };
-      if (preview.details.capturePoisonDamage > 0) {
-        updated = applyPoisonDoT(updated, preview.details.capturePoisonStacks > 0 ? preview.details.capturePoisonStacks : 1, preview.details.capturePoisonDamage, 3);
+      const capturePoisonDamage = atk.getStat('capturePoisonDamage');
+      const capturePoisonStacks = atk.getStat('capturePoisonStacks');
+      const slaveDamageBonus = atk.getStat('slaveDamageBonus');
+      const slaveHealPenalty = atk.getStat('slaveHealPenalty');
+      if (capturePoisonDamage > 0) {
+        updated = applyPoisonDoT(updated, capturePoisonStacks > 0 ? capturePoisonStacks : 1, capturePoisonDamage, 3);
         updated = { ...updated, poisonedBy: attacker.factionId } as Unit;
       }
-      if (preview.details.slaveDamageBonus > 0) {
-        updated = { ...updated, slaveDamageBonus: preview.details.slaveDamageBonus };
+      if (slaveDamageBonus > 0) {
+        updated = { ...updated, slaveDamageBonus };
       }
-      if (preview.details.slaveHealPenalty > 0) {
-        updated = { ...updated, slaveHealPenalty: preview.details.slaveHealPenalty };
+      if (slaveHealPenalty > 0) {
+        updated = { ...updated, slaveHealPenalty };
       }
-      if (preview.details.captureEscapePrevented) {
+      if (atk.hasFlag('captureEscapePrevented')) {
         updated = { ...updated, captureEscapePrevented: true };
         baseResolution.captureEscapePrevented = true;
       }
@@ -1030,11 +1609,23 @@ export function applyCombatAction(
   if (poisonApplied && updatedDefender) {
     pushCombatEffect(triggeredEffects, 'Poisoned', `Defender was poisoned for ${updatedDefender.poisonStacks} stack damage over time.`, 'aftermath');
   }
+  if (baseResolution.bleedApplied) {
+    pushCombatEffect(triggeredEffects, 'Predator Bleed', 'Stealth attack inflicted bleed (1 dmg/turn for 3 turns).', 'ability');
+  }
   if (reflectionDamageApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Reflection', `Defender reflected ${reflectionDamageApplied} damage back to the attacker.`, 'aftermath');
   }
-  if (totalKnockbackDistance > 0 && !preview.result.defenderDestroyed) {
+  if (totalKnockbackDistance > 0 && !defenderActuallyDestroyed) {
     pushCombatEffect(triggeredEffects, 'Knockback', `Defender was displaced ${totalKnockbackDistance} hex${totalKnockbackDistance === 1 ? '' : 'es'}.`, 'aftermath');
+  }
+  if (knockbackCollisionDamage > 0) {
+    pushCombatEffect(triggeredEffects, 'Pinball Collision', `Knockback collision dealt ${knockbackCollisionDamage} damage.`, 'synergy');
+  }
+  if (bigChargeRoutTriggered) {
+    pushCombatEffect(triggeredEffects, 'Big Charge Rout', 'Heavy charge routed the defender.', 'ability');
+    if (stampedeDamageApplied > 0) {
+      pushCombatEffect(triggeredEffects, 'Stampede', `Routed defender stampeded into an obstacle, taking ${stampedeDamageApplied} damage.`, 'ability');
+    }
   }
   if (reStealthTriggered) {
     pushCombatEffect(triggeredEffects, 'Stealth Recharge', 'Attacker slipped back into stealth after the exchange.', 'aftermath');
@@ -1042,23 +1633,23 @@ export function applyCombatAction(
   if (combatHealingApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Combat Healing', `Attacker recovered ${combatHealingApplied} HP from dealt damage.`, 'aftermath');
   }
+  if (bombardmentDamageApplied > 0) {
+    pushCombatEffect(triggeredEffects, 'Naval Bombardment', `Ships bombarded for +${bombardmentDamageApplied} bonus damage.`, 'synergy');
+  }
+  if (fightingRetreatDamage > 0) {
+    pushCombatEffect(triggeredEffects, 'Fighting Retreat', `Disengaging strike dealt ${fightingRetreatDamage} damage.`, 'synergy');
+  }
   if (sandstormTargetsHit > 0) {
     pushCombatEffect(triggeredEffects, 'Sandstorm Splash', `Area damage hit ${sandstormTargetsHit} nearby unit${sandstormTargetsHit === 1 ? '' : 's'}.`, 'aftermath');
   }
   if (contaminatedHexApplied) {
     pushCombatEffect(triggeredEffects, 'Contamination', 'The defender hex became contaminated after the strike.', 'aftermath');
   }
-  if (frostbiteApplied) {
-    pushCombatEffect(triggeredEffects, 'Frostbite', `Defender took ${preview.details.frostbiteColdDoT} cold DoT and ${preview.details.frostbiteSlow} slow.`, 'aftermath');
-  }
-  if (hitAndRunTriggered && preview.details.poisonTrapPositions.length > 0) {
+  if (hitAndRunTriggered && poisonTrapPositionsRaw.length > 0) {
     pushCombatEffect(triggeredEffects, 'Poison Trap', 'Attacker left a poison trap on the retreat path.', 'aftermath');
   }
   if (hitAndRunTriggered) {
     pushCombatEffect(triggeredEffects, 'Hit And Run', 'Attacker disengaged after combat to avoid being pinned.', 'aftermath');
-  }
-  if (healOnRetreatApplied > 0) {
-    pushCombatEffect(triggeredEffects, 'Retreat Heal', `Attacker recovered ${healOnRetreatApplied} HP while withdrawing.`, 'aftermath');
   }
   if (pursuitDamageApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Pursuit', `Skirmisher pressed the advantage for +${pursuitDamageApplied} bonus damage.`, 'aftermath');
@@ -1072,14 +1663,26 @@ export function applyCombatAction(
   if (poisonDetonated) {
     pushCombatEffect(triggeredEffects, 'Poison Detonation', 'Venom erupted on kill, poisoning adjacent enemies.', 'aftermath');
   }
+  if (chargeSplashTargetsHit > 0) {
+    pushCombatEffect(triggeredEffects, 'Charge Splash', `Charge impact dealt ${chargeSplashDamage} splash damage to ${chargeSplashTargetsHit} adjacent unit${chargeSplashTargetsHit === 1 ? '' : 's'}.`, 'aftermath');
+  }
   if (pursuitMovementRestored > 0) {
     pushCombatEffect(triggeredEffects, 'Pursuit Movement', `Foraging riders pushed forward for +${pursuitMovementRestored} movement after the kill.`, 'aftermath');
+  }
+  if (baseResolution.killChainApplied) {
+    pushCombatEffect(triggeredEffects, 'Killing Chain', 'Skirmisher chained a follow-up attack after the kill.', 'ability');
+  }
+  if (baseResolution.sporeJumpApplied) {
+    pushCombatEffect(triggeredEffects, 'Spore Jump', `Venom jumped to ${sporeJumpTargets} nearby unit${sporeJumpTargets === 1 ? '' : 's'} after the poisoned kill.`, 'ability');
+  }
+  if (baseResolution.myceliumNetworkApplied) {
+    pushCombatEffect(triggeredEffects, 'Mycelium Network', `Toxic bloom propagated ${myceliumTargets} friendly unit${myceliumTargets === 1 ? '' : 's'} with poison.`, 'ability');
   }
   if (emergentSustainHealApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Paladin Sustain', `Attacker recovered ${emergentSustainHealApplied} HP from damage dealt.`, 'aftermath');
   }
   if (baseResolution.emergentSustainMinHpSaved) {
-    pushCombatEffect(triggeredEffects, 'Undying Will', `Attacker survived a lethal blow at ${preview.details.emergentSustainMinHp} HP.`, 'aftermath');
+    pushCombatEffect(triggeredEffects, 'Undying Will', `Attacker survived a lethal blow at ${minHpFloor} HP.`, 'aftermath');
   }
   if (baseResolution.emergentSmiteApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Radiant Smite', `Paladin at full HP dealt +${baseResolution.emergentSmiteApplied} smite damage.`, 'synergy');
@@ -1087,19 +1690,37 @@ export function applyCombatAction(
   if (baseResolution.emergentUndyingSaved) {
     pushCombatEffect(triggeredEffects, 'Juggernaut Undying', 'Juggernaut survived a lethal blow at 1 HP.', 'synergy');
   }
-  if (preview.details.emergentManyFacedStance) {
-    const stanceLabel = preview.details.emergentManyFacedStance.charAt(0).toUpperCase() + preview.details.emergentManyFacedStance.slice(1);
+  if (baseResolution.lastStandSaved) {
+    pushCombatEffect(triggeredEffects, 'Last Stand', 'Arctic Warden survived a lethal blow at 1 HP.', 'ability');
+  }
+  if (woundedEarthAbsorbed > 0) {
+    if (woundedEarthAlliesHealed > 0) {
+      pushCombatEffect(triggeredEffects, 'Wounded Earth', `Terrain channeled ${woundedEarthAbsorbed} absorbed damage into healing ${woundedEarthAlliesHealed} adjacent friendly unit${woundedEarthAlliesHealed === 1 ? '' : 's'} on forest/jungle.`, 'ability');
+    } else {
+      pushCombatEffect(triggeredEffects, 'Wounded Earth', `Terrain absorbed ${woundedEarthAbsorbed} damage, reducing HP loss.`, 'ability');
+    }
+  }
+  const emergentManyFacedStance = (atk.data.get('emergentManyFacedStance') as string | undefined) ?? '';
+  if (emergentManyFacedStance) {
+    const stanceLabel = emergentManyFacedStance.charAt(0).toUpperCase() + emergentManyFacedStance.slice(1);
     pushCombatEffect(triggeredEffects, `Many-Faced: ${stanceLabel}`, `Adapted stance based on combat context.`, 'synergy');
-    baseResolution.emergentManyFacedStance = preview.details.emergentManyFacedStance;
+    baseResolution.emergentManyFacedStance = emergentManyFacedStance;
+    // Store stance on faction for non-combat consumption (phantom movement bonus)
+    const factionsMF = new Map(current.factions);
+    const mf = factionsMF.get(attacker.factionId);
+    if (mf) {
+      factionsMF.set(attacker.factionId, {
+        ...mf,
+        manyFacedLastStance: emergentManyFacedStance,
+      });
+      current = { ...current, factions: factionsMF };
+    }
   }
   if (baseResolution.instantKillTriggered) {
     pushCombatEffect(triggeredEffects, 'Lethal Ambush', 'Synergy enabled an instant kill bypassing all defenses.', 'synergy');
   }
   if (baseResolution.stunApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Stun', `Synergy stunned the defender for ${baseResolution.stunApplied} turn(s).`, 'synergy');
-  }
-  if (baseResolution.formationCrushApplied > 0) {
-    pushCombatEffect(triggeredEffects, 'Formation Crush', `Synergy applied ${baseResolution.formationCrushApplied} crush stack(s).`, 'synergy');
   }
   if (baseResolution.synergyReflectionDamage > 0) {
     pushCombatEffect(triggeredEffects, 'Synergy Reflection', `Synergy reflected ${baseResolution.synergyReflectionDamage} damage.`, 'synergy');
@@ -1110,8 +1731,12 @@ export function applyCombatAction(
   if (baseResolution.heavyRegenApplied > 0) {
     pushCombatEffect(triggeredEffects, 'Heavy Regeneration', `Synergy regenerated ${baseResolution.heavyRegenApplied} HP.`, 'synergy');
   }
-  if (baseResolution.slaveHealApplied > 0) {
-    pushCombatEffect(triggeredEffects, 'Slave Healing', `Synergy healed ${baseResolution.slaveHealApplied} HP.`, 'synergy');
+
+  if (baseResolution.saplingApplied) {
+    const detail = baseResolution.saplingMaxHpBonus > 0
+      ? `Defender hex transformed into forest. Druid gained +${baseResolution.saplingMaxHpBonus} max HP.`
+      : 'Defender hex transformed into forest.';
+    pushCombatEffect(triggeredEffects, 'Sapling', detail, 'aftermath');
   }
 
   feedback = {
@@ -1121,6 +1746,7 @@ export function applyCombatAction(
       capturedOnKill,
       retreatCaptured,
       pressGangCaptured: baseResolution.pressGangCaptured,
+      captiveChampionSpawned: baseResolution.captiveChampionSpawned,
       poisonDetonated: baseResolution.poisonDetonated,
       greedyLootGained: baseResolution.greedyLootGained,
       pursuitMovementRestored: baseResolution.pursuitMovementRestored,
@@ -1130,25 +1756,33 @@ export function applyCombatAction(
       combatHealingApplied,
       sandstormTargetsHit,
       contaminatedHexApplied,
-      frostbiteApplied,
       hitAndRunTriggered,
-      healOnRetreatApplied,
       totalKnockbackDistance,
       pursuitDamageApplied,
       emergentSustainHealApplied: baseResolution.emergentSustainHealApplied,
       emergentSustainMinHpSaved: baseResolution.emergentSustainMinHpSaved,
       emergentSmiteApplied: baseResolution.emergentSmiteApplied,
       emergentUndyingSaved: baseResolution.emergentUndyingSaved,
+      lastStandSaved: baseResolution.lastStandSaved,
+      bleedApplied: baseResolution.bleedApplied,
+      killChainApplied: baseResolution.killChainApplied,
+      sporeJumpApplied: baseResolution.sporeJumpApplied,
+      myceliumNetworkApplied: baseResolution.myceliumNetworkApplied,
       emergentManyFacedStance: baseResolution.emergentManyFacedStance,
       instantKillTriggered: baseResolution.instantKillTriggered,
       stunApplied: baseResolution.stunApplied,
-      formationCrushApplied: baseResolution.formationCrushApplied,
       synergyReflectionDamage: baseResolution.synergyReflectionDamage,
       aoeTargetsHit: baseResolution.aoeTargetsHit,
       heavyRegenApplied: baseResolution.heavyRegenApplied,
-      slaveHealApplied: baseResolution.slaveHealApplied,
       captureEscapePrevented: baseResolution.captureEscapePrevented,
       synergyCaptureBonus: baseResolution.synergyCaptureBonus,
+      chargeSplashTargetsHit: baseResolution.chargeSplashTargetsHit,
+      armadaChainDamage: baseResolution.armadaChainDamage,
+      woundedEarthAbsorbed,
+      woundedEarthAlliesHealed,
+      woundedEarthSaved: baseResolution.woundedEarthSaved,
+      saplingApplied: baseResolution.saplingApplied,
+      saplingMaxHpBonus: baseResolution.saplingMaxHpBonus,
     },
   };
 

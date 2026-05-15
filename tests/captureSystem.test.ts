@@ -11,6 +11,9 @@ import {
 } from '../src/systems/captureSystem';
 import { createRNG } from '../src/core/rng';
 import type { GameState, Unit } from '../src/game/types';
+import type { VeteranLevel } from '../src/core/enums';
+import type { UnitId } from '../src/types';
+import type { SignatureAbilityParams } from '../src/data/registry/types';
 
 const registry = loadRulesRegistry();
 
@@ -42,7 +45,7 @@ function makeCaptureState(
     factionId: attackerFactionId,
     history: [],
     morale: 100,
-    veteranLevel: 'green' as never,
+    veteranLevel: 'green' as VeteranLevel,
     learnedAbilities: [],
     ...attackerOverrides,
   };
@@ -54,7 +57,7 @@ function makeCaptureState(
     factionId: defenderFactionId,
     history: [],
     morale: 50,
-    veteranLevel: 'green' as never,
+    veteranLevel: 'green' as VeteranLevel,
     learnedAbilities: [],
     ...defenderOverrides,
   };
@@ -189,11 +192,11 @@ describe('attemptCapture', () => {
     const defender = units[1];
 
     // Greedy ability with 100% chance ensures capture
-    const greedyAbility = {
+    const greedyAbility: SignatureAbilityParams = {
       greedyCaptureChance: 1.0,
       greedyCaptureCooldown: 0,
       greedyCaptureHpFraction: 0.5,
-    } as never;
+    };
 
     const result = attemptCapture(state, attacker, defender, registry, greedyAbility, createRNG(99), 0);
 
@@ -233,11 +236,11 @@ describe('attemptCapture', () => {
     const attacker = units[0];
     const defender = units[1];
 
-    const greedyAbility = {
+    const greedyAbility: SignatureAbilityParams = {
       greedyCaptureChance: 1.0,
       greedyCaptureCooldown: 5,
       greedyCaptureHpFraction: 0.5,
-    } as never;
+    };
 
     // Cooldown of 5, elapsed = 10-9 = 1, so still on cooldown (4 remaining)
     // Unit should be destroyed
@@ -256,11 +259,11 @@ describe('attemptCapture', () => {
     const defender = units[1];
 
     // Zero chance + 100% bonus = 100% chance
-    const greedyAbility = {
+    const greedyAbility: SignatureAbilityParams = {
       greedyCaptureChance: 0,
       greedyCaptureCooldown: 0,
       greedyCaptureHpFraction: 0.5,
-    } as never;
+    };
 
     const result = attemptCapture(state, attacker, defender, registry, greedyAbility, createRNG(42), 1.0);
     // Should capture with totalChance = min(1, 0 + 1.0) = 1.0
@@ -275,7 +278,7 @@ describe('attemptNonCombatCapture', () => {
   it('returns captured=false when captor or target missing', () => {
     const state = makeCaptureState();
     const result = attemptNonCombatCapture(
-      state, 'nonexistent' as never, 'nonexistent2' as never,
+      state, 'nonexistent' as UnitId, 'nonexistent2' as UnitId,
       registry, 1.0, 0.5, 0, createRNG(42),
     );
     expect(result.captured).toBe(false);
@@ -285,7 +288,7 @@ describe('attemptNonCombatCapture', () => {
     const state = makeCaptureState();
     const unit = Array.from(state.units.values())[0];
     const result = attemptNonCombatCapture(
-      state, unit.id as never, unit.id as never,
+      state, unit.id, unit.id,
       registry, 1.0, 0.5, 0, createRNG(42),
     );
     expect(result.captured).toBe(false);
@@ -298,7 +301,7 @@ describe('attemptNonCombatCapture', () => {
     const target = units[1];
 
     const result = attemptNonCombatCapture(
-      state, captor.id as never, target.id as never,
+      state, captor.id, target.id,
       registry, 1.0, 0.5, 0, createRNG(42),
     );
 
@@ -333,7 +336,7 @@ describe('attemptNonCombatCapture', () => {
     // First capture: succeed (100% chance, no cooldown issues)
     state.round = 10;
     const result1 = attemptNonCombatCapture(
-      state, captor.id as never, target.id as never,
+      state, captor.id, target.id,
       registry, 1.0, 0.5, 3, createRNG(42),
     );
     expect(result1.captured).toBe(true);
@@ -343,7 +346,7 @@ describe('attemptNonCombatCapture', () => {
     // But target is now same faction as captor, so it will fail anyway
     const result2 = attemptNonCombatCapture(
       { ...result1.state, round: 11 },
-      captor.id as never, target.id as never,
+      captor.id, target.id,
       registry, 1.0, 0.5, 3, createRNG(43),
     );
     // Target was already converted, so it's same faction => captured=false
