@@ -77,9 +77,15 @@ export function getBulwarkDefenseBonus(
  * Find the best retreat hex for Hit and Run ability
  * Returns hex furthest from any enemy that is adjacent to current position
  */
+export interface RetreatOptions {
+  ghostPassActive?: boolean;
+  preferWater?: boolean;
+}
+
 export function findRetreatHex(
   unit: Unit,
-  state: GameState
+  state: GameState,
+  options?: RetreatOptions,
 ): HexCoord | null {
   const neighbors = getNeighbors(unit.position);
   let bestHex: HexCoord | null = null;
@@ -90,6 +96,8 @@ export function findRetreatHex(
   const prototype = state.prototypes.get(unit.prototypeId);
   const unitTags = prototype?.tags ?? [];
   const isAmphibious = unitTags.includes('amphibious');
+  const ghostPass = options?.ghostPassActive ?? false;
+  const preferWater = options?.preferWater ?? false;
 
   for (const hex of neighbors) {
     // Check if hex is occupied
@@ -104,8 +112,8 @@ export function findRetreatHex(
       || (isDesert && passiveTrait !== 'desert_logistics' && passiveTrait !== 'charge_momentum')
       || (isSwamp && passiveTrait !== 'healing_druids' && passiveTrait !== 'jungle_stalkers' && passiveTrait !== 'river_assault' && !isAmphibious);
 
-    // Skip hexes with damaging terrain unless no safer hex is available
-    if (wouldTakeDamage) continue;
+    // Skip hexes with damaging terrain unless ghost pass is active
+    if (wouldTakeDamage && !ghostPass) continue;
 
     // Calculate distance to nearest visible enemy
     let minEnemyDist = Infinity;
@@ -116,9 +124,13 @@ export function findRetreatHex(
       }
     }
 
+    // Prefer water hexes if retreat-to-water is active
+    const terrainIsWater = retreatTerrain === 'coast' || retreatTerrain === 'river' || retreatTerrain === 'ocean';
+    const waterBonus = (preferWater && terrainIsWater) ? 100 : 0;
+
     // Prefer hexes further from enemies
-    if (minEnemyDist > maxEnemyDistance) {
-      maxEnemyDistance = minEnemyDist;
+    if (minEnemyDist + waterBonus > maxEnemyDistance) {
+      maxEnemyDistance = minEnemyDist + waterBonus;
       bestHex = hex;
     }
   }

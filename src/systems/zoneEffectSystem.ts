@@ -10,8 +10,9 @@
 // query helpers below.
 
 import type { GameState, ZoneEffect, ZoneEffectId, HexCoord, FactionId } from '../game/types.js';
+import type { ZoneEffectType } from '../features/zoneEffects/types.js';
 import { hexDistance } from '../core/grid.js';
-export { ZONE_EFFECT_LABEL } from '../features/zoneEffects/types.js';
+export { ZONE_EFFECT_LABEL, type ZoneEffectType } from '../features/zoneEffects/types.js';
 
 /**
  * All zone effects whose coverage includes the given hex.
@@ -82,6 +83,25 @@ export function addZoneEffect(state: GameState, effect: ZoneEffect): GameState {
   const zoneEffects = new Map(state.zoneEffects);
   zoneEffects.set(effect.id, effect);
   return { ...state, zoneEffects };
+}
+
+/**
+ * Remove all zone effects matching a type and owner in a single pass.
+ */
+export function removeZoneEffectsByOwner(
+  state: GameState,
+  type: ZoneEffectType,
+  ownerFactionId: FactionId,
+): GameState {
+  const next = new Map(state.zoneEffects);
+  let removed = false;
+  for (const [id, ze] of next) {
+    if (ze.type === type && ze.ownerFactionId === ownerFactionId) {
+      next.delete(id);
+      removed = true;
+    }
+  }
+  return removed ? { ...state, zoneEffects: next } : state;
 }
 
 /**

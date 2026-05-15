@@ -234,6 +234,7 @@ function dispatchGrantVerb(p: GrantVerb, context: CombatContext, result: Synergy
     case 'terraform':
       result.emergentTerraformCharges = p.uses === 'unlimited' ? 99 : (typeof p.uses === 'number' ? p.uses : EMERGENT_PARAMS.terrain_lord.terraformCharges);
       break;
+    // Activation-phase verbs — recorded but not applied during combat
     case 'submerge':
     case 'declareOasis':
     case 'relayMarch':

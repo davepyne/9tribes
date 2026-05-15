@@ -1,4 +1,4 @@
-import { hexDistance, hexToKey } from '../../core/grid.js';
+import { hexDistance, hexToKey, getNeighbors } from '../../core/grid.js';
 import type { RulesRegistry } from '../../data/registry/types.js';
 import type { GameState, Unit } from '../../game/types.js';
 import type { HexCoord, UnitId } from '../../types.js';
@@ -63,6 +63,7 @@ import { createCityId } from '../../core/ids.js';
 import { declareMaelstrom } from '../maelstromSystem.js';
 import { createCitySiteBonuses, findBestCitySiteForFaction, getSettlementOccupancyBlocker } from '../citySiteSystem.js';
 import { syncFactionSettlementIds } from '../factionOwnershipSystem.js';
+import { resolveEffectiveSynergies } from '../synergyRuntime.js';
 
 const HIGH_VALUE_ATTACK_SCORE = 10;
 
@@ -765,7 +766,80 @@ export function activateUnit(
     }
   }
 
+  // Shadow Network (river_stealth+river_stealth): position swap with adjacent stealthed ally
+  const activeUnitForSwap = current.units.get(unitId);
+  if (activeUnitForSwap && activeUnitForSwap.isStealthed && activeUnitForSwap.hp > 0) {
+    const swapTags = prototype?.tags ?? [];
+    const swapSynergies = resolveEffectiveSynergies(faction, swapTags);
+    const canSwap = swapSynergies.some(s =>
+      s.effects.some(e => e.kind === 'grantVerb' && (e as { verb: string }).verb === 'positionSwap')
+    );
+    if (canSwap) {
+      // Find an adjacent stealthed ally to swap with — pick the one furthest from enemies
+      let bestSwapAlly: Unit | null = null;
+      let bestSwapDist = -1;
+      for (const allyId of faction.unitIds) {
+        if (allyId === unitId) continue;
+        const ally = current.units.get(allyId as UnitId);
+        if (!ally || ally.hp <= 0 || !ally.isStealthed) continue;
+        if (hexDistance(activeUnitForSwap.position, ally.position) <= 3) {
+          // Find distance to nearest enemy
+          let nearestEnemyDist = Infinity;
+          for (const [, eu] of current.units) {
+            if (eu.factionId !== factionId && eu.hp > 0) {
+              nearestEnemyDist = Math.min(nearestEnemyDist, hexDistance(ally.position, eu.position));
+            }
+          }
+          if (nearestEnemyDist > bestSwapDist) {
+            bestSwapDist = nearestEnemyDist;
+            bestSwapAlly = ally;
+          }
+        }
+      }
+      if (bestSwapAlly) {
+        const swapUnits = new Map(current.units);
+        const posA = activeUnitForSwap.position;
+        const posB = bestSwapAlly.position;
+        swapUnits.set(unitId, { ...activeUnitForSwap, position: posB });
+        swapUnits.set(bestSwapAlly.id, { ...bestSwapAlly, position: posA });
+        current = { ...current, units: swapUnits };
+        activeUnit = current.units.get(unitId)!;
+        log(trace, `${faction.name} ${prototype.name} swapped positions via Shadow Network`);
+      }
+    }
+  }
+
   current = performStrategicMovement(current, unitId, registry, trace);
+
+  // Desert Slave Train (camel_adaptation+slaving): carry captured/slave units along movement path
+  const postMoveUnit = current.units.get(unitId);
+  if (postMoveUnit && postMoveUnit.hp > 0) {
+    const carryTags = prototype?.tags ?? [];
+    const carrySynergies = resolveEffectiveSynergies(faction, carryTags);
+    const canCarry = carrySynergies.some(s =>
+      s.effects.some(e => e.kind === 'grantVerb' && (e as { verb: string }).verb === 'carryCaptured')
+    );
+    if (canCarry) {
+      // Move slave units that were adjacent to the unit's pre-move position to be adjacent to the new position
+      const carryUnits = new Map(current.units);
+      for (const allyId of faction.unitIds) {
+        const ally = carryUnits.get(allyId as UnitId);
+        if (!ally || ally.hp <= 0 || !ally.slaveStatFraction) continue;
+        if (hexDistance(activeUnit.position, ally.position) <= 1) {
+          // Find an empty hex adjacent to the moved unit
+          const neighbors = getNeighbors(postMoveUnit.position);
+          for (const hex of neighbors) {
+            const hasOccupant = [...carryUnits.values()].some(u => u.hp > 0 && u.position.q === hex.q && u.position.r === hex.r);
+            if (!hasOccupant) {
+              carryUnits.set(allyId as UnitId, { ...ally, position: hex });
+              break;
+            }
+          }
+        }
+      }
+      current = { ...current, units: carryUnits };
+    }
+  }
 
   const movedUnit = current.units.get(unitId);
   if (movedUnit) {

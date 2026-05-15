@@ -10,6 +10,7 @@ import { applyKnockback } from '../signatureAbilitySystem.js';
 import { destroyTransport, isTransportUnit } from '../transportSystem.js';
 import { hasCaptureAbility } from '../captureSystem.js';
 import { isWaterTerrain } from '../terrainUtils.js';
+import { resolveEffectiveSynergies } from '../synergyRuntime.js';
 
 export function getImprovementBonus(state: GameState, position: { q: number; r: number }, factionId?: string) {
   for (const improvement of state.improvements.values()) {
@@ -27,6 +28,21 @@ export function getImprovementBonus(state: GameState, position: { q: number; r: 
   for (const village of state.villages.values()) {
     if (village.position.q === position.q && village.position.r === position.r) {
       return 0.5;
+    }
+  }
+
+  // Citadel (fortress+nature_healing): units with countsAsCity synergy get city defense bonus
+  if (factionId) {
+    for (const [, unit] of state.units) {
+      if (unit.position.q !== position.q || unit.position.r !== position.r) continue;
+      if (unit.factionId !== factionId || unit.hp <= 0) continue;
+      const proto = state.prototypes.get(unit.prototypeId);
+      const tags = proto?.tags ?? [];
+      const faction = state.factions.get(unit.factionId);
+      const synergies = resolveEffectiveSynergies(faction, tags);
+      if (synergies.some(s => s.effects.some(e => e.kind === 'setFlag' && (e as { flag: string }).flag === 'countsAsCity'))) {
+        return 1;
+      }
     }
   }
 
@@ -136,9 +152,11 @@ export function applyKnockbackDistance(
   attackerId: UnitId,
   defenderId: UnitId,
   distance: number,
-): { state: GameState; appliedDistance: number } {
+  collisionDamage = 0,
+): { state: GameState; appliedDistance: number; collisionDamageApplied: number } {
   let current = state;
   let appliedDistance = 0;
+  let collisionDamageApplied = 0;
 
   for (let step = 0; step < distance; step += 1) {
     const attacker = current.units.get(attackerId);
@@ -149,6 +167,17 @@ export function applyKnockbackDistance(
 
     const knockbackHex = applyKnockback(current, attacker, defender, 1);
     if (!knockbackHex) {
+      // Blocked by obstacle or occupied hex — apply collision damage
+      if (collisionDamage > 0 && defender.hp > 0) {
+        const afterCollision = current.units.get(defenderId);
+        if (afterCollision && afterCollision.hp > 0) {
+          current = writeUnitToState(current, {
+            ...afterCollision,
+            hp: Math.max(0, afterCollision.hp - collisionDamage),
+          });
+          collisionDamageApplied = collisionDamage;
+        }
+      }
       break;
     }
 
@@ -159,7 +188,7 @@ export function applyKnockbackDistance(
     appliedDistance += 1;
   }
 
-  return { state: current, appliedDistance };
+  return { state: current, appliedDistance, collisionDamageApplied };
 }
 
 export function createCombatActionPreviewRecord(

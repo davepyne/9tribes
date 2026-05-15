@@ -14,6 +14,7 @@ import { resolveResearchDoctrine } from './capabilityDoctrine.js';
 import { canUseCharge } from './abilitySystem.js';
 import { pruneDeadUnits } from './combatActionSystem.js';
 import { destroyVillage } from './villageSystem.js';
+import { resolveEffectiveSynergies } from './synergyRuntime.js';
 
 
 export interface MovementPreview {
@@ -142,6 +143,29 @@ export function previewMove(
   }
   if (canChargeThroughTerrain) {
     totalCost = Math.min(totalCost, 1);
+  }
+
+  // Shoreline Nomads (tidal_warfare+camel_adaptation): +1 movement on coast/desert/shallow water
+  if (faction) {
+    const synergies = resolveEffectiveSynergies(faction, prototypeTags);
+    let amphibiousBonus = 0;
+    for (const syn of synergies) {
+      for (const eff of syn.effects) {
+        if (eff.kind === 'statMod') {
+          const sm = eff as Extract<typeof eff, { kind: 'statMod' }>;
+          if (sm.stat === 'amphibiousMovementBonus' && sm.value > 0) {
+            amphibiousBonus = sm.value;
+          }
+        }
+      }
+    }
+    if (amphibiousBonus > 0) {
+      const isAmphibiousTerrain = targetTerrainId === 'coast' || targetTerrainId === 'desert'
+        || isWaterTerrain(targetTerrainId);
+      if (isAmphibiousTerrain) {
+        totalCost = Math.max(1, totalCost - amphibiousBonus);
+      }
+    }
   }
 
   // Only River People naval movement through rivers is allowed to drop below 1.

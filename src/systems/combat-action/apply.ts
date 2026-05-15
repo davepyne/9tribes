@@ -967,16 +967,18 @@ export function applyCombatAction(
   }
 
   let totalKnockbackDistance = 0;
+  let knockbackCollisionDamage = 0;
   const effectiveKnockback = preview.details.totalKnockbackDistance + preview.details.heavyMassStacks;
+  const collisionDmg = preview.details.formationPinballCollisionDamage;
   if (effectiveKnockback > 0 && !defenderActuallyDestroyed && !retreatCaptured) {
-    const knockbackResult = applyKnockbackDistance(current, preview.attackerId, preview.defenderId, effectiveKnockback);
+    const knockbackResult = applyKnockbackDistance(current, preview.attackerId, preview.defenderId, effectiveKnockback, collisionDmg);
     current = knockbackResult.state;
     totalKnockbackDistance = knockbackResult.appliedDistance;
+    knockbackCollisionDamage = knockbackResult.collisionDamageApplied;
   }
 
   // Juggernaut charge signature: knockback on kill
   if (preview.details.emergentKnockbackOnKill > 0 && defenderActuallyDestroyed) {
-    // Push surviving units behind the defender
     const knockbackResult = applyKnockbackDistance(current, preview.attackerId, preview.defenderId, preview.details.emergentKnockbackOnKill);
     current = knockbackResult.state;
     totalKnockbackDistance += knockbackResult.appliedDistance;
@@ -1056,7 +1058,10 @@ export function applyCombatAction(
   if (hitAndRunEligible) {
     const retreatingAttacker = current.units.get(preview.attackerId);
     if (retreatingAttacker && retreatingAttacker.hp > 0) {
-      const retreatHex = findRetreatHex(retreatingAttacker, current);
+      const retreatHex = findRetreatHex(retreatingAttacker, current, {
+        ghostPassActive: preview.details.ghostPassActive,
+        preferWater: preview.details.beachRaidRetreatToWater,
+      });
       if (retreatHex) {
         const unitsAfterRetreat = new Map(current.units);
         unitsAfterRetreat.set(retreatingAttacker.id, {
@@ -1080,13 +1085,11 @@ export function applyCombatAction(
     if (repositionAttacker && repositionAttacker.hp > 0) {
       const retreatHex = findRetreatHex(repositionAttacker, current);
       if (retreatHex) {
-        const unitsAfterRepos = new Map(current.units);
-        unitsAfterRepos.set(repositionAttacker.id, {
+        current = writeUnitToState(current, {
           ...repositionAttacker,
           position: retreatHex,
           status: 'ready',
         });
-        current = { ...current, units: unitsAfterRepos };
         feedback = {
           ...feedback,
           hitAndRunRetreat: { unitId: repositionAttacker.id, to: retreatHex },
@@ -1099,14 +1102,12 @@ export function applyCombatAction(
   if (preview.details.emergentKillChainRedeployRange > 0 && defenderActuallyDestroyed) {
     const redeployAttacker = current.units.get(preview.attackerId);
     if (redeployAttacker && redeployAttacker.hp > 0) {
-      const unitsAfterRedeploy = new Map(current.units);
-      unitsAfterRedeploy.set(redeployAttacker.id, {
+      current = writeUnitToState(current, {
         ...redeployAttacker,
         movesRemaining: redeployAttacker.maxMoves,
         attacksRemaining: Math.max(redeployAttacker.attacksRemaining, 1),
         status: 'ready',
       });
-      current = { ...current, units: unitsAfterRedeploy };
     }
   }
 
@@ -1161,7 +1162,6 @@ export function applyCombatAction(
     }
   }
 
-  // Juggernaut venom signature: extra poison per hit
   if (preview.details.emergentPoisonPerHit > 0 && !defenderActuallyDestroyed) {
     updatedDefender = current.units.get(preview.defenderId);
     if (updatedDefender && updatedDefender.hp > 0) {
@@ -1241,6 +1241,25 @@ export function applyCombatAction(
     if (sporeJumped) {
       current = { ...current, units: sporeUnits };
       baseResolution.sporeJumpApplied = true;
+    }
+  }
+
+  // Toxic Spread (venom+venom): when a poisoned enemy dies, spread poison to adjacent enemies
+  if (
+    defenderActuallyDestroyed
+    && preview.details.toxicSpreadTransferRadius > 0
+    && defender.poisonStacks > 0
+    && nextAttacker.hp > 0
+  ) {
+    const spreadRadius = preview.details.toxicSpreadTransferRadius;
+    const spreadStacks = preview.details.toxicSpreadTransferStacks;
+    const spreadResult = applyPoisonInRange(current.units, defender.position, spreadRadius, {
+      factionFilter: 'enemies', filterFactionId: attacker.factionId,
+      stacks: spreadStacks, damagePerStack: attackerDoctrine?.poisonDamagePerStack ?? 1, duration: 3,
+      provenance: { factionId: attacker.factionId, prototypeId: attacker.prototypeId },
+    });
+    if (spreadResult.targetsHit > 0) {
+      current = { ...current, units: spreadResult.units };
     }
   }
 
@@ -1360,7 +1379,7 @@ export function applyCombatAction(
     current = { ...current, poisonTraps };
 
     // Poison Shadow: create a poison_cloud zone effect that prevents healing
-    if (preview.details.emergentPoisonCloudPreventsHealing || preview.details.attackerSynergyEffects.includes('spawnOnMap_poisonCloud')) {
+    if (preview.details.emergentPoisonCloudPreventsHealing) {
       const cloudCenter = preview.details.poisonTrapPositions[0] ?? attacker.position;
       current = addZoneEffect(current, {
         id: createZoneEffectId(),
@@ -1616,7 +1635,6 @@ export function applyCombatAction(
     current = writeUnitToState(current, { ...updatedDefender, hp: Math.max(0, updatedDefender.hp - fightingRetreatDamage) });
   }
 
-  // Post-combat re-stealth (hitrun+river_stealth Shadow Step)
   updatedAttacker = current.units.get(preview.attackerId);
   if (preview.details.reEnterStealthAfterCombat && updatedAttacker && updatedAttacker.hp > 0 && !updatedAttacker.isStealthed) {
     updatedAttacker = enterStealth({ ...updatedAttacker, turnsSinceStealthBreak: 0 }, attackerPrototype.tags ?? []);
@@ -1660,6 +1678,9 @@ export function applyCombatAction(
   }
   if (totalKnockbackDistance > 0 && !defenderActuallyDestroyed) {
     pushCombatEffect(triggeredEffects, 'Knockback', `Defender was displaced ${totalKnockbackDistance} hex${totalKnockbackDistance === 1 ? '' : 'es'}.`, 'aftermath');
+  }
+  if (knockbackCollisionDamage > 0) {
+    pushCombatEffect(triggeredEffects, 'Pinball Collision', `Knockback collision dealt ${knockbackCollisionDamage} damage.`, 'synergy');
   }
   if (bigChargeRoutTriggered) {
     pushCombatEffect(triggeredEffects, 'Big Charge Rout', 'Heavy charge routed the defender.', 'ability');

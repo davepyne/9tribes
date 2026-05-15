@@ -346,6 +346,39 @@ export function previewCombatAction(
   if (attackerSynergyResult.coastalNomadDefense > 0 && ['coast', 'river'].includes(attackerTerrainId)) {
     situationalDefenseModifier += attackerSynergyResult.coastalNomadDefense;
   }
+  if (attackerSynergyResult.beachRaidDamageBonus > 0 && isWaterTerrain(attackerTerrainId)) {
+    situationalAttackModifier += attackerSynergyResult.beachRaidDamageBonus;
+  }
+
+  // Layered Defense (fortress+fortress): two adjacent fortress units halve ranged attacks against them
+  if (defenderSynergyResult.formationWallActive && attackerIsRanged) {
+    for (const hex of getNeighbors(defender.position)) {
+      const neighborUnitId = getUnitAtHex(state, hex);
+      if (!neighborUnitId || neighborUnitId === defenderId) continue;
+      const neighborUnit = state.units.get(neighborUnitId);
+      if (!neighborUnit || neighborUnit.factionId !== defender.factionId || neighborUnit.hp <= 0) continue;
+      const neighborProto = state.prototypes.get(neighborUnit.prototypeId);
+      if (neighborProto?.tags?.includes('fortress')) {
+        situationalAttackModifier -= defenderSynergyResult.formationWallRangedReduction;
+        break;
+      }
+    }
+  }
+
+  // Mobile Stronghold aura (fortress+camel_adaptation): adjacent allies gain defense
+  if (defenderSynergyResult.mobileStrongholdAlliedDefenseBonus > 0) {
+    for (const hex of getNeighbors(defender.position)) {
+      const neighborUnitId = getUnitAtHex(state, hex);
+      if (!neighborUnitId || neighborUnitId === defenderId) continue;
+      const neighborUnit = state.units.get(neighborUnitId);
+      if (!neighborUnit || neighborUnit.factionId !== defender.factionId || neighborUnit.hp <= 0) continue;
+      const neighborProto = state.prototypes.get(neighborUnit.prototypeId);
+      if (neighborProto?.tags?.includes('fortress') || neighborProto?.tags?.includes('camel')) {
+        situationalDefenseModifier += defenderSynergyResult.mobileStrongholdAlliedDefenseBonus;
+        break;
+      }
+    }
+  }
 
   // Raid camp: defender in a raid_camp zone owned by attacker's faction takes defense penalty
   const raidCampEffects = getZoneEffectsAtHex(state, defender.position);
