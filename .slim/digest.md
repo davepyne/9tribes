@@ -1096,3 +1096,32 @@ No significant changes detected.
 ### Dependency Changes
 
 No significant changes detected.
+
+---
+
+## Digest — 2026-05-15T23:06:36.097855Z
+
+### Removed Files
+- `src/systems/unit-activation/fieldFort.ts` — 6 exports lost: FIELD_FORT_ATTACK_MARGIN, FIELD_FORT_DECISION_SCORE, shouldBrace, getFieldFortOpportunity, buildFieldFortIfEligible, ... (+1 more)
+- `src/systems/warExhaustionSystem.ts` — 8 exports lost: EXHAUSTION_CONFIG, createWarExhaustion, addExhaustion, calculateProductionPenalty, calculateMoralePenalty, ... (+3 more)
+- `web/src/game/phaser/system/PathRenderer.ts` — 1 exports lost: PathRenderer
+
+### Modified Files
+- `src/features/zoneEffects/types.ts` — ~1 signatures (ZoneEffectType)
+- `src/systems/combat-action/helpers.ts` — +2 exports (applyDamageToAdjacentEnemies, healUnit); ~1 signatures (applyKnockbackDistance)
+- `src/systems/signatureAbilitySystem.ts` — +1 exports (RetreatOptions); ~1 signatures (findRetreatHex)
+- `src/systems/synergyPrimitives.ts` — +1 exports (SimpleCondition); -3 exports (ScalingAxis, TargetSpec, TriggerSpec); ~1 signatures (ConditionSpec)
+- `src/systems/synergyRuntime.ts` — +1 exports (factionHasEmergentFlag)
+- `src/systems/synergyTypes.ts` — +2 exports (AppliedStatus, MapSpawn); -1 exports (EmergentEffect); ~1 signatures (SynergyCombatResult)
+- `src/systems/terrainUtils.ts` — +1 exports (getTerrainAt)
+- `src/systems/unit-activation/helpers.ts` — -1 exports (getAliveFactions)
+- `src/systems/zoneEffectSystem.ts` — +1 exports (removeZoneEffectsByOwner)
+
+### Dependency Changes
+- `src/features/zoneEffects/types.ts` — 1 dependencies
+- `src/systems/combat-action/helpers.ts` — 14 dependencies
+- `src/systems/signatureAbilitySystem.ts` — 8 dependencies
+- `src/systems/synergyRuntime.ts` — 3 dependencies
+- `src/systems/terrainUtils.ts` — 2 dependencies
+- `src/systems/unit-activation/helpers.ts` — 5 dependencies
+- `src/systems/zoneEffectSystem.ts` — 3 dependencies

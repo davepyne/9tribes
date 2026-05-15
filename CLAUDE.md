@@ -59,10 +59,10 @@ When to use which:
 
 To refresh after code changes:
 ```bash
-python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py changes --root ./
-python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py extract --root ./ --changed-only
-python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py digest --root ./ --output .slim/digest.md
-python3 ~/.openclaw-autoclaw/skills/cartography-v2/scripts/cartographer.py update --root ./
+python3 ~/.hermes/skills/cartography/scripts/cartographer.py changes --root ./
+python3 ~/.hermes/skills/cartography/scripts/cartographer.py extract --root ./ --changed-only
+python3 ~/.hermes/skills/cartography/scripts/cartographer.py digest --root ./ --output .slim/digest.md
+python3 ~/.hermes/skills/cartography/scripts/cartographer.py update --root ./
 ```
 
 ## Grid System
@@ -111,14 +111,23 @@ The old 69-entry `synergyEffectHandlers` Map and 11-entry `emergentEffectHandler
 - **`src/systems/synergyPrimitives.ts`** — Type definitions for 12 primitive kinds (StatMod, SetFlag, ApplyStatus, Knockback, Heal, ProjectAura, Capture, PreventAction, SpawnOnMap, GrantVerb, InstantKill, ModeSelect). Future synergies are declarative records, not discriminated-union branches.
 - **`src/systems/primitiveDispatcher.ts`** — Resolves `PrimitiveEffect[]` → `SynergyCombatResult`. One dispatch function per primitive kind. Mutates the result object in-place.
 - **`src/systems/primitiveEvaluator.ts`** — Evaluates condition strings (AND/OR/negation, tag checks, terrain conditions, HP thresholds), resolves targets, and matches triggers.
-- **`src/systems/synergyRuntime.ts`** — Singleton that lazy-loads the synergy engine from JSON files. Now also exports `resolveEffectiveSynergies()`.
-- Types (DomainConfig, PairSynergyConfig, etc.) moved to `src/systems/synergyTypes.ts`.
+- **`src/systems/synergyRuntime.ts`** — Singleton that lazy-loads the synergy engine from the typed content modules (`content/domains/index.ts`, `content/synergies/index.ts`). Exports: `getSynergyEngine`, `resolveEffectiveSynergies`, `calculateSynergyAttackBonus`, `calculateSynergyDefenseBonus`, `factionHasEmergentFlag`.
+- Types (DomainConfig, PairSynergyConfig, etc.) live in `src/systems/synergyTypes.ts`.
+- **`src/systems/emergentRuleParams.ts`** — Faction-scoped tuning constants for emergent rules (terrain_lord, ghost_army, etc.). Per-combat effects must live in synergy primitive arrays in the content layer, NOT here.
+
+## Content Pipeline (2026-05)
+
+Game content is defined in typed TypeScript modules (not raw JSON) so the compiler validates every effect shape at build time:
+
+- **`src/content/domains/index.ts`** — Single source of truth for all domain data (ability metadata, tier progressions, descriptions, effect flags). Replaces `ability-domains.json` and `research.json`. 727 lines, exports: `RESEARCH_DOMAINS`, `ABILITY_DOMAINS`, `getAllResearchDomains`, `getAllAbilityDomains`, etc.
+- **`src/content/synergies/index.ts`** — Single source of truth for pair synergies and emergent rules. Replaces `pair-synergies.json` and `emergent-rules.json`. 1121 lines. Every effect is validated against `PrimitiveEffect` at compile time.
+- **`src/game/stateAccess.ts`** — Typed accessor helpers for GameState maps (`getUnit`, `getFaction`, `getCity`, `getPrototype`, `getResearch`, `getVillage`, `getEconomy`, plus `has*` and spatial queries). Centralizes branded-ID casts so callers don't need `as never`.
 
 ## Zone Effects & Terrain Mutation
 
 New map-level persistent effects system:
 
-- **`src/systems/zoneEffectSystem.ts`** — Lifecycle and query helpers for zone effects. Key functions: `getZoneEffectsAtHex`, `getZoneEffectDamageOnHex`, `getZoneEffectMovementPenalty`, `addZoneEffect`, `removeZoneEffect`, `tickZoneEffectLifetimes` (called once per round at rollover).
+- **`src/systems/zoneEffectSystem.ts`** — Lifecycle and query helpers for zone effects. Key functions: `getZoneEffectsAtHex`, `getZoneEffectDamageOnHex`, `getZoneEffectMovementPenalty`, `addZoneEffect`, `removeZoneEffect`, `removeZoneEffectsByOwner`, `tickZoneEffectLifetimes` (called once per round at rollover).
 - **`src/systems/terrainMutationSystem.ts`** — One-way terrain conversion. `setTerrainAt` (single hex), `setTerrainInRadius` (area). Mutates `state.map.tiles` directly. Used by Oasis and Sapling mechanics.
 
 ### T3 Capstone Abilities

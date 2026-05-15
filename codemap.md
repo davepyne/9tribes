@@ -127,7 +127,7 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 ## Synergy Runtime (`src/systems/synergyRuntime.ts`)
 
 - INPUT: Faction (synergyEligibleDomains, pairEligibleDomains), unit tags
-- OUTPUT: getSynergyEngine → SynergyEngine (singleton); resolveEffectiveSynergies → ActiveSynergy[]; calculateSynergyAttackBonus/DefenseBonus → number
+- OUTPUT: getSynergyEngine → SynergyEngine (singleton); resolveEffectiveSynergies → ActiveSynergy[]; calculateSynergyAttackBonus/DefenseBonus → number; factionHasEmergentFlag → boolean
 - SIDE EFFECTS: getSynergyEngine lazy-loads singleton from JSON files (pair-synergies, emergent-rules, ability-domains).
 - INVARIANTS: Resolution priority: triple stack > faction native self-pair/double stack > unit tag-based. Attack bonus: multiplierStackValue - 1 (floored at 0). Defense bonus: dugInDefense + auraOverlapDefense.
 - CALLERS: combat-action/preview.ts, combat-action/apply.ts
@@ -279,7 +279,7 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 ## Zone Effect System (`src/systems/zoneEffectSystem.ts`)
 
 - INPUT: GameState, HexCoord, FactionId, ZoneEffect, ZoneEffectId
-- OUTPUT: getZoneEffectsAtHex → ZoneEffect[]; getZoneEffectDamageOnHex → number; getZoneEffectMovementPenalty → number; addZoneEffect → GameState; removeZoneEffect → GameState; tickZoneEffectLifetimes → GameState; exports ZONE_EFFECT_LABEL
+- OUTPUT: getZoneEffectsAtHex → ZoneEffect[]; getZoneEffectDamageOnHex → number; getZoneEffectMovementPenalty → number; addZoneEffect → GameState; removeZoneEffect → GameState; removeZoneEffectsByOwner → GameState; tickZoneEffectLifetimes → GameState; exports ZONE_EFFECT_LABEL
 - SIDE EFFECTS: add/remove return new GameState with updated zoneEffects Map. tickZoneEffectLifetimes decrements turnsRemaining and drops expired effects (permanent = -1 untouched).
 - INVARIANTS: O(n) scan per query (n = active effects, expected single-digit). Coverage: hexDistance(hex, effect.center) <= effect.radius. radius=0 means center hex only. Damage/penalty: sums from all non-owner effects (no friendly fire). Stacks additively — two overlapping Toxic Blooms = 4 dmg.
 - CALLERS: maelstromSystem.ts (addZoneEffect), toxicBloomSystem.ts (addZoneEffect, removeZoneEffect), turnSystem.ts (tickZoneEffectLifetimes), environmentalEffects.ts (damage queries)
@@ -427,3 +427,67 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 - SIDE EFFECTS: Closes panels in priority order on Escape. Cleans up on unmount.
 - INVARIANTS: One panel per Escape press (first match wins).
 - CALLERS: GameShell.tsx
+
+## Unit Creation (`src/features/units/createUnit.ts`)
+
+- INPUT: `createFreshUnit(factionId, position {q,r}, prototype, id)`
+- OUTPUT: Fully initialized Unit object. Defaults: facing=0, attacksRemaining=1, xp=0, veteranLevel='green', status='ready', morale=100, all boolean flags false, poisonStacks=0, poisonTurnsRemaining=0, learnedAbilities=[], history=[].
+- SIDE EFFECTS: None. Pure function.
+- INVARIANTS: HP/maxHP from prototype.derivedStats.hp. Moves/maxMoves from prototype.derivedStats.moves. Unit starts with 1 attack. Morale 100.
+- CALLERS: productionSystem.ts, summonSystem.ts, buildMvpScenario.ts, scenarios/targeted.ts
+
+## Emergent Rule Params (`src/systems/emergentRuleParams.ts`)
+
+- INPUT: None (exports single const EMERGENT_PARAMS)
+- OUTPUT: EMERGENT_PARAMS — frozen dictionary keyed by emergent rule name (terrain_lord, terrain_assassin, standing_stone, ghost_army, slave_empire, raid_camp, poison_shadow, iron_turtle, many_faced). Typed numeric/boolean tuning parameters per rule.
+- SIDE EFFECTS: None. Pure data module.
+- INVARIANTS: Faction-scoped tuning constants, NOT per-combat effects. Per-combat effects live in synergy primitive arrays (content/synergies/index.ts). Exported as const.
+- CALLERS: simulation/factionTurnEffects.ts (heavy), primitiveDispatcher.ts, combat-action/apply.ts, healingSystem.ts
+
+## Wild Cyclops Constants (`src/systems/wildCyclopsConstants.ts`)
+
+- INPUT: isWildFaction(factionId)
+- OUTPUT: WILD_CYCLOPS_FACTION_ID ('wild_cyclops'), CYCLOPS_SPAWN_CHANCE (0.25), CYCLOPS_REGEN_PER_ROUND (2), isWildFaction → boolean
+- SIDE EFFECTS: None. Pure data + predicate.
+- INVARIANTS: NOT a real faction — no economy/cities/victory. isWildFaction strict equality check. Spawn 25%, regen 2 HP/round.
+- CALLERS: buildMvpScenario.ts
+
+## Zone Effects — Types (`src/features/zoneEffects/types.ts`)
+
+- INPUT: None (type/data module)
+- OUTPUT: ZoneEffectType (union: 'maelstrom'|'toxic_bloom'|'crushing_zone'|'raid_camp'|'poison_cloud'); ZONE_EFFECT_LABEL (type→display string); ZoneEffect interface (id, type, center, radius, ownerFactionId, damagePerTurn, movementPenalty, turnsRemaining, createdRound, optional preventsHealing)
+- SIDE EFFECTS: None. Pure types + label constant.
+- INVARIANTS: Effects keyed by id, not hex. One hex may host multiple stacking effects. turnsRemaining===-1 means permanent. Friendly fire OFF. Zones visible through fog. preventsHealing for poison_cloud.
+- CALLERS: zoneEffectSystem.ts, game/types.ts
+
+## Signature Ability System (`src/systems/signatureAbilitySystem.ts`)
+
+- INPUT: Various — unitId+state+registry (hasFortressTraining), defender+state+registry+baseBonus (getBulwarkDefenseBonus), unit+state+options (findRetreatHex), state+attacker+defender+distance (applyKnockback), target+stacks+damage+duration (applyPoisonDoT), unit (tickStealthCooldown/enterStealth)
+- OUTPUT: hasFortressTraining → boolean; getBulwarkDefenseBonus → number; findRetreatHex → HexCoord|null; applyKnockback → HexCoord|null; applyPoisonDoT → Unit; tickStealthCooldown/enterStealth → Unit; getNatureHealingAura → {selfHeal, allyHeal}; getTidalCoastDebuff → number (0.25)
+- SIDE EFFECTS: None — all pure functions.
+- INVARIANTS: Poison stacks capped at 2. enterStealth requires 'stealth' tag AND turnsSinceStealthBreak===0. findRetreatHex skips damaging terrain unless ghostPass active. Bulwark requires adjacent alive same-faction ally with fortress training. Knockback prefers away-vector direction.
+- CALLERS: factionTurnEffects.ts, healingSystem.ts, combat-action/apply.ts, combat-action/helpers.ts, combat-action/preview.ts
+
+## Synergy Types (`src/systems/synergyTypes.ts`)
+
+- INPUT: Pure type definitions + SynergyCombatResult class
+- OUTPUT: Types: DomainConfig, PairSynergyConfig, EmergentRuleConfig, ActiveSynergy, ActiveDoubleStack, ActiveTripleStack, CombatContext, AppliedStatus, MapSpawn, HealingContext. Class: SynergyCombatResult with getStat/setStat/hasFlag/hasVerb/findStatus/getList/getSpawns helpers.
+- SIDE EFFECTS: SynergyCombatResult.setStat mutates internal stats Map. Intentionally mutable — primitiveDispatcher mutates in-place.
+- INVARIANTS: Single unified result container. New synergies must NOT add named fields. CombatContext requires both attackerId and defenderId. EmergentRuleConfig.effects is per-combat; faction tuning in EMERGENT_PARAMS. getStat defaults to 0. getList returns []. getNearestFriendlyDistanceToHex returns 99.
+- CALLERS: primitiveEvaluator.ts, primitiveDispatcher.ts, synergyEngine.ts, synergyEffects.ts, content/synergies/index.ts, combat-action/types.ts
+
+## Terrain Utils (`src/systems/terrainUtils.ts`)
+
+- INPUT: terrainId string (predicates), state+position (getTerrainAt)
+- OUTPUT: isWaterTerrain/isDeepWaterTerrain/isRiverStealthTerrain/isCoverTerrain/isWetlandTerrain/isWoodlandTerrain → boolean; isLandTerrain → boolean (true for undefined); getTerrainAt → string (defaults 'plains'); COVER_TERRAINS → Set<string>
+- SIDE EFFECTS: None. Pure functions.
+- INVARIANTS: Water: coast/river/ocean. Deep water: coast/ocean (NOT river). River stealth: river/swamp. Cover: forest/jungle/hill/swamp. Wetland: river/coast/swamp. Woodland: forest/jungle. isLandTerrain = !isWaterTerrain. getTerrainAt falls back to 'plains'.
+- CALLERS: 22 sites — highest fan-out in codebase. buildMvpScenario.ts, productionSystem.ts, fogSystem.ts, movementSystem.ts, citySiteSystem.ts, healingSystem.ts, maelstromSystem.ts, combat-action/apply.ts, combat-action/preview.ts, combat-action/helpers.ts, submergeSystem.ts, oasisSystem.ts, primitiveEvaluator.ts, transportSystem.ts, factionTurnEffects.ts, combatSignalSystem.ts, factionIdentitySystem.ts, unit-activation modules, moraleSystem.ts, terrainMutationSystem.ts
+
+## Unit Activation — Helpers (`src/systems/unit-activation/helpers.ts`)
+
+- INPUT: Various — state+position (getTerrainAt, getImprovementAtHex, isFortificationHex), state+factionId+pos+radius (count functions), state+factionId+unitId (removeUnitFromFaction, setUnitActivated), combat result fields (describeCombatOutcome)
+- OUTPUT: getTerrainAt → string; describeCombatOutcome → string; formatCombatSummary → string; rotateUnitToward → Unit; getImprovementAtHex → Improvement|null; isFortificationHex → boolean; count functions → number; getNearestFriendlyDistanceToHex → number (99 if none); countNearbyUnitPressure → {nearbyEnemies, nearbyFriendlies} (radius 2); removeUnitFromFaction → GameState; setUnitActivated → GameState; mapAssignmentToIntent → 'retreat'|'regroup'|'siege'|'support'|'advance'
+- SIDE EFFECTS: None in-place. removeUnitFromFaction and setUnitActivated return new GameState.
+- INVARIANTS: countNearbyUnitPressure radius=2. getNearestFriendlyDistanceToHex returns 99. setUnitActivated sets activatedThisRound=true AND status='spent'. describeCombatOutcome priority: defender destroyed > attacker destroyed > defender fled > defender routed > attacker fled > attacker routed > 'Exchange'. mapAssignmentToIntent: recovery→retreat, defender/reserve→regroup, siege_force→siege, raider→support, else→advance. Dead units excluded from counts.
+- CALLERS: opportunityAttackSystem.ts, zocSystem.ts, all unit-activation/ submodules

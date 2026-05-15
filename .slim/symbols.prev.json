@@ -8689,17 +8689,6 @@
         }
       ]
     },
-    "src/systems/primitiveDispatcher.ts": {
-      "exports": [
-        {
-          "name": "resolvePrimitives",
-          "kind": "function",
-          "line": 250,
-          "signature": "export function resolvePrimitives( effects: PrimitiveEffect[], context: CombatContext, result: SynergyCombatResult, ): void {",
-          "isDefault": false
-        }
-      ]
-    },
     "src/systems/simulation/environmentalEffects.ts": {
       "exports": [
         {
@@ -9178,17 +9167,6 @@
         }
       ]
     },
-    "src/systems/primitiveEvaluator.ts": {
-      "exports": [
-        {
-          "name": "evaluateCondition",
-          "kind": "function",
-          "line": 13,
-          "signature": "export function evaluateCondition( condition: ConditionSpec | undefined, context: CombatContext, ): boolean {",
-          "isDefault": false
-        }
-      ]
-    },
     "src/systems/unit-activation/activateUnit.ts": {
       "exports": [
         {
@@ -9359,11 +9337,33 @@
           "isDefault": false
         }
       ]
+    },
+    "src/systems/primitiveDispatcher.ts": {
+      "exports": [
+        {
+          "name": "resolvePrimitives",
+          "kind": "function",
+          "line": 250,
+          "signature": "export function resolvePrimitives( effects: PrimitiveEffect[], context: CombatContext, result: SynergyCombatResult, ): void {",
+          "isDefault": false
+        }
+      ]
+    },
+    "src/systems/primitiveEvaluator.ts": {
+      "exports": [
+        {
+          "name": "evaluateCondition",
+          "kind": "function",
+          "line": 13,
+          "signature": "export function evaluateCondition( condition: ConditionSpec | undefined, context: CombatContext, ): boolean {",
+          "isDefault": false
+        }
+      ]
     }
   },
   "_metadata": {
     "version": "2.0.0",
-    "last_run": "2026-05-15T18:15:27.078210Z",
+    "last_run": "2026-05-15T18:17:53.142988Z",
     "root": "/home/frank/repos/9tribes",
     "file_count": 247
   },
@@ -9469,8 +9469,8 @@
     "src/systems/occupancySystem.ts": "298a2dfd57f5dafefc0ec7ed981cecd8",
     "src/systems/opportunityAttackSystem.ts": "378a828a1fd28e6ef3f4fd362024d019",
     "src/systems/pathfinder.ts": "637d86462d61085addc8f9528f2adb15",
-    "src/systems/primitiveDispatcher.ts": "085be3b2032f1fdfe6307f359ac0ebd6",
-    "src/systems/primitiveEvaluator.ts": "06ae334b36fa4bd9ec47b4c48bae726d",
+    "src/systems/primitiveDispatcher.ts": "b6adb339a0d7b9f19dac793b65bbf800",
+    "src/systems/primitiveEvaluator.ts": "6fd88c5a9a03f58100dd5a77c64cf684",
     "src/systems/productionSystem.ts": "4d4f96aa5f5fdb9e2d32eb9b6df95966",
     "src/systems/researchSystem.ts": "2360dff31d9085ac181c400b522a28db",
     "src/systems/sacrificeSystem.ts": "7f72d9df586038c813b03d37fe0b4319",
