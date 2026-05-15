@@ -7,6 +7,7 @@ import type { HexCoord, FactionId } from '../types.js';
 import type { ResearchDoctrine } from './capabilityDoctrine.js';
 import { getDirectionIndex, getNeighbors, getOppositeDirection } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
+import { factionHasEmergentFlag } from './synergyRuntime.js';
 
 /** Naval chassis IDs — any unit with one of these is in the naval ZoC domain. */
 const NAVAL_CHASSIS_IDS = new Set(['naval_frame', 'ranged_naval_frame', 'galley_frame']);
@@ -123,6 +124,12 @@ export function getZoCMovementCost(
     return 0;
   }
 
+  // Emergent rule ZoC immunity (juggernaut, iron_turtle, many_faced phantom)
+  const faction = state.factions.get(movingUnit.factionId);
+  if (factionHasEmergentFlag(faction, 'emergentIgnoreZoc')) {
+    return 0;
+  }
+
   // Hitrun T1 approach: ignore ZoC when moving toward an enemy to attack
   if (doctrine?.ignoreZocOnApproachEnabled && blockers.length > 0) {
     return 0;
@@ -155,6 +162,15 @@ export function entersEnemyZoC(
     // But cannot ignore fort ZoC
     if (fortZoC) {
       return !isOnFortAtHex(state, originHex); // already in fort = no ZoC entry
+    }
+    return false;
+  }
+
+  // Emergent rule ZoC immunity (juggernaut, iron_turtle, many_faced phantom)
+  const faction = state.factions.get(movingUnit.factionId);
+  if (factionHasEmergentFlag(faction, 'emergentIgnoreZoc')) {
+    if (fortZoC) {
+      return !isOnFortAtHex(state, originHex);
     }
     return false;
   }

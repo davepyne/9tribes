@@ -38,4 +38,9 @@ describe('synergy coverage audit', () => {
     const result = runAudit();
     expect(result.triggerTargetScaling).toHaveLength(0);
   });
+
+  it('no declared primitive field is silently ignored by the dispatcher', () => {
+    const result = runAudit();
+    expect(result.unreadFieldViolations).toHaveLength(0);
+  });
 });

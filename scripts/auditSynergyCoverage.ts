@@ -51,10 +51,18 @@ export interface TriggerTargetUsage {
   value: unknown;
 }
 
+export interface InertSynergy {
+  id: string;
+  kind: 'pair' | 'emergent';
+  writtenFields: string[];
+}
+
 export interface AuditResult {
   fields: FieldClassification[];
   counts: Record<Classification, number>;
   triggerTargetScaling: TriggerTargetUsage[];
+  unreadFieldViolations: UnreadFieldViolation[];
+  inertSynergies: InertSynergy[];
 }
 
 // ---------------------------------------------------------------------------
@@ -241,6 +249,36 @@ function walkContent(
 }
 
 // ---------------------------------------------------------------------------
+// 3b. Per-synergy inert detection
+// ---------------------------------------------------------------------------
+
+interface SynergyEntry {
+  id?: string;
+  effects: Record<string, unknown>[];
+}
+
+function getSynergyWrittenFields(entry: SynergyEntry): string[] {
+  return walkEffects(entry.effects);
+}
+
+function findInertSynergies(
+  entries: SynergyEntry[],
+  kind: 'pair' | 'emergent',
+  liveFields: Set<string>,
+): InertSynergy[] {
+  const inert: InertSynergy[] = [];
+  for (const entry of entries) {
+    const written = getSynergyWrittenFields(entry);
+    if (written.length === 0) continue;
+    const hasLive = written.some(f => liveFields.has(f));
+    if (!hasLive) {
+      inert.push({ id: entry.id ?? '<unknown>', kind, writtenFields: written });
+    }
+  }
+  return inert;
+}
+
+// ---------------------------------------------------------------------------
 // 4. Consumer-read check
 // ---------------------------------------------------------------------------
 //
@@ -280,10 +318,11 @@ function buildConsumerReadMap(fieldNames: string[], tsFiles: string[]): Map<stri
   for (const field of fieldNames) {
     const escaped = field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     // Match: getStat('name') | hasFlag('name') | hasVerb('name') | data.get('name') | getList('name')
-    // Also accept double-quoted forms.
+    // Also accept double-quoted forms and factionHasEmergentFlag(..., 'name') helper calls.
     const re = new RegExp(
       `(getStat|hasFlag|hasVerb|getList)\\(\\s*['"\`]${escaped}['"\`]`
-      + `|data\\.get\\(\\s*['"\`]${escaped}['"\`]`,
+      + `|data\\.get\\(\\s*['"\`]${escaped}['"\`]`
+      + `|factionHasEmergentFlag\\([^,]+,\\s*['"\`]${escaped}['"\`]`,
     );
     let found = false;
     for (const [, content] of fileContents) {
@@ -295,7 +334,83 @@ function buildConsumerReadMap(fieldNames: string[], tsFiles: string[]): Map<stri
 }
 
 // ---------------------------------------------------------------------------
-// 5. Parse content data statically (TS Compiler API)
+// 5. Declared-but-unread primitive field check (Phase 6)
+// ---------------------------------------------------------------------------
+
+// The set of optional fields that every primitive may carry via PrimitiveBase
+// or per-kind interfaces. The dispatcher must actually read (destructure) each
+// declared field at runtime; otherwise it is silently dropped, violating
+// Invariant 2.
+//
+// This is a static allowlist that maps each primitive kind to the optional
+// fields its dispatcher function reads. If a new optional field is added to an
+// interface, it must appear here or the audit will flag it.
+
+interface FieldReadCheck {
+  kind: string;
+  optionalFields: string[];
+}
+
+const DISPATCHER_READS: FieldReadCheck[] = [
+  // PrimitiveBase fields — condition read by all dispatchers
+  { kind: 'statMod',        optionalFields: ['condition'] },
+  { kind: 'setFlag',        optionalFields: ['condition'] },
+  { kind: 'applyStatus',    optionalFields: ['condition', 'stacks', 'duration', 'fields'] },
+  { kind: 'knockback',      optionalFields: ['condition', 'collisionDamage', 'collisionStun', 'extendMultiplier'] },
+  { kind: 'heal',           optionalFields: ['condition'] },
+  { kind: 'capture',        optionalFields: ['condition', 'chanceBonus', 'hpThreshold'] },
+  { kind: 'preventAction',  optionalFields: ['condition'] },
+  { kind: 'spawnOnMap',     optionalFields: ['condition', 'radius', 'duration', 'fields'] },
+  { kind: 'grantVerb',      optionalFields: ['condition'] },
+  { kind: 'instantKill',    optionalFields: ['condition'] },
+  { kind: 'projectAura',    optionalFields: ['condition'] },
+  { kind: 'modeSelect',     optionalFields: ['condition'] },
+];
+
+export interface UnreadFieldViolation {
+  kind: string;
+  field: string;
+}
+
+export function checkDeclaredFieldsRead(): UnreadFieldViolation[] {
+  const dispatcherSource = fs.readFileSync(
+    path.join(SRC, 'systems', 'primitiveDispatcher.ts'), 'utf-8',
+  );
+  const violations: UnreadFieldViolation[] = [];
+
+  for (const { kind, optionalFields } of DISPATCHER_READS) {
+    // Find the dispatch function for this kind, e.g. dispatchStatMod
+    const funcName = `dispatch${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
+    // Extract the function body roughly: from funcName to the next function declaration
+    const funcStartRe = new RegExp(`function ${funcName}\\b`);
+    const funcStartMatch = funcStartRe.exec(dispatcherSource);
+    if (!funcStartMatch) {
+      // Kind not found in dispatcher — skip (should not happen)
+      continue;
+    }
+    const funcStartIdx = funcStartMatch.index;
+    // Find the next top-level function declaration after this one
+    const nextFuncRe = /\nfunction\s+\w+/g;
+    nextFuncRe.lastIndex = funcStartIdx + 1;
+    const nextFuncMatch = nextFuncRe.exec(dispatcherSource);
+    const funcEndIdx = nextFuncMatch ? nextFuncMatch.index : dispatcherSource.length;
+    const funcBody = dispatcherSource.substring(funcStartIdx, funcEndIdx);
+
+    for (const field of optionalFields) {
+      // Check if the field is read: p.<field> or <param>.<field>
+      // The dispatcher functions use `p` as the parameter name
+      const fieldReadRe = new RegExp(`\\bp\\.${field}\\b`);
+      if (!fieldReadRe.test(funcBody)) {
+        violations.push({ kind, field });
+      }
+    }
+  }
+
+  return violations;
+}
+
+// ---------------------------------------------------------------------------
+// 6. Parse content data statically (TS Compiler API)
 // ---------------------------------------------------------------------------
 
 function parseContentData(contentPath: string): { pairSynergies: any[]; emergentRules: any[] } {
@@ -427,7 +542,16 @@ export function runAudit(): AuditResult {
     });
   }
 
-  return { fields: classifications, counts, triggerTargetScaling: ttsUsages };
+  // Identify inert synergies (all written fields are non-live)
+  const liveFieldSet = new Set(
+    classifications.filter(f => f.classification === 'live').map(f => f.field),
+  );
+  const inertSynergies = [
+    ...findInertSynergies(pairSynergies, 'pair', liveFieldSet),
+    ...findInertSynergies(emergentRules, 'emergent', liveFieldSet),
+  ];
+
+  return { fields: classifications, counts, triggerTargetScaling: ttsUsages, unreadFieldViolations: checkDeclaredFieldsRead(), inertSynergies };
 }
 
 // ---------------------------------------------------------------------------
@@ -435,7 +559,7 @@ export function runAudit(): AuditResult {
 // ---------------------------------------------------------------------------
 
 function printReport(result: AuditResult): void {
-  const { fields, counts, triggerTargetScaling } = result;
+  const { fields, counts, triggerTargetScaling, unreadFieldViolations, inertSynergies } = result;
 
   console.log('\n=== Synergy Coverage Audit ===\n');
   console.log(`Total fields: ${fields.length}`);
@@ -465,6 +589,26 @@ function printReport(result: AuditResult): void {
     }
   } else {
     console.log('\nNo trigger/target/scaling usage found in content.');
+  }
+
+  // Phase 6: declared-but-unread primitive field check
+  if (unreadFieldViolations.length > 0) {
+    console.log(`\n=== Declared-but-unread primitive fields (${unreadFieldViolations.length}) ===\n`);
+    for (const v of unreadFieldViolations) {
+      console.log(`  ${v.kind}.${v.field} — declared on interface but never read by dispatcher`);
+    }
+  } else {
+    console.log('\nAll declared primitive fields are read by the dispatcher.');
+  }
+
+  // Phase 4: inert synergies (no live primitive)
+  if (inertSynergies.length > 0) {
+    console.log(`\n=== Inert synergies — no live primitive (${inertSynergies.length}) ===\n`);
+    for (const s of inertSynergies) {
+      console.log(`  [${s.kind}] ${s.id} — written fields: ${s.writtenFields.join(', ')}`);
+    }
+  } else {
+    console.log('\nAll synergies have at least one live primitive.');
   }
 
   console.log('');

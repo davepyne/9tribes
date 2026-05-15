@@ -178,6 +178,7 @@ export function applyCombatAction(
     captureEscapePrevented: false,
     synergyCaptureBonus: 0,
     chargeSplashTargetsHit: 0,
+    armadaChainDamage: 0,
     woundedEarthAbsorbed: 0,
     woundedEarthAlliesHealed: 0,
     woundedEarthSaved: false,
@@ -797,6 +798,32 @@ export function applyCombatAction(
     if (chargeSplashTargetsHit > 0) {
       current = { ...current, units: splashUnits };
       baseResolution.chargeSplashTargetsHit = chargeSplashTargetsHit;
+    }
+  }
+
+  // Armada chain damage: naval units deal +1 damage per friendly naval unit within 2 hexes (cap +4)
+  let armadaChainDamage = 0;
+  const chainBonus = atk.getStat('formationChainBonus');
+  if (chainBonus > 0 && isNavalAttacker && nextDefender.hp > 0) {
+    let chainCount = 0;
+    for (const unit of current.units.values()) {
+      if (unit.factionId !== attacker.factionId || unit.id === attacker.id || unit.hp <= 0) continue;
+      if (hexDistance(unit.position, attacker.position) > 2) continue;
+      const proto = current.prototypes.get(unit.prototypeId);
+      const chassis = proto ? registry.getChassis(proto.chassisId) : undefined;
+      if (chassis?.movementClass === 'naval') chainCount++;
+    }
+    const cappedCount = Math.min(chainCount, 4);
+    if (cappedCount > 0) {
+      armadaChainDamage = chainBonus * cappedCount;
+      const chainDefender = current.units.get(preview.defenderId);
+      if (chainDefender && chainDefender.hp > 0) {
+        const newHp = Math.max(0, chainDefender.hp - armadaChainDamage);
+        const chainUnits = new Map(current.units);
+        chainUnits.set(preview.defenderId, { ...chainDefender, hp: newHp });
+        current = { ...current, units: chainUnits };
+        baseResolution.armadaChainDamage = armadaChainDamage;
+      }
     }
   }
 
@@ -1796,6 +1823,7 @@ export function applyCombatAction(
       captureEscapePrevented: baseResolution.captureEscapePrevented,
       synergyCaptureBonus: baseResolution.synergyCaptureBonus,
       chargeSplashTargetsHit: baseResolution.chargeSplashTargetsHit,
+      armadaChainDamage: baseResolution.armadaChainDamage,
       woundedEarthAbsorbed,
       woundedEarthAlliesHealed,
       woundedEarthSaved: baseResolution.woundedEarthSaved,

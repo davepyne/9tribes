@@ -92,6 +92,7 @@ export interface CombatActionResolution {
   captureEscapePrevented: boolean;
   synergyCaptureBonus: number;
   chargeSplashTargetsHit: number;
+  armadaChainDamage: number;
   woundedEarthAbsorbed: number;
   woundedEarthAlliesHealed: number;
   woundedEarthSaved: boolean;

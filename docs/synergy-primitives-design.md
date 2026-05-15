@@ -28,13 +28,11 @@ type TriggerSpec =
   | 'onEnterAura' | 'onTurnEnd' | 'onPhase'
   | { event: string; filter?: string };
 
-/** Every primitive may carry condition (gate during resolution)
- *  and trigger (fires at a different time from normal resolution). */
 interface PrimitiveBase {
   condition?: string;   // 'isCharge' | 'isStealthAttack' | 'isRetreat' | 'terrain:desert' | etc.
-  target?: TargetSpec;
-  trigger?: TriggerSpec;
 }
+
+> **Note (Phase 6 cleanup):** The `trigger`, `target`, and `scaling` fields that originally appeared on PrimitiveBase and StatMod have been removed. They were part of the original primitive design but are deferred until a concrete synergy requires them — the dispatcher does not honor these fields. If implemented later, each capability gets its own phase (6a/6b/6c) with its own done condition. See `docs/synergy-primitives-cleanup-plan.md` Phase 6 Option B for the implementation sketch.
 
 // --- 1. statMod — modify a numeric property ---
 
@@ -47,11 +45,6 @@ interface StatMod extends PrimitiveBase {
                         // 'allyMovement' | 'counterDamage' | etc.
   op: 'add' | 'multiply' | 'set' | 'min' | 'max';
   value: number;        // Numeric only. Boolean/string flags use setFlag.
-  scaling?: {
-    per: 'stackingAttacker' | 'chainedUnit' | 'runUpHex'
-       | 'poisonStack' | 'woundsReceived';
-    max?: number;
-  };
   permanent?: boolean;  // Persists beyond combat (e.g., armorBroken)
 }
 

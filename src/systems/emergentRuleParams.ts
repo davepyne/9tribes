@@ -1,18 +1,14 @@
-// Non-combat tuning values for emergent rules.
-// Combat effects live in each rule's PrimitiveEffect[] (resolved by the
-// primitive dispatcher). This file holds values used by non-combat systems
-// (healing, movement, economy, etc.).
-
+/**
+ * Faction-scoped tuning values for emergent rules. NOT for per-combat effects.
+ * Per-combat effects live in each rule's `effects: PrimitiveEffect[]` array in
+ * `src/content/synergies/index.ts` and are resolved by the primitive dispatcher.
+ * Adding a key here that duplicates a primitive's value violates Invariant 3.
+ */
 export const EMERGENT_PARAMS = {
   terrain_lord: {
     nativeTerrainDamageBonus: 0.5,
     doubleChargeRangeInNativeTerrain: true,
     terraformCharges: 3,
-  },
-  paladin: {
-    healPercentOfDamage: 0.5,
-    minHp: 1,
-    smiteBonusAtFullHp: 1.0,
   },
   terrain_assassin: {
     terrainTypes: ['desert', 'coast', 'hill'],
@@ -33,19 +29,6 @@ export const EMERGENT_PARAMS = {
     phaseDistance: 4,
     killChainRedeployRange: 99,
     phaseAlliesMovementBonus: 2,
-  },
-  juggernaut: {
-    domainSignatures: {
-      venom: { poisonPerHit: 1 },
-      fortress: { damageReflection: 0.3 },
-      charge: { knockbackOnKill: 1, damageBehindPercent: 0.5 },
-      hitrun: { freeRepositionAfterKill: 1 },
-      heavy_hitter: { armorPiercePercent: 0.5 },
-      slaving: { captureBelowHpPercent: 0.25 },
-      tidal_warfare: { bonusDamageAdjacentToWater: 2 },
-    },
-    undyingOncePerCombat: true,
-    ignoreZoc: true,
   },
   slave_empire: {
     captureAuraRadius: 2,

@@ -81,20 +81,6 @@ export type EffectTypeName =
 
 // --- Shared sub-types ---
 
-export type TargetSpec =
-  | 'self' | 'attacker' | 'defender'
-  | { alliesInRadius: number }
-  | { enemiesInRadius: number }
-  | { role: string }
-  | 'position';
-
-export type TriggerSpec =
-  | 'onKill' | 'onDeath' | 'onHit' | 'onCapture'
-  | 'onKillFromStealth' | 'onAdjacentAllyDeath'
-  | 'onExecution' | 'mercyKillOfCaptive'
-  | 'onEnterAura' | 'onTurnEnd' | 'onPhase'
-  | { event: string; filter?: string };
-
 export type SimpleCondition =
   | 'isCharge'
   | 'isStealthAttack'
@@ -114,13 +100,7 @@ export type ConditionSpec =
 
 export interface PrimitiveBase {
   condition?: ConditionSpec;
-  target?: TargetSpec;
-  trigger?: TriggerSpec;
 }
-
-export type ScalingAxis =
-  | 'stackingAttacker' | 'chainedUnit' | 'runUpHex'
-  | 'poisonStack' | 'woundsReceived' | 'hpLost';
 
 // --- 1. statMod ---
 
@@ -129,10 +109,6 @@ export interface StatMod extends PrimitiveBase {
   stat: StatName;
   op: 'add' | 'multiply' | 'set' | 'min' | 'max';
   value: number;
-  scaling?: {
-    per: ScalingAxis;
-    max?: number;
-  };
   permanent?: boolean;
 }
 
@@ -238,7 +214,6 @@ export interface GrantVerb extends PrimitiveBase {
 
 export interface InstantKill extends PrimitiveBase {
   kind: 'instantKill';
-  apCostToVictim?: number;
 }
 
 // --- 12. modeSelect ---

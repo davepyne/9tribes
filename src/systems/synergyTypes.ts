@@ -34,6 +34,9 @@ export interface EmergentRuleConfig {
   domainSets?: Record<string, string[]>;
   mobilityDomains?: string[];
   combatDomains?: string[];
+  /** Per-combat effects only. Faction-scoped tuning (zone radii, terraform charges,
+   *  economy bonuses, phase distances) belongs in EMERGENT_PARAMS in
+   *  `src/systems/emergentRuleParams.ts`. */
   effects: PrimitiveEffect[];
   description: string;
   friendlyFlavor: string;
