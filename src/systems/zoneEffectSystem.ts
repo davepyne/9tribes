@@ -11,6 +11,7 @@
 
 import type { GameState, ZoneEffect, ZoneEffectId, HexCoord, FactionId } from '../game/types.js';
 import { hexDistance } from '../core/grid.js';
+export { ZONE_EFFECT_LABEL } from '../features/zoneEffects/types.js';
 
 /**
  * All zone effects whose coverage includes the given hex.

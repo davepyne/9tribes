@@ -21,6 +21,11 @@ import type { ZoneEffectId, FactionId, HexCoord } from '../../types.js';
 
 export type ZoneEffectType = 'maelstrom' | 'toxic_bloom';
 
+export const ZONE_EFFECT_LABEL: Record<ZoneEffectType, string> = {
+  maelstrom: 'Maelstrom',
+  toxic_bloom: 'Toxic Bloom',
+};
+
 export interface ZoneEffect {
   id: ZoneEffectId;
   type: ZoneEffectType;

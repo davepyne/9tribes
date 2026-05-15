@@ -13,13 +13,10 @@ import { createRNG } from '../src/core/rng';
 import { hexDistance, hexToKey } from '../src/core/grid';
 import { addZoneEffect } from '../src/systems/zoneEffectSystem';
 import type { GameState, Unit, Faction, FactionId, HexCoord } from '../src/game/types';
-import type { ResearchNodeId } from '../src/types';
 import {
   getCombatants,
   placeAdjacent,
-  addExtraUnit,
   setResearch,
-  fakeFaction,
 } from './helpers/combatSetup.js';
 
 const registry = loadRulesRegistry();
@@ -406,37 +403,6 @@ describe('re-capture liberation', () => {
 // Captive Champion — T3 native: spawns seasoned unit on every 5th capture
 // ---------------------------------------------------------------------------
 describe('Captive Champion spawn', () => {
-  /** Run a capture combat: attacker kills defender at ⩽50% HP (triggers autoCapture with native T3 slaving). */
-  function runCaptureCombat(
-    state: GameState,
-    attackerPrototypeId: string,
-    defenderPrototypeId: string,
-  ): { state: GameState; championSpawned: boolean } {
-    const factionIds = Array.from(state.factions.keys());
-    const attackerFactionId = factionIds[0];
-    const defenderFactionId = factionIds[1];
-
-    const attFaction = state.factions.get(attackerFactionId)!;
-    const defFaction = state.factions.get(defenderFactionId)!;
-
-    const attacker = state.units.get(attFaction.unitIds[0])!;
-    const defender = state.units.get(defFaction.unitIds[0])!;
-
-    // Place adjacent
-    const adjacentPos: HexCoord = { q: attacker.position.q + 1, r: attacker.position.r };
-    const placed = new Map(state.units);
-    placed.set(defender.id, { ...defender, position: adjacentPos });
-    let combatState = { ...state, units: placed };
-
-    // Preview
-    const preview = previewCombatAction(combatState, registry, attacker.id, defender.id);
-    if (!preview) return { state: combatState, championSpawned: false };
-
-    // Apply
-    const result = applyCombatAction(combatState, registry, preview);
-    return { state: result.state, championSpawned: result.feedback.resolution.captiveChampionSpawned };
-  }
-
   it('spawns a seasoned champion on the 5th capture and every 5th thereafter', () => {
     let state = buildMvpScenario(42);
     const factionIds = Array.from(state.factions.keys()) as FactionId[];
@@ -458,8 +424,6 @@ describe('Captive Champion spawn', () => {
 
     // We need multiple defenders to capture. Add disposable enemy units.
     // Capture 5 times by running 5 separate combats.
-    let lastChampionSpawned = false;
-    const capturedPrototypeIds: string[] = [];
 
     for (let captureIdx = 1; captureIdx <= 10; captureIdx++) {
       // Add a fresh defender from the defender faction at a unique position
@@ -494,10 +458,6 @@ describe('Captive Champion spawn', () => {
 
       const result = applyCombatAction(state, registry, preview);
       state = result.state;
-
-      if (result.feedback.resolution.capturedOnKill) {
-        capturedPrototypeIds.push(attUnit.prototypeId);
-      }
 
       const championSpawned = result.feedback.resolution.captiveChampionSpawned;
 
@@ -548,9 +508,8 @@ describe('navalCaptureRadius auto-capture', () => {
     units.set(def.id, { ...def, hp: 1, maxHp: 3, position: defenderPos });
     state = { ...state, units };
 
-    // Add a friendly naval unit (using Slave Trireme prototype = naval_frame chassis) 
-    // within 2 hexes of the defender: place at defenderPos itself (distance 0)
-    const navalProto = state.prototypes.get('prototype_16' as never)!; // Slave Trireme, chassis=naval_frame
+    // Add a friendly naval unit (Slave Trireme = naval_frame chassis)
+    // within 2 hexes of the defender: place at attacker's position (distance 0 from defender)
     const navalId = 'test-naval-1' as never;
     const navalUnit: Unit = {
       ...att,
