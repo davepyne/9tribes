@@ -23,7 +23,7 @@ const ALL_EMERGENT_RULES: EmergentRuleData[] = EMERGENT_RULES_BACKEND.map((r) =>
   domainSets: r.domainSets,
   mobilityDomains: r.mobilityDomains,
   combatDomains: r.combatDomains,
-  effect: { description: r.effect.description },
+  description: r.description,
   friendlyFlavor: r.friendlyFlavor,
   enemyFlavor: r.enemyFlavor,
 }));

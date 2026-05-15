@@ -78,7 +78,7 @@ describe('Phase 4: Emergent rule wiring', () => {
   describe('E2 — Terrain Assassin (permanent_stealth)', () => {
     it('permanent stealth terrains not settable via primitives — handled at zone level', () => {
       // permanent_stealth uses empty effects array; terrain list is read from
-      // emergentRule.effect.terrainTypes by the zone-effect system, not by
+      // EMERGENT_PARAMS.terrain_assassin.terrainTypes by the zone-effect system, not by
       // applyCombatSynergies. The combat path does not populate
       // emergentPermanentStealthTerrains.
       const triple = makeEmergentTriple('permanent_stealth', {

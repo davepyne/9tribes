@@ -8,18 +8,16 @@
 // frontend view-models both import from this module; no parallel JSON copies.
 //
 // Why a typed module instead of JSON:
-//   - Compile-time validation of every effect shape against the discriminated
-//     `EmergentEffect` union and `PrimitiveEffect` structs (a JSON import was
-//     opaque to the type system and silently allowed typos).
+//   - Compile-time validation of every effect shape against the
+//     `PrimitiveEffect` union (a JSON import was opaque to the type system
+//     and silently allowed typos).
 //   - Zero runtime validators — TS guarantees the data shape at build time.
 //   - One source of truth shared by backend and frontend; no chance of the
 //     two diverging via stale JSON copies.
 //
-// Layering note: the data unions (`EmergentEffect`,
-// `PairSynergyConfig`, `EmergentRuleConfig`) live in
-// src/systems/synergyTypes.ts for historical reasons. Importing them from
-// /systems into /content is a pragmatic wart we accept rather than performing
-// a parallel types-move refactor in this migration.
+// Layering note: the config types (`PairSynergyConfig`, `EmergentRuleConfig`)
+// live in src/systems/synergyTypes.ts. Non-combat tuning values live in
+// src/systems/emergentRuleParams.ts.
 // ============================================================================
 
 import type {
@@ -239,7 +237,13 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Citadel',
     domains: ['fortress', 'nature_healing'],
     requiredTags: ['fortress', 'druid'],
-    effects: [],
+    effects: [
+      { kind: 'projectAura', radius: 2, effects: [
+        { kind: 'heal', amount: 3, mode: 'flat' },
+      ] },
+      { kind: 'setFlag', flag: 'countsAsCity' },
+      { kind: 'statMod', stat: 'defense', op: 'add', value: 0.5 },
+    ],
     description:
       'Units with both fortress and healing create a 2-hex healing aura. The unit counts as a city for defense purposes and generates 1 resource per turn.',
     friendlyFlavor:
@@ -252,7 +256,9 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Hidden Fortress',
     domains: ['fortress', 'river_stealth'],
     requiredTags: ['fortress', 'stealth'],
-    effects: [],
+    effects: [
+      { kind: 'statMod', stat: 'stealthChargeMultiplier', op: 'set', value: 2.0, condition: 'isStealthAttack' },
+    ],
     description:
       'Stealth fortress units are invisible until they attack or an enemy enters an adjacent hex. First attack from stealth has 2x critical multiplier. Can creep 1 hex while hidden.',
     friendlyFlavor:
@@ -332,7 +338,9 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Endless Charge',
     domains: ['charge', 'hitrun'],
     requiredTags: ['elephant', 'skirmish'],
-    effects: [],
+    effects: [
+      { kind: 'grantVerb', verb: 'secondCharge' },
+    ],
     description:
       'Units with charge can charge, retreat, and charge again in the same turn if they have enough movement points',
     friendlyFlavor:
@@ -358,7 +366,10 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Charging Growth',
     domains: ['charge', 'nature_healing'],
     requiredTags: ['elephant', 'druid'],
-    effects: [],
+    effects: [
+      { kind: 'heal', amount: 0.3, mode: 'percentMaxHp', condition: 'isCharge' },
+      { kind: 'statMod', stat: 'bloomPulseMovementBonus', op: 'set', value: 1, condition: 'isCharge' },
+    ],
     description:
       'Charging units adjacent to healing units regenerate after a charge. Successful charges restore 1 movement point.',
     friendlyFlavor:
@@ -483,7 +494,9 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Shadow Step',
     domains: ['hitrun', 'river_stealth'],
     requiredTags: ['skirmish', 'stealth'],
-    effects: [],
+    effects: [
+      { kind: 'grantVerb', verb: 'reEnterStealth', condition: 'isRetreat' },
+    ],
     description:
       'Stealth hit-and-run: after attacking from stealth, the unit automatically re-enters stealth at the retreat hex (no cooldown)',
     friendlyFlavor:
@@ -568,7 +581,10 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Silent Landing',
     domains: ['tidal_warfare', 'river_stealth'],
     requiredTags: ['naval', 'stealth'],
-    effects: [],
+    effects: [
+      { kind: 'statMod', stat: 'stealthChargeMultiplier', op: 'add', value: 0.5, condition: 'isStealthAttack' },
+      { kind: 'setFlag', flag: 'transportedTroopsStealth' },
+    ],
     description:
       'Stealth naval units can make amphibious landings without breaking stealth. First attack after landing deals +50% damage. Transported troops gain stealth.',
     friendlyFlavor:
@@ -646,7 +662,11 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Oasis',
     domains: ['nature_healing', 'camel_adaptation'],
     requiredTags: ['druid', 'camel'],
-    effects: [],
+    effects: [
+      { kind: 'projectAura', radius: 1, effects: [
+        { kind: 'heal', amount: 1.0, mode: 'percentMaxHp' },
+      ] },
+    ],
     description:
       "Camel units with healing create an 'oasis' effect: the hex they occupy and all adjacent hexes count as neutral terrain for movement purposes. Units at full HP are fully restored at turn end (5-turn cooldown).",
     friendlyFlavor:
@@ -706,7 +726,10 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     name: 'Mirage',
     domains: ['river_stealth', 'camel_adaptation'],
     requiredTags: ['stealth', 'camel'],
-    effects: [],
+    effects: [
+      { kind: 'applyStatus', status: 'stealth', duration: 'permanent', condition: 'terrain:desert' },
+      { kind: 'spawnOnMap', effectType: 'decoy', position: 'attacker', duration: 2 },
+    ],
     description:
       'Camel stealth units in desert terrain are permanently stealthed. Moving in desert spawns a phantom decoy that lasts 2 turns.',
     friendlyFlavor:
@@ -859,14 +882,8 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       combat: ['venom', 'fortress', 'charge', 'hitrun', 'slaving', 'heavy_hitter'],
       mobility: ['camel_adaptation', 'charge', 'hitrun', 'river_stealth'],
     },
-    effect: {
-      type: 'terrain_lord',
-      nativeTerrainDamageBonus: 0.5,
-      doubleChargeRangeInNativeTerrain: true,
-      terraformCharges: 3,
-      description:
-        'Charges ignore all terrain penalties. In native terrain: double charge range + +50% damage. Reshape: permanently convert 3 hexes to your native terrain type.',
-    },
+    description:
+      'Charges ignore all terrain penalties. In native terrain: double charge range + +50% damage. Reshape: permanently convert 3 hexes to your native terrain type.',
     effects: [
       { kind: 'statMod', stat: 'damage', op: 'multiply', value: 1.5, condition: 'isCharge' },
     ],
@@ -884,14 +901,8 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       defensive: ['fortress', 'tidal_warfare', 'heavy_hitter'],
       offensive: ['venom', 'charge', 'hitrun', 'slaving'],
     },
-    effect: {
-      type: 'paladin',
-      healPercentOfDamage: 0.5,
-      minHp: 1,
-      smiteBonusAtFullHp: 1.0,
-      description:
-        "Heals for 50% of damage dealt; can't drop below 1 HP from a single hit. At full HP, next attack deals +100% damage (Radiant Smite).",
-    },
+    description:
+      "Heals for 50% of damage dealt; can't drop below 1 HP from a single hit. At full HP, next attack deals +100% damage (Radiant Smite).",
     effects: [
       { kind: 'statMod', stat: 'emergentSustainHealPercent', op: 'set', value: 0.5 },
       { kind: 'statMod', stat: 'emergentSustainMinHp', op: 'set', value: 1 },
@@ -911,13 +922,11 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       combat: ['venom', 'charge', 'hitrun', 'slaving'],
       terrain: ['camel_adaptation', 'tidal_warfare', 'heavy_hitter'],
     },
-    effect: {
-      type: 'permanent_stealth',
-      terrainTypes: ['desert', 'coast', 'hill'],
-      description:
-        'Attacks from stealth in matching terrain type are permanent stealth — enemies never detect you regardless of proximity',
-    },
-    effects: [],
+    description:
+      'Attacks from stealth in matching terrain type are permanent stealth — enemies never detect you regardless of proximity',
+    effects: [
+      { kind: 'applyStatus', status: 'stealth', duration: 'permanent', condition: 'isStealthAttack' },
+    ],
     friendlyFlavor:
       'Your assassins become one with the terrain — invisible forever in their chosen environment. They kill without revealing themselves, over and over, until nothing remains.',
     enemyFlavor:
@@ -932,21 +941,8 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       healing: ['nature_healing'],
       defensive: ['tidal_warfare', 'heavy_hitter'],
     },
-    effect: {
-      type: 'standing_stone',
-      anchoredAuraRadius: 4,
-      anchoredDefenseBonus: 0.3,
-      anchoredHealPerTurn: 5,
-      anchoredSelfRegen: 8,
-      anchoredAdjacentDamage: 2,
-      damageSharePercent: 0.5,
-      tarPitMovementPenalty: 2,
-      marchAuraRadius: 1,
-      marchDefenseBonus: 0.15,
-      marchHealPerTurn: 2,
-      description:
-        'Toggle stance each turn. Anchored: 3-hex aura (+30% defense, 5 HP/turn, damage share 50/50, enemies lose 2 movement, adjacent enemies take 2 damage). Marching: 1-hex aura (+15% defense, 2 HP/turn), can move.',
-    },
+    description:
+      'Toggle stance each turn. Anchored: 3-hex aura (+30% defense, 5 HP/turn, damage share 50/50, enemies lose 2 movement, adjacent enemies take 2 damage). Marching: 1-hex aura (+15% defense, 2 HP/turn), can move.',
     effects: [
       { kind: 'statMod', stat: 'defense', op: 'add', value: 0.3 },
       { kind: 'preventAction', action: 'displacement' },
@@ -962,14 +958,8 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
     name: 'Ghost Army',
     condition: 'contains_3_mobility',
     mobilityDomains: ['charge', 'hitrun', 'camel_adaptation', 'river_stealth'],
-    effect: {
-      type: 'ghost_army',
-      phaseDistance: 4,
-      killChainRedeployRange: 99,
-      phaseAlliesMovementBonus: 2,
-      description:
-        'Phase: teleport up to 3 hexes through anything (0 movement cost, must be outside enemy vision). On kill: re-stealth + re-emerge near any ally. Adjacent allies gain +2 movement when this unit phases.',
-    },
+    description:
+      'Phase: teleport up to 3 hexes through anything (0 movement cost, must be outside enemy vision). On kill: re-stealth + re-emerge near any ally. Adjacent allies gain +2 movement when this unit phases.',
     effects: [],
     friendlyFlavor:
       'Your phantom soldiers phase through the battlefield like smoke — teleporting, killing, and vanishing to re-emerge beside any ally. Their presence alone quickens your entire force.',
@@ -981,22 +971,8 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
     name: 'Juggernaut',
     condition: 'contains_3_combat',
     combatDomains: ['venom', 'fortress', 'charge', 'slaving', 'heavy_hitter', 'hitrun', 'tidal_warfare'],
-    effect: {
-      type: 'juggernaut',
-      domainSignatures: {
-        venom: { poisonPerHit: 1 },
-        fortress: { damageReflection: 0.3 },
-        charge: { knockbackOnKill: 1, damageBehindPercent: 0.5 },
-        hitrun: { freeRepositionAfterKill: 1 },
-        heavy_hitter: { armorPiercePercent: 0.5 },
-        slaving: { captureBelowHpPercent: 0.25 },
-        tidal_warfare: { bonusDamageAdjacentToWater: 2 },
-      },
-      undyingOncePerCombat: true,
-      ignoreZoc: true,
-      description:
-        'Each combat domain contributes a signature ability. 3-combat unit collects 3 signatures simultaneously. Cannot be killed by a single hit (survives at 1 HP once). Ignores zone of control.',
-    },
+    description:
+      'Each combat domain contributes a signature ability. 3-combat unit collects 3 signatures simultaneously. Cannot be killed by a single hit (survives at 1 HP once). Ignores zone of control.',
     effects: [
       { kind: 'setFlag', flag: 'emergentUndying' },
       { kind: 'setFlag', flag: 'emergentIgnoreZoc' },
@@ -1015,14 +991,8 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       heavy: ['heavy_hitter'],
       fortress: ['fortress'],
     },
-    effect: {
-      type: 'slave_empire',
-      captureAuraRadius: 2,
-      captureChanceBonus: 0.2,
-      slaveProductionBonus: 0.5,
-      description:
-        'Fortress zones (2-hex radius) auto-capture wounded enemies below 25% HP. Captured slaves produce +50% resources. Heavy enforcers make slaves immune to rout.',
-    },
+    description:
+      'Fortress zones (2-hex radius) auto-capture wounded enemies below 25% HP. Captured slaves produce +50% resources. Heavy enforcers make slaves immune to rout.',
     effects: [{ kind: 'statMod', stat: 'emergentCaptureBonus', op: 'set', value: 0.2 }],
     friendlyFlavor:
       'Your empire runs on chains. Fortress zones drag in the wounded automatically, your slaves produce at double efficiency, and your heavy enforcers ensure no captives ever break free.',
@@ -1038,18 +1008,8 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       slaving: ['slaving'],
       mobility: ['charge', 'hitrun'],
     },
-    effect: {
-      type: 'raid_camp',
-      campPlacementRange: 5,
-      campDuration: 2,
-      campStealthDuration: 1,
-      campMovementBonus: 2,
-      campEnemyRadius: 3,
-      campEnemyDefensePenalty: 0.25,
-      captureBonus: 0.3,
-      description:
-        'Each turn, place a Raid Camp within 5 hexes. Allies entering gain +2 movement and stealth for 1 turn. Enemies within 3 hexes of a camp on hostile territory suffer -25% defense. Capture chance +30%. Camp persists 2 turns.',
-    },
+    description:
+      'Each turn, place a Raid Camp within 5 hexes. Allies entering gain +2 movement and stealth for 1 turn. Enemies within 3 hexes of a camp on hostile territory suffer -25% defense. Capture chance +30%. Camp persists 2 turns.',
     effects: [{ kind: 'statMod', stat: 'emergentCaptureBonus', op: 'set', value: 0.3 }],
     friendlyFlavor:
       'Your raiders establish forward camps that turn any position into an ambush point. Allies surge with speed and stealth while enemies falter under the shadow of your presence.',
@@ -1065,14 +1025,8 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       stealth: ['river_stealth'],
       combat: ['charge', 'hitrun'],
     },
-    effect: {
-      type: 'poison_shadow',
-      stealthPoisonStacks: 3,
-      retreatPoisonCloud: true,
-      poisonCloudDamage: 2,
-      description:
-        "Stealth attacks apply 3 poison stacks instantly. Retreating from stealth leaves a poison cloud (2 damage/turn, 2-hex radius). Enemies can't heal while in the cloud.",
-    },
+    description:
+      "Stealth attacks apply 3 poison stacks instantly. Retreating from stealth leaves a poison cloud (2 damage/turn, 2-hex radius). Enemies can't heal while in the cloud.",
     effects: [
       { kind: 'applyStatus', status: 'poison', stacks: 3, condition: 'isStealthAttack' },
       { kind: 'spawnOnMap', effectType: 'poisonCloud', position: 'attacker', condition: 'isRetreat' },
@@ -1092,16 +1046,8 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
       heavy: ['heavy_hitter'],
       terrain: ['tidal_warfare', 'camel_adaptation'],
     },
-    effect: {
-      type: 'iron_turtle',
-      crushingZoneRadius: 3,
-      crushingZoneDamage: 2,
-      crushingZoneMovementPenalty: 1,
-      damageReflection: 0.5,
-      ignoreZoc: true,
-      description:
-        '2-hex crushing zone deals 2 damage/turn and -1 movement to enemies inside. 50% damage reflection. Cannot be displaced. Ignores zone of control.',
-    },
+    description:
+      '2-hex crushing zone deals 2 damage/turn and -1 movement to enemies inside. 50% damage reflection. Cannot be displaced. Ignores zone of control.',
     effects: [
       { kind: 'statMod', stat: 'damageReflection', op: 'set', value: 0.5 },
       { kind: 'statMod', stat: 'emergentCrushZoneRadius', op: 'set', value: 3 },
@@ -1118,16 +1064,8 @@ const EMERGENT_RULES_DATA: readonly EmergentRuleConfig[] = [
     id: 'many_faced',
     name: 'Many-Faced',
     condition: 'default',
-    effect: {
-      type: 'many_faced',
-      bulwarkDefense: 0.4,
-      bulwarkReflection: 0.25,
-      predatorDamage: 0.4,
-      predatorRangeBonus: 1,
-      phantomMovementBonus: 1,
-      description:
-        'Cycles stances based on last turn\'s events. Took damage -> Bulwark (+40% defense, 25% reflection). Dealt damage -> Predator (+40% damage, +1 range). Moved -> Phantom (ignore ZoC, +1 movement, stealth on rough terrain). Stance persists until the next event reassigns it.',
-    },
+    description:
+      'Cycles stances based on last turn\'s events. Took damage -> Bulwark (+40% defense, 25% reflection). Dealt damage -> Predator (+40% damage, +1 range). Moved -> Phantom (ignore ZoC, +1 movement, stealth on rough terrain). Stance persists until the next event reassigns it.',
     effects: [
       {
         kind: 'modeSelect',

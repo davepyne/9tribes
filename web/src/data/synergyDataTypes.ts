@@ -16,5 +16,5 @@ export type EmergentRule = {
   name: string;
   condition: string;
   domainSets: Record<string, string[]>;
-  effect: { description: string };
+  description: string;
 };

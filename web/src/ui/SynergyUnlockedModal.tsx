@@ -44,7 +44,7 @@ const EMERGENT_RULES_FULL: EmergentRuleData[] = EMERGENT_RULES_BACKEND.map((r) =
   domainSets: r.domainSets,
   mobilityDomains: r.mobilityDomains,
   combatDomains: r.combatDomains,
-  effect: { description: r.effect.description },
+  description: r.description,
   friendlyFlavor: r.friendlyFlavor,
   enemyFlavor: r.enemyFlavor,
 }));
@@ -131,7 +131,7 @@ export function useSynergyUnlockDetector(
         }
         onDetect({
           synergies,
-          tripleStack: { id: rule.id, name: rule.name, description: rule.effect.description },
+          tripleStack: { id: rule.id, name: rule.name, description: rule.description },
         });
       }
     }

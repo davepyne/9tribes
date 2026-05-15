@@ -30,7 +30,7 @@ function makeEmergent(
   return {
     name: overrides.name ?? overrides.id,
     condition: 'default',
-    effect: overrides.effect ?? { type: 'multiplier', pairSynergyMultiplier: 1.0, description: 'test' },
+    description: overrides.description ?? 'test',
     effects: overrides.effects ?? [{ kind: 'statMod', stat: 'multiplierStackValue', op: 'set', value: 1 }] as PrimitiveEffect[],
     friendlyFlavor: overrides.friendlyFlavor ?? 'test flavor',
     enemyFlavor: overrides.enemyFlavor ?? 'test flavor',

@@ -16,6 +16,7 @@ import {
 } from './synergyEffects.js';
 import { getNatureHealingAura } from './signatureAbilitySystem.js';
 import { resolveEffectiveSynergies } from './synergyRuntime.js';
+import { EMERGENT_PARAMS } from './emergentRuleParams.js';
 
 const HEALING_CONFIG = {
   OWNED_TERRITORY: 0.10,
@@ -217,9 +218,8 @@ export function applyHealingForFaction(
 
     // E1 — Standing Stone emergent: faction units gain healPerTurn bonus from the aura
     const tripleStack = faction.activeTripleStack;
-    if (tripleStack?.emergentRule.effect.type === 'standing_stone') {
-      const stoneEffect = tripleStack.emergentRule.effect as import('./synergyEngine.js').EmergentEffect & { type: 'standing_stone' };
-      healRate += stoneEffect.anchoredHealPerTurn;
+    if (tripleStack?.emergentRule.id === 'standing_stone') {
+      healRate += EMERGENT_PARAMS.standing_stone.anchoredHealPerTurn;
     }
 
     // Withering: nearby enemies reduce healing

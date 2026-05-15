@@ -134,7 +134,7 @@ export function previewMove(
     totalCost = Math.min(totalCost, 1);
   }
   // E4 — Raid Camp emergent: allied units ignore desert movement penalty
-  if (targetTerrainId === 'desert' && faction?.activeTripleStack?.emergentRule.effect.type === 'raid_camp') {
+  if (targetTerrainId === 'desert' && faction?.activeTripleStack?.emergentRule.id === 'raid_camp') {
     totalCost = Math.min(totalCost, 1);
   }
   if (doctrine.roughTerrainMovementEnabled && isCoverTerrain(targetTerrainId)) {

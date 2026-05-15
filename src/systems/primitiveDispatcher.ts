@@ -70,7 +70,20 @@ function dispatchApplyStatus(p: ApplyStatus, context: CombatContext, result: Syn
     case 'formationCrush':
       result.formationCrushStacks += stacks;
       break;
-    default:
+    case 'frostbite':
+      result.frostbiteStacks += stacks;
+      result.frostbiteColdDoT += stacks;
+      result.frostbiteSlow += dur;
+      break;
+    case 'armorBroken':
+      result.armorPiercing = Math.max(result.armorPiercing, 1);
+      break;
+    case 'stealth':
+    case 'bleed':
+    case 'rage':
+    case 'corruptionAura':
+    case 'cleanse':
+    case 'decoy':
       break;
   }
   result.additionalEffects.push(`applyStatus_${p.status}`);
@@ -124,7 +137,20 @@ function dispatchPreventAction(p: PreventAction, context: CombatContext, result:
     case 'captureEscape':
       result.captureEscapePrevented = true;
       break;
-    default:
+    case 'retreat':
+    case 'attackSource':
+    case 'movementThrough':
+    case 'pursue':
+    case 'terrainPenalty':
+    case 'retaliation':
+      result.noRetaliation = true;
+      break;
+    case 'retreatThroughImpassable':
+      result.ghostPassActive = true;
+      break;
+    case 'impassableBlocksRetreat':
+    case 'revealNetworkOnKill':
+    case 'heal':
       break;
   }
   result.additionalEffects.push(`preventAction_${p.action}`);
@@ -132,8 +158,21 @@ function dispatchPreventAction(p: PreventAction, context: CombatContext, result:
 
 function dispatchSpawnOnMap(p: SpawnOnMap, context: CombatContext, result: SynergyCombatResult): void {
   if (!evaluateCondition(p.condition, context)) return;
-  if (p.effectType === 'poisonTrap' || p.effectType === 'poisonCloud') {
-    result.poisonTrapPositions.push(context.attackerPosition);
+  const pos = p.position === 'defender' ? context.defenderPosition : context.attackerPosition;
+  switch (p.effectType) {
+    case 'poisonTrap':
+    case 'poisonCloud':
+      result.poisonTrapPositions.push(pos);
+      break;
+    case 'sandstorm':
+      result.sandstormDamage = (p.fields?.damage as number) ?? result.sandstormDamage;
+      break;
+    case 'contamination':
+      result.contaminateActive = true;
+      break;
+    case 'decoy':
+    case 'raidCamp':
+      break;
   }
   result.additionalEffects.push(`spawnOnMap_${p.effectType}`);
 }
@@ -163,7 +202,17 @@ function dispatchGrantVerb(p: GrantVerb, context: CombatContext, result: Synergy
     case 'retreatToWater':
       result.beachRaidRetreatToWater = true;
       break;
-    default:
+    case 'reEnterStealth':
+    case 'decamp':
+    case 'terraform':
+    case 'submerge':
+    case 'declareOasis':
+    case 'relayMarch':
+    case 'phase':
+    case 'redeployOnKill':
+    case 'repositionAfterKill':
+    case 'shareVision':
+    case 'instantRetreatWithCaptive':
       break;
   }
   result.additionalEffects.push(`grantVerb_${p.verb}`);

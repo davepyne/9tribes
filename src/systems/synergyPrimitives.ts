@@ -21,7 +21,8 @@ export type StatName =
   | 'sandstormAuraDebuff' | 'slaveArmyDamageBonus'
   | 'slaveArmyDefensePenalty' | 'slaveCoercionDamageBonus'
   | 'heavyMassStacks' | 'multiplierStackValue' | 'dugInDefense'
-  | 'auraOverlapDefense' | 'formationCrushStacks' | 'formationFocusBonus'
+  | 'auraOverlapDefense' | 'stealthChargeMultiplier'
+  | 'formationCrushStacks' | 'formationFocusBonus'
   | 'formationChainBonus' | 'bloomPulseHeal' | 'bloomPulseSelfHeal'
   | 'bloomPulseAuraRadius' | 'bloomPulseMovementBonus'
   | 'bombardmentRange' | 'bombardmentDamageMultiplier'
@@ -56,7 +57,8 @@ export type FlagName =
   | 'beachRaidRetreatToWater' | 'ghostPassActive'
   | 'fightingRetreatFreeStrike' | 'caravanPassengerActive'
   | 'mobileStrongholdFortUp' | 'formationFocusIgnoresDefense'
-  | 'emergentUndying' | 'emergentIgnoreZoc';
+  | 'emergentUndying' | 'emergentIgnoreZoc'
+  | 'countsAsCity' | 'transportedTroopsStealth';
 
 export type StatusName =
   | 'poison' | 'stun' | 'slow' | 'stealth' | 'bleed'
@@ -99,7 +101,21 @@ export type TriggerSpec =
   | 'onEnterAura' | 'onTurnEnd' | 'onPhase'
   | { event: string; filter?: string };
 
-export type ConditionSpec = string;
+export type SimpleCondition =
+  | 'isCharge'
+  | 'isStealthAttack'
+  | 'isRetreat'
+  | 'isStealthed'
+  | 'isWater';
+
+export type ConditionSpec =
+  | SimpleCondition
+  | `tag:${string}`
+  | `terrain:${string}`
+  | `targetHp${'<' | '<=' | '>' | '>='}${number}`
+  | `${string} AND ${string}`
+  | `${string} OR ${string}`
+  | `!${string}`;
 
 export interface PrimitiveBase {
   condition?: ConditionSpec;

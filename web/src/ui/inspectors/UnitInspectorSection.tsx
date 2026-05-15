@@ -38,7 +38,7 @@ const EMERGENT_RULE_BY_ID = new Map<string, EmergentRuleData>(
       domainSets: r.domainSets,
       mobilityDomains: r.mobilityDomains,
       combatDomains: r.combatDomains,
-      effect: { description: r.effect.description },
+      description: r.description,
       friendlyFlavor: r.friendlyFlavor,
       enemyFlavor: r.enemyFlavor,
     },

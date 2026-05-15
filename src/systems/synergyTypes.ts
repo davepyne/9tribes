@@ -32,35 +32,11 @@ export interface EmergentRuleConfig {
   domainSets?: Record<string, string[]>;
   mobilityDomains?: string[];
   combatDomains?: string[];
-  effect: EmergentEffect;
   effects: PrimitiveEffect[];
+  description: string;
   friendlyFlavor: string;
   enemyFlavor: string;
 }
-
-export type EmergentEffect =
-  // Terrain Lord (was terrain_rider/terrain_charge)
-  | { type: 'terrain_lord'; nativeTerrainDamageBonus: number; doubleChargeRangeInNativeTerrain: boolean; terraformCharges: number; description: string }
-  // Paladin (was sustain — added smite)
-  | { type: 'paladin'; healPercentOfDamage: number; minHp: number; smiteBonusAtFullHp: number; description: string }
-  // Terrain Assassin (unchanged)
-  | { type: 'permanent_stealth'; terrainTypes: string[]; description: string }
-  // Standing Stone (was zone_of_control/anchor)
-  | { type: 'standing_stone'; anchoredAuraRadius: number; anchoredDefenseBonus: number; anchoredHealPerTurn: number; anchoredSelfRegen: number; anchoredAdjacentDamage: number; damageSharePercent: number; tarPitMovementPenalty: number; marchAuraRadius: number; marchDefenseBonus: number; marchHealPerTurn: number; description: string }
-  // Ghost Army (was mobility_unit)
-  | { type: 'ghost_army'; phaseDistance: number; killChainRedeployRange: number; phaseAlliesMovementBonus: number; description: string }
-  // Juggernaut (was combat_unit — per-domain signatures)
-  | { type: 'juggernaut'; domainSignatures: Record<string, Record<string, number | boolean>>; undyingOncePerCombat: boolean; ignoreZoc: boolean; description: string }
-  // Slave Empire (unchanged)
-  | { type: 'slave_empire'; captureAuraRadius: number; captureChanceBonus: number; slaveProductionBonus: number; description: string }
-  // Raid Camp (was desert_raider)
-  | { type: 'raid_camp'; campPlacementRange: number; campDuration: number; campStealthDuration: number; campMovementBonus: number; campEnemyRadius: number; campEnemyDefensePenalty: number; captureBonus: number; description: string }
-  // Poison Shadow (unchanged)
-  | { type: 'poison_shadow'; stealthPoisonStacks: number; retreatPoisonCloud: boolean; poisonCloudDamage: number; description: string }
-  // Iron Turtle (expanded)
-  | { type: 'iron_turtle'; crushingZoneRadius: number; crushingZoneDamage: number; crushingZoneMovementPenalty: number; damageReflection: number; ignoreZoc: boolean; description: string }
-  // Many-Faced (was adaptive/multiplier)
-  | { type: 'many_faced'; bulwarkDefense: number; bulwarkReflection: number; predatorDamage: number; predatorRangeBonus: number; phantomMovementBonus: number; description: string };
 
 export interface ActiveSynergy {
   pairId: string;
@@ -225,6 +201,8 @@ export interface SynergyCombatResult {
   slaveEconomyHealPerTurn: number;
   slaveEconomyResourceBonus: number;
   caravanPassengerActive: boolean;
+  countsAsCity: boolean;
+  transportedTroopsStealth: boolean;
 }
 
 export interface HealingContext {

@@ -26,7 +26,7 @@ const EMERGENT_RULES: EmergentRule[] = EMERGENT_RULES_FULL.map((r) => ({
   name: r.name,
   condition: r.condition,
   domainSets: r.domainSets ?? {},
-  effect: { description: r.effect.description },
+  description: r.description,
 }));
 
 // ── Synergy Lookup Logic ──
@@ -223,7 +223,7 @@ function KnowledgeGainedModalInner({ event, onDismiss }: ModalInnerProps) {
               <p key={rule.id} className="kgm-nearmiss">
                 If this unit also learns{' '}
                 <span className="kgm-missing-domain">{formatDomainName(missingDomain)}</span>, it could unlock:{' '}
-                <strong>{rule.name}</strong> &mdash; {rule.effect.description}
+                <strong>{rule.name}</strong> &mdash; {rule.description}
               </p>
             ))}
           </div>

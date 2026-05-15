@@ -136,7 +136,14 @@ export function makeEmptyResult(): SynergyCombatResult {
     slaveEconomyHealPerTurn: 0,
     slaveEconomyResourceBonus: 0,
     caravanPassengerActive: false,
+    countsAsCity: false,
+    transportedTroopsStealth: false,
   };
+}
+
+/** Reset an existing SynergyCombatResult to its zero values in-place (avoids GC pressure). */
+export function resetSynergyResult(result: SynergyCombatResult): void {
+  Object.assign(result, makeEmptyResult());
 }
 
 // --- Public API ---
