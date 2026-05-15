@@ -33,3 +33,9 @@ export function isCoverTerrain(terrainId: string | undefined): boolean {
 export function isWetlandTerrain(terrainId: string | undefined): boolean {
   return terrainId ? WETLAND_TERRAINS.has(terrainId) : false;
 }
+
+const WOODLAND_TERRAINS = new Set(['forest', 'jungle']);
+
+export function isWoodlandTerrain(terrainId: string | undefined): boolean {
+  return terrainId ? WOODLAND_TERRAINS.has(terrainId) : false;
+}

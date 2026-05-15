@@ -71,6 +71,7 @@ export interface Unit {
   bleedTurnsRemaining?: number;
   killChainCountThisTurn?: number;
   woundsReceivedThisTurn?: number;
+  terrainDamageAbsorption?: number;  // nature_healing_t2 — damage absorbed by Wounded Earth this combat (UI feedback)
   // Learn-by-kill system: abilities learned from killing enemy faction units
   learnedAbilities: LearnedAbility[];
   // Multi-turn move queue target; undefined = no active queue

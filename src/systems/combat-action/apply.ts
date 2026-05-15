@@ -22,7 +22,7 @@ import { applyPoisonDoT, enterStealth, findRetreatHex } from '../signatureAbilit
 import { getPrototype, getNearestFriendlyCity } from '../../game/stateAccess.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { getGreedyLootOnKill, getPoisonOnAttack, getPursuitMovementOnKill, isUnitRiverStealthed } from '../factionIdentitySystem.js';
-import { isCoverTerrain } from '../terrainUtils.js';
+import { isCoverTerrain, isWoodlandTerrain } from '../terrainUtils.js';
 
 import {
   recordBattleFought,
@@ -176,6 +176,9 @@ export function applyCombatAction(
     captureEscapePrevented: false,
     synergyCaptureBonus: 0,
     chargeSplashTargetsHit: 0,
+    woundedEarthAbsorbed: 0,
+    woundedEarthAlliesHealed: 0,
+    woundedEarthSaved: false,
   };
 
   const attacker = state.units.get(preview.attackerId);
@@ -313,6 +316,40 @@ export function applyCombatAction(
       : defender.woundsReceivedThisTurn,
   };
 
+  // Nature Healing T2 — Wounded Earth: terrain absorbs 25% damage on forest/jungle
+  let woundedEarthAbsorbed = 0;
+  let woundedEarthAlliesHealed = 0;
+  if (
+    defenderDoctrineEarly?.woundedEarthEnabled
+    && preview.result.defenderDamage > 0
+    && isWoodlandTerrain(defenderTerrainId)
+  ) {
+    const absorbAmount = Math.floor(preview.result.defenderDamage * 0.25);
+    if (absorbAmount > 0) {
+      woundedEarthAbsorbed = absorbAmount;
+      if (!defenderDoctrineEarly.woundedEarthHealEnabled) {
+        // Foreign: terrain absorbs damage, reducing HP loss
+        const newHp = Math.min(defender.hp, nextDefender.hp + absorbAmount);
+        nextDefender = {
+          ...nextDefender,
+          hp: newHp,
+          terrainDamageAbsorption: absorbAmount,
+        };
+        if (preview.result.defenderDestroyed && newHp > 0) {
+          baseResolution.woundedEarthSaved = true;
+        }
+      } else {
+        // Native: defender takes full damage; adjacent allies heal instead (applied after current is built)
+        nextDefender = { ...nextDefender, terrainDamageAbsorption: absorbAmount };
+      }
+    }
+  }
+
+  // Revert 'spent' status if Wounded Earth saved the defender
+  if (baseResolution.woundedEarthSaved) {
+    nextDefender = { ...nextDefender, status: defender.status };
+  }
+
   // Phase 3C — Heavy naval ram: extra damage from naval ram synergy
   if (preview.details.heavyNavalRamDamage > 0 && isNavalAttacker && nextDefender.hp > 0) {
     nextDefender = { ...nextDefender, hp: Math.max(0, nextDefender.hp - preview.details.heavyNavalRamDamage) };
@@ -351,7 +388,7 @@ export function applyCombatAction(
   // effects, knockback, rout, etc.) should read. `preview.result.
   // defenderDestroyed` reflects only the preview's prediction and is
   // stale once a save mechanism fires.
-  const defenderActuallyDestroyed = preview.result.defenderDestroyed && !baseResolution.lastStandSaved;
+  const defenderActuallyDestroyed = preview.result.defenderDestroyed && !baseResolution.lastStandSaved && !baseResolution.woundedEarthSaved;
 
   if (preview.attackerWasStealthed && attacker.isStealthed && nextAttacker.hp > 0) {
     const isDesertStealth = attackerDoctrine?.permanentStealthEnabled === true
@@ -440,6 +477,28 @@ export function applyCombatAction(
   const defenderDoctrine = defenderFaction
     ? resolveCapabilityDoctrine(current.research.get(defender.factionId), defenderFaction)
     : undefined;
+
+  // Nature Healing T2 native — Wounded Earth: adjacent allies on forest/jungle heal for absorbed amount
+  if (woundedEarthAbsorbed > 0 && defenderDoctrineEarly?.woundedEarthHealEnabled) {
+    const healUnits = new Map(current.units);
+    for (const adjHex of getNeighbors(defender.position)) {
+      const adjUnitId = getUnitAtHex(current, adjHex);
+      if (!adjUnitId) continue;
+      const adjUnit = healUnits.get(adjUnitId);
+      if (!adjUnit || adjUnit.factionId !== defender.factionId || adjUnit.hp <= 0) continue;
+      const adjTerrainId = current.map?.tiles.get(hexToKey(adjHex))?.terrain ?? '';
+      if (isWoodlandTerrain(adjTerrainId)) {
+        healUnits.set(adjUnitId, {
+          ...adjUnit,
+          hp: Math.min(adjUnit.maxHp, adjUnit.hp + woundedEarthAbsorbed),
+        });
+        woundedEarthAlliesHealed++;
+      }
+    }
+    if (woundedEarthAlliesHealed > 0) {
+      current = { ...current, units: healUnits };
+    }
+  }
 
   // E5 — Paladin sustain: heal for % of damage dealt
   let emergentSustainHealApplied = 0;
@@ -1509,6 +1568,13 @@ export function applyCombatAction(
   if (baseResolution.lastStandSaved) {
     pushCombatEffect(triggeredEffects, 'Last Stand', 'Arctic Warden survived a lethal blow at 1 HP.', 'ability');
   }
+  if (woundedEarthAbsorbed > 0) {
+    if (woundedEarthAlliesHealed > 0) {
+      pushCombatEffect(triggeredEffects, 'Wounded Earth', `Terrain channeled ${woundedEarthAbsorbed} absorbed damage into healing ${woundedEarthAlliesHealed} adjacent friendly unit${woundedEarthAlliesHealed === 1 ? '' : 's'} on forest/jungle.`, 'ability');
+    } else {
+      pushCombatEffect(triggeredEffects, 'Wounded Earth', `Terrain absorbed ${woundedEarthAbsorbed} damage, reducing HP loss.`, 'ability');
+    }
+  }
   if (preview.details.emergentManyFacedStance) {
     const stanceLabel = preview.details.emergentManyFacedStance.charAt(0).toUpperCase() + preview.details.emergentManyFacedStance.slice(1);
     pushCombatEffect(triggeredEffects, `Many-Faced: ${stanceLabel}`, `Adapted stance based on combat context.`, 'synergy');
@@ -1578,6 +1644,9 @@ export function applyCombatAction(
       captureEscapePrevented: baseResolution.captureEscapePrevented,
       synergyCaptureBonus: baseResolution.synergyCaptureBonus,
       chargeSplashTargetsHit: baseResolution.chargeSplashTargetsHit,
+      woundedEarthAbsorbed,
+      woundedEarthAlliesHealed,
+      woundedEarthSaved: baseResolution.woundedEarthSaved,
     },
   };
 

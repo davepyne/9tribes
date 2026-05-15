@@ -65,6 +65,8 @@ export interface ResearchDoctrine {
   nativeDamageReflectionEnabled: boolean; // heavy_hitter_t2 native - reflect 50% + stagger attacker
   hitAndRunEnabled: boolean;         // hitrun_t2 - cavalry can attack then retreat in same turn
   bloodtrailMomentumEnabled: boolean; // hitrun_t2 - each wound received grants +1 movement next turn
+  woundedEarthEnabled: boolean;          // nature_healing_t2 - terrain absorbs 25% damage on forest/jungle
+  woundedEarthHealEnabled: boolean;      // nature_healing_t2 native - adjacent allies heal for absorbed amount instead
   killChainEnabled: boolean;         // hitrun_t3 foreign - follow-up attack at 60% damage after kill
   nativeKillChainEnabled: boolean;   // hitrun_t3 native - follow-up at 100% damage, chain up to 3 kills
 
@@ -261,6 +263,8 @@ export function resolveResearchDoctrine(
     nativeDamageReflectionEnabled: hasNode('heavy_hitter_t2') && nativeDomains.has('heavy_hitter'),
     hitAndRunEnabled: hasNode('hitrun_t2'),
     bloodtrailMomentumEnabled: hasNode('hitrun_t2'),
+    woundedEarthEnabled: hasNode('nature_healing_t2'),
+    woundedEarthHealEnabled: hasNode('nature_healing_t2') && nativeDomains.has('nature_healing'),
     killChainEnabled: hasNode('hitrun_t3'),
     nativeKillChainEnabled: hasNativeT3('hitrun'),
 
