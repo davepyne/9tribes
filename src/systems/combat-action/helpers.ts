@@ -1,4 +1,4 @@
-import { getDirectionIndex, hexDistance, hexToKey } from '../../core/grid.js';
+import { getDirectionIndex, getNeighbors, hexDistance, hexToKey } from '../../core/grid.js';
 import type { GameState, UnitId } from '../../game/types.js';
 import type { Unit } from '../../features/units/types.js';
 import type { HexCoord } from '../../types.js';
@@ -9,6 +9,7 @@ import { clearPreparedAbility } from '../abilitySystem.js';
 import { applyKnockback } from '../signatureAbilitySystem.js';
 import { destroyTransport, isTransportUnit } from '../transportSystem.js';
 import { hasCaptureAbility } from '../captureSystem.js';
+import { getUnitAtHex } from '../occupancySystem.js';
 import { isWaterTerrain } from '../terrainUtils.js';
 import { resolveEffectiveSynergies } from '../synergyRuntime.js';
 
@@ -105,6 +106,33 @@ export function rotateUnitToward(unit: Unit, target: HexCoord): Unit {
     return unit;
   }
   return { ...unit, facing };
+}
+
+export function applyDamageToAdjacentEnemies(
+  state: GameState,
+  center: { q: number; r: number },
+  attackerFactionId: string,
+  damage: number,
+): { state: GameState; hitCount: number } {
+  let hitCount = 0;
+  const units = new Map(state.units);
+  for (const adjHex of getNeighbors(center)) {
+    const adjUnitId = getUnitAtHex(state, adjHex);
+    if (!adjUnitId) continue;
+    const adjUnit = units.get(adjUnitId);
+    if (adjUnit && adjUnit.factionId !== attackerFactionId && adjUnit.hp > 0) {
+      units.set(adjUnitId, { ...adjUnit, hp: Math.max(0, adjUnit.hp - damage) });
+      hitCount++;
+    }
+  }
+  if (hitCount === 0) return { state, hitCount: 0 };
+  return { state: { ...state, units }, hitCount };
+}
+
+export function healUnit(state: GameState, unit: Unit, amount: number): GameState {
+  const healed = Math.min(unit.maxHp, unit.hp + amount);
+  if (healed === unit.hp) return state;
+  return writeUnitToState(state, { ...unit, hp: healed });
 }
 
 export function writeUnitToState(state: GameState, unit: Unit | undefined): GameState {

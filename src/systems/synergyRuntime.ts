@@ -11,14 +11,17 @@ import {
   getAllEmergentRules,
 } from '../content/synergies/index.js';
 
-const synergyEngine: SynergyEngine = new SynergyEngine(
-  [...getAllPairSynergies()],
-  [...getAllEmergentRules()],
-  getAllAbilityDomains() as DomainConfig[],
-);
+let _engine: SynergyEngine | null = null;
 
 export function getSynergyEngine(): SynergyEngine {
-  return synergyEngine;
+  if (!_engine) {
+    _engine = new SynergyEngine(
+      [...getAllPairSynergies()],
+      [...getAllEmergentRules()],
+      getAllAbilityDomains() as DomainConfig[],
+    );
+  }
+  return _engine;
 }
 
 type FactionSynergyState = {

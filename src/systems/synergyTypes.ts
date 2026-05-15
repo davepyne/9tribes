@@ -76,7 +76,6 @@ export interface CombatContext {
   isStealthAttack: boolean;
   isRetreat: boolean;
   isStealthed: boolean;
-  position: { x: number; y: number };
   attackerPosition: { x: number; y: number };
   defenderPosition: { x: number; y: number };
   attackerLearnedDomains: string[];

@@ -1,3 +1,6 @@
+import { hexToKey } from '../core/grid.js';
+import type { GameState } from '../game/types.js';
+
 const WATER_TERRAINS = new Set(['coast', 'river', 'ocean']);
 const DEEP_WATER_TERRAINS = new Set(['coast', 'ocean']);
 const RIVER_STEALTH_TERRAINS = new Set(['river', 'swamp']);
@@ -38,4 +41,8 @@ const WOODLAND_TERRAINS = new Set(['forest', 'jungle']);
 
 export function isWoodlandTerrain(terrainId: string | undefined): boolean {
   return terrainId ? WOODLAND_TERRAINS.has(terrainId) : false;
+}
+
+export function getTerrainAt(state: GameState, position: { q: number; r: number }): string {
+  return state.map?.tiles.get(hexToKey(position))?.terrain ?? 'plains';
 }

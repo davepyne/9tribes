@@ -194,14 +194,6 @@ function isOnFortAtHex(gameState: GameState, pos: HexCoord): boolean {
 }
 
 /**
- * Check if a unit is cavalry (based on prototype chassis).
- * @deprecated Use isMounted instead for broader mounted unit support
- */
-function isCavalry(unit: Unit, state: GameState): boolean {
-  return isMounted(unit, state);
-}
-
-/**
  * Check if a unit is mounted (cavalry, camel, heavy cavalry, or any unit with mounted tags).
  * Mounted units ignore Zone of Control.
  */

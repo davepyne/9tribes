@@ -50,6 +50,8 @@ import {
   removeDeadUnitsFromFactions,
   rotateUnitToward,
   writeUnitToState,
+  healUnit,
+  applyDamageToAdjacentEnemies,
   applyKnockbackDistance,
   destroyTransportIfApplicable,
 } from './helpers.js';
@@ -315,9 +317,6 @@ export function applyCombatAction(
     routed: defender.slaveRoutImmune ? false : (preview.result.defenderRouted || preview.result.defenderFled),
     hillDugIn: false,
     digInStacks: 0,
-    // Preview-based status: marked 'spent' if the preview predicts a kill;
-    // the Last Stand block below reverts this to defender.status if a save
-    // fires, so the final state correctly reflects defenderActuallyDestroyed.
     status: preview.result.defenderDestroyed ? 'spent' : defender.status,
     woundsReceivedThisTurn: preview.result.defenderDamage > 0
       ? (defender.woundsReceivedThisTurn ?? 0) + 1
@@ -358,20 +357,20 @@ export function applyCombatAction(
     nextDefender = { ...nextDefender, status: defender.status };
   }
 
-  // Phase 3C — Heavy naval ram: extra damage from naval ram synergy
+  // Heavy naval ram: extra damage from naval ram synergy
   const heavyNavalRamDamage = atk.getStat('heavyNavalRamDamage');
   if (heavyNavalRamDamage > 0 && isNavalAttacker && nextDefender.hp > 0) {
     nextDefender = { ...nextDefender, hp: Math.max(0, nextDefender.hp - heavyNavalRamDamage) };
   }
 
-  // Phase 3C — Slave coercion: extra damage when attacking with slaves
+  // Slave coercion: extra damage when attacking with slaves
   const slaveCoercionDamageBonus = atk.getStat('slaveCoercionDamageBonus');
   if (slaveCoercionDamageBonus > 0 && nextDefender.hp > 0) {
     const coercionDmg = Math.max(1, Math.floor(preview.result.defenderDamage * slaveCoercionDamageBonus));
     nextDefender = { ...nextDefender, hp: Math.max(0, nextDefender.hp - coercionDmg) };
   }
 
-  // Phase 3A — Lethal Ambush: instant kill bypasses normal damage
+  // Lethal Ambush: instant kill bypasses normal damage
   if (atk.hasFlag('instantKill') && nextDefender.hp > 0) {
     nextDefender = { ...nextDefender, hp: 0 };
     baseResolution.instantKillTriggered = true;
@@ -392,12 +391,6 @@ export function applyCombatAction(
     baseResolution.lastStandSaved = true;
   }
 
-  // After Last Stand has had a chance to fire, this is the canonical
-  // "did the defender actually die?" signal that all downstream logic
-  // (kill XP, learn-from-kill, transport destroy, killchain, post-kill
-  // effects, knockback, rout, etc.) should read. `preview.result.
-  // defenderDestroyed` reflects only the preview's prediction and is
-  // stale once a save mechanism fires.
   const defenderActuallyDestroyed = preview.result.defenderDestroyed && !baseResolution.lastStandSaved && !baseResolution.woundedEarthSaved;
 
   if (preview.attackerWasStealthed && attacker.isStealthed && nextAttacker.hp > 0) {
@@ -485,9 +478,7 @@ export function applyCombatAction(
 
   const attackerFaction = current.factions.get(attacker.factionId);
   const defenderFaction = current.factions.get(defender.factionId);
-  const defenderDoctrine = defenderFaction
-    ? resolveCapabilityDoctrine(current.research.get(defender.factionId), defenderFaction)
-    : undefined;
+  const defenderDoctrine = defenderDoctrineEarly;
 
   // Nature Healing T2 native — Wounded Earth: adjacent allies on forest/jungle heal for absorbed amount
   if (woundedEarthAbsorbed > 0 && defenderDoctrineEarly?.woundedEarthHealEnabled) {
@@ -615,7 +606,7 @@ export function applyCombatAction(
     : null;
   // E3/E4 — emergent capture bonus from Slave Empire (+0.20)
   const emergentCaptureBonus = atk.getStat('emergentCaptureBonus');
-  // Phase 3B — synergy capture bonuses
+  // Synergy capture bonuses
   let synergyCaptureBonus = 0;
   if (preview.details.isChargeAttack) synergyCaptureBonus += atk.getStat('chargeCaptureChance');
   if (isWaterTerrain(attackerTerrainId)) synergyCaptureBonus += atk.getStat('navalCaptureBonus');
@@ -785,19 +776,11 @@ export function applyCombatAction(
     && nextAttacker.hp > 0
   ) {
     chargeSplashDamage = Math.max(1, Math.floor(preview.result.defenderDamage * 0.5));
-    const splashUnits = new Map(current.units);
-    for (const adjHex of getNeighbors(defender.position)) {
-      const adjUnitId = getUnitAtHex(current, adjHex);
-      if (!adjUnitId) continue;
-      const adjUnit = splashUnits.get(adjUnitId);
-      if (adjUnit && adjUnit.factionId !== attacker.factionId && adjUnit.hp > 0) {
-        splashUnits.set(adjUnitId, { ...adjUnit, hp: Math.max(0, adjUnit.hp - chargeSplashDamage) });
-        chargeSplashTargetsHit++;
-      }
-    }
-    if (chargeSplashTargetsHit > 0) {
-      current = { ...current, units: splashUnits };
-      baseResolution.chargeSplashTargetsHit = chargeSplashTargetsHit;
+    const splash = applyDamageToAdjacentEnemies(current, defender.position, attacker.factionId, chargeSplashDamage);
+    if (splash.hitCount > 0) {
+      current = splash.state;
+      chargeSplashTargetsHit = splash.hitCount;
+      baseResolution.chargeSplashTargetsHit = splash.hitCount;
     }
   }
 
@@ -1171,7 +1154,7 @@ export function applyCombatAction(
     poisonApplied = true;
   }
 
-  // Phase 3A — Synergy poison stacks (separate from tag-based poison)
+  // Synergy poison stacks
   const synergyPoisonStacks = atk.getStat('poisonStacks');
   if (synergyPoisonStacks > 0 && !defenderActuallyDestroyed && updatedDefender) {
     updatedDefender = current.units.get(preview.defenderId);
@@ -1332,7 +1315,7 @@ export function applyCombatAction(
     current = writeUnitToState(current, updatedAttacker);
   }
 
-  // Phase 3C — Synergy damage reflection (heavy_fortress, iron_turtle, juggernaut fortress sig)
+  // Synergy damage reflection
   const totalReflection = def.getStat('damageReflection') + atk.getStat('emergentDamageReflection');
   if (totalReflection > 0 && preview.result.defenderDamage > 0 && updatedAttacker) {
     const synergyReflectedDmg = Math.max(1, Math.floor(preview.result.defenderDamage * totalReflection));
@@ -1350,7 +1333,7 @@ export function applyCombatAction(
     });
   }
 
-  // Phase 3A — Charge cooldown waived: grant an extra attack
+  // Charge cooldown waived: grant an extra attack
   updatedAttacker = current.units.get(preview.attackerId);
   if (atk.hasFlag('chargeCooldownWaived') && updatedAttacker && updatedAttacker.hp > 0) {
     current = writeUnitToState(current, {
@@ -1363,10 +1346,8 @@ export function applyCombatAction(
   let reStealthTriggered = false;
   if (
     updatedAttacker
-    && (
-      atk.additionalEffects.includes('stealth_recharge')
-      || (attackerDoctrine?.stealthRechargeEnabled && isCoverTerrain(preview.details.attackerTerrainId))
-    )
+    && attackerDoctrine?.stealthRechargeEnabled
+    && isCoverTerrain(preview.details.attackerTerrainId)
   ) {
     const hasAdjacentEnemy = getNeighbors(updatedAttacker.position).some((hex) => {
       const neighborUnitId = getUnitAtHex(current, hex);
@@ -1423,34 +1404,13 @@ export function applyCombatAction(
       });
     }
   }
-  updatedAttacker = current.units.get(preview.attackerId);
-  let combatHealingApplied = 0;
-  const combatHealingEffect = atk.additionalEffects.find((effectCode) => effectCode.includes('combat_healing'));
-  if (combatHealingEffect && updatedAttacker) {
-    const healMatch = combatHealingEffect.match(/combat_healing_(\d+)%/);
-    if (healMatch) {
-      const healPercent = parseInt(healMatch[1], 10) / 100;
-      const healAmount = Math.floor(preview.result.defenderDamage * healPercent);
-      if (healAmount > 0) {
-        combatHealingApplied = healAmount;
-        current = writeUnitToState(current, {
-          ...updatedAttacker,
-          hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + healAmount),
-        });
-      }
-    }
-  }
-
-  // Phase 3C — Heavy regen: heal attacker for % of damage dealt
+  // Heavy regen: heal attacker for % of damage dealt
   updatedAttacker = current.units.get(preview.attackerId);
   const heavyRegenPercent = atk.getStat('heavyRegenPercent');
   if (heavyRegenPercent > 0 && updatedAttacker && preview.result.defenderDamage > 0) {
     const regenAmount = Math.floor(preview.result.defenderDamage * heavyRegenPercent);
     if (regenAmount > 0) {
-      current = writeUnitToState(current, {
-        ...updatedAttacker,
-        hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + regenAmount),
-      });
+      current = healUnit(current, updatedAttacker, regenAmount);
       baseResolution.heavyRegenApplied = regenAmount;
     }
   }
@@ -1477,24 +1437,14 @@ export function applyCombatAction(
     current = { ...current, units: sandstormUnits };
   }
 
-  // Phase 3C — Synergy AoE damage (multiplier_stack, etc.)
+  // Synergy AoE damage
   updatedDefender = current.units.get(preview.defenderId);
   const aoeDamage = atk.getStat('aoeDamage');
   if (aoeDamage > 0 && updatedDefender && !defenderActuallyDestroyed && !retreatCaptured) {
-    const aoeUnits = new Map(current.units);
-    let aoeHit = 0;
-    for (const adjHex of getNeighbors(updatedDefender.position)) {
-      const adjUnitId = getUnitAtHex(current, adjHex);
-      if (!adjUnitId) continue;
-      const adjUnit = aoeUnits.get(adjUnitId);
-      if (adjUnit && adjUnit.factionId !== attacker.factionId && adjUnit.hp > 0) {
-        aoeUnits.set(adjUnitId, { ...adjUnit, hp: Math.max(0, adjUnit.hp - aoeDamage) });
-        aoeHit++;
-      }
-    }
-    if (aoeHit > 0) {
-      current = { ...current, units: aoeUnits };
-      baseResolution.aoeTargetsHit = aoeHit;
+    const splash = applyDamageToAdjacentEnemies(current, updatedDefender.position, attacker.factionId, aoeDamage);
+    if (splash.hitCount > 0) {
+      current = splash.state;
+      baseResolution.aoeTargetsHit = splash.hitCount;
     }
   }
 
@@ -1508,7 +1458,7 @@ export function applyCombatAction(
 
   updatedDefender = current.units.get(preview.defenderId);
 
-  // Phase 3A — Stun: reduce defender moves for N turns
+  // Stun: reduce defender moves for N turns
   updatedDefender = current.units.get(preview.defenderId);
   const stunDuration = atk.getStat('stunDuration');
   if (stunDuration > 0 && updatedDefender && !defenderActuallyDestroyed && updatedDefender.hp > 0) {
@@ -1520,7 +1470,7 @@ export function applyCombatAction(
     baseResolution.stunApplied = stunDuration;
   }
 
-  // Phase 3C — Sandstorm aura: accuracy debuff on adjacent enemies
+  // Sandstorm aura: accuracy debuff on adjacent enemies
   updatedDefender = current.units.get(preview.defenderId);
   const sandstormAuraRadius = atk.getStat('sandstormAuraRadius');
   const sandstormAuraDebuff = atk.getStat('sandstormAuraDebuff');
@@ -1540,7 +1490,7 @@ export function applyCombatAction(
     current = { ...current, units: auraUnits };
   }
 
-  // Phase 3A — Lethal Ambush poison: splash poison to adjacent enemies on instant kill
+  // Lethal Ambush poison: splash poison on instant kill
   const lethalAmbushPoison = atk.getStat('lethalAmbushPoison');
   if (baseResolution.instantKillTriggered && lethalAmbushPoison > 0) {
     const result = applyPoisonInRange(current.units, defender.position, 1, {
@@ -1553,7 +1503,7 @@ export function applyCombatAction(
     }
   }
 
-  // Phase 3C — Withering reduction: apply debuff to defender's healing
+  // Withering reduction: apply debuff to defender's healing
   const witheringReduction = atk.getStat('witheringReduction');
   if (witheringReduction > 0 && updatedDefender && !defenderActuallyDestroyed && updatedDefender.hp > 0) {
     current = writeUnitToState(current, {
@@ -1563,6 +1513,7 @@ export function applyCombatAction(
   }
 
   // Synergy heal primitives (flat + % max HP)
+  let combatHealingApplied = 0;
   updatedAttacker = current.units.get(preview.attackerId);
   const synergyFlatHeal = atk.getStat('synergyFlatHeal');
   const synergyPercentHealMaxHp = atk.getStat('synergyPercentHealMaxHp');
@@ -1590,10 +1541,7 @@ export function applyCombatAction(
   if (vampiricStrikeHealPercent > 0 && updatedAttacker && preview.result.defenderDamage > 0) {
     const vampHeal = Math.floor(preview.result.defenderDamage * vampiricStrikeHealPercent);
     if (vampHeal > 0) {
-      current = writeUnitToState(current, {
-        ...updatedAttacker,
-        hp: Math.min(updatedAttacker.maxHp, updatedAttacker.hp + vampHeal),
-      });
+      current = healUnit(current, updatedAttacker, vampHeal);
       combatHealingApplied += vampHeal;
     }
   }
@@ -1623,7 +1571,7 @@ export function applyCombatAction(
     reStealthTriggered = true;
   }
 
-  // Phase 3B — Capture aftermath: apply poison and modifiers to captured units
+  // Capture aftermath: apply poison and modifiers to captured units
   if (capturedOnKill) {
     const capturedUnit = current.units.get(preview.defenderId);
     if (capturedUnit && capturedUnit.hp > 0) {

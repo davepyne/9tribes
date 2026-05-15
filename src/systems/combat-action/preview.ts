@@ -328,7 +328,6 @@ export function previewCombatAction(
       isStealthAttack: unit.id === attacker.id ? attackerWasStealthed : isUnitEffectivelyStealthed(state, unit),
       isRetreat: false,
       isStealthed: isUnitEffectivelyStealthed(state, unit),
-      position: { x: unit.position.q, y: unit.position.r },
       attackerPosition: { x: unit.position.q, y: unit.position.r },
       defenderPosition: { x: enemyUnit.position.q, y: enemyUnit.position.r },
       attackerLearnedDomains: faction?.learnedDomains ?? [],
