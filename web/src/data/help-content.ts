@@ -1,5 +1,5 @@
 import civilizationsData from '../../../src/content/base/civilizations.json';
-import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
+import { PAIR_SYNERGIES } from '../../../src/content/synergies/index';
 import { DOMAIN_TERRAIN_AFFINITY, TERRAIN_RESEARCH_BONUS } from '../../../src/systems/simulation/factionTurnEffects.js';
 import { DOMAIN_NAMES } from './domainMeta.js';
 
@@ -462,7 +462,7 @@ ${generateTerrainTableHtml()}
     };
   }),
 
-  synergyGuide: pairSynergiesData.pairSynergies.map((s: { id: string }) => ({
+  synergyGuide: PAIR_SYNERGIES.map((s) => ({
     pairId: s.id,
     playerDescription: SYNERGY_PLAYER_DESCRIPTIONS[s.id] ?? `Combination synergy: ${s.id.replace(/\+/g, ' + ')}`,
   })),

@@ -6,12 +6,10 @@ import type { AiDifficultyProfile } from '../aiDifficulty.js';
 import type { UnitWithPrototype } from './types.js';
 import { hexDistance } from '../../core/grid.js';
 import { ABILITY_DOMAINS } from '../../content/domains/index.js';
-import emergentRulesData from '../../content/base/emergent-rules.json' with { type: 'json' };
-import type { EmergentRuleConfig } from '../synergyEngine.js';
+import { EMERGENT_RULES, type EmergentRuleConfig } from '../../content/synergies/index.js';
 import { getNearestEnemyCity } from './objectives.js';
 
 const ALL_ABILITY_DOMAIN_IDS = new Set(Object.keys(ABILITY_DOMAINS));
-const EMERGENT_RULES = emergentRulesData.rules as EmergentRuleConfig[];
 
 export function applyDifficultyLearnAndSacrificeCoordinator(
   state: GameState,

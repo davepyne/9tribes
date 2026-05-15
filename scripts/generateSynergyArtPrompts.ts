@@ -1,46 +1,38 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 /**
  * Generate ComfyUI/Flux prompt manifests for every synergy card.
  *
- * Reads:
- *   - src/content/base/pair-synergies.json
- *   - src/content/base/emergent-rules.json
+ * Reads typed source-of-truth modules:
+ *   - src/content/synergies/index.ts (pairs + emergent rules)
+ *   - src/content/domains/index.ts   (ability domains + research tiers)
  *   - src/content/base/civilizations.json
  *
  * Writes:
  *   - tools/synergy-art/prompts.json
- *       Full manifest. One entry per art file the resolver looks for:
- *         pairs/{a}_{b}.png            (alphabetical pair, faction-agnostic)
- *         triples/{factionId}_{ruleId}.png  (only for triples a faction can plausibly reach)
- *
  *   - tools/synergy-art/prompts.csv
- *       Flat CSV (filename, prompt, negative_prompt) — easy to paste into a batch UI.
- *
  *   - tools/synergy-art/comfyui-batch.txt
- *       Newline-delimited "filename||prompt" pairs. Wire into a ComfyUI loop
- *       node that reads the file, splits on "||", and writes outputs to the
- *       corresponding filename. (See README in the same folder.)
  *
  * Usage:
- *   node scripts/generateSynergyArtPrompts.mjs
+ *   npm run synergy:art-prompts
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PAIR_SYNERGIES, EMERGENT_RULES } from '../src/content/synergies/index.js';
+import {
+  ABILITY_DOMAINS,
+  RESEARCH_DOMAINS,
+} from '../src/content/domains/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const CONTENT = path.join(ROOT, 'src', 'content', 'base');
 const OUT_DIR = path.join(ROOT, 'tools', 'synergy-art');
 
-const pairs = JSON.parse(fs.readFileSync(path.join(CONTENT, 'pair-synergies.json'), 'utf8')).pairSynergies;
-const rules = JSON.parse(fs.readFileSync(path.join(CONTENT, 'emergent-rules.json'), 'utf8')).rules;
-const civsRaw = JSON.parse(fs.readFileSync(path.join(CONTENT, 'civilizations.json'), 'utf8'));
+const civsRaw = JSON.parse(fs.readFileSync(path.join(CONTENT, 'civilizations.json'), 'utf8')) as Record<string, { id: string; name: string }>;
 const civs = Object.values(civsRaw);
-const domainsData = JSON.parse(fs.readFileSync(path.join(CONTENT, 'ability-domains.json'), 'utf8')).domains;
-const researchData = JSON.parse(fs.readFileSync(path.join(CONTENT, 'research.json'), 'utf8'));
 
-// ── Style anchors — locked across the whole set so cards feel cohesive ──
+// ── Style anchors ──
 const STYLE_BASE =
   'fantasy card illustration in the style of Magic the Gathering art, ' +
   'full-bleed landscape composition, edge-to-edge artwork, ' +
@@ -58,8 +50,7 @@ const NEGATIVE =
   'photo, photograph, photorealistic, 3d render, cgi, anime, manga, chibi, ' +
   'modern clothing, cars, technology, ui, hud, low quality, blurry, oversaturated';
 
-// ── Domain → visual vocabulary ──
-const DOMAIN_VOCAB = {
+const DOMAIN_VOCAB: Record<string, { motif: string; color: string; tone: string }> = {
   venom:           { motif: 'serpents and dripping toxin', color: 'venom green',         tone: 'sickly luminescence' },
   fortress:        { motif: 'tower walls and shield bosses', color: 'iron blue',         tone: 'monolithic stillness' },
   charge:          { motif: 'tusked beasts and trampling cavalry', color: 'amber dust',  tone: 'forward motion, dust trails' },
@@ -72,7 +63,7 @@ const DOMAIN_VOCAB = {
   heavy_hitter:    { motif: 'mauls, anvils, broken stone', color: 'cold slate',          tone: 'crushing weight' },
 };
 
-const FACTION_ANCHOR = {
+const FACTION_ANCHOR: Record<string, string> = {
   jungle_clan:    'verdant rainforest, dripping vines, jaguar pelts',
   druid_circle:   'oak grove, standing stones, antlered figures',
   steppe_clan:    'open grassland under wide sky, horsehair banners',
@@ -84,25 +75,24 @@ const FACTION_ANCHOR = {
   frost_wardens:  'ice and pine, breath visible, blue dusk',
 };
 
-// ── Helpers ──
-function sortPairKey(domains) {
+function sortPairKey(domains: readonly string[]): string[] {
   return [...domains].sort();
 }
 
-function pairFilename(domains) {
+function pairFilename(domains: readonly string[]): string {
   const [a, b] = sortPairKey(domains);
   return `pairs/${a}_${b}.png`;
 }
 
-function tripleFilename(factionId, ruleId) {
+function tripleFilename(factionId: string, ruleId: string): string {
   return `triples/${factionId}_${ruleId}.png`;
 }
 
-function vocab(d) {
+function vocab(d: string) {
   return DOMAIN_VOCAB[d] ?? { motif: d.replace(/_/g, ' '), color: 'amber', tone: 'arcane' };
 }
 
-function pairPrompt(syn) {
+function pairPrompt(syn: typeof PAIR_SYNERGIES[number]): string {
   const [a, b] = syn.domains;
   const va = vocab(a);
   const vb = vocab(b);
@@ -117,19 +107,14 @@ function pairPrompt(syn) {
   return fragments.join(', ');
 }
 
-/**
- * Decide which factions are reachable for a given emergent rule.
- * For now we generate a triple image for every (faction × rule) pair —
- * ComfyUI batches are cheap when run overnight, and the resolver gracefully
- * falls back if a file is missing. If you want to prune: cross-reference
- * civilizations.json capabilitySeeds with rule.domainSets.
- */
-function reachableFactionsForRule(_rule) {
+function reachableFactionsForRule(_rule: typeof EMERGENT_RULES[number]): string[] {
   return civs.map((c) => c.id);
 }
 
-function triplePrompt(rule, faction) {
-  const domains = rule.domainSets ? Object.values(rule.domainSets).flat() : (rule.combatDomains ?? []);
+function triplePrompt(rule: typeof EMERGENT_RULES[number], faction: { id: string; name: string }): string {
+  const domains = rule.domainSets
+    ? Object.values(rule.domainSets).flat()
+    : (rule.combatDomains ?? rule.mobilityDomains ?? []);
   const motifs = domains.slice(0, 3).map((d) => vocab(d).motif).join('; ');
   const fragments = [
     `${rule.name} — splash rare scene depicting ${faction.name} at the moment of an emergent power`,
@@ -143,11 +128,9 @@ function triplePrompt(rule, faction) {
   return fragments.join(', ');
 }
 
-// ── Solo domain prompts ──
-
-function soloPrompt(domainId) {
+function soloPrompt(domainId: string): string {
   const v = vocab(domainId);
-  const d = domainsData[domainId];
+  const d = ABILITY_DOMAINS[domainId];
   const baseDesc = d?.baseEffect?.description ?? '';
   const fragments = [
     `${d?.name ?? domainId}, wide landscape scene depicting ${v.motif}`,
@@ -159,36 +142,35 @@ function soloPrompt(domainId) {
   return fragments.join(', ');
 }
 
-function soloTierDescriptions(domainId) {
-  const nodes = researchData[domainId]?.nodes;
-  if (!nodes) return null;
+function soloTierDescriptions(domainId: string) {
+  const domain = RESEARCH_DOMAINS[domainId];
+  if (!domain) return null;
   return {
-    t1: nodes[`${domainId}_t1`]?.qualitativeEffect?.description ?? '',
-    t2: nodes[`${domainId}_t2`]?.qualitativeEffect?.description ?? '',
-    t3: nodes[`${domainId}_t3`]?.qualitativeEffect?.description ?? '',
+    t1: domain.nodes[`${domainId}_t1`]?.qualitativeEffect?.description ?? '',
+    t2: domain.nodes[`${domainId}_t2`]?.qualitativeEffect?.description ?? '',
+    t3: domain.nodes[`${domainId}_t3`]?.qualitativeEffect?.description ?? '',
   };
 }
 
 // ── Build manifest ──
-const entries = [];
+type Entry = Record<string, unknown> & { kind: string; filename: string; prompt: string; negative_prompt: string };
+const entries: Entry[] = [];
 
-// Solo art — one per domain
-for (const domainId of Object.keys(domainsData)) {
+for (const domainId of Object.keys(ABILITY_DOMAINS)) {
   entries.push({
     kind: 'solo',
     filename: `solos/${domainId}.jpg`,
     domainId,
-    domainName: domainsData[domainId].name,
-    baseEffect: domainsData[domainId].baseEffect?.description ?? '',
+    domainName: ABILITY_DOMAINS[domainId].name,
+    baseEffect: ABILITY_DOMAINS[domainId].baseEffect?.description ?? '',
     tierDescriptions: soloTierDescriptions(domainId),
     prompt: soloPrompt(domainId),
     negative_prompt: NEGATIVE,
   });
 }
 
-// Pair art — one per unique unordered pair of domains across all synergies
-const seenPairs = new Set();
-for (const syn of pairs) {
+const seenPairs = new Set<string>();
+for (const syn of PAIR_SYNERGIES) {
   const key = sortPairKey(syn.domains).join('+');
   if (seenPairs.has(key)) continue;
   seenPairs.add(key);
@@ -203,8 +185,7 @@ for (const syn of pairs) {
   });
 }
 
-// Triple art — per (faction × rule)
-for (const rule of rules) {
+for (const rule of EMERGENT_RULES) {
   for (const factionId of reachableFactionsForRule(rule)) {
     const faction = civsRaw[factionId];
     if (!faction) continue;
@@ -234,7 +215,7 @@ fs.writeFileSync(
 
 const csvRows = ['filename,prompt,negative_prompt'];
 for (const e of entries) {
-  const escape = (s) => `"${s.replace(/"/g, '""')}"`;
+  const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
   csvRows.push([escape(e.filename), escape(e.prompt), escape(e.negative_prompt)].join(','));
 }
 fs.writeFileSync(path.join(OUT_DIR, 'prompts.csv'), csvRows.join('\n'));
@@ -242,7 +223,6 @@ fs.writeFileSync(path.join(OUT_DIR, 'prompts.csv'), csvRows.join('\n'));
 const batchLines = entries.map((e) => `${e.filename}||${e.prompt}`);
 fs.writeFileSync(path.join(OUT_DIR, 'comfyui-batch.txt'), batchLines.join('\n'));
 
-// Summary
 const soloCount = entries.filter((e) => e.kind === 'solo').length;
 const pairCount = entries.filter((e) => e.kind === 'pair').length;
 const tripleCount = entries.filter((e) => e.kind === 'triple').length;

@@ -10,8 +10,7 @@ import { getNativeDomains } from '../features/factions/types.js';
 import { scoreResearchCandidate } from './aiPersonality.js';
 import type { AiDifficultyProfile } from './aiDifficulty.js';
 import { getDomainProgression } from './domainProgression.js';
-import emergentRulesData from '../content/base/emergent-rules.json' with { type: 'json' };
-import type { EmergentRuleConfig } from './synergyEngine.js';
+import { EMERGENT_RULES, type EmergentRuleConfig } from '../content/synergies/index.js';
 
 // ---------------------------------------------------------------------------
 // Candidate enumeration
@@ -350,7 +349,7 @@ export function getReachableTripleStackOpportunities(
   codifiedDomains: Set<string>,
   unlockedDomains: Set<string>,
 ): TripleStackOpportunity[] {
-  const rules = (emergentRulesData.rules as EmergentRuleConfig[]).filter((rule) => rule.condition !== 'default');
+  const rules = EMERGENT_RULES.filter((rule) => rule.condition !== 'default');
   const opportunities: TripleStackOpportunity[] = [];
 
   for (const rule of rules) {

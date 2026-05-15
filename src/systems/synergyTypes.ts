@@ -41,7 +41,7 @@ export type SynergyEffect =
   | { type: 'dug_in'; defenseBonus: number; dugInCounterDamageBonus?: number }
   | { type: 'land_aura'; defenseBonus: number; radius: number }
   | { type: 'extended_healing'; radius: number; selfHeal: number; allyHeal: number; countsAsCity?: boolean; resourcePerTurn?: number }
-  | { type: 'stealth_aura'; revealRadius: number; firstAttackCritMultiplier?: number; creepMovementHexes?: number }
+  | { type: 'stealth_aura'; revealRadius: number; firstAttackCritMultiplier?: number; creepMovementHexes?: number; firstAttackAfterLandingDamageBonus?: number; transportedTroopsStealth?: boolean }
   | { type: 'terrain_fortress'; terrainTypes: string[]; defenseBonus: number }
   | { type: 'ram_attack'; knockbackDistance: number; ramDamageBonus?: number; randomDriftHexes?: number }
   | { type: 'combat_healing'; healPercent: number; chargeRestoresMovementPoints?: number }

@@ -2,14 +2,13 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import type { ClientState } from '../game/types/clientState';
 import type { CapabilityPipViewModel } from '../game/types/clientState';
-import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
-import emergentRulesData from '../../../src/content/base/emergent-rules.json';
+import { ALL_PAIR_SYNERGIES, ALL_EMERGENT_RULES, PAIR_SYNERGY_BY_ID, EMERGENT_RULE_BY_ID } from '../data/synergyLookup';
 import { ABILITY_DOMAINS, RESEARCH_DOMAINS, getAbilityDomainById } from '../../../src/content/domains/index.js';
 import { DOMAIN_COLORS, DOMAIN_ICONS, DOMAIN_NAMES } from '../data/domainMeta';
-import { SynergyCard, type TierDescriptions } from './SynergyCard';
+import { SynergyCard, type TierDescriptions, type PairSynergyData, type EmergentRuleData } from './SynergyCard';
 
-type PairSynergy = typeof pairSynergiesData.pairSynergies[number];
-type EmergentRule = typeof emergentRulesData.rules[number];
+type PairSynergy = PairSynergyData;
+type EmergentRule = EmergentRuleData;
 
 // Emergent rule descriptions for popup
 const EMERGENT_DESCRIPTIONS: Record<string, { effect: string; requirement: string }> = {
@@ -191,7 +190,7 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
 
   const activeTripleRule = useMemo(() => {
     if (!hasActiveTriple || !activeTripleEmergentRuleId) return null;
-    return (emergentRulesData.rules as EmergentRule[]).find((r) => r.id === activeTripleEmergentRuleId) ?? null;
+    return EMERGENT_RULE_BY_ID.get(activeTripleEmergentRuleId) ?? null;
   }, [hasActiveTriple, activeTripleEmergentRuleId]);
 
   const hasContent = foreignDomains.length > 0 || activePairCount > 0;
@@ -199,8 +198,8 @@ export const SynergyChip = React.memo(function SynergyChip({ state }: SynergyChi
   // Build all cards for the hand using backend state
   const handCards = useMemo(() => {
     const cards: Array<{ key: string; kind: 'solo' | 'pair' | 'triple'; synergy: any; tierDescriptions?: TierDescriptions; inactive?: boolean }> = [];
-    const allPairs = pairSynergiesData.pairSynergies as PairSynergy[];
-    const allRules = emergentRulesData.rules as EmergentRule[];
+    const allPairs = ALL_PAIR_SYNERGIES;
+    const allRules = ALL_EMERGENT_RULES;
 
     for (const d of learnedDomains) {
       cards.push({

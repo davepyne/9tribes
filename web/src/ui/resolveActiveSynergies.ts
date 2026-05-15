@@ -1,9 +1,8 @@
-import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
-import emergentRulesData from '../../../src/content/base/emergent-rules.json';
+import { ALL_PAIR_SYNERGIES, ALL_EMERGENT_RULES } from '../data/synergyLookup';
 import type { PairSynergyData, EmergentRuleData } from '../ui/SynergyCard';
 
-const ALL_PAIRS = (pairSynergiesData.pairSynergies as PairSynergyData[]);
-const ALL_RULES = (emergentRulesData.rules as EmergentRuleData[]);
+const ALL_PAIRS = ALL_PAIR_SYNERGIES;
+const ALL_RULES = ALL_EMERGENT_RULES;
 
 export type ResolvedPairSynergy = {
   data: PairSynergyData;

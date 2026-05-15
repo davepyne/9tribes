@@ -1,9 +1,32 @@
 import React, { useState, useMemo } from 'react';
 import { helpContent } from '../data/help-content';
-import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
-import emergentRulesData from '../../../src/content/base/emergent-rules.json';
+import {
+  PAIR_SYNERGIES as PAIR_SYNERGIES_BACKEND,
+  EMERGENT_RULES as EMERGENT_RULES_BACKEND,
+} from '../../../src/content/synergies/index';
 import { SynergyCard } from './SynergyCard';
 import type { PairSynergyData, EmergentRuleData } from './SynergyCard';
+
+const ALL_PAIR_SYNERGIES: PairSynergyData[] = PAIR_SYNERGIES_BACKEND.map((s) => ({
+  id: s.id,
+  name: s.name,
+  domains: [...s.domains],
+  description: s.description,
+  friendlyFlavor: s.friendlyFlavor,
+  enemyFlavor: s.enemyFlavor,
+}));
+
+const ALL_EMERGENT_RULES: EmergentRuleData[] = EMERGENT_RULES_BACKEND.map((r) => ({
+  id: r.id,
+  name: r.name,
+  condition: r.condition,
+  domainSets: r.domainSets,
+  mobilityDomains: r.mobilityDomains,
+  combatDomains: r.combatDomains,
+  effect: { description: r.effect.description },
+  friendlyFlavor: r.friendlyFlavor,
+  enemyFlavor: r.enemyFlavor,
+}));
 import { domainGlyph, domainColor, domainDisplayName } from './SynergyChip';
 import { DOMAIN_IDS } from '../data/domainMeta';
 
@@ -63,7 +86,7 @@ export const SynergyEncyclopediaTab = React.memo(function SynergyEncyclopediaTab
 
   const filteredSynergies = useMemo(() => {
     const search = searchTerm.toLowerCase().trim();
-    return (pairSynergiesData.pairSynergies as PairSynergyData[]).filter((pair) => {
+    return ALL_PAIR_SYNERGIES.filter((pair) => {
       if (activeFilters.size > 0) {
         for (const f of activeFilters) {
           if (!pair.domains.includes(f)) return false;
@@ -79,7 +102,7 @@ export const SynergyEncyclopediaTab = React.memo(function SynergyEncyclopediaTab
   }, [searchTerm, activeFilters, guideMap]);
 
   const emergentRules = useMemo(
-    () => (emergentRulesData.rules as EmergentRuleData[]).filter((r) => r.condition !== 'default'),
+    () => ALL_EMERGENT_RULES.filter((r) => r.condition !== 'default'),
     [],
   );
 
@@ -123,7 +146,7 @@ export const SynergyEncyclopediaTab = React.memo(function SynergyEncyclopediaTab
       </div>
 
       <div className="syn-enc__count">
-        Showing {filteredSynergies.length} of {pairSynergiesData.pairSynergies.length} synergies
+        Showing {filteredSynergies.length} of {ALL_PAIR_SYNERGIES.length} synergies
       </div>
 
       {filteredSynergies.length > 0 ? (

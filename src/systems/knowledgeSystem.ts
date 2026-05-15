@@ -7,7 +7,7 @@ import type { Faction } from '../features/factions/types.js';
 import { getNativeDomains } from '../features/factions/types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
 import { ABILITY_DOMAINS, type AbilityDomainDef } from '../content/domains/index.js';
-import pairSynergiesData from '../content/base/pair-synergies.json' with { type: 'json' };
+import { PAIR_SYNERGIES } from '../content/synergies/index.js';
 import { recordDomainLearned, recordSynergyPair } from './simulation/traceRecorder.js';
 import type { SimulationTrace } from './simulation/traceTypes.js';
 
@@ -167,7 +167,7 @@ export function gainExposure(
     for (const existingDomain of faction.learnedDomains) {
       const synergyPairId = `${existingDomain}+${domainId}`;
       const reversePairId = `${domainId}+${existingDomain}`;
-      const synergyExists = (pairSynergiesData.pairSynergies as any[]).some(
+      const synergyExists = PAIR_SYNERGIES.some(
         (pair) => pair.id === synergyPairId || pair.id === reversePairId
       );
       if (synergyExists) {

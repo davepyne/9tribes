@@ -25,8 +25,7 @@ import { TechDiscoveryModalProvider, useTechDiscoveryDetector, useTechDiscoveryM
 import { SynergyUnlockedModalProvider, useSynergyUnlockDetector, useSynergyModal } from '../ui/SynergyUnlockedModal';
 import { CityLimitModalProvider, useCityLimitDetector, useCityLimitModal } from '../ui/CityLimitModal';
 import { EnemySynergyContactModal } from '../ui/EnemySynergyContactModal';
-import pairSynergiesData from '../../../src/content/base/pair-synergies.json';
-import emergentRulesData from '../../../src/content/base/emergent-rules.json';
+import { findSynergyById } from '../data/synergyLookup';
 import { CombatLogPanel } from '../ui/CombatLogPanel';
 import { useCombatBridge } from './hooks/useCombatBridge';
 import { useSessionAudio } from './hooks/useSessionAudio';
@@ -151,10 +150,9 @@ function KnowledgeGainedShellContent({
         if (entry.encounters > 0 && !seenIntelRef.current.has(key)) {
           seenIntelRef.current.add(key);
           // Resolve synergy name from the data
-          const found = pairSynergiesData.pairSynergies.find((p: any) => p.id === synergyId)
-            ?? emergentRulesData.rules.find((r: any) => r.id === synergyId);
+          const found = findSynergyById(synergyId);
           if (found) {
-            newContacts.push({ factionId, synergyId, synergyName: found.name });
+            newContacts.push({ factionId, synergyId, synergyName: found.data.name });
           }
         }
       }

@@ -3,16 +3,16 @@ import {
   SynergyEngine,
   type ActiveSynergy,
   type DomainConfig,
-  type EmergentRuleConfig,
-  type PairSynergyConfig,
 } from './synergyEngine.js';
-import pairSynergiesData from '../content/base/pair-synergies.json' with { type: 'json' };
 import { getAllAbilityDomains } from '../content/domains/index.js';
-import emergentRulesData from '../content/base/emergent-rules.json' with { type: 'json' };
+import {
+  getAllPairSynergies,
+  getAllEmergentRules,
+} from '../content/synergies/index.js';
 
 const synergyEngine: SynergyEngine = new SynergyEngine(
-  pairSynergiesData.pairSynergies as PairSynergyConfig[],
-  emergentRulesData.rules as EmergentRuleConfig[],
+  [...getAllPairSynergies()],
+  [...getAllEmergentRules()],
   getAllAbilityDomains() as DomainConfig[],
 );
 

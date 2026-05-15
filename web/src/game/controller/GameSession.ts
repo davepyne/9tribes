@@ -36,7 +36,7 @@ import { clearMoveQueueOnUnit, executeQueuedMovesForUnit } from './moveQueueSess
 import { buildReachableMoves } from './movementExplorer.js';
 import { refreshFogForAllFactions, updateSiegeState, getBastionBuildEligibility, buildBastionAtUnit, getFortDestroyEligibility, destroyFortAtUnit, getPrototypeCost, getAiUnitIds, getPrototypeName, getActiveFactionName, hasCaptureAbility, canPriestSummon, attemptPriestSummon, getMaelstromDeclareEligibility, declareMaelstromAtUnit, getOasisDeclareEligibility, declareOasisAtUnit, executeSubmergeAtUnit } from './sessionUtils.js';
 import type { GameAction, EnemySynergyIntelMap } from '../types/clientState';
-import pairSynergiesData from '../../../../src/content/base/pair-synergies.json';
+import { PAIR_SYNERGIES as PAIR_SYNERGIES_DATA } from '../../../../src/content/synergies/index.js';
 import type { ReplayCombatEvent } from '../types/replay';
 import type { PlayStateSource, SerializedGameState } from '../types/playState';
 import type { AttackTargetView } from '../types/worldView';
@@ -679,11 +679,7 @@ export class GameSession {
     const enemyDomains = enemyFaction.learnedDomains ?? [];
     if (enemyDomains.length < 2) return;
 
-    const pairData = pairSynergiesData.pairSynergies as unknown as Array<{
-      id: string; name: string; domains: [string, string];
-    }>;
-
-    for (const synergy of pairData) {
+    for (const synergy of PAIR_SYNERGIES_DATA) {
       const [d1, d2] = synergy.domains;
       if (!enemyDomains.includes(d1) || !enemyDomains.includes(d2)) continue;
 

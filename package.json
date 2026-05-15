@@ -17,8 +17,7 @@
     "web:dev": "npm --prefix web run dev",
     "sim:scenario": "tsx scripts/runScenario.ts",
     "web:build": "npm --prefix web run build",
-    "check:synergy": "node scripts/checkSynergyCoverage.mjs",
-    "synergy:art-prompts": "node scripts/generateSynergyArtPrompts.mjs"
+    "synergy:art-prompts": "tsx scripts/generateSynergyArtPrompts.ts"
   },
   "devDependencies": {
     "tsx": "^4.7.0",
