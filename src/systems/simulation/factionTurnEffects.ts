@@ -682,7 +682,6 @@ export function tickSummonState(
 
 export function tickDecoyState(
   state: GameState,
-  _factionId: FactionId,
   trace?: SimulationTrace
 ): GameState {
   // Find all decoy units and decrement their decoyTurnsRemaining
@@ -1126,8 +1125,6 @@ export function processFactionPhases(
   if (factionAbilities?.summon) {
     current = tickSummonState(current, factionId, registry, trace);
   }
-
-  current = tickDecoyState(current, factionId, trace);
 
   current = applyWarlordAura(current, factionId, registry, trace);
 

@@ -29,6 +29,7 @@ import type {
   PathPreviewNodeView,
   ReachableHexView,
   WorldViewModel,
+  ZoneEffectView,
 } from '../types/worldView';
 import { getResearch, getFaction } from '../stateAccess.js';
 import { isUnitEmbarked } from '../../../../src/systems/transportSystem.js';
@@ -339,17 +340,7 @@ function buildZoneEffectViews(
   state: GameState,
   hexVisibility: Map<string, 'visible' | 'explored' | 'hidden'>,
   playerFactionId: string | null,
-): Array<{
-  id: string;
-  type: string;
-  q: number;
-  r: number;
-  radius: number;
-  ownerFactionId: string;
-  turnsRemaining: number;
-  visible: boolean;
-  stealthy?: boolean;
-}> {
+): ZoneEffectView[] {
   return Array.from(state.zoneEffects.values()).map((ze) => {
     const key = hexToKey(ze.center);
     const visibility = hexVisibility.get(key) ?? 'hidden';

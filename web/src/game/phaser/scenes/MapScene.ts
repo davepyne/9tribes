@@ -12,6 +12,7 @@ import { SelectionRenderer } from '../systems/SelectionRenderer';
 import { SettlementRenderer } from '../systems/SettlementRenderer';
 import { TileLayerRenderer } from '../systems/TileLayerRenderer';
 import { UnitRenderer } from '../systems/UnitRenderer';
+import { ZoneEffectRenderer } from '../systems/ZoneEffectRenderer';
 import { MapSceneCamera, screenToWorld, worldToScreen } from './MapSceneCamera';
 import { MapSceneInput } from './MapSceneInput';
 
@@ -21,6 +22,7 @@ export class MapScene extends Phaser.Scene {
   private borderLayer!: Phaser.GameObjects.Container;
   private settlementLayer!: Phaser.GameObjects.Container;
   private improvementLayer!: Phaser.GameObjects.Container;
+  private zoneEffectLayer!: Phaser.GameObjects.Container;
   private pathLayer!: Phaser.GameObjects.Container;
   private unitLayer!: Phaser.GameObjects.Container;
   private combatOverlayLayer!: Phaser.GameObjects.Container;
@@ -31,6 +33,7 @@ export class MapScene extends Phaser.Scene {
   private borderRenderer!: BorderRenderer;
   private settlementRenderer!: SettlementRenderer;
   private improvementRenderer!: ImprovementRenderer;
+  private zoneEffectRenderer!: ZoneEffectRenderer;
   private unitRenderer!: UnitRenderer;
   private pathRenderer!: PathRenderer;
   private selectionRenderer!: SelectionRenderer;
@@ -51,6 +54,7 @@ export class MapScene extends Phaser.Scene {
     this.borderLayer = this.add.container().setDepth(1);
     this.settlementLayer = this.add.container().setDepth(2);
     this.improvementLayer = this.add.container().setDepth(3);
+    this.zoneEffectLayer = this.add.container().setDepth(3.5);
     this.pathLayer = this.add.container().setDepth(4);
     this.unitLayer = this.add.container().setDepth(5);
     this.combatOverlayLayer = this.add.container().setDepth(6);
@@ -62,6 +66,7 @@ export class MapScene extends Phaser.Scene {
     this.borderRenderer = new BorderRenderer(this, this.borderLayer, this.worldToScreenFn);
     this.settlementRenderer = new SettlementRenderer(this, this.settlementLayer, this.worldToScreenFn);
     this.improvementRenderer = new ImprovementRenderer(this, this.improvementLayer, this.worldToScreenFn);
+    this.zoneEffectRenderer = new ZoneEffectRenderer(this, this.zoneEffectLayer, this.worldToScreenFn);
     this.unitRenderer = new UnitRenderer(this, this.unitLayer, this.worldToScreenFn);
     this.combatAnimator = new CombatAnimator(this, this.worldToScreenFn);
     this.pathRenderer = new PathRenderer(this, this.pathLayer, this.worldToScreenFn);
@@ -100,6 +105,7 @@ export class MapScene extends Phaser.Scene {
   shutdown() {
     this.unsubscribe?.();
     this.scale.off('resize');
+    this.zoneEffectRenderer.destroy();
   }
 
   private readonly worldToScreenFn = (q: number, r: number) => worldToScreen(q, r);
@@ -128,6 +134,8 @@ export class MapScene extends Phaser.Scene {
     });
 
     this.improvementRenderer.render(state.world);
+
+    this.zoneEffectRenderer.render(state.world);
 
     this.pathRenderer.render(state.world);
 
