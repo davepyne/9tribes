@@ -165,6 +165,18 @@ export type PathPreviewNodeView = {
   step: number;
 };
 
+export type ZoneEffectType = 'maelstrom' | 'toxic_bloom' | 'crushing_zone' | 'raid_camp' | 'poison_cloud' | 'venomous_tide' | 'poison_trap';
+
+export type ZoneEffectView = {
+  id: string;
+  type: ZoneEffectType;
+  q: number;
+  r: number;
+  radius: number;
+  ownerFactionId: string;
+  turnsRemaining: number;
+};
+
 export type WorldViewModel = {
   activeFactionId: string | null;
   map: {
@@ -191,6 +203,7 @@ export type WorldViewModel = {
           destination: HexCoord;
         }
       | null;
+    zoneEffects: ZoneEffectView[];
   };
   visibility: {
     mode: 'full' | 'fogged';
