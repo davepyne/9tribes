@@ -71,6 +71,10 @@ export interface Unit {
   terrainDamageAbsorption?: number;  // nature_healing_t2 — damage absorbed by Wounded Earth this combat (UI feedback)
   // Learn-by-kill system: abilities learned from killing enemy faction units
   learnedAbilities: LearnedAbility[];
+  // Decoy units: phantom copies spawned by Mirage synergy (river_stealth+camel_adaptation).
+  // Look identical to the source unit, targetable by AI, but don't act or block movement.
+  isDecoy?: boolean;
+  decoyTurnsRemaining?: number; // 0 or undefined = not a decoy; decremented each round
   // Multi-turn move queue target; undefined = no active queue
   moveQueueDestination?: HexCoord;
 }

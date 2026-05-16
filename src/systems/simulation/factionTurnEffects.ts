@@ -680,6 +680,32 @@ export function tickSummonState(
   return state;
 }
 
+export function tickDecoyState(
+  state: GameState,
+  _factionId: FactionId,
+  trace?: SimulationTrace
+): GameState {
+  // Find all decoy units and decrement their decoyTurnsRemaining
+  let current = state;
+  for (const [, unit] of current.units) {
+    if (unit.isDecoy && unit.decoyTurnsRemaining !== undefined) {
+      const remaining = unit.decoyTurnsRemaining - 1;
+      if (remaining <= 0) {
+        // Expire the decoy
+        const units = new Map(current.units);
+        units.delete(unit.id);
+        current = { ...current, units };
+        log(trace, `Decoy unit ${unit.id} expired`);
+      } else if (remaining !== unit.decoyTurnsRemaining) {
+        const units = new Map(current.units);
+        units.set(unit.id, { ...unit, decoyTurnsRemaining: remaining });
+        current = { ...current, units };
+      }
+    }
+  }
+  return current;
+}
+
 function applyWarlordAura(
   state: GameState,
   factionId: FactionId,
@@ -1100,6 +1126,8 @@ export function processFactionPhases(
   if (factionAbilities?.summon) {
     current = tickSummonState(current, factionId, registry, trace);
   }
+
+  current = tickDecoyState(current, factionId, trace);
 
   current = applyWarlordAura(current, factionId, registry, trace);
 

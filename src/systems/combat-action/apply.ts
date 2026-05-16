@@ -20,6 +20,7 @@ import { attemptCapture, attemptNonCombatCapture, getCaptureParams, hasCaptureAb
 import { applyContactTransfer } from '../capabilitySystem.js';
 import { applyPoisonDoT, enterStealth, findRetreatHex } from '../signatureAbilitySystem.js';
 import { getPrototype, getNearestFriendlyCity } from '../../game/stateAccess.js';
+import { createFreshUnit } from '../../features/units/createUnit.js';
 import { getUnitAtHex } from '../occupancySystem.js';
 import { getGreedyLootOnKill, getPoisonOnAttack, getPursuitMovementOnKill, isUnitRiverStealthed } from '../factionIdentitySystem.js';
 import { isCoverTerrain, isWoodlandTerrain } from '../terrainUtils.js';
@@ -1410,6 +1411,34 @@ export function applyCombatAction(
       });
     }
   }
+
+  // Mirage Decoy: spawn a phantom unit at the attacker's hex from spawnOnMap decoy effect
+  const decoySpawns = atk.getSpawns('decoy');
+  if (decoySpawns.length > 0 && attacker.hp > 0) {
+    const attackerProto = getPrototype(state, attacker.prototypeId);
+    if (attackerProto) {
+      const decoyPos = decoySpawns[0].position;
+      const decoyDuration = decoySpawns[0].duration ?? 2;
+      const decoyId = createUnitId();
+      const baseDecoy = createFreshUnit(attacker.factionId, { q: decoyPos.x, r: decoyPos.y }, attackerProto, decoyId);
+      const decoy: Unit = {
+        ...baseDecoy,
+        hp: attacker.hp,
+        maxHp: attacker.maxHp,
+        facing: attacker.facing,
+        isDecoy: true,
+        decoyTurnsRemaining: decoyDuration,
+        attacksRemaining: 0,
+        movesRemaining: 0,
+        status: 'spent',
+      };
+      const unitsWithDecoy = new Map(current.units);
+      unitsWithDecoy.set(decoyId, decoy);
+      current = { ...current, units: unitsWithDecoy };
+      pushCombatEffect(baseResolution.triggeredEffects, 'Mirage Decoy', `Phantom decoy spawned at ${decoyPos.x},${decoyPos.y} for ${decoyDuration} turns.`, 'synergy');
+    }
+  }
+
   // Heavy regen: heal attacker for % of damage dealt
   updatedAttacker = current.units.get(preview.attackerId);
   const heavyRegenPercent = atk.getStat('heavyRegenPercent');
