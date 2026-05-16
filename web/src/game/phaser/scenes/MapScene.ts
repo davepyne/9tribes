@@ -10,6 +10,7 @@ import { ImprovementRenderer } from '../systems/ImprovementRenderer';
 import { PathRenderer } from '../systems/PathRenderer';
 import { SelectionRenderer } from '../systems/SelectionRenderer';
 import { SettlementRenderer } from '../systems/SettlementRenderer';
+import { TerrainMutationAnimator } from '../systems/TerrainMutationAnimator';
 import { TileLayerRenderer } from '../systems/TileLayerRenderer';
 import { UnitRenderer } from '../systems/UnitRenderer';
 import { ZoneEffectRenderer } from '../systems/ZoneEffectRenderer';
@@ -19,6 +20,7 @@ import { MapSceneInput } from './MapSceneInput';
 export class MapScene extends Phaser.Scene {
   private unsubscribe: (() => void) | null = null;
   private tileLayer!: Phaser.GameObjects.Container;
+  private terrainMutationLayer!: Phaser.GameObjects.Container;
   private borderLayer!: Phaser.GameObjects.Container;
   private settlementLayer!: Phaser.GameObjects.Container;
   private improvementLayer!: Phaser.GameObjects.Container;
@@ -30,6 +32,7 @@ export class MapScene extends Phaser.Scene {
   private fogLayer!: Phaser.GameObjects.Container;
   private combatAnimator!: CombatAnimator;
   private tileRenderer!: TileLayerRenderer;
+  private terrainMutationAnimator!: TerrainMutationAnimator;
   private borderRenderer!: BorderRenderer;
   private settlementRenderer!: SettlementRenderer;
   private improvementRenderer!: ImprovementRenderer;
@@ -51,6 +54,7 @@ export class MapScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#17130e');
 
     this.tileLayer = this.add.container().setDepth(0);
+    this.terrainMutationLayer = this.add.container().setDepth(0.5);
     this.borderLayer = this.add.container().setDepth(1);
     this.settlementLayer = this.add.container().setDepth(2);
     this.improvementLayer = this.add.container().setDepth(3);
@@ -63,6 +67,7 @@ export class MapScene extends Phaser.Scene {
     this.selectionLayer = this.add.container().setDepth(8);
 
     this.tileRenderer = new TileLayerRenderer(this, this.tileLayer, this.worldToScreenFn);
+    this.terrainMutationAnimator = new TerrainMutationAnimator(this, this.terrainMutationLayer, this.worldToScreenFn);
     this.borderRenderer = new BorderRenderer(this, this.borderLayer, this.worldToScreenFn);
     this.settlementRenderer = new SettlementRenderer(this, this.settlementLayer, this.worldToScreenFn);
     this.improvementRenderer = new ImprovementRenderer(this, this.improvementLayer, this.worldToScreenFn);
@@ -105,6 +110,7 @@ export class MapScene extends Phaser.Scene {
   shutdown() {
     this.unsubscribe?.();
     this.scale.off('resize');
+    this.terrainMutationAnimator.destroy();
     this.zoneEffectRenderer.destroy();
   }
 
@@ -125,6 +131,8 @@ export class MapScene extends Phaser.Scene {
     this.tileRenderer.render(state.world, state, {
       onHexSelected: (q, r, pointer) => this.inputHandler.handleHexClick(state, q, r, pointer),
     });
+
+    this.terrainMutationAnimator.render(state.world);
 
     this.borderRenderer.render(state.world);
 
