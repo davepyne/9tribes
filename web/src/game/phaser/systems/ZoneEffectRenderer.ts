@@ -91,7 +91,8 @@ export class ZoneEffectRenderer {
   ) {}
 
   render(world: WorldViewModel): void {
-    const activeIds = new Set(world.overlays.zoneEffects.map(ze => ze.id));
+    const visibleEffects = world.overlays.zoneEffects.filter(ze => ze.visible);
+    const activeIds = new Set(visibleEffects.map(ze => ze.id));
 
     // Remove destroyed effects
     for (const [zoneId, inst] of this.effects) {
@@ -108,7 +109,7 @@ export class ZoneEffectRenderer {
     }
 
     // Create effects (zone effects are stationary — only create new, never update existing)
-    for (const ze of world.overlays.zoneEffects) {
+    for (const ze of visibleEffects) {
       if (!this.effects.has(ze.id)) {
         const isProcedural = PROCEDURAL_TYPES.has(ze.type);
 

@@ -175,6 +175,10 @@ export type ZoneEffectView = {
   radius: number;
   ownerFactionId: string;
   turnsRemaining: number;
+  /** False when fog-of-war or owner-restriction hides this effect from the player. */
+  visible: boolean;
+  /** If true, only the owning faction can see this effect. */
+  stealthy?: boolean;
 };
 
 export type WorldViewModel = {

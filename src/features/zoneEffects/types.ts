@@ -48,4 +48,6 @@ export interface ZoneEffect {
   createdRound: number;
   /** If true, non-owner units inside this zone cannot heal. Used by poison_cloud. */
   preventsHealing?: boolean;
+  /** If true, the effect is only visible to the owning faction. Non-owners never see it. */
+  stealthy?: boolean;
 }
