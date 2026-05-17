@@ -9,7 +9,6 @@ import { getTerrainAt } from './environmentalEffects.js';
 export function applyWarlordAura(
   state: GameState,
   factionId: FactionId,
-  _registry: unknown,
   trace?: SimulationTrace,
 ): GameState {
   const faction = state.factions.get(factionId);

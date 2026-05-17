@@ -251,17 +251,11 @@ export function applyStatusEffects(ctx: CombatContext): void {
   let sandstormTargetsHit = 0;
   const sandstormDamage = atk.getStat('sandstormDamage');
   if (sandstormDamage > 0 && updatedDefender && !ctx.defenderActuallyDestroyed && !ctx.retreatCaptured) {
-    const sandstormUnits = new Map(current.units);
-    for (const adjHex of getNeighbors(updatedDefender.position)) {
-      const adjUnitId = getUnitAtHex(current, adjHex);
-      if (!adjUnitId) continue;
-      const adjUnit = sandstormUnits.get(adjUnitId);
-      if (adjUnit && adjUnit.factionId !== attacker.factionId && adjUnit.hp > 0) {
-        sandstormUnits.set(adjUnitId, { ...adjUnit, hp: Math.max(0, adjUnit.hp - sandstormDamage) });
-        sandstormTargetsHit += 1;
-      }
+    const splash = applyDamageToAdjacentEnemies(current, updatedDefender.position, attacker.factionId, sandstormDamage);
+    if (splash.hitCount > 0) {
+      current = splash.state;
+      sandstormTargetsHit = splash.hitCount;
     }
-    current = { ...current, units: sandstormUnits };
   }
   // Synergy AoE damage
   updatedDefender = current.units.get(preview.defenderId);

@@ -25,18 +25,6 @@ import { startOrAdvanceCodification } from './codificationPhase.js';
 import { applyEcologyResearchPass } from './ecologyResearch.js';
 import type { DifficultyLevel } from '../aiDifficulty.js';
 
-// Re-export ecology functions for backward compatibility
-export {
-  DOMAIN_TERRAIN_AFFINITY,
-  TERRAIN_RESEARCH_BONUS,
-  MAX_RESEARCH_TERRAIN_BONUS,
-  RESEARCH_PROXIMITY_BONUS_PER_CONTACT,
-  computeTerrainResearchBonuses,
-  computeProximityResearchBonuses,
-  buildEcologyBreakdown,
-  applyEcologyResearchPass,
-} from './ecologyResearch.js';
-
 export { tickDecoyState } from './decoyTick.js';
 
 export function processFactionPhases(
@@ -106,7 +94,7 @@ export function processFactionPhases(
     current = tickSummonState(current, factionId, registry, trace);
   }
 
-  current = applyWarlordAura(current, factionId, registry, trace);
+  current = applyWarlordAura(current, factionId, trace);
   current = refreshFactionUnits(current, factionId, registry, trace);
   current = applyEnvironmentalDamage(current, factionId, registry, trace);
 

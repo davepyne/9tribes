@@ -11,7 +11,6 @@ import { EMERGENT_PARAMS } from '../emergentRuleParams.js';
 import { addZoneEffect, removeZoneEffectsByOwner } from '../zoneEffectSystem.js';
 import { createZoneEffectId } from '../../core/ids.js';
 import { hexDistance } from '../../core/grid.js';
-import { getUnitAtHex } from '../occupancySystem.js';
 import { findMeatiestUnit } from './wildFactionTurn.js';
 
 export function applyGhostArmyMovement(state: GameState, factionId: FactionId, bonusMovement: number): GameState {

@@ -1,11 +1,8 @@
 /**
  * resolveAftermath.ts — Knockback/rout and final state resolution.
- *
- * Pure extraction from applyCombatAction (lines 991-1143).
  * All cross-phase state is read/written via CombatContext.
  */
 
-import type { FactionId } from '../../types.js';
 import type { CombatContext } from './combatContext.js';
 import { getNeighbors } from '../../core/grid.js';
 import { rngShuffle } from '../../core/rng.js';
@@ -151,7 +148,7 @@ export function finalizeCombatState(ctx: CombatContext): void {
   current = applyCombatResearchBonus(current, attacker.factionId, defender.factionId, registry);
   current = applyCombatResearchBonus(current, defender.factionId, attacker.factionId, registry);
   current = applyContactTransfer(current, attacker.factionId, defender.factionId, 'contact');
-  const absorbResult = maybeAbsorbFaction(current, attacker.factionId as FactionId, defender.factionId as FactionId, registry);
+  const absorbResult = maybeAbsorbFaction(current, attacker.factionId, defender.factionId, registry);
   current = absorbResult.state;
   if (absorbResult.absorbedDomains.length > 0) {
     feedback = { ...feedback, absorbedDomains: absorbResult.absorbedDomains };
@@ -159,11 +156,11 @@ export function finalizeCombatState(ctx: CombatContext): void {
   current = unlockHybridRecipes(current, attacker.factionId, registry);
 
   if (defenderActuallyDestroyed && !capturedOnKill) {
-    current = updateCombatRecordOnWin(current, attacker.factionId as FactionId, current.round);
-    current = updateCombatRecordOnLoss(current, defender.factionId as FactionId, current.round);
+    current = updateCombatRecordOnWin(current, attacker.factionId, current.round);
+    current = updateCombatRecordOnLoss(current, defender.factionId, current.round);
   } else if (attackerActuallyDestroyed) {
-    current = updateCombatRecordOnLoss(current, attacker.factionId as FactionId, current.round);
-    current = updateCombatRecordOnWin(current, defender.factionId as FactionId, current.round);
+    current = updateCombatRecordOnLoss(current, attacker.factionId, current.round);
+    current = updateCombatRecordOnWin(current, defender.factionId, current.round);
   }
 
   const hitAndRunEligible =

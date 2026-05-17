@@ -21,8 +21,7 @@ import type {
 import type { CombatContext } from './combatContext.js';
 
 /**
- * Phase 1: Create the CombatContext from raw inputs.
- * Extracts lines 148-283 of apply.ts.
+ * Create the CombatContext from raw inputs.
  * Returns either a fully-initialized CombatContext or an early-return result
  * (when units/prototypes are missing or non-combat capture fires).
  */
@@ -141,8 +140,7 @@ export function createCombatContext(
 }
 
 /**
- * Phase 2: Resolve damage, apply survival mechanics, build nextAttacker/nextDefender.
- * Extracts lines 285-436 of apply.ts.
+ * Resolve damage, apply survival mechanics, build nextAttacker/nextDefender.
  * Mutates ctx fields: resolution, nextAttacker, nextDefender, minHpFloor,
  * woundedEarthAbsorbed, woundedEarthAlliesHealed, defenderActuallyDestroyed.
  */
@@ -269,8 +267,7 @@ export function resolveDamage(ctx: CombatContext): void {
 }
 
 /**
- * Phase 3: Learn from kill, award XP, promote, write units to state.
- * Extracts lines 438-484 of apply.ts.
+ * Learn from kill, award XP, promote, write units to state.
  * Mutates ctx fields: nextAttacker, feedback, current.
  */
 export function processKillAndState(ctx: CombatContext): void {
@@ -318,8 +315,7 @@ export function processKillAndState(ctx: CombatContext): void {
 }
 
 /**
- * Phase 4: Post-damage effects — Wounded Earth heal, emergent sustain, smite, pursuit.
- * Extracts lines 486-568 of apply.ts.
+ * Post-damage effects: Wounded Earth heal, emergent sustain, smite, pursuit.
  * Mutates ctx fields: current, resolution, emergentSustainHealApplied, emergentSmiteApplied,
  * pursuitDamageApplied, woundedEarthAlliesHealed.
  */

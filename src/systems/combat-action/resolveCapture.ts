@@ -1,12 +1,11 @@
 /**
  * resolveCapture.ts — Capture resolution and post-kill effects.
- *
- * Pure extraction from applyCombatAction (lines 570-989).
  * All cross-phase state is read/written via CombatContext.
  */
 
 import type { CombatContext } from './combatContext.js';
 import type { Unit } from '../../features/units/types.js';
+import type { VeteranLevel, UnitStatus } from '../../core/enums.js';
 import { hexDistance, getNeighbors, hexToKey } from '../../core/grid.js';
 import { createUnitId } from '../../core/ids.js';
 import { rngChance } from '../../core/rng.js';
@@ -23,12 +22,7 @@ import {
 import { applyPoisonInRange } from './combatContext.js';
 import { removeDeadUnitsFromFactions, writeUnitToState, applyDamageToAdjacentEnemies } from './helpers.js';
 
-/**
- * Phase A — Capture resolution.
- *
- * Computes auto-capture thresholds, attempts capture on kill,
- * handles press gang capture. Sets ctx tracking variables.
- */
+/** Capture resolution: auto-capture thresholds, capture on kill, press gang. */
 export function processCapture(ctx: CombatContext): void {
   const {
     state, registry, preview, attacker, defender, attackerPrototype,
@@ -142,8 +136,8 @@ export function processCapture(ctx: CombatContext): void {
           factionId: attacker.factionId,
           hp: Math.max(1, Math.floor(defender.maxHp * slaveHp)),
           morale: 40,
-          veteranLevel: 'green' as import('../../core/enums.js').VeteranLevel,
-          status: 'ready' as import('../../core/enums.js').UnitStatus,
+          veteranLevel: 'green' as VeteranLevel,
+          status: 'ready' as UnitStatus,
           slaveStatFraction: liberation.statFraction,
           slaveRoutImmune: liberation.routImmune,
         };
@@ -172,13 +166,7 @@ export function processCapture(ctx: CombatContext): void {
   ctx.attackerActuallyDestroyed = attackerActuallyDestroyed;
 }
 
-/**
- * Phase A — Post-kill effects.
- *
- * Greedy loot, mycelium network, poison detonate, charge splash,
- * armada chain, pursuit movement, melee advance, kill chain,
- * retreat capture, captive champion, slave market.
- */
+/** Post-kill effects: loot, mycelium, poison detonate, charge splash, armada chain, pursuit, melee advance, kill chain, retreat capture, captive champion, slave market. */
 export function applyPostKillEffects(ctx: CombatContext): void {
   const {
     state, registry, preview, attacker, defender, attackerPrototype,
@@ -439,8 +427,8 @@ export function applyPostKillEffects(ctx: CombatContext): void {
             maxMoves: stats.moves,
             attacksRemaining: 1,
             xp: 0,
-            veteranLevel: 'seasoned' as import('../../core/enums.js').VeteranLevel,
-            status: 'ready' as import('../../core/enums.js').UnitStatus,
+            veteranLevel: 'seasoned' as VeteranLevel,
+            status: 'ready' as UnitStatus,
             prototypeId: defender.prototypeId,
             history: [{ type: 'captive_champion', timestamp: current.round, details: { round: current.round, fromCaptureOf: defender.id } }],
             morale: 75,
@@ -487,5 +475,4 @@ export function applyPostKillEffects(ctx: CombatContext): void {
   ctx.poisonDetonated = poisonDetonated;
   ctx.myceliumTargets = myceliumTargets;
   ctx.retreatCaptured = updatedRetreatCaptured;
-  ctx.sporeJumpTargets = 0; // not set in this phase, but ctx tracks it
 }
