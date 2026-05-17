@@ -3,7 +3,7 @@ import type { GameState, Faction } from '../game/types.js';
 import type { FactionId, UnitId } from '../types.js';
 import type { Unit } from '../features/units/types.js';
 import { tickZoneEffectLifetimes } from './zoneEffectSystem.js';
-import { tickDecoyState } from './simulation/factionTurnEffects.js';
+import { tickDecoyState } from './simulation/decoyTick.js';
 import { detectAndSpawnToxicBlooms, cleanseToxicBlooms } from './toxicBloomSystem.js';
 
 /**

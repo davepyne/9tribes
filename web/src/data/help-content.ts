@@ -1,6 +1,6 @@
 import civilizationsData from '../../../src/content/base/civilizations.json';
 import { PAIR_SYNERGIES } from '../../../src/content/synergies/index';
-import { DOMAIN_TERRAIN_AFFINITY, TERRAIN_RESEARCH_BONUS } from '../../../src/systems/simulation/factionTurnEffects.js';
+import { DOMAIN_TERRAIN_AFFINITY, TERRAIN_RESEARCH_BONUS } from '../../../src/systems/simulation/ecologyResearch.js';
 import { DOMAIN_NAMES } from './domainMeta.js';
 
 // ── Dynamic terrain table (derived from backend constants) ──

@@ -37,7 +37,8 @@ export { getSynergyEngine, calculateSynergyAttackBonus, calculateSynergyDefenseB
 
 import { recordSnapshot, maybeRecordEndSnapshot } from './simulation/traceRecorder.js';
 import { getVictoryStatus, getAliveFactions } from './simulation/victory.js';
-import { processFactionPhases, tickDecoyState } from './simulation/factionTurnEffects.js';
+import { processFactionPhases } from './simulation/factionTurnEffects.js';
+import { tickDecoyState } from './simulation/decoyTick.js';
 import { tickZoneEffectLifetimes } from './zoneEffectSystem.js';
 import { detectAndSpawnToxicBlooms, cleanseToxicBlooms } from './toxicBloomSystem.js';
 
