@@ -7,7 +7,7 @@ import type { RulesRegistry, ResearchNodeDef } from '../../../../../src/data/reg
 import {
   getDomainTier,
 } from '../../../../../src/systems/researchSystem.js';
-import { getForeignT1Cost } from '../../../../../src/systems/knowledgeSystem.js';
+import { getForeignT1Cost, isDomainRestricted } from '../../../../../src/systems/knowledgeSystem.js';
 import { getDomainProgression } from '../../../../../src/systems/domainProgression.js';
 import type {
   ResearchInspectorViewModel,
@@ -89,7 +89,9 @@ export function buildResearchInspectorViewModel(
   const nativeDomain = faction.nativeDomain ?? '';
   const learnedDomains = faction.learnedDomains ?? [nativeDomain];
   const assimilatedCount = faction.assimilatedDomainCount ?? 0;
-  const allDomains = registry.getAllResearchDomains();
+  const allDomains = registry.getAllResearchDomains().filter(
+    d => !isDomainRestricted(d.id) || faction.nativeDomains?.includes(d.id),
+  );
   const progression = getDomainProgression(faction, research);
 
   // Build node VMs across all research domains
