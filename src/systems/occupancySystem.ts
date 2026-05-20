@@ -9,6 +9,7 @@ import { hexToKey } from '../core/grid.js';
 export function buildOccupancyMap(gameState: GameState): Map<string, UnitId> {
   const occupancy = new Map<string, UnitId>();
   for (const [unitId, unit] of gameState.units) {
+    if (unit.isDecoy) continue;
     const key = hexToKey(unit.position);
     occupancy.set(key, unitId);
   }
@@ -16,7 +17,8 @@ export function buildOccupancyMap(gameState: GameState): Map<string, UnitId> {
 }
 
 /**
- * Get the unit ID at a specific hex, if any
+ * Get the unit ID at a specific hex, if any.
+ * Skips decoy units (phantom copies that look identical but don't block movement).
  */
 export function getUnitAtHex(
   gameState: GameState,
@@ -24,7 +26,7 @@ export function getUnitAtHex(
 ): UnitId | undefined {
   const key = hexToKey(hex);
   for (const [unitId, unit] of gameState.units) {
-    if (hexToKey(unit.position) === key) {
+    if (hexToKey(unit.position) === key && !unit.isDecoy) {
       return unitId;
     }
   }

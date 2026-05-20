@@ -117,6 +117,13 @@ export const TEXTURES = {
   frostPriestRear: 'unit-frost-priest-flipped',
   frostPolarBearRear: 'unit-frost-polar-bear-flipped',
   cyclopsRear: 'unit-cyclops-flipped',
+  vfxToxicBloom: 'vfx-toxic-bloom',
+  vfxMaelstrom: 'vfx-maelstrom',
+  vfxCrushingZone: 'vfx-crushing-zone',
+  vfxRaidCamp: 'vfx-raid-camp',
+  vfxPoisonCloud: 'vfx-poison-cloud',
+  vfxPoisonTrap: 'vfx-poison-trap',
+  vfxSpikeLine: 'vfx-spike-line',
 } as const;
 
 export const FREELAND_SPECS = {

@@ -123,4 +123,11 @@ export const assetManifest = [
   { kind: 'image', key: TEXTURES.frostPriestRear, path: `${PLAYTEST_UNITS_ROOT}/frost_priest_flipped.png` },
   { kind: 'image', key: TEXTURES.frostPolarBearRear, path: `${PLAYTEST_UNITS_ROOT}/frost_polar_bear_flipped.png` },
   { kind: 'image', key: TEXTURES.cyclopsRear, path: `${PLAYTEST_UNITS_ROOT}/cyclops_flipped.png` },
+  { kind: 'sheet', key: TEXTURES.vfxToxicBloom, path: '/assets/vfx/vfx-toxic-bloom.png', frameConfig: { frameWidth: 96, frameHeight: 48 } },
+  { kind: 'sheet', key: TEXTURES.vfxMaelstrom, path: '/assets/vfx/vfx-maelstrom.png', frameConfig: { frameWidth: 96, frameHeight: 64 } },
+  { kind: 'sheet', key: TEXTURES.vfxCrushingZone, path: '/assets/vfx/vfx-crushing-zone.png', frameConfig: { frameWidth: 96, frameHeight: 48 } },
+  { kind: 'sheet', key: TEXTURES.vfxRaidCamp, path: '/assets/vfx/vfx-raid-camp.png', frameConfig: { frameWidth: 96, frameHeight: 48 } },
+  { kind: 'sheet', key: TEXTURES.vfxPoisonCloud, path: '/assets/vfx/vfx-poison-cloud.png', frameConfig: { frameWidth: 96, frameHeight: 48 } },
+  { kind: 'sheet', key: TEXTURES.vfxPoisonTrap, path: '/assets/vfx/vfx-poison-trap.png', frameConfig: { frameWidth: 96, frameHeight: 48 } },
+  { kind: 'sheet', key: TEXTURES.vfxSpikeLine, path: '/assets/vfx/vfx-spike-line.png', frameConfig: { frameWidth: 96, frameHeight: 48 } },
 ] as const;

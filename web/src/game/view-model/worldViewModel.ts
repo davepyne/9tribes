@@ -29,6 +29,7 @@ import type {
   PathPreviewNodeView,
   ReachableHexView,
   WorldViewModel,
+  ZoneEffectView,
 } from '../types/worldView';
 import { getResearch, getFaction } from '../stateAccess.js';
 import { isUnitEmbarked } from '../../../../src/systems/transportSystem.js';
@@ -153,6 +154,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
 
   return {
     activeFactionId: state.activeFactionId,
+    round: state.round,
     map: {
       width: state.map.width,
       height: state.map.height,
@@ -213,6 +215,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
       pathPreview: source.pathPreview,
       queuedPath: source.queuedPath,
       lastMove: source.lastMove,
+      zoneEffects: buildZoneEffectViews(state, hexVisibility, source.playerFactionId),
     },
     visibility: {
       mode: 'fogged',
@@ -332,6 +335,43 @@ function buildHexVisibilityMap(state: GameState, playerFactionId: string | null)
   }
 
   return map;
+}
+
+function buildZoneEffectViews(
+  state: GameState,
+  hexVisibility: Map<string, 'visible' | 'explored' | 'hidden'>,
+  playerFactionId: string | null,
+): ZoneEffectView[] {
+  return Array.from(state.zoneEffects.values()).map((ze) => {
+    const key = hexToKey(ze.center);
+    const visibility = hexVisibility.get(key) ?? 'hidden';
+    const isOwner = ze.ownerFactionId === playerFactionId;
+
+    let visible = false;
+    if (ze.stealthy) {
+      // Stealthy effects: only the planting faction sees them
+      visible = isOwner && visibility !== 'hidden';
+    } else if (isOwner) {
+      // Owner faction: visible when hex is visible or explored
+      visible = visibility !== 'hidden';
+    } else {
+      // Other factions: only visible when hex is directly visible (not just explored)
+      visible = visibility === 'visible';
+    }
+
+    return {
+      id: ze.id,
+      type: ze.type,
+      q: ze.center.q,
+      r: ze.center.r,
+      radius: ze.radius,
+      ownerFactionId: ze.ownerFactionId,
+      turnsRemaining: ze.turnsRemaining,
+      createdRound: ze.createdRound,
+      visible,
+      stealthy: ze.stealthy,
+    };
+  });
 }
 
 function buildBorderEdges(

@@ -19,7 +19,7 @@
 
 import type { ZoneEffectId, FactionId, HexCoord } from '../../types.js';
 
-export type ZoneEffectType = 'maelstrom' | 'toxic_bloom' | 'crushing_zone' | 'raid_camp' | 'poison_cloud';
+export type ZoneEffectType = 'maelstrom' | 'toxic_bloom' | 'crushing_zone' | 'raid_camp' | 'poison_cloud' | 'venomous_tide' | 'poison_trap' | 'spike_line' | 'bloodtrail' | 'life_bloom' | 'citadel';
 
 export const ZONE_EFFECT_LABEL: Record<ZoneEffectType, string> = {
   maelstrom: 'Maelstrom',
@@ -27,6 +27,12 @@ export const ZONE_EFFECT_LABEL: Record<ZoneEffectType, string> = {
   crushing_zone: 'Crushing Zone',
   raid_camp: 'Raid Camp',
   poison_cloud: 'Poison Cloud',
+  venomous_tide: 'Venomous Tide',
+  poison_trap: 'Poison Trap',
+  spike_line: 'Spike Line',
+  bloodtrail: 'Bloodtrail',
+  life_bloom: 'Life Bloom',
+  citadel: 'Citadel',
 };
 
 export interface ZoneEffect {
@@ -46,4 +52,6 @@ export interface ZoneEffect {
   createdRound: number;
   /** If true, non-owner units inside this zone cannot heal. Used by poison_cloud. */
   preventsHealing?: boolean;
+  /** If true, the effect is only visible to the owning faction. Non-owners never see it. */
+  stealthy?: boolean;
 }

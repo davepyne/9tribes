@@ -86,6 +86,24 @@ export function addZoneEffect(state: GameState, effect: ZoneEffect): GameState {
 }
 
 /**
+ * Find a zone effect by type and owning faction. Returns the first match
+ * or undefined if none exists. Used by systems that manage one zone per
+ * faction (e.g., life_bloom, crushing_zone).
+ */
+export function findZoneEffectByTypeAndOwner(
+  state: GameState,
+  type: ZoneEffectType,
+  ownerFactionId: FactionId,
+): ZoneEffect | undefined {
+  for (const effect of state.zoneEffects.values()) {
+    if (effect.type === type && effect.ownerFactionId === ownerFactionId) {
+      return effect;
+    }
+  }
+  return undefined;
+}
+
+/**
  * Remove all zone effects matching a type and owner in a single pass.
  */
 export function removeZoneEffectsByOwner(
