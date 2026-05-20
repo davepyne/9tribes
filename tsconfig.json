@@ -8,8 +8,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM"],
     "resolveJsonModule": true
   },
-  "exclude": ["node_modules", "dist", "web/dist"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "web", "scripts"]
 }

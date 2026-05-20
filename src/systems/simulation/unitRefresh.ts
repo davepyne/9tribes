@@ -12,8 +12,39 @@ import { maybeExpirePreparedAbility } from '../unitActivationSystem.js';
 import { resolveEffectiveSynergies } from '../synergyRuntime.js';
 import { applyHealingSynergies, type HealingContext } from '../synergyEffects.js';
 import { getUnitAtHex } from '../occupancySystem.js';
+import { addZoneEffect, removeZoneEffect, findZoneEffectByTypeAndOwner, type ZoneEffectType } from '../zoneEffectSystem.js';
+import { createZoneEffectId } from '../../core/ids.js';
 import { isWetlandTerrain } from '../terrainUtils.js';
 import { isPassiveWetlandStealth } from '../factionIdentitySystem.js';
+
+function syncAnchorZoneEffect(
+  state: GameState,
+  type: ZoneEffectType,
+  factionId: FactionId,
+  position: { q: number; r: number },
+  radius: number,
+  preserveCreatedRound?: number,
+): GameState {
+  const existing = findZoneEffectByTypeAndOwner(state, type, factionId);
+  if (existing && existing.center.q === position.q && existing.center.r === position.r) {
+    return state;
+  }
+  let current = state;
+  if (existing) {
+    current = removeZoneEffect(current, existing.id);
+  }
+  return addZoneEffect(current, {
+    id: createZoneEffectId(),
+    type,
+    center: position,
+    radius,
+    ownerFactionId: factionId,
+    damagePerTurn: 0,
+    movementPenalty: 0,
+    turnsRemaining: -1,
+    createdRound: preserveCreatedRound ?? current.round,
+  });
+}
 
 export function refreshFactionUnits(
   state: GameState,
@@ -240,7 +271,102 @@ export function refreshFactionUnits(
   }
   current = { ...current, units: bloomAuraUnits };
 
-  // Slave economy resource bonus pass
+  // Life Bloom Burst: every 3rd round since zone creation, heal all allies
+  // (including the bloom unit itself) within auraRadius for +8 HP.
+  {
+    const bloomZone = findZoneEffectByTypeAndOwner(current, 'life_bloom', factionId);
+    if (bloomZone) {
+      const roundsSinceCreation = current.round - bloomZone.createdRound;
+      if (roundsSinceCreation > 0 && roundsSinceCreation % 3 === 0) {
+        const burstUnits = new Map(current.units);
+        for (const [uid, ally] of burstUnits) {
+          if (ally.factionId !== factionId || ally.hp <= 0) continue;
+          if (hexDistance(bloomZone.center, ally.position) <= bloomZone.radius) {
+            burstUnits.set(uid, {
+              ...ally,
+              hp: Math.min(ally.maxHp, ally.hp + 8),
+            });
+          }
+        }
+        current = { ...current, units: burstUnits };
+      }
+    }
+  }
+
+  // Life Bloom zone effect: spawn/update/remove a visual zone effect at the
+  // first bloom-capable unit's position.
+  {
+    let bloomAnchor: { position: { q: number; r: number }; auraRadius: number } | null = null;
+    for (const unitIdStr of refreshedFaction.unitIds) {
+      const bloomUnit = current.units.get(unitIdStr as UnitId);
+      if (!bloomUnit || bloomUnit.hp <= 0) continue;
+      const bloomProto = current.prototypes.get(bloomUnit.prototypeId);
+      const bloomTags = bloomProto?.tags ?? [];
+      if (!(bloomTags.includes('healing') || bloomTags.includes('druid'))) continue;
+      const bloomSynergies = resolveEffectiveSynergies(refreshedFaction, bloomTags);
+      let auraRadius = 0;
+      for (const syn of bloomSynergies) {
+        for (const eff of syn.effects) {
+          if (eff.kind === 'statMod') {
+            const sm = eff as Extract<typeof eff, { kind: 'statMod' }>;
+            if (sm.stat === 'bloomPulseAuraRadius') auraRadius = Math.max(auraRadius, sm.value);
+          }
+        }
+      }
+      if (auraRadius > 0) {
+        bloomAnchor = { position: bloomUnit.position, auraRadius };
+        break;
+      }
+    }
+
+    if (bloomAnchor) {
+      const existing = findZoneEffectByTypeAndOwner(current, 'life_bloom', factionId);
+      current = syncAnchorZoneEffect(
+        current, 'life_bloom', factionId,
+        bloomAnchor.position, bloomAnchor.auraRadius,
+        existing?.createdRound,
+      );
+    } else {
+      const existing = findZoneEffectByTypeAndOwner(current, 'life_bloom', factionId);
+      if (existing) current = removeZoneEffect(current, existing.id);
+    }
+  }
+
+  // Citadel zone effect: spawn/update/remove a visual zone effect for units
+  // with the fortress+nature_healing (Citadel) synergy.
+  {
+    let citadelAnchor: { position: { q: number; r: number }; auraRadius: number } | null = null;
+    for (const unitIdStr of refreshedFaction.unitIds) {
+      const unit = current.units.get(unitIdStr as UnitId);
+      if (!unit || unit.hp <= 0) continue;
+      const proto = current.prototypes.get(unit.prototypeId);
+      const tags = proto?.tags ?? [];
+      if (!tags.includes('fortress')) continue;
+      const synergies = resolveEffectiveSynergies(refreshedFaction, tags);
+      for (const syn of synergies) {
+        if (syn.pairId !== 'fortress+nature_healing') continue;
+        for (const eff of syn.effects) {
+          if (eff.kind === 'projectAura') {
+            const pa = eff as Extract<typeof eff, { kind: 'projectAura' }>;
+            citadelAnchor = { position: unit.position, auraRadius: pa.radius };
+            break;
+          }
+        }
+        if (citadelAnchor) break;
+      }
+      if (citadelAnchor) break;
+    }
+
+    if (citadelAnchor) {
+      current = syncAnchorZoneEffect(
+        current, 'citadel', factionId,
+        citadelAnchor.position, citadelAnchor.auraRadius,
+      );
+    } else {
+      const existing = findZoneEffectByTypeAndOwner(current, 'citadel', factionId);
+      if (existing) current = removeZoneEffect(current, existing.id);
+    }
+  }
   for (const unitIdStr of refreshedFaction.unitIds) {
     const slaveUnit = current.units.get(unitIdStr as UnitId);
     if (!slaveUnit || slaveUnit.hp <= 0 || !slaveUnit.slaveStatFraction) continue;

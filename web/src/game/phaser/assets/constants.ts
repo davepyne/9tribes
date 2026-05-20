@@ -123,6 +123,7 @@ export const TEXTURES = {
   vfxRaidCamp: 'vfx-raid-camp',
   vfxPoisonCloud: 'vfx-poison-cloud',
   vfxPoisonTrap: 'vfx-poison-trap',
+  vfxSpikeLine: 'vfx-spike-line',
 } as const;
 
 export const FREELAND_SPECS = {

@@ -165,7 +165,7 @@ export type PathPreviewNodeView = {
   step: number;
 };
 
-export type ZoneEffectType = 'maelstrom' | 'toxic_bloom' | 'crushing_zone' | 'raid_camp' | 'poison_cloud' | 'venomous_tide' | 'poison_trap';
+export type ZoneEffectType = 'maelstrom' | 'toxic_bloom' | 'crushing_zone' | 'raid_camp' | 'poison_cloud' | 'venomous_tide' | 'poison_trap' | 'spike_line' | 'bloodtrail' | 'life_bloom' | 'citadel';
 
 export type ZoneEffectView = {
   id: string;
@@ -175,6 +175,8 @@ export type ZoneEffectView = {
   radius: number;
   ownerFactionId: string;
   turnsRemaining: number;
+  /** Round when this effect was created. */
+  createdRound: number;
   /** False when fog-of-war or owner-restriction hides this effect from the player. */
   visible: boolean;
   /** If true, only the owning faction can see this effect. */
@@ -183,6 +185,7 @@ export type ZoneEffectView = {
 
 export type WorldViewModel = {
   activeFactionId: string | null;
+  round: number;
   map: {
     width: number;
     height: number;

@@ -154,6 +154,7 @@ function buildPlayWorldViewModel(source: PlayWorldSource): WorldViewModel {
 
   return {
     activeFactionId: state.activeFactionId,
+    round: state.round,
     map: {
       width: state.map.width,
       height: state.map.height,
@@ -366,6 +367,7 @@ function buildZoneEffectViews(
       radius: ze.radius,
       ownerFactionId: ze.ownerFactionId,
       turnsRemaining: ze.turnsRemaining,
+      createdRound: ze.createdRound,
       visible,
       stealthy: ze.stealthy,
     };

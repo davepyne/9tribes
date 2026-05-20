@@ -10,6 +10,8 @@ import { applyCombatSignals } from '../combatSignalSystem.js';
 import { applyContactTransfer } from '../capabilitySystem.js';
 import { unlockHybridRecipes } from '../hybridSystem.js';
 import { findRetreatHex } from '../signatureAbilitySystem.js';
+import { addZoneEffect } from '../zoneEffectSystem.js';
+import { createZoneEffectId } from '../../core/ids.js';
 import {
   updateCombatRecordOnLoss,
   updateCombatRecordOnWin,
@@ -182,6 +184,23 @@ export function finalizeCombatState(ctx: CombatContext): void {
           movesRemaining: Math.max(0, retreatingAttacker.movesRemaining - 1),
         });
         current = { ...current, units: unitsAfterRetreat };
+        // DESIGN: Bloodtrail zones intentionally stack without bound (unlike
+        // life_bloom/citadel which are one-per-faction). Each hit-and-run
+        // leaves a separate splotch at the pre-retreat hex, creating a
+        // literal trail. Self-cleaning via turnsRemaining: 2.
+        if (attackerDoctrine?.bloodtrailMomentumEnabled) {
+          current = addZoneEffect(current, {
+            id: createZoneEffectId(),
+            type: 'bloodtrail',
+            center: { q: retreatingAttacker.position.q, r: retreatingAttacker.position.r },
+            radius: 0,
+            ownerFactionId: attacker.factionId,
+            damagePerTurn: 0,
+            movementPenalty: 0,
+            turnsRemaining: 2,
+            createdRound: current.round,
+          });
+        }
         feedback = {
           ...feedback,
           hitAndRunRetreat: { unitId: retreatingAttacker.id, to: retreatHex },

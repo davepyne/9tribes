@@ -129,4 +129,5 @@ export const assetManifest = [
   { kind: 'sheet', key: TEXTURES.vfxRaidCamp, path: '/assets/vfx/vfx-raid-camp.png', frameConfig: { frameWidth: 96, frameHeight: 48 } },
   { kind: 'sheet', key: TEXTURES.vfxPoisonCloud, path: '/assets/vfx/vfx-poison-cloud.png', frameConfig: { frameWidth: 96, frameHeight: 48 } },
   { kind: 'sheet', key: TEXTURES.vfxPoisonTrap, path: '/assets/vfx/vfx-poison-trap.png', frameConfig: { frameWidth: 96, frameHeight: 48 } },
+  { kind: 'sheet', key: TEXTURES.vfxSpikeLine, path: '/assets/vfx/vfx-spike-line.png', frameConfig: { frameWidth: 96, frameHeight: 48 } },
 ] as const;

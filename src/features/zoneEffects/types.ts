@@ -19,7 +19,7 @@
 
 import type { ZoneEffectId, FactionId, HexCoord } from '../../types.js';
 
-export type ZoneEffectType = 'maelstrom' | 'toxic_bloom' | 'crushing_zone' | 'raid_camp' | 'poison_cloud' | 'venomous_tide' | 'poison_trap';
+export type ZoneEffectType = 'maelstrom' | 'toxic_bloom' | 'crushing_zone' | 'raid_camp' | 'poison_cloud' | 'venomous_tide' | 'poison_trap' | 'spike_line' | 'bloodtrail' | 'life_bloom' | 'citadel';
 
 export const ZONE_EFFECT_LABEL: Record<ZoneEffectType, string> = {
   maelstrom: 'Maelstrom',
@@ -29,6 +29,10 @@ export const ZONE_EFFECT_LABEL: Record<ZoneEffectType, string> = {
   poison_cloud: 'Poison Cloud',
   venomous_tide: 'Venomous Tide',
   poison_trap: 'Poison Trap',
+  spike_line: 'Spike Line',
+  bloodtrail: 'Bloodtrail',
+  life_bloom: 'Life Bloom',
+  citadel: 'Citadel',
 };
 
 export interface ZoneEffect {
