@@ -6,7 +6,7 @@ import {
 import {
   DOMAIN_TERRAIN_AFFINITY,
   MAX_RESEARCH_TERRAIN_BONUS,
-} from '../src/systems/simulation/factionTurnEffects.js';
+} from '../src/systems/simulation/ecologyResearch.js';
 import { createRNG } from '../src/core/rng.js';
 import type { Faction, CapabilityState } from '../src/features/factions/types.js';
 import type { ResearchState } from '../src/features/research/types.js';

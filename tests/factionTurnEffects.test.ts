@@ -8,7 +8,7 @@ import {
   RESEARCH_PROXIMITY_BONUS_PER_CONTACT,
   computeTerrainResearchBonuses,
   computeProximityResearchBonuses,
-} from '../src/systems/simulation/factionTurnEffects';
+} from '../src/systems/simulation/ecologyResearch';
 import { deriveResourceIncome } from '../src/systems/economySystem';
 import { applyEnvironmentalDamage } from '../src/systems/simulation/environmentalEffects';
 import { createRNG } from '../src/core/rng';
