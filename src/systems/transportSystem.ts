@@ -4,6 +4,7 @@ import type { UnitId, HexCoord } from '../types.js';
 import type { RulesRegistry } from '../data/registry/types.js';
 import { getNeighbors, hexToKey, hexDistance } from '../core/grid.js';
 import { isLandTerrain } from './terrainUtils.js';
+import { resolveCapabilityDoctrine } from './capabilityDoctrine.js';
 
 /**
  * Transport state for a transport ship carrying land units.
@@ -136,11 +137,25 @@ export function canBoardTransport(
   // Transport must have capacity
   const prototype = state.prototypes.get(transport.prototypeId);
   if (!prototype) return false;
-  
+
   const chassis = registry.getChassis(prototype.chassisId);
-  if (!chassis || !chassis.tags?.includes('transport')) return false;
-  
-  const capacity = chassis.transportCapacity ?? 0;
+  const isRegularTransport = chassis?.tags?.includes('transport') && (chassis?.transportCapacity ?? 0) > 0;
+
+  // Doctrine-based transport: camel caravan carry or pirate combined assault
+  const faction = state.factions.get(transport.factionId);
+  const doctrine = faction
+    ? resolveCapabilityDoctrine(state.research.get(transport.factionId), faction)
+    : undefined;
+  const isCamelCarrier = doctrine?.caravanCarryEnabled === true
+    && (prototype.tags?.includes('camel') ?? false);
+  const isPirateAssault = doctrine?.pirateCombinedAssaultEnabled === true
+    && (prototype.tags?.includes('naval') ?? false);
+
+  if (!isRegularTransport && !isCamelCarrier && !isPirateAssault) return false;
+
+  let capacity = chassis?.transportCapacity ?? 0;
+  if (isCamelCarrier) capacity = Math.max(capacity, 1);
+  if (isPirateAssault) capacity += 1;
   const currentCount = getEmbarkedCount(transportId, transportMap);
   if (currentCount >= capacity) return false;
 
@@ -261,12 +276,22 @@ export function disembarkUnit(
     });
   }
 
-  // Update land unit: move to target hex, set moves to 0 (spent for disembarking)
+  // Check if transport has doctrine-based same-turn disembark
+  const transportProto = state.prototypes.get(transport.prototypeId);
+  const transportFaction = state.factions.get(transport.factionId);
+  const transportDoctrine = transportFaction
+    ? resolveCapabilityDoctrine(state.research.get(transport.factionId), transportFaction)
+    : undefined;
+  const preserveActions =
+    (transportDoctrine?.caravanCarryEnabled === true && transportProto?.tags?.includes('camel') === true)
+    || (transportDoctrine?.pirateCombinedAssaultEnabled === true && (transportProto?.tags?.includes('naval') ?? false));
+
+  // Update land unit: move to target hex. Same-turn disembark preserves actions.
   const newUnits = new Map(state.units);
   newUnits.set(unitId, {
     ...landUnit,
     position: { ...targetHex },
-    movesRemaining: 0, // Disembarking consumes the unit's moves
+    movesRemaining: preserveActions ? 1 : 0,
   });
 
   // Update transport: set moves to 0 (disembarking consumes transport's moves too)

@@ -378,6 +378,27 @@ export function previewCombatAction(
     }
   }
 
+  // Coastal Fortress land-defense aura (fortress+tidal_warfare): allied land units near a
+  // naval unit with the Coastal Fortress synergy gain defense.
+  const defenderTerrainForAura = state.map?.tiles.get(hexToKey(defender.position))?.terrain ?? 'plains';
+  if (!isWaterTerrain(defenderTerrainForAura)) {
+    for (const [, nu] of state.units) {
+      if (nu.factionId !== defender.factionId || nu.hp <= 0 || nu.id === defenderId) continue;
+      const nProto = state.prototypes.get(nu.prototypeId);
+      if (!nProto?.tags?.includes('naval')) continue;
+      if (hexDistance(nu.position, defender.position) > 2) continue;
+      const nSynergies = resolveEffectiveSynergies(defenderFaction, nProto.tags ?? []);
+      for (const s of nSynergies) {
+        for (const e of s.effects) {
+          if (e.kind === 'statMod' && (e as { stat: string }).stat === 'bombardmentLandAuraDefense') {
+            situationalDefenseModifier += (e as { value: number }).value ?? 0;
+          }
+        }
+      }
+      break;
+    }
+  }
+
   // Raid camp: defender in a raid_camp zone owned by attacker's faction takes defense penalty
   const raidCampEffects = getZoneEffectsAtHex(state, defender.position);
   const inRaidCamp = raidCampEffects.some(

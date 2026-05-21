@@ -354,6 +354,45 @@ export function activateUnit(
   const baseRange = prototype.derivedStats.range ?? 1;
   const unitRange = baseRange + (prototype.rangeBonus ?? 0);
   const factionDoctrine = resolveResearchDoctrine(current.research.get(factionId), faction);
+
+  // Formation Swap (fortress T1 native): swap positions with an adjacent ally once/turn, 0 move cost
+  if (factionDoctrine.formationSwapEnabled && activeUnit.status === 'ready' && activeUnit.hp > 0) {
+    let currentInRange = 0;
+    for (const [, eu] of current.units) {
+      if (eu.factionId !== factionId && eu.hp > 0 && hexDistance(activeUnit.position, eu.position) <= unitRange) {
+        currentInRange++;
+      }
+    }
+    let bestSwapAlly: Unit | null = null;
+    let bestSwapScore = currentInRange;
+    for (const allyId of faction.unitIds) {
+      if (allyId === unitId) continue;
+      const ally = current.units.get(allyId as UnitId);
+      if (!ally || ally.hp <= 0) continue;
+      if (hexDistance(activeUnit.position, ally.position) !== 1) continue;
+      let allyInRange = 0;
+      for (const [, eu] of current.units) {
+        if (eu.factionId !== factionId && eu.hp > 0 && hexDistance(ally.position, eu.position) <= unitRange) {
+          allyInRange++;
+        }
+      }
+      if (allyInRange > bestSwapScore) {
+        bestSwapScore = allyInRange;
+        bestSwapAlly = ally;
+      }
+    }
+    if (bestSwapAlly) {
+      const swapUnits = new Map(current.units);
+      const posA = activeUnit.position;
+      const posB = bestSwapAlly.position;
+      swapUnits.set(unitId, { ...activeUnit, position: posB });
+      swapUnits.set(bestSwapAlly.id, { ...bestSwapAlly, position: posA });
+      current = { ...current, units: swapUnits };
+      activeUnit = current.units.get(unitId)!;
+      log(trace, `${faction.name} ${prototype.name} swapped positions via Formation Discipline`);
+    }
+  }
+
   const canChargeAttack =
     unitRange <= 1 && (canUseCharge(prototype) || factionDoctrine.chargeTranscendenceEnabled);
   const strategy = current.factionStrategies.get(factionId);

@@ -68,7 +68,26 @@ export function canAttackTarget(state: GameState, registry: RulesRegistry, attac
   }
 
   const attackRange = attackerPrototype.derivedStats.range ?? 1;
-  if (hexDistance(attacker.position, defender.position) > attackRange) {
+  const distance = hexDistance(attacker.position, defender.position);
+
+  // Coastal Fortress (fortress+tidal_warfare): bombardmentRange extends attack range
+  let bombardmentRange = 0;
+  const attackerFaction = state.factions.get(attacker.factionId);
+  if (attackerFaction && distance > attackRange) {
+    const synergies = resolveEffectiveSynergies(attackerFaction, attackerPrototype.tags ?? []);
+    for (const s of synergies) {
+      for (const e of s.effects) {
+        if (e.kind === 'statMod' && (e as { stat: string }).stat === 'bombardmentRange') {
+          bombardmentRange = Math.max(bombardmentRange, (e as { value: number }).value ?? 0);
+        }
+      }
+    }
+  }
+  if (bombardmentRange > 0 && distance <= bombardmentRange) {
+    return true;
+  }
+
+  if (distance > attackRange) {
     return false;
   }
 

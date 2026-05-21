@@ -271,7 +271,7 @@ const FORTRESS_RESEARCH = buildResearchDomain({
     type: 'shield_wall',
     description: 'Units adjacent to a friendly ally gain +15% defense. Two adjacent allies grant +25%.',
     nativeDescription: 'Hill Engineers may swap positions with an adjacent ally once per turn at no movement cost (formation discipline).',
-    effect: { adjacentAllyDefenseBonus: 0.15, multiAllyDefenseBonus: 0.25, formationSwapEnabled: true }, // first two: wired; rest: design
+    effect: { adjacentAllyDefenseBonus: 0.15, multiAllyDefenseBonus: 0.25, formationSwapEnabled: true }, // wired (formationSwapEnabled -> activateUnit formation swap verb)
   },
   t2: {
     name: 'Spike Lines',
@@ -372,7 +372,7 @@ const CAMEL_RESEARCH = buildResearchDomain({
     nativeDescription: 'Desert Nomads may proclaim an Oasis ONCE per game: a chosen hex and its 2-hex neighborhood is permanently converted to desert. Carry/disgorge has no movement penalty for Nomads.',
     effect: {
       roughTerrainDefenseBonus: 0.2, // wired
-      caravanCarryEnabled: true, // design
+      caravanCarryEnabled: true, // wired (caravanCarryEnabled -> transportSystem canBoardTransport + disembarkUnit)
       oasisOncePerGame: true, // design — strategic
       nomadicTranscendenceEnabled: true, // wired (legacy: all-terrain-1-movement)
     },
@@ -487,7 +487,7 @@ const TIDAL_RESEARCH = buildResearchDomain({
     type: 'tidal_surge',
     description: 'Naval units can attack adjacent coastal land hexes; all units gain +15% attack when on coast or river. Naval units adjacent to your land units grant those land units +15% attack as well.',
     nativeDescription: 'Pirate naval units may carry one extra land unit AND disgorge it in the same turn (combined assault).',
-    effect: { navalCoastalAssault: true, tidalSurgeAttackBonus: 0.15, pirateCombinedAssault: true }, // first two: wired; combined: design
+    effect: { navalCoastalAssault: true, tidalSurgeAttackBonus: 0.15, pirateCombinedAssault: true }, // wired (pirateCombinedAssault -> transportSystem canBoardTransport + disembarkUnit)
   },
   t3: {
     name: 'Maelstrom',
