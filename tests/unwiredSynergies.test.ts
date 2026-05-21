@@ -11,8 +11,9 @@ import { loadRulesRegistry } from '../src/data/loader/loadRulesRegistry';
 import { buildMvpScenario } from '../src/game/buildMvpScenario';
 import { previewCombatAction } from '../src/systems/combat-action/preview';
 import { applyCombatAction } from '../src/systems/combat-action/apply';
-import { getCombatants, placeAdjacent } from './helpers/combatSetup';
+import { getCombatants, placeAdjacent, addExtraUnit } from './helpers/combatSetup';
 import { applyCombatSynergies, type CombatContext } from '../src/systems/synergyEffects';
+import { refreshFactionUnits } from '../src/systems/simulation/unitRefresh';
 import type { ActiveSynergy } from '../src/systems/synergyTypes';
 import type { PrimitiveEffect } from '../src/systems/synergyPrimitives';
 import type { GameState } from '../src/game/types';
@@ -322,5 +323,80 @@ describe('Fog / movement / activation dispatch', () => {
       { kind: 'setFlag', flag: 'caravanPassengerActive' },
     ]);
     expect(applyCombatSynergies(makeCtx(), [syn], null).hasFlag('caravanPassengerActive')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Per-turn projectAura heal — consumed by unitRefresh.ts projectAura heal pass
+// ---------------------------------------------------------------------------
+
+describe('Per-turn projectAura heal: refreshFactionUnits applies aura healing', () => {
+  it('Citadel projectAura heals nearby allies each turn', () => {
+    let state: GameState = buildMvpScenario(42);
+    const { attacker, attackerFactionId } = getCombatants(state);
+
+    // Add a same-faction ally adjacent to the attacker (within aura radius 2)
+    const adjacentPos = { q: attacker.position.q + 1, r: attacker.position.r };
+    const { state: state2, unitId: allyId } = addExtraUnit(
+      state, adjacentPos, attackerFactionId, attacker,
+    );
+    state = state2;
+
+    // Wound the ally
+    const units = new Map(state.units);
+    const ally = units.get(allyId)!;
+    const wounded = { ...ally, hp: ally.maxHp - 10 };
+    units.set(allyId, wounded);
+    state = { ...state, units };
+
+    // Inject Citadel synergy on the attacker's faction
+    const factions = new Map(state.factions);
+    const f = factions.get(attackerFactionId)!;
+    factions.set(attackerFactionId, {
+      ...f,
+      activeNativeSelfPair: makeSynergy('citadel', [
+        { kind: 'projectAura', radius: 2, effects: [{ kind: 'heal', amount: 3, mode: 'flat' }] },
+      ]),
+    });
+    state = { ...state, factions };
+
+    // Refresh — attacker's aura should heal the nearby ally
+    const after = refreshFactionUnits(state, attackerFactionId, registry);
+    const allyAfter = after.units.get(allyId)!;
+    expect(allyAfter.hp).toBeGreaterThan(wounded.hp);
+  });
+
+  it('Oasis projectAura heals allies with percentMaxHp mode', () => {
+    let state: GameState = buildMvpScenario(42);
+    const { attacker, attackerFactionId } = getCombatants(state);
+
+    const adjacentPos = { q: attacker.position.q + 1, r: attacker.position.r };
+    const { state: state2, unitId: allyId } = addExtraUnit(
+      state, adjacentPos, attackerFactionId, attacker,
+    );
+    state = state2;
+
+    // Wound the ally
+    const units = new Map(state.units);
+    const ally = units.get(allyId)!;
+    const wounded = { ...ally, hp: Math.floor(ally.maxHp * 0.5) };
+    units.set(allyId, wounded);
+    state = { ...state, units };
+
+    // Inject Oasis synergy (1% maxHp, radius 1)
+    const factions = new Map(state.factions);
+    const f = factions.get(attackerFactionId)!;
+    factions.set(attackerFactionId, {
+      ...f,
+      activeNativeSelfPair: makeSynergy('oasis', [
+        { kind: 'projectAura', radius: 1, effects: [{ kind: 'heal', amount: 1.0, mode: 'percentMaxHp' }] },
+      ]),
+    });
+    state = { ...state, factions };
+
+    const after = refreshFactionUnits(state, attackerFactionId, registry);
+    const allyAfter = after.units.get(allyId)!;
+    // 1% of maxHp — at least 1 HP healed for any unit with maxHp >= 100
+    expect(allyAfter.hp).toBeGreaterThan(wounded.hp);
   });
 });

@@ -367,6 +367,43 @@ export function refreshFactionUnits(
       if (existing) current = removeZoneEffect(current, existing.id);
     }
   }
+
+  // ProjectAura per-turn heal pass: applies healing from any projectAura with
+  // nested heal effects (Citadel fortress+nature_healing, Oasis
+  // nature_healing+camel_adaptation, etc.). Matches the bloom aura pattern.
+  {
+    const auraUnits = new Map(current.units);
+    for (const unitIdStr of refreshedFaction.unitIds) {
+      const auraUnit = auraUnits.get(unitIdStr as UnitId);
+      if (!auraUnit || auraUnit.hp <= 0) continue;
+      const auraProto = current.prototypes.get(auraUnit.prototypeId);
+      const auraTags = auraProto?.tags ?? [];
+      const auraSynergies = resolveEffectiveSynergies(refreshedFaction, auraTags);
+      for (const syn of auraSynergies) {
+        for (const eff of syn.effects) {
+          if (eff.kind !== 'projectAura') continue;
+          const pa = eff as Extract<typeof eff, { kind: 'projectAura' }>;
+          for (const inner of pa.effects) {
+            if (inner.kind !== 'heal') continue;
+            const healEff = inner as Extract<typeof inner, { kind: 'heal' }>;
+            for (const [uid, ally] of auraUnits) {
+              if (ally.factionId !== factionId || ally.hp <= 0) continue;
+              if (hexDistance(auraUnit.position, ally.position) > pa.radius) continue;
+              const healAmount = healEff.mode === 'percentMaxHp'
+                ? Math.ceil(ally.maxHp * healEff.amount)
+                : healEff.amount;
+              auraUnits.set(uid, {
+                ...ally,
+                hp: Math.min(ally.maxHp, ally.hp + healAmount),
+              });
+            }
+          }
+        }
+      }
+    }
+    current = { ...current, units: auraUnits };
+  }
+
   for (const unitIdStr of refreshedFaction.unitIds) {
     const slaveUnit = current.units.get(unitIdStr as UnitId);
     if (!slaveUnit || slaveUnit.hp <= 0 || !slaveUnit.slaveStatFraction) continue;
