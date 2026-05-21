@@ -380,6 +380,7 @@ export function previewCombatAction(
 
   // Coastal Fortress land-defense aura (fortress+tidal_warfare): allied land units near a
   // naval unit with the Coastal Fortress synergy gain defense.
+  // Non-stacking: first matching ship is sufficient (break after first hit).
   const defenderTerrainForAura = state.map?.tiles.get(hexToKey(defender.position))?.terrain ?? 'plains';
   if (!isWaterTerrain(defenderTerrainForAura)) {
     for (const [, nu] of state.units) {
@@ -390,8 +391,8 @@ export function previewCombatAction(
       const nSynergies = resolveEffectiveSynergies(defenderFaction, nProto.tags ?? []);
       for (const s of nSynergies) {
         for (const e of s.effects) {
-          if (e.kind === 'statMod' && (e as { stat: string }).stat === 'bombardmentLandAuraDefense') {
-            situationalDefenseModifier += (e as { value: number }).value ?? 0;
+          if (e.kind === 'statMod' && e.stat === 'bombardmentLandAuraDefense') {
+            situationalDefenseModifier += e.value;
           }
         }
       }

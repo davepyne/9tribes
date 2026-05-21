@@ -154,6 +154,9 @@ export function canBoardTransport(
   if (!isRegularTransport && !isCamelCarrier && !isPirateAssault) return false;
 
   let capacity = chassis?.transportCapacity ?? 0;
+  // Camel: "carry one allied unit" — sets floor of 1 (even if chassis has transport capacity,
+  // the doctrine grants at least 1 slot). Pirate: "carry one extra" — adds to existing chassis
+  // capacity, so a transport-chassis ship with pirateCombinedAssault gets capacity + 1.
   if (isCamelCarrier) capacity = Math.max(capacity, 1);
   if (isPirateAssault) capacity += 1;
   const currentCount = getEmbarkedCount(transportId, transportMap);
@@ -286,12 +289,14 @@ export function disembarkUnit(
     (transportDoctrine?.caravanCarryEnabled === true && transportProto?.tags?.includes('camel') === true)
     || (transportDoctrine?.pirateCombinedAssaultEnabled === true && (transportProto?.tags?.includes('naval') ?? false));
 
-  // Update land unit: move to target hex. Same-turn disembark preserves actions.
+  // Update land unit: move to target hex. Same-turn disembark preserves both
+    // movement and attacks so the unit can act immediately upon arrival.
   const newUnits = new Map(state.units);
   newUnits.set(unitId, {
     ...landUnit,
     position: { ...targetHex },
     movesRemaining: preserveActions ? 1 : 0,
+    attacksRemaining: preserveActions ? landUnit.attacksRemaining : 0,
   });
 
   // Update transport: set moves to 0 (disembarking consumes transport's moves too)

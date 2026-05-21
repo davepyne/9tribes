@@ -77,8 +77,8 @@ export function canAttackTarget(state: GameState, registry: RulesRegistry, attac
     const synergies = resolveEffectiveSynergies(attackerFaction, attackerPrototype.tags ?? []);
     for (const s of synergies) {
       for (const e of s.effects) {
-        if (e.kind === 'statMod' && (e as { stat: string }).stat === 'bombardmentRange') {
-          bombardmentRange = Math.max(bombardmentRange, (e as { value: number }).value ?? 0);
+        if (e.kind === 'statMod' && e.stat === 'bombardmentRange') {
+          bombardmentRange = Math.max(bombardmentRange, e.value);
         }
       }
     }

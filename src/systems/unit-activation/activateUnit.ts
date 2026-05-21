@@ -355,7 +355,9 @@ export function activateUnit(
   const unitRange = baseRange + (prototype.rangeBonus ?? 0);
   const factionDoctrine = resolveResearchDoctrine(current.research.get(factionId), faction);
 
-  // Formation Swap (fortress T1 native): swap positions with an adjacent ally once/turn, 0 move cost
+  // Formation Swap (fortress T1 native): swap positions with an adjacent ally, 0 move cost.
+  // Once-per-turn is enforced by the activation lifecycle: status === 'ready' here,
+  // and setUnitActivated() marks the unit 'exhausted' at the end of this call.
   if (factionDoctrine.formationSwapEnabled && activeUnit.status === 'ready' && activeUnit.hp > 0) {
     let currentInRange = 0;
     for (const [, eu] of current.units) {
