@@ -1,6 +1,6 @@
 // Fog of War System - Manages visibility and last seen snapshots for factions
 import type { GameState } from '../game/types.js';
-import type { FactionId, HexCoord } from '../types.js';
+import type { FactionId, HexCoord, UnitId } from '../types.js';
 import type { TerrainType } from '../world/map/types.js';
 import { hexDistance, getHexesInRange, hexToKey, keyToHex } from '../core/grid.js';
 import type { Unit } from '../features/units/types.js';
@@ -36,6 +36,47 @@ const VILLAGE_VISIBILITY_RADIUS = 2;
 const MOUNTED_SCOUT_VISIBILITY_BONUS = 1;
 const STEALTH_CLOAK_RADIUS = 1;
 const STEALTH_REVEAL_RADIUS = 2;
+
+/** Rough/cover terrain that native Mirage (camel_adaptation_t2 native) extends to. */
+const MIRAGE_ROUGH_TERRAINS = new Set<string>(['forest', 'jungle', 'hill', 'mountain']);
+
+/**
+ * Mirage (camel_adaptation_t2): a unit standing on qualifying terrain is invisible
+ * to a viewer faction whose nearest unit/city is more than `mirageRange` hexes away.
+ * Foreign mirage qualifies on desert/tundra; native mirage extends to all rough
+ * cover terrain. Returns true when the unit should be hidden from `viewerFactionId`.
+ */
+export function isUnitMirageHidden(
+  state: GameState,
+  viewerFactionId: FactionId,
+  unit: Unit
+): boolean {
+  if (unit.hp <= 0) return false;
+  const ownerFaction = state.factions.get(unit.factionId);
+  if (!ownerFaction) return false;
+
+  const doctrine = resolveResearchDoctrine(state.research.get(unit.factionId), ownerFaction);
+  if (!doctrine.mirageStealthEnabled || doctrine.mirageRange <= 0) return false;
+
+  const terrainId = state.map?.tiles.get(hexToKey(unit.position))?.terrain ?? '';
+  const qualifies = terrainId === 'desert' || terrainId === 'tundra'
+    || (doctrine.mirageAllRoughEnabled && MIRAGE_ROUGH_TERRAINS.has(terrainId));
+  if (!qualifies) return false;
+
+  const range = doctrine.mirageRange;
+  const viewer = state.factions.get(viewerFactionId);
+  if (!viewer) return true;
+
+  for (const uid of viewer.unitIds) {
+    const vu = state.units.get(uid);
+    if (vu && vu.hp > 0 && hexDistance(vu.position, unit.position) <= range) return false;
+  }
+  for (const cid of viewer.cityIds) {
+    const c = state.cities.get(cid);
+    if (c && hexDistance(c.position, unit.position) <= range) return false;
+  }
+  return true;
+}
 
 export function isUnitCloakedByRiverStealthAura(
   state: GameState,
@@ -154,6 +195,31 @@ function isRevealedByStealthAura(
 }
 
 /**
+ * River Stealth T3 (foreign, stealthRevealEnabled): enemy stealthed units revealed
+ * by this faction's stealthed scouts lose `revealMovementPenalty` movement on their
+ * next turn. The penalty is stored on the enemy unit and consumed when its owning
+ * faction's turn starts (turnSystem / unitRefresh read nextTurnMovePenalty).
+ */
+export function applyStealthRevealPenalty(state: GameState, factionId: FactionId): GameState {
+  const faction = state.factions.get(factionId);
+  if (!faction) return state;
+
+  const doctrine = resolveResearchDoctrine(state.research.get(factionId), faction);
+  if (!doctrine.stealthRevealEnabled || doctrine.revealMovementPenalty <= 0) return state;
+
+  let newUnits: Map<UnitId, Unit> | null = null;
+  for (const [uid, unit] of state.units) {
+    if (unit.factionId === factionId || unit.hp <= 0) continue;
+    if (!isUnitEffectivelyStealthed(state, unit)) continue;
+    if (!isRevealedByStealthAura(state, factionId, unit)) continue;
+    if ((unit.nextTurnMovePenalty ?? 0) >= doctrine.revealMovementPenalty) continue;
+    if (!newUnits) newUnits = new Map(state.units);
+    newUnits.set(uid, { ...unit, nextTurnMovePenalty: doctrine.revealMovementPenalty });
+  }
+  return newUnits ? { ...state, units: newUnits } : state;
+}
+
+/**
  * Calculate current visibility for a faction.
  * Returns a new FactionFogState with visible hexes set to 'visible',
  * previously explored hexes set to 'explored'.
@@ -169,6 +235,12 @@ export function calculateVisibility(state: GameState, factionId: FactionId): Fac
     };
   }
 
+  // Pirate Lords (tidal_warfare_t1 native): +1 vision while standing on coast/river.
+  const pirateNavalVision = resolveResearchDoctrine(
+    state.research.get(factionId),
+    faction,
+  ).pirateNavalVisionEnabled;
+
   // 1. Get all living friendly units and add their visibility range
   const camelUnitPositions: HexCoord[] = [];
   for (const unitId of faction.unitIds) {
@@ -181,7 +253,10 @@ export function calculateVisibility(state: GameState, factionId: FactionId): Fac
       if (isCamel) {
         camelUnitPositions.push(unit.position);
       }
-      const radius = UNIT_VISIBILITY_RADIUS + (isMounted ? MOUNTED_SCOUT_VISIBILITY_BONUS : 0);
+      const unitTerrain = state.map?.tiles.get(hexToKey(unit.position))?.terrain;
+      const navalVisionBonus = pirateNavalVision && (unitTerrain === 'coast' || unitTerrain === 'river')
+        ? 1 : 0;
+      const radius = UNIT_VISIBILITY_RADIUS + (isMounted ? MOUNTED_SCOUT_VISIBILITY_BONUS : 0) + navalVisionBonus;
       const visibleHexes = getHexesInRange(unit.position, radius);
       for (const hex of visibleHexes) {
         newVisibleKeys.add(hexToKey(hex));
@@ -498,6 +573,9 @@ export function getVisibleEnemyUnits(
       if (isUnitEffectivelyStealthed(state, unit) && !isRevealedByStealthAura(state, factionId, unit)) {
         continue;
       }
+      if (isUnitMirageHidden(state, factionId, unit)) {
+        continue;
+      }
       const prototype = state.prototypes.get(unit.prototypeId);
       if (prototype) {
         result.push({ unit, prototype });
@@ -528,6 +606,10 @@ export function isUnitVisibleTo(
 
   if (isUnitEffectivelyStealthed(state, unit)) {
     return isRevealedByStealthAura(state, factionId, unit);
+  }
+
+  if (isUnitMirageHidden(state, factionId, unit)) {
+    return false;
   }
 
   // Enemy units must be in a currently visible hex

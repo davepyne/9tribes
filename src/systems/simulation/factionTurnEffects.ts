@@ -9,7 +9,7 @@ import { applyEcologyPressure, applyForceCompositionPressure } from '../capabili
 import { unlockHybridRecipes } from '../hybridSystem.js';
 import { evaluateAndSpawnVillage } from '../villageSystem.js';
 import { computeFactionStrategy } from '../strategicAi.js';
-import { updateFogState } from '../fogSystem.js';
+import { updateFogState, applyStealthRevealPenalty } from '../fogSystem.js';
 import { gainExposure } from '../knowledgeSystem.js';
 import { hexDistance } from '../../core/grid.js';
 import { isWildFaction } from '../wildCyclopsConstants.js';
@@ -55,6 +55,9 @@ export function processFactionPhases(
   }
 
   current = updateFogState(current, factionId);
+
+  // River Stealth T3 (foreign): slow enemy stealthed units this faction has revealed.
+  current = applyStealthRevealPenalty(current, factionId);
 
   // Derive economy before strategy so the coordinator has current-turn supply data
   current = advanceCaptureTimers(current, factionId);

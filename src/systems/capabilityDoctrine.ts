@@ -17,6 +17,7 @@ export interface ResearchDoctrine {
   forestAmbushEnabled: boolean;     // nature_healing_t1 - kept for combat-side nature effects
   shieldWallEnabled: boolean;       // fortress_t1 - +15% defense when adjacent to ally
   riverCrossingEnabled: boolean;    // tidal_warfare_t1 - no penalty crossing rivers
+  pirateNavalVisionEnabled: boolean; // tidal_warfare_t1 (native) - +1 vision from any coast/river hex
   marchingStaminaEnabled: boolean;  // retired: hitrun_t1 reflavored to skirmish_step
   venomousStrikesEnabled: boolean;  // venom_t1 - all attacks apply 1 poison stack
   poisonPersistenceEnabled: boolean; // venom_t1 (native only) - poison stacks never expire
@@ -53,11 +54,15 @@ export interface ResearchDoctrine {
 
   // Additional qualitative effects from research
   heatResistanceEnabled: boolean;    // camel_adaptation_t1 - ignore desert/tundra movement penalty
+  nomadicTerrainImmunityEnabled: boolean; // camel_adaptation_t1 (native) - ignore movement penalty on ALL non-impassable terrain
   roughTerrainMovementEnabled: boolean;    // river_stealth_t1 - +1 movement in rough terrain
   greedyCaptureEnabled: boolean;     // slaving_t1 - +15% damage vs wounded enemies (<50% HP)
   antiFortificationEnabled: boolean; // heavy_hitter_t1 - +20% damage vs fortified/bracing enemies
   damageBonusVsElevationEnabled: boolean; // heavy_hitter_t1 - +20% damage vs enemies on hill/mountain
   permanentStealthEnabled: boolean;  // camel_adaptation_t2 - permanent stealth in desert/tundra
+  mirageStealthEnabled: boolean;     // camel_adaptation_t2 - units on mirage terrain are invisible to distant enemies (fog)
+  mirageRange: number;               // camel_adaptation_t2 - mirage units stay visible only within this many hexes (2)
+  mirageAllRoughEnabled: boolean;    // camel_adaptation_t2 (native) - mirage extends to all rough/cover terrain
   stealthRechargeEnabled: boolean;   // river_stealth_t2 - re-enter stealth after attacking
   predatorBleedEnabled: boolean;     // river_stealth_t2 - first attack from stealth applies bleed
   persistentStealthOnAttackEnabled: boolean; // river_stealth_t2 native - attacks don't break stealth
@@ -94,6 +99,7 @@ export interface ResearchDoctrine {
   submergeEnabled: boolean;           // native river_stealth_t3 - unit may teleport to a connected waterway hex and enter stealth
   stealthCloakAuraEnabled: boolean;   // native river_stealth_t3 - stealthed units cloak adjacent allies, who also gain sneak attack
   stealthRevealEnabled: boolean;      // foreign river_stealth_t3 - stealth units reveal stealthed enemies within 2 hexes
+  revealMovementPenalty: number;      // foreign river_stealth_t3 - revealed enemies lose this many movement next turn (1)
   autoCaptureEnabled: boolean;        // foreign slaving_t3 - wounded enemies below 25% HP are auto-captured
   nomadicTranscendenceEnabled: boolean; // native camel_adaptation_t3 - all terrain costs 1 movement
   slaverTranscendenceEnabled: boolean;  // native slaving_t3 - auto-capture below 50% HP
@@ -214,6 +220,7 @@ export function resolveResearchDoctrine(
     forestAmbushEnabled: hasNode('nature_healing_t1'),
     shieldWallEnabled: hasNode('fortress_t1'),
     riverCrossingEnabled: hasNode('tidal_warfare_t1'),
+    pirateNavalVisionEnabled: hasNode('tidal_warfare_t1') && nativeDomains.has('tidal_warfare'),
     marchingStaminaEnabled: false, // retired: hitrun_t1 reflavored to skirmish_step
     venomousStrikesEnabled: hasNode('venom_t1'),
     poisonPersistenceEnabled: hasNode('venom_t1') && nativeDomains.has('venom'),
@@ -259,11 +266,15 @@ export function resolveResearchDoctrine(
 
     // Additional qualitative effects
     heatResistanceEnabled: hasNode('camel_adaptation_t1'),
+    nomadicTerrainImmunityEnabled: hasNode('camel_adaptation_t1') && nativeDomains.has('camel_adaptation'),
     roughTerrainMovementEnabled: false, // retired: river_stealth_t1 reflavored to wetland_stealth
     greedyCaptureEnabled: hasNode('slaving_t1'),
     antiFortificationEnabled: hasNode('heavy_hitter_t1'),
     damageBonusVsElevationEnabled: hasNode('heavy_hitter_t1'),
     permanentStealthEnabled: hasNode('camel_adaptation_t2'),
+    mirageStealthEnabled: hasNode('camel_adaptation_t2'),
+    mirageRange: hasNode('camel_adaptation_t2') ? 2 : 0,
+    mirageAllRoughEnabled: hasNode('camel_adaptation_t2') && nativeDomains.has('camel_adaptation'),
     stealthRechargeEnabled: hasNode('river_stealth_t2'),
     predatorBleedEnabled: hasNode('river_stealth_t2'),
     persistentStealthOnAttackEnabled: hasNode('river_stealth_t2') && nativeDomains.has('river_stealth'),
@@ -300,6 +311,7 @@ export function resolveResearchDoctrine(
     submergeEnabled: hasNativeT3('river_stealth'),
     stealthCloakAuraEnabled: hasNativeT3('river_stealth'),
     stealthRevealEnabled: hasForeignT3('river_stealth'),
+    revealMovementPenalty: hasForeignT3('river_stealth') ? 1 : 0,
     autoCaptureEnabled: hasForeignT3('slaving'),
     armorPenetrationEnabled: hasForeignT3('heavy_hitter'),
     heavyTranscendenceEnabled: hasNativeT3('heavy_hitter'),

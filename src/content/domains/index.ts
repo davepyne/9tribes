@@ -356,14 +356,14 @@ const CAMEL_RESEARCH = buildResearchDomain({
     type: 'endurance',
     description: 'No movement penalty in desert or tundra. +1 movement when starting the turn on harsh terrain (desert, tundra, dunes).',
     nativeDescription: 'Desert Nomads ignore movement penalties on ALL non-impassable terrain.',
-    effect: { ignoreDesertMovementPenalty: true, harshTerrainMoveBonus: 1, nomadicTerrainImmunity: true }, // first two: wired; nomadicTerrainImmunity: design (used to map to nomadicTranscendenceEnabled)
+    effect: { ignoreDesertMovementPenalty: true, harshTerrainMoveBonus: 1, nomadicTerrainImmunity: true }, // all: wired (native nomadicTerrainImmunity -> doctrine.nomadicTerrainImmunityEnabled, movementSystem.ts)
   },
   t2: {
     name: 'Mirage',
     type: 'terrain_veil',
     description: 'Units in desert or tundra are invisible to enemies more than 2 hexes away (stealth-at-distance, not stealth-on-contact).',
     nativeDescription: 'Nomad Mirage extends to all rough/cover terrain types (forest, jungle, hill, mountain) — the Nomads vanish wherever the land bends light.',
-    effect: { permanentStealthInHarshTerrain: true, mirageRange: 2, mirageAllRough: true }, // first: wired; rest: design
+    effect: { permanentStealthInHarshTerrain: true, mirageRange: 2, mirageAllRough: true }, // all: wired (mirageRange/mirageAllRough -> doctrine.mirageRange/mirageAllRoughEnabled, fogSystem.ts)
   },
   t3: {
     name: 'Caravan Doctrine',
@@ -456,7 +456,7 @@ const RIVER_STEALTH_RESEARCH = buildResearchDomain({
     nativeDescription: 'River People may Submerge: spend an action on a water hex to become untargetable for 1 turn (no attack, no zone of control). They re-emerge in stealth, anywhere along the connected waterway.',
     effect: {
       stealthRevealRange: 2, // wired
-      revealMovementPenalty: 1, // design
+      revealMovementPenalty: 1, // wired (doctrine.revealMovementPenalty -> fogSystem.applyStealthRevealPenalty)
       submergeEnabled: true, // design — strategic action verb
       stealthCloakAuraEnabled: true, // wired (legacy: cloak-adjacent-allies)
     },
@@ -480,7 +480,7 @@ const TIDAL_RESEARCH = buildResearchDomain({
     type: 'river_crossing',
     description: 'No movement penalty crossing rivers or coast. +10% attack on coast or river hexes.',
     nativeDescription: 'Pirate Lords gain +1 vision from any coast or river hex (naval scouting heritage).',
-    effect: { riverMovementPenalty: 0, coastAttackBonus: 0.1, pirateNavalVision: true }, // first: wired; rest: design
+    effect: { riverMovementPenalty: 0, coastAttackBonus: 0.1, pirateNavalVision: true }, // all: wired (native pirateNavalVision -> doctrine.pirateNavalVisionEnabled, fogSystem.ts)
   },
   t2: {
     name: 'Boarding Tactics',

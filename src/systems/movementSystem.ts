@@ -119,8 +119,9 @@ export function previewMove(
   // Doctrine-based movement bonuses
   const isCavalry = chassis?.movementClass === 'cavalry';
 
-  // Nomadic Transcendence: all terrain costs 1 — skip expensive synergy lookups
-  if (doctrine.nomadicTranscendenceEnabled) {
+  // Nomadic Transcendence (native camel T3) / Nomadic Terrain Immunity (native
+  // camel T1): all passable terrain costs at most 1 — skip expensive synergy lookups
+  if (doctrine.nomadicTranscendenceEnabled || doctrine.nomadicTerrainImmunityEnabled) {
     totalCost = Math.min(totalCost, 1);
   }
 
