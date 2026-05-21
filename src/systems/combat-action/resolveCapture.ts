@@ -13,6 +13,7 @@ import { buildSlaveOverrides } from '../capabilityDoctrine.js';
 import { isWaterTerrain } from '../terrainUtils.js';
 import { getZoneEffectsAtHex } from '../zoneEffectSystem.js';
 import { getUnitAtHex } from '../occupancySystem.js';
+import { resolveEffectiveSynergies } from '../synergyRuntime.js';
 import { getPrototype, getNearestFriendlyCity } from '../../game/stateAccess.js';
 import { getGreedyLootOnKill, getPursuitMovementOnKill } from '../factionIdentitySystem.js';
 import {
@@ -378,6 +379,31 @@ export function applyPostKillEffects(ctx: CombatContext): void {
           }
           baseResolution.killChainApplied = true;
         }
+      }
+    }
+  }
+  // Slave Army (slaving+slaving) — death rally: when a horde unit dies, its
+  // adjacent same-faction allies surge forward (+1 movement this turn).
+  if (defenderActuallyDestroyed && !capturedOnKill) {
+    const slainFaction = current.factions.get(defender.factionId);
+    const slainProto = current.prototypes.get(defender.prototypeId);
+    if (slainFaction) {
+      const synergies = resolveEffectiveSynergies(slainFaction, slainProto?.tags ?? []);
+      const hasRally = synergies.some((syn) =>
+        syn.effects.some((e) => e.kind === 'setFlag' && (e as { flag: string }).flag === 'slaveHordeDeathRally'),
+      );
+      if (hasRally) {
+        const rallyUnits = new Map(current.units);
+        let rallied = false;
+        for (const hex of getNeighbors(defender.position)) {
+          const uid = getUnitAtHex(current, hex);
+          if (!uid) continue;
+          const ally = rallyUnits.get(uid);
+          if (!ally || ally.factionId !== defender.factionId || ally.hp <= 0) continue;
+          rallyUnits.set(uid, { ...ally, movesRemaining: ally.movesRemaining + 1 });
+          rallied = true;
+        }
+        if (rallied) current = { ...current, units: rallyUnits };
       }
     }
   }

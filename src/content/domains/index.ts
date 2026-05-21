@@ -209,7 +209,7 @@ const NATURE_HEALING_RESEARCH = buildResearchDomain({
     nativeDescription: 'Each kill by a Druid unit converts the target hex into a permanent forest tile (Sapling). The Druid who scored the kill gains a permanent +1 max HP, capped at +3 lifetime.',
     effect: {
       healingAuraRange: 2, // wired
-      worldrootShareFraction: 0.1, // design
+      worldrootShareFraction: 0.1, // wired (doctrine.worldrootShareFraction -> unitRefresh worldroot heal pass)
       saplingOnKill: true, // wired
       undyingDefenseAt20: 0.5, // wired (foreign legacy effect retained for the "<20% HP +50% def" rider; native gets Sapling instead)
     },
@@ -440,7 +440,7 @@ const RIVER_STEALTH_RESEARCH = buildResearchDomain({
     type: 'wetland_stealth',
     description: 'Units ending their turn on river, coast, or swamp hexes enter stealth.',
     nativeDescription: 'River People’s stealth breaks line-of-sight for adjacent allies as well (cover-projection): allies adjacent to a stealthed River unit are also concealed from distant enemies.',
-    effect: { stealthOnWetlandEndOfTurn: true, coverProjectionEnabled: true }, // first: wired; coverProjection: design
+    effect: { stealthOnWetlandEndOfTurn: true, coverProjectionEnabled: true }, // all: wired (native coverProjection -> doctrine.coverProjectionEnabled, fogSystem.isUnitCoverProjected)
   },
   t2: {
     name: 'Predator Stance',

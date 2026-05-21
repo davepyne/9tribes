@@ -8,7 +8,7 @@ import { resolveResearchDoctrine, type ResearchDoctrine } from './capabilityDoct
 import { getDirectionIndex, getNeighbors, getOppositeDirection } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
 import { isFortificationHex } from './unit-activation/helpers.js';
-import { factionHasEmergentFlag } from './synergyRuntime.js';
+import { factionHasEmergentFlag, resolveEffectiveSynergies } from './synergyRuntime.js';
 
 /** Naval chassis IDs — any unit with one of these is in the naval ZoC domain. */
 const NAVAL_CHASSIS_IDS = new Set(['naval_frame', 'ranged_naval_frame', 'galley_frame']);
@@ -126,9 +126,36 @@ export function getSpikeLineMovementPenalty(
     if (!(proto?.tags?.includes('fortress') ?? false)) continue;
     const faction = state.factions.get(unit.factionId);
     const doctrine = resolveResearchDoctrine(state.research.get(unit.factionId), faction);
-    if (doctrine.spikeLinesEnabled) return 1;
+    // Native (persistent) spike lines are delivered via spike_line zone effects
+    // instead, so the live check only handles the foreign variant (no double-count).
+    if (doctrine.spikeLinesEnabled && !doctrine.persistentSpikeLinesEnabled) return 1;
   }
   return 0;
+}
+
+/**
+ * Slave Army (slaving+slaving): when a unit carrying the synergy has 2+ living
+ * same-faction allies adjacent (a group of 3+ including itself), the horde
+ * ignores Zone of Control.
+ */
+function slaveHordeIgnoresZoc(state: GameState, movingUnit: Unit): boolean {
+  const faction = state.factions.get(movingUnit.factionId);
+  if (!faction) return false;
+  const proto = state.prototypes.get(movingUnit.prototypeId);
+  const synergies = resolveEffectiveSynergies(faction, proto?.tags ?? []);
+  const hasFlag = synergies.some((syn) =>
+    syn.effects.some((e) => e.kind === 'setFlag' && (e as { flag: string }).flag === 'slaveHordeIgnoresZoc'),
+  );
+  if (!hasFlag) return false;
+
+  let adjacentAllies = 0;
+  for (const hex of getNeighbors(movingUnit.position)) {
+    const uid = getUnitAtHex(state, hex);
+    if (!uid) continue;
+    const ally = state.units.get(uid);
+    if (ally && ally.factionId === movingUnit.factionId && ally.hp > 0) adjacentAllies++;
+  }
+  return adjacentAllies >= 2; // +1 for the moving unit itself = group of 3+
 }
 
 /**
@@ -155,6 +182,11 @@ export function getZoCMovementCost(
   // Emergent rule ZoC immunity (juggernaut, iron_turtle, many_faced phantom)
   const faction = state.factions.get(movingUnit.factionId);
   if (factionHasEmergentFlag(faction, 'emergentIgnoreZoc')) {
+    return 0;
+  }
+
+  // Slave Army (slaving+slaving): a horde of 3+ adjacent allies ignores ZoC.
+  if (slaveHordeIgnoresZoc(state, movingUnit)) {
     return 0;
   }
 

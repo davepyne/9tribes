@@ -33,7 +33,6 @@ export type StatName =
   | 'slaveEconomyResourceBonus' | 'toxicSpreadTransferRadius'
   | 'toxicSpreadTransferStacks' | 'formationWallRangedReduction'
   | 'formationPinballCollisionDamage' | 'caravanRelayVisionRange'
-  | 'slaveHordeDamageBonus' | 'slaveHordeDefensePenalty'
   | 'capturePoisonDamage' | 'capturePoisonStacks'
   | 'slaveDamageBonus' | 'slaveHealPenalty'
   // Heal-primitive accumulators (written by dispatchHeal)
@@ -56,6 +55,7 @@ export type FlagName =
   | 'fightingRetreatFreeStrike' | 'caravanPassengerActive'
   | 'formationFocusIgnoresDefense'
   | 'emergentUndying' | 'emergentIgnoreZoc'
+  | 'slaveHordeIgnoresZoc' | 'slaveHordeDeathRally'
   | 'emergentPoisonCloudPreventsHealing'
   | 'reEnterStealthAfterCombat'
   | 'countsAsCity' | 'transportedTroopsStealth';

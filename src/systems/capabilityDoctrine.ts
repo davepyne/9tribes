@@ -16,6 +16,7 @@ export interface ResearchDoctrine {
   // Tier 1 qualitative effects
   forestAmbushEnabled: boolean;     // nature_healing_t1 - kept for combat-side nature effects
   shieldWallEnabled: boolean;       // fortress_t1 - +15% defense when adjacent to ally
+  formationSwapEnabled: boolean;    // fortress_t1 (native) - swap positions with an adjacent ally once/turn at no move cost
   riverCrossingEnabled: boolean;    // tidal_warfare_t1 - no penalty crossing rivers
   pirateNavalVisionEnabled: boolean; // tidal_warfare_t1 (native) - +1 vision from any coast/river hex
   marchingStaminaEnabled: boolean;  // retired: hitrun_t1 reflavored to skirmish_step
@@ -83,6 +84,7 @@ export interface ResearchDoctrine {
 
   // Phase 2 — Tribe Identity flags
   wetlandStealthEnabled: boolean;    // river_stealth_t1 - stealth on wetland end-of-turn
+  coverProjectionEnabled: boolean;   // river_stealth_t1 (native) - allies adjacent to a stealthed River unit are concealed
   skirmishStepEnabled: boolean;      // hitrun_t1 - move then attack bonus
   ignoreZocOnApproachEnabled: boolean; // hitrun_t1 - ignore ZoC on the approach hex when attacking
   pressGangCaptureEnabled: boolean;  // slaving_t1 - capture chance on kill vs wounded
@@ -100,7 +102,10 @@ export interface ResearchDoctrine {
   sunderingChargeContinueEnabled: boolean; // foreign charge_t3 - a charge that kills lets the attacker strike a second enemy
   hitrunZocIgnoreEnabled: boolean;    // foreign hitrun_t3 - units with hitrun ignore zone of control
   healingAuraUpgradeEnabled: boolean; // foreign nature_healing_t3 - healing aura range doubled to 2 hexes
+  worldrootShareFraction: number;     // foreign nature_healing_t3 - units near forest/jungle heal +fraction of max HP/turn
   roughTerrainDefenseEnabled: boolean; // foreign camel_adaptation_t3 - units in rough terrain gain +20% defense
+  caravanCarryEnabled: boolean;        // foreign camel_adaptation_t3 - camel-class units may carry one allied unit
+  pirateCombinedAssaultEnabled: boolean; // native tidal_warfare_t2 - naval units carry +1 land unit and disgorge same turn
   navalCoastalBonusEnabled: boolean;  // foreign tidal_warfare_t3 - naval units gain +25% attack in coastal hexes
   submergeEnabled: boolean;           // native river_stealth_t3 - unit may teleport to a connected waterway hex and enter stealth
   stealthCloakAuraEnabled: boolean;   // native river_stealth_t3 - stealthed units cloak adjacent allies, who also gain sneak attack
@@ -225,6 +230,7 @@ export function resolveResearchDoctrine(
     // Tier 1 qualitative effects
     forestAmbushEnabled: hasNode('nature_healing_t1'),
     shieldWallEnabled: hasNode('fortress_t1'),
+    formationSwapEnabled: hasNode('fortress_t1') && nativeDomains.has('fortress'),
     riverCrossingEnabled: hasNode('tidal_warfare_t1'),
     pirateNavalVisionEnabled: hasNode('tidal_warfare_t1') && nativeDomains.has('tidal_warfare'),
     marchingStaminaEnabled: false, // retired: hitrun_t1 reflavored to skirmish_step
@@ -301,6 +307,7 @@ export function resolveResearchDoctrine(
 
     // Phase 2 — Tribe Identity flags
     wetlandStealthEnabled: hasNode('river_stealth_t1'),
+    coverProjectionEnabled: hasNode('river_stealth_t1') && nativeDomains.has('river_stealth'),
     skirmishStepEnabled: hasNode('hitrun_t1'),
     ignoreZocOnApproachEnabled: hasNode('hitrun_t1'),
     pressGangCaptureEnabled: hasNode('slaving_t1'),
@@ -318,7 +325,10 @@ export function resolveResearchDoctrine(
     sunderingChargeContinueEnabled: hasForeignT3('charge'),
     hitrunZocIgnoreEnabled: hasForeignT3('hitrun'),
     healingAuraUpgradeEnabled: hasForeignT3('nature_healing'),
+    worldrootShareFraction: hasForeignT3('nature_healing') ? 0.1 : 0,
     roughTerrainDefenseEnabled: hasForeignT3('camel_adaptation'),
+    caravanCarryEnabled: hasForeignT3('camel_adaptation'),
+    pirateCombinedAssaultEnabled: hasNode('tidal_warfare_t2') && nativeDomains.has('tidal_warfare'),
     navalCoastalBonusEnabled: hasForeignT3('tidal_warfare'),
     submergeEnabled: hasNativeT3('river_stealth'),
     stealthCloakAuraEnabled: hasNativeT3('river_stealth'),

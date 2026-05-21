@@ -823,10 +823,14 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     domains: ['slaving', 'slaving'],
     requiredTags: ['capture', 'capture'],
     effects: [
-      { kind: 'statMod', stat: 'slaveHordeDamageBonus', op: 'set', value: 0.5 },
-      { kind: 'statMod', stat: 'slaveHordeDefensePenalty', op: 'set', value: 0.3 },
+      // +50% damage / -30% defense are delivered by the generic damage/defense
+      // stats below. The two flags wire the horde's positional behaviors:
+      // groups of 3+ ignore ZoC (zocSystem) and a slave death rallies adjacent
+      // allies with +1 movement (resolveCapture).
       { kind: 'statMod', stat: 'damage', op: 'set', value: 0.5 },
       { kind: 'statMod', stat: 'defense', op: 'add', value: -0.3 },
+      { kind: 'setFlag', flag: 'slaveHordeIgnoresZoc' },
+      { kind: 'setFlag', flag: 'slaveHordeDeathRally' },
     ],
     description:
       '+50% damage, -30% defense. Groups of 3+ ignore ZoC. When one slave dies, adjacent slaves gain +1 movement that turn.',

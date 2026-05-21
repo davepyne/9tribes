@@ -107,6 +107,30 @@ export function isUnitCloakedByRiverStealthAura(
   return false;
 }
 
+/**
+ * River Stealth T1 (native, coverProjectionEnabled): a unit adjacent to a
+ * stealthed same-faction river-stealth unit is concealed from enemy fog. Unlike
+ * the T3 cloak aura this is fog-only — it grants no combat ambush bonus.
+ */
+export function isUnitCoverProjected(state: GameState, unit: Unit): boolean {
+  if (unit.hp <= 0) return false;
+  const faction = state.factions.get(unit.factionId);
+  if (!faction) return false;
+
+  const doctrine = resolveResearchDoctrine(state.research.get(unit.factionId), faction);
+  if (!doctrine.coverProjectionEnabled) return false;
+
+  for (const sourceId of faction.unitIds) {
+    if (sourceId === unit.id) continue;
+    const source = state.units.get(sourceId);
+    if (!source || source.hp <= 0 || !source.isStealthed) continue;
+    const sourceProto = state.prototypes.get(source.prototypeId);
+    if (!(sourceProto?.tags?.includes('stealth') ?? false)) continue;
+    if (hexDistance(source.position, unit.position) <= STEALTH_CLOAK_RADIUS) return true;
+  }
+  return false;
+}
+
 export function isUnitEffectivelyStealthed(
   state: GameState,
   unit: Unit
@@ -576,6 +600,9 @@ export function getVisibleEnemyUnits(
       if (isUnitMirageHidden(state, factionId, unit)) {
         continue;
       }
+      if (isUnitCoverProjected(state, unit) && !isRevealedByStealthAura(state, factionId, unit)) {
+        continue;
+      }
       const prototype = state.prototypes.get(unit.prototypeId);
       if (prototype) {
         result.push({ unit, prototype });
@@ -609,6 +636,10 @@ export function isUnitVisibleTo(
   }
 
   if (isUnitMirageHidden(state, factionId, unit)) {
+    return false;
+  }
+
+  if (isUnitCoverProjected(state, unit) && !isRevealedByStealthAura(state, factionId, unit)) {
     return false;
   }
 

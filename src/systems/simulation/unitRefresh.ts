@@ -4,7 +4,7 @@ import type { RulesRegistry } from '../../data/registry/types.js';
 import type { SimulationTrace } from './traceTypes.js';
 import { log } from './traceRecorder.js';
 import { getTerrainAt, getHealRate, occupiesFriendlySettlement } from './environmentalEffects.js';
-import { getNeighbors, hexDistance } from '../../core/grid.js';
+import { getNeighbors, hexDistance, getHexesInRange } from '../../core/grid.js';
 import { resolveResearchDoctrine, prototypeHasComponent } from '../capabilityDoctrine.js';
 import { recoverMorale, checkRally } from '../moraleSystem.js';
 import { tickStealthCooldown, enterStealth, getNatureHealingAura } from '../signatureAbilitySystem.js';
@@ -434,6 +434,65 @@ export function refreshFactionUnits(
       }
     }
     break;
+  }
+
+  // Worldroot (foreign nature_healing T3): friendly units within 3 hexes of any
+  // forest/jungle hex regenerate an extra fraction of their max HP per turn.
+  {
+    const factionDoctrine = resolveResearchDoctrine(current.research.get(factionId), refreshedFaction);
+    if (factionDoctrine.worldrootShareFraction > 0) {
+      const wrUnits = new Map(current.units);
+      let changed = false;
+      for (const uid of refreshedFaction.unitIds) {
+        const u = wrUnits.get(uid as UnitId);
+        if (!u || u.hp <= 0 || u.hp >= u.maxHp) continue;
+        const nearWoodland = getHexesInRange(u.position, 3).some((h) => {
+          const t = getTerrainAt(current, h);
+          return t === 'forest' || t === 'jungle';
+        });
+        if (!nearWoodland) continue;
+        const extra = Math.max(1, Math.ceil(u.maxHp * factionDoctrine.worldrootShareFraction));
+        wrUnits.set(uid as UnitId, { ...u, hp: Math.min(u.maxHp, u.hp + extra) });
+        changed = true;
+      }
+      if (changed) current = { ...current, units: wrUnits };
+    }
+  }
+
+  // Persistent Spike Lines (native fortress T2): each bracing fortress unit
+  // refreshes a spike_line zone (movementPenalty 1) at its hex; the zone lingers
+  // 2 turns via tickZoneEffectLifetimes after the unit moves away.
+  {
+    const factionDoctrine = resolveResearchDoctrine(current.research.get(factionId), refreshedFaction);
+    if (factionDoctrine.persistentSpikeLinesEnabled) {
+      const zones = new Map(current.zoneEffects);
+      let changed = false;
+      for (const uid of refreshedFaction.unitIds) {
+        const u = current.units.get(uid as UnitId);
+        if (!u || u.hp <= 0 || u.preparedAbility !== 'brace') continue;
+        const proto = current.prototypes.get(u.prototypeId);
+        if (!(proto?.tags?.includes('fortress') ?? false)) continue;
+        let found = false;
+        for (const [id, ze] of zones) {
+          if (ze.type === 'spike_line' && ze.ownerFactionId === factionId
+            && ze.center.q === u.position.q && ze.center.r === u.position.r) {
+            zones.set(id, { ...ze, turnsRemaining: 2 });
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          const id = createZoneEffectId();
+          zones.set(id, {
+            id, type: 'spike_line', center: { q: u.position.q, r: u.position.r }, radius: 1,
+            ownerFactionId: factionId, damagePerTurn: 0, movementPenalty: 1,
+            turnsRemaining: 2, createdRound: current.round,
+          });
+        }
+        changed = true;
+      }
+      if (changed) current = { ...current, zoneEffects: zones };
+    }
   }
 
   return current;

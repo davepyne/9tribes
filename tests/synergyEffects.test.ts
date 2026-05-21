@@ -664,16 +664,16 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
   describe('slave_horde', () => {
     const synergy = makeSynergy([
-      { kind: 'statMod', stat: 'slaveHordeDamageBonus', op: 'set', value: 0.50 },
-      { kind: 'statMod', stat: 'slaveHordeDefensePenalty', op: 'set', value: 0.30 },
       { kind: 'statMod', stat: 'damage', op: 'multiply', value: 1.5 },
       { kind: 'statMod', stat: 'defense', op: 'add', value: -0.30 },
+      { kind: 'setFlag', flag: 'slaveHordeIgnoresZoc' },
+      { kind: 'setFlag', flag: 'slaveHordeDeathRally' },
     ] as PrimitiveEffect[]);
 
-    it('sets damage bonus and defense penalty, multiplies damage and reduces defense', () => {
+    it('sets the horde flags, multiplies damage and reduces defense', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.getStat('slaveHordeDamageBonus')).toBe(0.50);
-      expect(result.getStat('slaveHordeDefensePenalty')).toBe(0.30);
+      expect(result.hasFlag('slaveHordeIgnoresZoc')).toBe(true);
+      expect(result.hasFlag('slaveHordeDeathRally')).toBe(true);
       // damage = floor(0 * 1.5) = 0; defense starts at 0, max(0, 0 + -0.30) = -0.3
       expect(result.getStat('damage')).toBe(0);
       expect(result.getStat('defense')).toBe(-0.3);
@@ -882,8 +882,8 @@ describe('Phase 4-6 new pair synergy effects', () => {
       expect(result.getStat('bloomPulseMovementBonus')).toBe(0);
       expect(result.hasVerb('positionSwap')).toBe(false);
       expect(result.getStat('caravanRelayVisionRange')).toBe(0);
-      expect(result.getStat('slaveHordeDamageBonus')).toBe(0);
-      expect(result.getStat('slaveHordeDefensePenalty')).toBe(0);
+      expect(result.hasFlag('slaveHordeIgnoresZoc')).toBe(false);
+      expect(result.hasFlag('slaveHordeDeathRally')).toBe(false);
       expect(result.getStat('bombardmentRange')).toBe(0);
       expect(result.getStat('bombardmentDamageMultiplier')).toBe(0);
       expect(result.getStat('bombardmentLandAuraDefense')).toBe(0);

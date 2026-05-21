@@ -542,7 +542,7 @@ describe('synergy behavioral tests — pair synergies', () => {
     countTest();
     const s = getPairSynergyById('slaving+slaving')!;
     const withCtx = resolve(s.effects);
-    expect(withCtx.getStat('slaveHordeDamageBonus')).toBeGreaterThan(0);
+    expect(withCtx.hasFlag('slaveHordeIgnoresZoc')).toBe(true);
     expect(withCtx.getStat('damage')).toBeGreaterThan(0);
   });
 
