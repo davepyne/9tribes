@@ -265,7 +265,6 @@ describe('instantKill', () => {
 describe('grantVerb', () => {
   it('grants positionSwap', () => {
     const r = resolve([{ kind: 'grantVerb', verb: 'positionSwap' }]);
-    expect(r.hasFlag('positionSwapAvailable')).toBe(true);
     expect(r.hasVerb('positionSwap')).toBe(true);
   });
 

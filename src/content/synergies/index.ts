@@ -271,8 +271,6 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     domains: ['fortress', 'camel_adaptation'],
     requiredTags: ['fortress', 'camel'],
     effects: [
-      { kind: 'setFlag', flag: 'mobileStrongholdFortUp' },
-      { kind: 'statMod', stat: 'mobileStrongholdDefenseBonus', op: 'set', value: 0.75 },
       { kind: 'statMod', stat: 'mobileStrongholdAlliedDefenseBonus', op: 'set', value: 0.25 },
       { kind: 'statMod', stat: 'defense', op: 'add', value: 0.75 },
       { kind: 'preventAction', action: 'displacement' },

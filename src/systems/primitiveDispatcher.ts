@@ -209,7 +209,6 @@ function dispatchGrantVerb(p: GrantVerb, context: CombatContext, result: Synergy
   result.verbs.add(p.verb);
   switch (p.verb) {
     case 'positionSwap':
-      result.flags.add('positionSwapAvailable');
       break;
   }
   result.additionalEffects.push(`grantVerb_${p.verb}`);

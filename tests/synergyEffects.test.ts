@@ -641,13 +641,12 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
   describe('position_swap', () => {
     const synergy = makeSynergy([
-      { kind: 'setFlag', flag: 'positionSwapAvailable' },
+      { kind: 'grantVerb', verb: 'positionSwap' },
     ] as PrimitiveEffect[]);
 
     it('enables position swap', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.hasFlag('positionSwapAvailable')).toBe(true);
-      expect(result.additionalEffects).toContain('setFlag_positionSwapAvailable');
+      expect(result.hasVerb('positionSwap')).toBe(true);
     });
   });
 
@@ -723,19 +722,16 @@ describe('Phase 4-6 new pair synergy effects', () => {
 
   describe('mobile_stronghold', () => {
     const synergy = makeSynergy([
-      { kind: 'setFlag', flag: 'mobileStrongholdFortUp' },
-      { kind: 'statMod', stat: 'mobileStrongholdDefenseBonus', op: 'set', value: 0.75 },
+      { kind: 'statMod', stat: 'mobileStrongholdAlliedDefenseBonus', op: 'set', value: 0.25 },
       { kind: 'statMod', stat: 'defense', op: 'add', value: 0.75 },
-      { kind: 'setFlag', flag: 'antiDisplacement' },
+      { kind: 'preventAction', action: 'displacement' },
     ] as PrimitiveEffect[]);
 
-    it('enables fort up, adds defense bonus, sets anti-displacement', () => {
+    it('adds defense bonus, allied defense aura, and anti-displacement', () => {
       const result = applyCombatSynergies(makeContext(), [synergy], null);
-      expect(result.hasFlag('mobileStrongholdFortUp')).toBe(true);
-      expect(result.getStat('mobileStrongholdDefenseBonus')).toBe(0.75);
+      expect(result.getStat('mobileStrongholdAlliedDefenseBonus')).toBe(0.25);
       expect(result.getStat('defense')).toBe(0.75);
       expect(result.hasFlag('antiDisplacement')).toBe(true);
-      expect(result.additionalEffects).toContain('statMod_mobileStrongholdDefenseBonus_set_0.75');
     });
   });
 
@@ -884,15 +880,13 @@ describe('Phase 4-6 new pair synergy effects', () => {
       expect(result.getStat('bloomPulseSelfHeal')).toBe(0);
       expect(result.getStat('bloomPulseAuraRadius')).toBe(0);
       expect(result.getStat('bloomPulseMovementBonus')).toBe(0);
-      expect(result.hasFlag('positionSwapAvailable')).toBe(false);
+      expect(result.hasVerb('positionSwap')).toBe(false);
       expect(result.getStat('caravanRelayVisionRange')).toBe(0);
       expect(result.getStat('slaveHordeDamageBonus')).toBe(0);
       expect(result.getStat('slaveHordeDefensePenalty')).toBe(0);
       expect(result.getStat('bombardmentRange')).toBe(0);
       expect(result.getStat('bombardmentDamageMultiplier')).toBe(0);
       expect(result.getStat('bombardmentLandAuraDefense')).toBe(0);
-      expect(result.hasFlag('mobileStrongholdFortUp')).toBe(false);
-      expect(result.getStat('mobileStrongholdDefenseBonus')).toBe(0);
       expect(result.getStat('mobileStrongholdAlliedDefenseBonus')).toBe(0);
       expect(result.getStat('beachRaidDamageBonus')).toBe(0);
       expect(result.hasFlag('beachRaidRetreatToWater')).toBe(false);

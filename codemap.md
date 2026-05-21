@@ -137,7 +137,7 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 - INPUT: Declarative records defining synergy effects via 12 primitive kinds
 - OUTPUT: Type definitions only (no runtime exports): StatName (30+ stat fields), FlagName (15 flags), StatusName (13 statuses), ActionName (13 actions), VerbName (17 verbs), EffectTypeName (6), PrimitiveEffect union (12 kinds: StatMod, SetFlag, ApplyStatus, Knockback, Heal, ProjectAura, Capture, PreventAction, SpawnOnMap, GrantVerb, InstantKill, ModeSelect)
 - SIDE EFFECTS: None — this is a type definition module. Replaces the 69 SynergyEffect variants and 11 EmergentEffect variants. Future synergies are declarative records, not discriminated-union branches.
-- INVARIANTS: Each primitive has optional condition (string evaluated by primitiveEvaluator), target (TargetSpec), and trigger (TriggerSpec). ModeSelect supports stance-based mode selection (combatContext, stance, stanceToggle → 'bulwark'/'predator'/'phantom').
+- INVARIANTS: Each primitive has an optional condition (ConditionSpec string evaluated by primitiveEvaluator). No target resolution or trigger matching layer — all effects apply directly within the current CombatContext. ModeSelect supports stance-based mode selection (combatContext, stance, stanceToggle → 'bulwark'/'predator'/'phantom').
 - CALLERS: primitiveDispatcher.ts (consumes PrimitiveEffect[]), synergyTypes.ts (imports types)
 
 ## Primitive Dispatcher (`src/systems/primitiveDispatcher.ts`)
@@ -150,10 +150,10 @@ Auto-generated contract summaries for complex subsystems. See `.slim/symbols.jso
 
 ## Primitive Evaluator (`src/systems/primitiveEvaluator.ts`)
 
-- INPUT: ConditionSpec string, CombatContext; TargetSpec; TriggerSpec
-- OUTPUT: evaluateCondition → boolean; resolveTarget → ResolvedTarget; triggerMatches → boolean
+- INPUT: ConditionSpec string (or undefined), CombatContext
+- OUTPUT: evaluateCondition → boolean (returns true when condition is undefined)
 - SIDE EFFECTS: None (pure)
-- INVARIANTS: Conditions support AND/OR/negation (!). Built-in: isCharge, isStealthAttack, isRetreat, isStealthed, isWater, afterRetreat. Tag checks (tag:poison, tag:heavy, etc.). Terrain conditions (terrain:desert, terrain:desert,coast,hill). HP thresholds (targetHp<0.25). TargetSpec: self/attacker/defender/position/alliesInRadius/enemiesInRadius/role. TriggerSpec: onKill/onDeath/onHit/onCapture/onKillFromStealth/onAdjacentAllyDeath/onExecution/onEnterAura/onTurnEnd/onPhase.
+- INVARIANTS: Conditions support AND/OR/negation (!). Built-in: isCharge, isStealthAttack, isRetreat, isStealthed, isWater. Tag checks (tag:poison, tag:heavy, etc.). Terrain conditions (terrain:desert, terrain:desert,coast,hill). Domain conditions (domain:venom → attackerLearnedDomains check). HP thresholds (targetHp<0.25). No target resolution or trigger matching layer exists.
 - CALLERS: primitiveDispatcher.ts (every dispatch checks evaluateCondition first)
 
 ## Faction Identity System (`src/systems/factionIdentitySystem.ts`)

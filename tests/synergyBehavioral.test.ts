@@ -208,9 +208,9 @@ describe('synergy behavioral tests — pair synergies', () => {
     countTest();
     const s = getPairSynergyById('fortress+camel_adaptation')!;
     const withCtx = resolve(s.effects);
-    expect(withCtx.hasFlag('mobileStrongholdFortUp')).toBe(true);
     expect(withCtx.hasFlag('antiDisplacement')).toBe(true);
     expect(withCtx.getStat('defense')).toBeGreaterThan(0);
+    expect(withCtx.getStat('mobileStrongholdAlliedDefenseBonus')).toBeGreaterThan(0);
   });
 
   it('Chained Prisoners (fortress+slaving)', () => {
@@ -507,7 +507,6 @@ describe('synergy behavioral tests — pair synergies', () => {
     const s = getPairSynergyById('river_stealth+river_stealth')!;
     const withCtx = resolve(s.effects);
     expect(withCtx.hasVerb('positionSwap')).toBe(true);
-    expect(withCtx.hasFlag('positionSwapAvailable')).toBe(true);
   });
 
   // --- camel_adaptation+X ---

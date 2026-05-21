@@ -18,7 +18,7 @@ const EXPECTED_COUNTS = {
   dead: 0,
   vestigial: 0,
   orphan: 0,
-  live: 92,
+  live: 89,
 } as const;
 
 describe('synergy coverage audit', () => {
