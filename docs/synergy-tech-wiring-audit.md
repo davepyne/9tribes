@@ -73,23 +73,23 @@ Status legend:
 | # | Source | Item / field | Status | What is missing |
 |---|--------|--------------|--------|-----------------|
 | 1 | nature_healing T3 (foreign) | `worldrootShareFraction` | Unimplemented | Friendly units within 3 hexes of forest/jungle share 10% of healing. |
-| 2 | fortress T1 (native) | `formationSwapEnabled` | Unimplemented | Hill Engineers swap positions with an adjacent ally, once/turn, 0 move cost. |
+| 2 | fortress T1 (native) | `formationSwapEnabled` | **Wired** (Batch D) | Hill Engineers swap positions with an adjacent ally, once/turn, 0 move cost. → `activateUnit.ts` formation swap verb |
 | 3 | fortress T2 (foreign) | `spikeLinesEnabled` | Unimplemented | Infantry/ranged project ZoC; bracing makes adjacent hexes cost +1 move to enemies; charges into a braced fortress take 1 unavoidable dmg. (`zocAuraEnabled` is a separate, wired flag.) |
 | 4 | fortress T2 (native) | `persistentSpikeLinesEnabled` | Unimplemented | Spike lines persist 2 turns after the bracing unit moves away. |
 | 5 | fortress T3 (foreign) | `phalanxDamageShare` | Unimplemented | Three adjacent fortress units share 50% of damage taken across the group. |
 | 6 | camel_adaptation T1 (native) | `nomadicTerrainImmunity` | Partial | Native T1 should ignore move penalty on ALL non-impassable terrain; only the desert/tundra base (foreign) is wired. (`nomadicTranscendenceEnabled` grants all-terrain at T3, not T1.) |
 | 7 | camel_adaptation T2 (foreign) | `mirageRange` | Partial | Mirage stealth-at-distance works as a boolean (`permanentStealthEnabled`), but the "more than 2 hexes away" range value is not read. |
 | 8 | camel_adaptation T2 (native) | `mirageAllRough` | Partial | Native mirage should extend to all rough/cover terrain (forest, jungle, hill, mountain); only desert/tundra is wired. |
-| 9 | camel_adaptation T3 (foreign) | `caravanCarryEnabled` | Unimplemented | Camel-class units carry one allied unit on their hex; carried unit disgorges and attacks on arrival. |
+| 9 | camel_adaptation T3 (foreign) | `caravanCarryEnabled` | **Wired** (Batch D) | Camel-class units carry one allied unit; disembarked unit keeps attacks. → `transportSystem.ts` canBoardTransport + disembarkUnit |
 | 10 | charge T3 (foreign) | `sunderingChargeContinue` | Unimplemented | A charge that kills lets the attacker continue moving in the same line and attack a second enemy. |
 | 11 | river_stealth T1 (native) | `coverProjectionEnabled` | Unimplemented | Allies adjacent to a stealthed River unit are also concealed from distant enemies. |
 | 12 | river_stealth T3 (foreign) | `revealMovementPenalty` | Partial | Stealth-reveal works (`stealthRevealEnabled`), but revealed enemies losing 1 movement next turn is not wired. |
 | 13 | tidal_warfare T1 (native) | `pirateNavalVision` | Unimplemented | Pirate Lords gain +1 vision from any coast/river hex. |
-| 14 | tidal_warfare T2 (native) | `pirateCombinedAssault` | Unimplemented | Pirate naval units carry one extra land unit AND disgorge it the same turn. |
+| 14 | tidal_warfare T2 (native) | `pirateCombinedAssault` | **Wired** (Batch D) | Pirate naval units carry +1 land unit; disembarked unit acts same turn. → `transportSystem.ts` canBoardTransport + disembarkUnit |
 | 15 | heavy_hitter T1 (native) | `fortifiedDefenseReduction` | Partial | Base +20% vs fortified is wired (`antiFortificationEnabled`); the native "reduce target's defense bonus by 50% for the rest of combat" is not. |
 | 16 | hitrun T2 (native) | `bloodtrailMovementBonus` (native variant) | Partial | Foreign bloodtrail (+1 move next turn) is wired (`bloodtrailMomentumEnabled`); the native "+2 per wound, applied the same turn" enhancement is not. |
 | 17 | Swarm Tactics — `hitrun+hitrun` | `formationFocusBonus`, `formationFocusIgnoresDefense` | Partial | +30% damage applies via generic `damage`, but **unconditionally** (not focus-fire on a shared target) and the **ignore-defender-defense never happens**. |
-| 18 | Coastal Fortress — `fortress+tidal_warfare` | `bombardmentRange`, `bombardmentLandAuraDefense` | Partial | `bombardmentDamageMultiplier` (resolveStatus.ts:343) and `defense +0.25` work, but **ships cannot bombard land at range** (attack range never extended) and the **ally land-defense aura is missing**. |
+| 18 | Coastal Fortress — `fortress+tidal_warfare` | `bombardmentRange`, `bombardmentLandAuraDefense` | **Wired** (Batch D) | `bombardmentDamageMultiplier` + `defense +0.25` already worked; `bombardmentRange` now extends attack range in `canAttackTarget`; `bombardmentLandAuraDefense` adds defense to allied land units near a Coastal Fortress ship in `preview.ts`. |
 | 19 | Slave Army — `slaving+slaving` | `slaveHordeDamageBonus`, `slaveHordeDefensePenalty` | Partial | +50% / −30% delivered via generic `damage`/`defense` (named fields are dead), but **"groups of 3+ ignore ZoC"** and **"slave death → adjacent allies +1 move"** are not implemented. |
 | 20 | Desert Stronghold — `fortress+camel_adaptation` | `mobileStrongholdDefenseBonus`, `mobileStrongholdFortUp` | Dead-duplicate | Self-defense via generic `defense +0.75`, ally aura via `mobileStrongholdAlliedDefenseBonus`, anti-displacement via `preventAction` — all live. These two fields are pure dead duplicates. |
 | 21 | Shadow Network — `river_stealth+river_stealth` | `positionSwapAvailable` flag | Dead-duplicate | Swap works via the `positionSwap` **verb** (`activateUnit.ts:775`); the flag is never read. |
