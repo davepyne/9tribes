@@ -200,6 +200,9 @@ export function assembleResult(ctx: CombatContext): CombatActionApplyResult {
     woundedEarthSaved: ctx.resolution.woundedEarthSaved,
     saplingApplied: ctx.resolution.saplingApplied,
     saplingMaxHpBonus: ctx.resolution.saplingMaxHpBonus,
+    spikeLineChargeDamage: ctx.resolution.spikeLineChargeDamage,
+    phalanxDamageShared: ctx.resolution.phalanxDamageShared,
+    sunderingChargeApplied: ctx.resolution.sunderingChargeApplied,
   };
 
   const feedback = {

@@ -147,8 +147,8 @@ describe('bloodtrail momentum movement bonus', () => {
 
     state = placeAdjacent(state, attacker, defender);
 
-    // Enable hitrun_t2 for the defender's faction
-    state = setResearch(state, defender.factionId, ['hitrun_t1', 'hitrun_t2'], ['hitrun']);
+    // Enable foreign hitrun_t2 (next-turn bloodtrail; native variant is same-turn).
+    state = setResearch(state, defender.factionId, ['hitrun_t1', 'hitrun_t2'], ['charge']);
 
     // Give defender wounds from previous combat
     const wounds = 5;
@@ -206,7 +206,8 @@ describe('bloodtrail momentum movement bonus', () => {
     const { attacker, defender, attackerFactionId } = getCombatants(state);
 
     state = placeAdjacent(state, attacker, defender);
-    state = setResearch(state, defender.factionId, ['hitrun_t1', 'hitrun_t2'], ['hitrun']);
+    // Foreign hitrun_t2: +1 next-turn move per wound (native variant is same-turn).
+    state = setResearch(state, defender.factionId, ['hitrun_t1', 'hitrun_t2'], ['charge']);
 
     const units = new Map(state.units);
     const defenderUnit = units.get(defender.id)!;

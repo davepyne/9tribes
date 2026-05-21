@@ -51,6 +51,7 @@ function resetFactionUnitsMoves(
         attackedTargetsThisTurn: [],
         lastStandUsedThisTurn: undefined,
         killChainCountThisTurn: undefined,
+        sunderingChargeUsedThisTurn: undefined,
         woundsReceivedThisTurn: undefined,
       });
     }

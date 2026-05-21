@@ -189,7 +189,10 @@ export function refreshFactionUnits(
 
     const staggerPenalty = unit.nextTurnMovePenalty ?? 0;
     const harshTerrainBonus = doctrine.heatResistanceEnabled && (currentTerrainId === 'desert' || currentTerrainId === 'tundra') ? 1 : 0;
-    const bloodtrailBonus = doctrine.bloodtrailMomentumEnabled && (unit.woundsReceivedThisTurn ?? 0) > 0
+    // Foreign Bloodtrail grants +1 move per wound NEXT turn. Native Bloodtrail
+    // delivers +2 per wound the SAME turn (resolveDamage), so it is excluded here.
+    const bloodtrailBonus = doctrine.bloodtrailMomentumEnabled && !doctrine.nativeBloodtrailEnabled
+      && (unit.woundsReceivedThisTurn ?? 0) > 0
       ? unit.woundsReceivedThisTurn!
       : 0;
     const refreshedMoves = Math.min(
@@ -213,6 +216,7 @@ export function refreshFactionUnits(
       attackedTargetsThisTurn: [],
       lastStandUsedThisTurn: undefined,
       killChainCountThisTurn: undefined,
+      sunderingChargeUsedThisTurn: undefined,
       woundsReceivedThisTurn: undefined,
     };
 

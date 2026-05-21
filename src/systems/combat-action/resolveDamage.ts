@@ -46,6 +46,7 @@ export function createCombatContext(
     captureEscapePrevented: false, synergyCaptureBonus: 0, chargeSplashTargetsHit: 0,
     armadaChainDamage: 0, woundedEarthAbsorbed: 0, woundedEarthAlliesHealed: 0,
     woundedEarthSaved: false, saplingApplied: false, saplingMaxHpBonus: 0,
+    spikeLineChargeDamage: 0, phalanxDamageShared: 0, sunderingChargeApplied: false,
   };
   const emptyFeedback: CombatActionFeedback = {
     lastLearnedDomain: null, hitAndRunRetreat: null, absorbedDomains: [], resolution: baseResolution,
@@ -178,6 +179,24 @@ export function resolveDamage(ctx: CombatContext): void {
     woundsReceivedThisTurn: preview.result.defenderDamage > 0
       ? (defender.woundsReceivedThisTurn ?? 0) + 1 : defender.woundsReceivedThisTurn,
   };
+
+  // Fortress T2 — Spike Lines: charging into a braced fortress unit takes 1 unavoidable damage.
+  if (
+    preview.details.isChargeAttack
+    && defenderDoctrine?.spikeLinesEnabled
+    && defender.preparedAbility === 'brace'
+    && (ctx.defenderPrototype.tags?.includes('fortress') ?? false)
+    && nextAttacker.hp > 0
+  ) {
+    nextAttacker = { ...nextAttacker, hp: Math.max(0, nextAttacker.hp - 1) };
+    ctx.resolution.spikeLineChargeDamage = 1;
+  }
+
+  // Skirmish Pursuit T2 native — Bloodtrail: +2 movement per wound, applied the
+  // SAME turn (vs the foreign +1 next-turn variant handled in unitRefresh).
+  if (attackerDoctrine?.nativeBloodtrailEnabled && preview.result.attackerDamage > 0) {
+    nextAttacker = { ...nextAttacker, movesRemaining: (nextAttacker.woundsReceivedThisTurn ?? 0) * 2 };
+  }
 
   // Nature Healing T2 — Wounded Earth: terrain absorbs 25% damage on forest/jungle
   let woundedEarthAbsorbed = 0;
@@ -337,6 +356,40 @@ export function applyPostDamageEffects(ctx: CombatContext): void {
     }
     if (ctx.woundedEarthAlliesHealed > 0) {
       ctx.current = { ...ctx.current, units: healUnits };
+    }
+  }
+
+  // Fortress T3 (foreign) — Phalanx: a fortress unit with 2+ adjacent fortress
+  // allies (group of 3+) shares 50% of the damage it just took across the group.
+  if (defenderDoctrine?.phalanxDamageShareEnabled && preview.result.defenderDamage > 0) {
+    const liveDefender = ctx.current.units.get(preview.defenderId);
+    const defProto = ctx.current.prototypes.get(defender.prototypeId);
+    if (liveDefender && liveDefender.hp > 0 && (defProto?.tags?.includes('fortress') ?? false)) {
+      const phalanxAllies: typeof defender[] = [];
+      for (const hex of getNeighbors(defender.position)) {
+        const aid = getUnitAtHex(ctx.current, hex);
+        if (!aid) continue;
+        const ally = ctx.current.units.get(aid);
+        if (!ally || ally.factionId !== defender.factionId || ally.hp <= 0) continue;
+        const allyProto = ctx.current.prototypes.get(ally.prototypeId);
+        if (allyProto?.tags?.includes('fortress')) phalanxAllies.push(ally);
+      }
+      if (phalanxAllies.length >= 2) {
+        const shareTotal = Math.floor(preview.result.defenderDamage * 0.5);
+        if (shareTotal > 0) {
+          const units = new Map(ctx.current.units);
+          units.set(preview.defenderId, { ...liveDefender, hp: Math.min(liveDefender.maxHp, liveDefender.hp + shareTotal) });
+          const groupSize = phalanxAllies.length;
+          for (let i = 0; i < phalanxAllies.length; i++) {
+            const portion = Math.floor(shareTotal / groupSize) + (i < shareTotal % groupSize ? 1 : 0);
+            if (portion <= 0) continue;
+            const a = units.get(phalanxAllies[i].id)!;
+            units.set(a.id, { ...a, hp: Math.max(0, a.hp - portion) });
+          }
+          ctx.current = { ...ctx.current, units };
+          ctx.resolution.phalanxDamageShared = shareTotal;
+        }
+      }
     }
   }
 

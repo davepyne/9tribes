@@ -239,7 +239,7 @@ const HITRUN_RESEARCH = buildResearchDomain({
     type: 'kill_retreat',
     description: 'Wounding an enemy below 50% HP grants the attacker +1 movement next turn (stacks up to +3). After a kill, attacker can retreat 1 hex.',
     nativeDescription: 'Steppe Bloodtrail bonus is +2 movement per wound AND applies immediately the same turn rather than next turn.',
-    effect: { retreatAfterKill: true, bloodtrailMovementBonus: 1 }, // retreatAfterKill: wired; bloodtrail: design
+    effect: { retreatAfterKill: true, bloodtrailMovementBonus: 1 }, // all: wired (native bloodtrailMovementBonus -> doctrine.nativeBloodtrailEnabled, resolveDamage same-turn +2/wound)
   },
   t3: {
     name: 'Killing Stride',
@@ -278,7 +278,7 @@ const FORTRESS_RESEARCH = buildResearchDomain({
     type: 'spike_lines',
     description: 'Infantry and ranged units project Zone of Control. Bracing units make adjacent hexes cost +1 movement to enemies; charges into a braced Fortress unit take 1 unavoidable damage.',
     nativeDescription: 'Hill Engineers’ Spike Lines persist for 2 turns after the bracing unit moves away — the engineering stays even when the engineer doesn’t.',
-    effect: { spikeLinesEnabled: true, persistentSpikeLinesEnabled: true, zocAuraEnabled: true }, // zocAuraEnabled (legacy zoCAuraEnabled): wired; rest: design
+    effect: { spikeLinesEnabled: true, persistentSpikeLinesEnabled: true, zocAuraEnabled: true }, // all: wired (spikeLines -> zocSystem/movement + resolveDamage; persistent -> spike_line zone, unitRefresh)
   },
   t3: {
     name: 'Bastion',
@@ -287,7 +287,7 @@ const FORTRESS_RESEARCH = buildResearchDomain({
     nativeDescription: 'Hill Engineers may raise a Bastion — a permanent fortification (+400% defense floor for the holding unit, vision aura 3 hexes for allies). Maximum 3 Bastions per game. All Hill units can brace, and the fortress aura range is doubled.',
     effect: {
       fortressAuraDefenseBonus: 0.25, // wired (foreign tier upgrade)
-      phalanxDamageShare: 0.5, // design
+      phalanxDamageShare: 0.5, // wired (doctrine.phalanxDamageShareEnabled -> resolveDamage applyPostDamageEffects)
       canBuildBastion: true, // wired (native): unlocks the build_bastion player action; AI heuristic in bastion.ts. Hard cap 3 per game.
       fortressTranscendenceEnabled: true, // wired (legacy: all-brace + aura range 2)
     },
@@ -417,7 +417,7 @@ const CHARGE_RESEARCH = buildResearchDomain({
     nativeDescription: 'Savannah charges splash: enemies within 1 hex of the target take 50% of charge damage. Charges through friendly Savannah Lions also CHAIN — each ally in the charge line adds +10% damage (up to +50%).',
     effect: {
       chargeRoutedDamageMultiplier: 0.5, // wired
-      sunderingChargeContinue: true, // design
+      sunderingChargeContinue: true, // wired (doctrine.sunderingChargeContinueEnabled -> resolveCapture applyPostKillEffects)
       chargeSplashRadius: 1, // wired (native)
       chargeChainBonus: 0.1, // wired (native, capped at +0.5)
       chargeTranscendenceEnabled: true, // KEEP: still gates terrain-ignoring charges in activateUnit.ts. ARMOR-PEN PATH MOVED OUT OF THIS FLAG.
@@ -521,7 +521,7 @@ const HEAVY_HITTER_RESEARCH = buildResearchDomain({
     type: 'anti_fortification',
     description: '+20% damage vs fortified or bracing enemies; +20% damage vs enemies on hill or mountain terrain.',
     nativeDescription: 'Arctic Wardens’ attacks against fortified targets also reduce the target’s defense bonus by 50% for the rest of combat.',
-    effect: { damageBonusVsFortified: 0.2, damageBonusVsElevation: 0.2, fortifiedDefenseReduction: 0.5 }, // first two: wired; rest: design
+    effect: { damageBonusVsFortified: 0.2, damageBonusVsElevation: 0.2, fortifiedDefenseReduction: 0.5 }, // all: wired (native fortifiedDefenseReduction -> doctrine.fortifiedDefenseReductionEnabled, preview.ts)
   },
   t2: {
     name: 'Backbreaker',

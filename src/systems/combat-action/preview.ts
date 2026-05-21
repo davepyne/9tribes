@@ -106,7 +106,7 @@ export function previewCombatAction(
     chargeAttackBonus += registry.getSignatureAbility('savannah_lions')?.stampedeBonus ?? 0.3;
     stampedeTriggered = true;
   }
-  const braceDefenseBonus = defender.preparedAbility === 'brace'
+  let braceDefenseBonus = defender.preparedAbility === 'brace'
     ? (defenderDoctrine?.fortressTranscendenceEnabled ? 0.4 : 0.2)
     : 0;
   let situationalAttackModifier = getCombatAttackModifier(attackerFaction, attackerTerrain, defenderTerrain);
@@ -412,12 +412,46 @@ export function previewCombatAction(
     }
   }
 
-  const improvementDefenseBonus = getImprovementBonus(state, defender.position, defender.factionId);
-  const wallDefenseBonus = getWallDefenseBonus(
+  let improvementDefenseBonus = getImprovementBonus(state, defender.position, defender.factionId);
+  let wallDefenseBonus = getWallDefenseBonus(
     state,
     defender.position,
     registry.getSignatureAbility('coral_people')?.wallDefenseMultiplier ?? 2,
   );
+
+  // Swarm Tactics (hitrun+hitrun) — formation focus-fire: the +30% damage and
+  // the ignore-defense rider only apply when another allied unit has already
+  // attacked this same target this turn (true focus-fire, not a flat bonus).
+  const formationFocusBonus = attackerSynergyResult.getStat('formationFocusBonus');
+  const formationFocusIgnoresDefense = attackerSynergyResult.hasFlag('formationFocusIgnoresDefense');
+  let focusFireActive = false;
+  if (formationFocusBonus > 0 || formationFocusIgnoresDefense) {
+    for (const ally of state.units.values()) {
+      if (ally.id === attacker.id || ally.factionId !== attacker.factionId || ally.hp <= 0) continue;
+      if ((ally.attackedTargetsThisTurn ?? []).includes(defenderId)) { focusFireActive = true; break; }
+    }
+  }
+  if (focusFireActive && formationFocusBonus > 0) {
+    situationalAttackModifier += formationFocusBonus;
+  }
+
+  // Defense-bonus reduction against a fortified/bracing target:
+  //   - Heavy Hitter T1 native (fortifiedDefenseReduction): halve the bonus.
+  //   - Swarm Tactics focus-fire (formationFocusIgnoresDefense): ignore it fully.
+  let fortifiedDefenseScale = 1;
+  if (attackerDoctrine?.fortifiedDefenseReductionEnabled && (defender.preparedAbility === 'brace' || defenderOnFort)) {
+    fortifiedDefenseScale = 0.5;
+  }
+  if (focusFireActive && formationFocusIgnoresDefense) {
+    fortifiedDefenseScale = 0;
+  }
+  if (fortifiedDefenseScale < 1) {
+    if (situationalDefenseModifier > 0) situationalDefenseModifier *= fortifiedDefenseScale;
+    braceDefenseBonus *= fortifiedDefenseScale;
+    improvementDefenseBonus *= fortifiedDefenseScale;
+    wallDefenseBonus *= fortifiedDefenseScale;
+  }
+
   const result = resolveCombat({
     attacker,
     defender,

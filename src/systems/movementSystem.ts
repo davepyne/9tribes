@@ -5,7 +5,7 @@ import type { RulesRegistry } from '../data/registry/types.js';
 import type { GameMap } from '../world/map/types.js';
 import { getDirectionIndex, getNeighbors, hexDistance, hexToKey } from '../core/grid.js';
 import { isHexOccupied } from './occupancySystem.js';
-import { entersEnemyZoC, getZoCMovementCost } from './zocSystem.js';
+import { entersEnemyZoC, getZoCMovementCost, getSpikeLineMovementPenalty } from './zocSystem.js';
 import { applyOpportunityAttacks } from './opportunityAttackSystem.js';
 import { getMovementCostModifier, isUnitRiverStealthed } from './factionIdentitySystem.js';
 import { isWaterTerrain, isDeepWaterTerrain, isCoverTerrain } from './terrainUtils.js';
@@ -177,10 +177,13 @@ export function previewMove(
     : 1;
   totalCost = Math.max(minimumMoveCost, totalCost);
 
-  // Zone-effect movement penalty (Maelstrom, etc.): non-owner units pay extra
-  // to enter hexes covered by hostile zone effects. Applied after the cost
-  // floor so it cannot be negated by minimum-cost reductions.
+  // Zone-effect movement penalty (Maelstrom, spike-line persistence, etc.):
+  // non-owner units pay extra to enter hexes covered by hostile zone effects.
+  // Applied after the cost floor so it cannot be negated by minimum-cost reductions.
   totalCost += getZoneEffectMovementPenalty(gameState, targetHex, unit.factionId);
+
+  // Fortress T2 — Spike Lines: +1 to enter a hex adjacent to a bracing fortress enemy.
+  totalCost += getSpikeLineMovementPenalty(targetHex, unit, gameState);
 
   // Swamp: always enterable but consumes all remaining moves (difficult terrain)
   const consumesAllMoves = targetTerrainId === 'swamp';

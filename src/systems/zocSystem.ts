@@ -4,7 +4,7 @@
 import type { GameState } from '../game/types.js';
 import type { Unit } from '../features/units/types.js';
 import type { HexCoord, FactionId } from '../types.js';
-import type { ResearchDoctrine } from './capabilityDoctrine.js';
+import { resolveResearchDoctrine, type ResearchDoctrine } from './capabilityDoctrine.js';
 import { getDirectionIndex, getNeighbors, getOppositeDirection } from '../core/grid.js';
 import { getUnitAtHex } from './occupancySystem.js';
 import { isFortificationHex } from './unit-activation/helpers.js';
@@ -102,6 +102,33 @@ export function getZoCBlockersWithAura(
   }
 
   return { blockers, fortZoC };
+}
+
+/**
+ * Fortress T2 — Spike Lines: a bracing fortress unit whose faction has
+ * spikeLinesEnabled makes every adjacent hex cost +1 movement to enemies.
+ * Returns the extra cost (0 or 1) for the moving unit entering `hex`.
+ * (Persistence after the unit moves away is handled separately via spike_line
+ * zone effects; this covers the live "while bracing in place" case.)
+ */
+export function getSpikeLineMovementPenalty(
+  hex: HexCoord,
+  movingUnit: Unit,
+  state: GameState,
+): number {
+  for (const neighborHex of getNeighbors(hex)) {
+    const unitId = getUnitAtHex(state, neighborHex);
+    if (!unitId) continue;
+    const unit = state.units.get(unitId);
+    if (!unit || unit.factionId === movingUnit.factionId || unit.hp <= 0) continue;
+    if (unit.preparedAbility !== 'brace') continue;
+    const proto = state.prototypes.get(unit.prototypeId);
+    if (!(proto?.tags?.includes('fortress') ?? false)) continue;
+    const faction = state.factions.get(unit.factionId);
+    const doctrine = resolveResearchDoctrine(state.research.get(unit.factionId), faction);
+    if (doctrine.spikeLinesEnabled) return 1;
+  }
+  return 0;
 }
 
 /**

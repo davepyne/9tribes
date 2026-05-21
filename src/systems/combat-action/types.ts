@@ -98,6 +98,9 @@ export interface CombatActionResolution {
   woundedEarthSaved: boolean;
   saplingApplied: boolean;
   saplingMaxHpBonus: number;
+  spikeLineChargeDamage: number;
+  phalanxDamageShared: number;
+  sunderingChargeApplied: boolean;
 }
 
 export interface CombatActionApplyResult {

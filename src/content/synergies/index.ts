@@ -549,9 +549,10 @@ const PAIR_SYNERGIES_DATA: readonly PairSynergyConfig[] = [
     domains: ['hitrun', 'hitrun'],
     requiredTags: ['skirmish', 'skirmish'],
     effects: [
+      // +30% damage and ignore-defense are gated on focus-fire (preview.ts) —
+      // not a flat unconditional bonus, so there is no generic `damage` statMod.
       { kind: 'statMod', stat: 'formationFocusBonus', op: 'set', value: 0.3 },
       { kind: 'setFlag', flag: 'formationFocusIgnoresDefense' },
-      { kind: 'statMod', stat: 'damage', op: 'set', value: 0.3 },
     ],
     description:
       "When 2+ hitrun units attack the same target in one turn, each subsequent attacker deals +30% damage and ignores defender's defense bonuses.",

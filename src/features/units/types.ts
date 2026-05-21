@@ -67,6 +67,7 @@ export interface Unit {
   bleeding?: boolean;
   bleedTurnsRemaining?: number;
   killChainCountThisTurn?: number;
+  sunderingChargeUsedThisTurn?: boolean;
   woundsReceivedThisTurn?: number;
   terrainDamageAbsorption?: number;  // nature_healing_t2 — damage absorbed by Wounded Earth this combat (UI feedback)
   // Learn-by-kill system: abilities learned from killing enemy faction units

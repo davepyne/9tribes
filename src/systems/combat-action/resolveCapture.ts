@@ -381,6 +381,40 @@ export function applyPostKillEffects(ctx: CombatContext): void {
       }
     }
   }
+  // Charge T3 (foreign) — Sundering Charge: a charge that kills lets the attacker
+  // continue and strike a second enemy in range at full charge damage.
+  if (
+    preview.details.isChargeAttack
+    && defenderActuallyDestroyed
+    && !attackerActuallyDestroyed
+    && attackerDoctrine?.sunderingChargeContinueEnabled
+  ) {
+    const sunderUnit = current.units.get(preview.attackerId);
+    if (sunderUnit && sunderUnit.hp > 0 && !sunderUnit.sunderingChargeUsedThisTurn) {
+      const attackRange = attackerPrototype.derivedStats.range ?? 1;
+      let nearestEnemy: Unit | null = null;
+      let nearestDist = Infinity;
+      for (const [uid, u] of current.units) {
+        if (u.factionId === attacker.factionId || u.hp <= 0 || uid === preview.defenderId) continue;
+        const dist = hexDistance(sunderUnit.position, u.position);
+        if (dist <= attackRange && dist < nearestDist) { nearestDist = dist; nearestEnemy = u; }
+      }
+      if (nearestEnemy) {
+        const sunderDamage = Math.max(1, preview.result.defenderDamage);
+        const newHp = Math.max(0, nearestEnemy.hp - sunderDamage);
+        const sunderUnits = new Map(current.units);
+        sunderUnits.set(nearestEnemy.id, { ...nearestEnemy, hp: newHp });
+        sunderUnits.set(preview.attackerId, { ...sunderUnit, sunderingChargeUsedThisTurn: true });
+        if (newHp <= 0) {
+          sunderUnits.delete(nearestEnemy.id);
+          current = { ...current, units: sunderUnits, factions: removeDeadUnitsFromFactions(current.factions, sunderUnits) };
+        } else {
+          current = { ...current, units: sunderUnits };
+        }
+        baseResolution.sunderingChargeApplied = true;
+      }
+    }
+  }
   // Retreat capture
   const retreatCaptureChance = atk.getStat('retreatCaptureChance');
   let updatedRetreatCaptured = retreatCaptured;

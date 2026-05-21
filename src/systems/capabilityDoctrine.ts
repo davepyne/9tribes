@@ -35,6 +35,8 @@ export interface ResearchDoctrine {
   sporeJumpEnabled: boolean;         // venom_t2 - poisoned kill jumps stacks to nearby enemies
   sporeJumpAllEnemies: boolean;      // venom_t2 native - jump to ALL enemies in range, not just nearest
   zoCAuraEnabled: boolean;           // fortress_t2 - fortified units project ZoC to adjacent hexes
+  spikeLinesEnabled: boolean;        // fortress_t2 - bracing units make adjacent hexes cost +1 to enemies; charges into a braced fortress take 1 dmg
+  persistentSpikeLinesEnabled: boolean; // fortress_t2 (native) - spike lines persist 2 turns after the bracing unit moves away
   canBuildBastion: boolean;          // fortress_t3 (native) - Hill Engineers may construct up to 3 Bastions per game
   canDeclareMaelstrom: boolean;     // tidal_warfare_t3 - once-per-game Maelstrom declaration
   canDeclareOasis: boolean;         // camel_adaptation_t3 native — once-per-game Oasis declaration
@@ -45,6 +47,7 @@ export interface ResearchDoctrine {
   // Tier 3 qualitative effects
   toxicBulwarkEnabled: boolean;      // venom_t3 - all units apply poison on hit
   fortressTranscendenceEnabled: boolean; // native fortress_t3 - all units can brace, aura range doubled
+  phalanxDamageShareEnabled: boolean; // foreign fortress_t3 - 3+ adjacent fortress units share 50% of damage taken
   chargeTranscendenceEnabled: boolean; // native charge_t3 - melee charges have no cooldown and ignore terrain penalties
   chargeSplashEnabled: boolean;       // native charge_t3 - charge splash: 50% damage to adjacent enemies (will diverge from transcendence)
   chargeChainEnabled: boolean;        // native charge_t3 - chain amplification: +10% per ally in charge line (will diverge from transcendence)
@@ -58,6 +61,7 @@ export interface ResearchDoctrine {
   roughTerrainMovementEnabled: boolean;    // river_stealth_t1 - +1 movement in rough terrain
   greedyCaptureEnabled: boolean;     // slaving_t1 - +15% damage vs wounded enemies (<50% HP)
   antiFortificationEnabled: boolean; // heavy_hitter_t1 - +20% damage vs fortified/bracing enemies
+  fortifiedDefenseReductionEnabled: boolean; // heavy_hitter_t1 (native) - halve a fortified target's defense bonus
   damageBonusVsElevationEnabled: boolean; // heavy_hitter_t1 - +20% damage vs enemies on hill/mountain
   permanentStealthEnabled: boolean;  // camel_adaptation_t2 - permanent stealth in desert/tundra
   mirageStealthEnabled: boolean;     // camel_adaptation_t2 - units on mirage terrain are invisible to distant enemies (fog)
@@ -71,6 +75,7 @@ export interface ResearchDoctrine {
   nativeDamageReflectionEnabled: boolean; // heavy_hitter_t2 native - reflect 50% + stagger attacker
   hitAndRunEnabled: boolean;         // hitrun_t2 - cavalry can attack then retreat in same turn
   bloodtrailMomentumEnabled: boolean; // hitrun_t2 - each wound received grants +1 movement next turn
+  nativeBloodtrailEnabled: boolean;   // hitrun_t2 (native) - +2 movement per wound, applied the same turn
   woundedEarthEnabled: boolean;          // nature_healing_t2 - terrain absorbs 25% damage on forest/jungle
   woundedEarthHealEnabled: boolean;      // nature_healing_t2 native - adjacent allies heal for absorbed amount instead
   killChainEnabled: boolean;         // hitrun_t3 foreign - follow-up attack at 60% damage after kill
@@ -92,6 +97,7 @@ export interface ResearchDoctrine {
   poisonBonusEnabled: boolean;       // foreign venom_t3 - poison-tagged units deal +50% poison damage
   fortressAuraUpgradeEnabled: boolean; // foreign fortress_t3 - fortress aura grants +25% defense
   chargeRoutedBonusEnabled: boolean;  // foreign charge_t3 - charge damage +50% against routed enemies
+  sunderingChargeContinueEnabled: boolean; // foreign charge_t3 - a charge that kills lets the attacker strike a second enemy
   hitrunZocIgnoreEnabled: boolean;    // foreign hitrun_t3 - units with hitrun ignore zone of control
   healingAuraUpgradeEnabled: boolean; // foreign nature_healing_t3 - healing aura range doubled to 2 hexes
   roughTerrainDefenseEnabled: boolean; // foreign camel_adaptation_t3 - units in rough terrain gain +20% defense
@@ -238,6 +244,8 @@ export function resolveResearchDoctrine(
     sporeJumpEnabled: hasNode('venom_t2'),
     sporeJumpAllEnemies: hasNode('venom_t2') && nativeDomains.has('venom'),
     zoCAuraEnabled: hasNode('fortress_t2'),
+    spikeLinesEnabled: hasNode('fortress_t2'),
+    persistentSpikeLinesEnabled: hasNode('fortress_t2') && nativeDomains.has('fortress'),
     // Bastion is a native-only capstone (Hill Engineers, fortress_t3 native) with a
     // hard 3-per-game cap tracked on faction.bastionsBuilt. The cap is enforced here
     // so all eligibility checks (player UI, AI heuristic) flow through the same flag.
@@ -257,6 +265,7 @@ export function resolveResearchDoctrine(
     // Tier 3 qualitative effects
     toxicBulwarkEnabled: hasNativeT3('venom'),
     fortressTranscendenceEnabled: hasNativeT3('fortress'),
+    phalanxDamageShareEnabled: hasForeignT3('fortress'),
     chargeTranscendenceEnabled: hasNativeT3('charge'),
     chargeSplashEnabled: hasNativeT3('charge'),
     chargeChainEnabled: hasNativeT3('charge'),
@@ -270,6 +279,7 @@ export function resolveResearchDoctrine(
     roughTerrainMovementEnabled: false, // retired: river_stealth_t1 reflavored to wetland_stealth
     greedyCaptureEnabled: hasNode('slaving_t1'),
     antiFortificationEnabled: hasNode('heavy_hitter_t1'),
+    fortifiedDefenseReductionEnabled: hasNode('heavy_hitter_t1') && nativeDomains.has('heavy_hitter'),
     damageBonusVsElevationEnabled: hasNode('heavy_hitter_t1'),
     permanentStealthEnabled: hasNode('camel_adaptation_t2'),
     mirageStealthEnabled: hasNode('camel_adaptation_t2'),
@@ -283,6 +293,7 @@ export function resolveResearchDoctrine(
     nativeDamageReflectionEnabled: hasNode('heavy_hitter_t2') && nativeDomains.has('heavy_hitter'),
     hitAndRunEnabled: hasNode('hitrun_t2'),
     bloodtrailMomentumEnabled: hasNode('hitrun_t2'),
+    nativeBloodtrailEnabled: hasNode('hitrun_t2') && nativeDomains.has('hitrun'),
     woundedEarthEnabled: hasNode('nature_healing_t2'),
     woundedEarthHealEnabled: hasNode('nature_healing_t2') && nativeDomains.has('nature_healing'),
     killChainEnabled: hasNode('hitrun_t3'),
@@ -304,6 +315,7 @@ export function resolveResearchDoctrine(
     poisonBonusEnabled: hasForeignT3('venom'),
     fortressAuraUpgradeEnabled: hasForeignT3('fortress'),
     chargeRoutedBonusEnabled: hasForeignT3('charge'),
+    sunderingChargeContinueEnabled: hasForeignT3('charge'),
     hitrunZocIgnoreEnabled: hasForeignT3('hitrun'),
     healingAuraUpgradeEnabled: hasForeignT3('nature_healing'),
     roughTerrainDefenseEnabled: hasForeignT3('camel_adaptation'),
